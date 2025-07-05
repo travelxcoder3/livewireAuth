@@ -1,0 +1,166 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+.topbar-logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255,255,255,0.10);
+    color: #fff;
+    border: none;
+    outline: none;
+    border-radius: 9999px;
+    padding: 0.4rem 0.7rem;
+    font-weight: 600;
+    font-size: 1rem;
+    min-width: 44px;
+    min-height: 44px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+.topbar-logout-btn .topbar-logout-text {
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: max-width 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s;
+    margin-right: 0.5rem;
+    margin-left: 0.5rem;
+    color: inherit;
+    font-size: 1rem;
+}
+.topbar-logout-btn:hover, .topbar-logout-btn:focus {
+    background: rgba(220,53,69,0.13);
+    color: #DC3545;
+}
+.topbar-logout-btn:hover .topbar-logout-text,
+.topbar-logout-btn:focus .topbar-logout-text {
+    max-width: 120px;
+    opacity: 1;
+}
+
+.topbar-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+    padding: 0 2.5rem;
+    height: 76px;
+    background: linear-gradient(90deg, #28A745 0%, #3CCFCF 100%);
+    box-shadow: 0 4px 24px 0 rgba(40, 167, 69, 0.08);
+    border-radius: 0 0 24px 24px;
+    position: relative;
+    z-index: 10;
+}
+@media (max-width: 600px) {
+    .topbar-main {
+        flex-direction: column;
+        height: auto;
+        padding: 0.5rem 0.5rem 0.7rem 0.5rem;
+        gap: 0.7rem;
+    }
+}
+
+.topbar-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    background: rgba(255,255,255,0.10);
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.08rem;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0.5rem 0.7rem;
+    box-shadow: 0 2px 8px 0 rgba(40, 167, 69, 0.07);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+}
+.topbar-nav-btn .topbar-nav-text {
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: max-width 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s;
+    margin-right: 0.5rem;
+    margin-left: 0.5rem;
+    color: inherit;
+    font-size: 1.08rem;
+    display: inline-block;
+}
+.topbar-nav-btn.active {
+    background: transparent !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    border: 2px solid transparent !important;
+}
+.topbar-nav-btn.active svg {
+    color: #fff !important;
+    stroke: #fff !important;
+    fill: none !important;
+}
+.topbar-nav-btn.active .topbar-nav-text,
+.topbar-nav-btn:hover .topbar-nav-text,
+.topbar-nav-btn:focus .topbar-nav-text {
+    max-width: 160px;
+    opacity: 1;
+}
+.topbar-nav-btn:hover, .topbar-nav-btn:focus {
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    box-shadow: 0 4px 16px 0 rgba(40, 167, 69, 0.13);
+    border: 2px solid #3CCFCF;
+}
+.topbar-nav-btn:active {
+    transform: scale(0.96);
+    box-shadow: 0 2px 8px 0 rgba(40, 167, 69, 0.18);
+}
+
+.group-user-dropdown {
+    position: relative;
+    outline: none;
+}
+.user-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    min-width: 180px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 8px 32px 0 rgba(40, 167, 69, 0.13);
+    z-index: 100;
+    overflow: hidden;
+    border: 1px solid #e0f7ef;
+    padding: 0;
+    animation: fadeIn 0.2s;
+}
+.group-user-dropdown:focus-within .user-dropdown-menu {
+    display: block;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.user-dropdown-menu button[type="submit"] {
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+}
