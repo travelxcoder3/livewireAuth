@@ -1,6 +1,46 @@
 <!-- لوحة التحكم الشاملة لأدمن الوكالة -->
 @php $stats = $this->comprehensiveStats; @endphp
 
+<!-- روابط سريعة لجميع الواجهات الخاصة بأدمن الوكالة -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    <a href="{{ route('agency.users') }}" class="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-users fa-2x mb-2"></i>
+        <span>المستخدمين</span>
+    </a>
+    <a href="{{ route('agency.roles') }}" class="bg-purple-500 hover:bg-purple-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-user-tag fa-2x mb-2"></i>
+        <span>الأدوار</span>
+    </a>
+    <a href="{{ route('agency.permissions') }}" class="bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-shield-alt fa-2x mb-2"></i>
+        <span>الصلاحيات</span>
+    </a>
+    <a href="{{ route('agency.service_types') }}" class="bg-green-500 hover:bg-green-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-concierge-bell fa-2x mb-2"></i>
+        <span>الخدمات</span>
+    </a>
+    <a href="{{ route('agency.providers') }}" class="bg-pink-500 hover:bg-pink-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-briefcase fa-2x mb-2"></i>
+        <span>المزودين</span>
+    </a>
+    <a href="{{ route('agency.customers.add') }}" class="bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-user-plus fa-2x mb-2"></i>
+        <span>إضافة عميل</span>
+    </a>
+    <a href="{{ route('agency.hr.employees.index') }}" class="bg-teal-500 hover:bg-teal-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-user-tie fa-2x mb-2"></i>
+        <span>الموظفين</span>
+    </a>
+    <a href="{{ route('agency.sales.index') }}" class="bg-orange-500 hover:bg-orange-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-chart-line fa-2x mb-2"></i>
+        <span>المبيعات</span>
+    </a>
+    <a href="{{ route('agency.profile') }}" class="bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg p-4 flex flex-col items-center shadow">
+        <i class="fas fa-user-circle fa-2x mb-2"></i>
+        <span>الملف الشخصي</span>
+    </a>
+</div>
+
 <!-- إحصائيات شاملة -->
 <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
     <div class="bg-white rounded-lg shadow p-6">
@@ -62,7 +102,7 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
     <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">آخر الأدوار المضافة</h2>
+        <h2 class="text-lg font-semibold text-black mb-4">آخر الأدوار المضافة</h2>
         <ul class="space-y-2">
             @foreach($this->recentRoles as $role)
                 <li class="flex items-center justify-between">
@@ -73,7 +113,7 @@
         </ul>
     </div>
     <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">آخر الصلاحيات المضافة</h2>
+        <h2 class="text-lg font-semibold text-black mb-4">آخر الصلاحيات المضافة</h2>
         <ul class="space-y-2">
             @foreach($this->recentPermissions as $permission)
                 <li class="flex items-center justify-between">
@@ -86,7 +126,7 @@
 </div>
 
 <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">معلومات الوكالة</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">معلومات الوكالة</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <p class="text-gray-600">اسم الوكالة</p>
@@ -108,7 +148,7 @@
 </div>
 
 <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-lg font-semibold text-gray-800 mb-4">أكثر صلاحية مستخدمة (مرتبطة بأدوار)</h2>
+    <h2 class="text-lg font-semibold text-black mb-4">أكثر صلاحية مستخدمة (مرتبطة بأدوار)</h2>
     @if($stats['most_used_permission'])
         <div class="flex items-center">
             <span class="font-medium text-blue-700">{{ $stats['most_used_permission']->name }}</span>
@@ -121,16 +161,16 @@
 
 <!-- آخر المستخدمين -->
 <div class="bg-white rounded-lg shadow p-6">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">آخر المستخدمين المضافين</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">آخر المستخدمين المضافين</h2>
     @if($this->recentUsers->count() > 0)
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 text-gray-900">
                     <tr>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الاسم</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">البريد الإلكتروني</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الدور</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">الاسم</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">البريد الإلكتروني</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">الدور</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">الحالة</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">

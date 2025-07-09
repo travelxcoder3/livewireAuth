@@ -51,7 +51,7 @@
 
 <!-- أكثر الأدوار استخداماً -->
 <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">أكثر الأدوار استخداماً</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">أكثر الأدوار استخداماً</h2>
     @if($stats['top_roles']->count() > 0)
         <div class="space-y-4">
             @foreach($stats['top_roles'] as $role)
@@ -80,15 +80,15 @@
 
 <!-- آخر الأدوار المضافة -->
 <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">آخر الأدوار المضافة</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">آخر الأدوار المضافة</h2>
     @if($stats['recent_roles']->count() > 0)
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 text-gray-900">
                     <tr>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم الدور</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عدد المستخدمين</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الإنشاء</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">اسم الدور</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">عدد المستخدمين</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">تاريخ الإنشاء</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -117,7 +117,7 @@
 
 <!-- معلومات الوكالة -->
 <div class="bg-white rounded-lg shadow p-6">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">معلومات الوكالة</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">معلومات الوكالة</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <p class="text-gray-600">اسم الوكالة</p>

@@ -59,6 +59,11 @@ class Users extends Component
 
     public function addUser()
     {
+        $agency = Auth::user()->agency;
+        if ($agency->users()->count() >= $agency->max_users) {
+            session()->flash('error', 'لا يمكنك إضافة مستخدمين جدد. لقد وصلت إلى الحد الأقصى المسموح به لهذه الوكالة.');
+            return;
+        }
         $this->validate();
         
         $user = User::create([
@@ -133,6 +138,11 @@ class Users extends Component
         
         $this->loadUsers();
         session()->flash('success', 'تم تغيير حالة المستخدم بنجاح');
+    }
+
+    public function closeModal()
+    {
+        $this->reset(['name', 'email', 'password', 'role', 'is_active', 'edit_name', 'edit_email', 'edit_password', 'edit_role', 'edit_is_active', 'showAddModal', 'showEditModal', 'editingUser']);
     }
 
     public function render()

@@ -1,137 +1,128 @@
+@php
+    use App\Services\ThemeService;
+
+    if (Auth::check()) {
+        $themeName = Auth::user()->hasRole('super-admin')
+            ? ThemeService::getSystemTheme()
+            : strtolower(Auth::user()->agency->theme_color ?? 'emerald');
+    } else {
+        $themeName = 'emerald';
+    }
+
+    $colors = ThemeService::getCurrentThemeColors($themeName);
+@endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'لوحة تحكم الوكالة')</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom Styles -->
-    <style>
-        [dir="rtl"] {
-            direction: rtl;
-        }
-    </style>
-    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ $title ?? 'إدارة الوكالة' }}</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+
+    <style>
+        :root {
+    --primary-100: {{ $colors['primary-100'] }};
+    --primary-500: {{ $colors['primary-500'] }};
+    --primary-600: {{ $colors['primary-600'] }};
+}   
+
+        .nav-gradient {
+            background: linear-gradient(90deg, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);
+        }
+
+        .border-theme {
+            border-color: rgb(var(--primary-500));
+        }
+
+        .focus-ring-theme:focus {
+            ring-color: rgb(var(--primary-500));
+        }
+
+        .nav-item { transition: all 0.2s ease; }
+        .nav-item.active { background-color: rgba(255,255,255,0.2); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .nav-item:hover { background-color: rgba(255,255,255,0.1); }
+
+        .nav-text {
+            transition: opacity 0.2s ease, max-width 0.2s ease;
+            opacity: 0;
+            max-width: 0;
+            overflow: hidden;
+        }
+        .nav-item.active .nav-text,
+        .nav-item:hover .nav-text { opacity: 1; max-width: 100px; }
+
+        .nav-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.1);
+            transition: all 0.2s ease;
+        }
+        .nav-item:hover .nav-icon,
+        .nav-item.active .nav-icon { background-color: rgba(255,255,255,0.2); }
+
+        .user-dropdown-menu {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 110%;
+            margin-top: 8px;
+            min-width: 180px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.08);
+            z-index: 50;
+        }
+        .group-user-dropdown:focus-within .user-dropdown-menu,
+        .group-user-dropdown:hover .user-dropdown-menu { display: block; }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <!-- Navigation -->
-    <nav class="bg-blue-600 text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-4 space-x-reverse">
-                    <h1 class="text-xl font-bold">لوحة تحكم الوكالة</h1>
-                </div>
-                
-                <div class="flex items-center space-x-4 space-x-reverse">
-                    <span class="text-sm">{{ auth()->user()->name }}</span>
-                    <form method="POST" action="{{ route('logout') }}" class="inline">
-                        @csrf
-                        <button type="submit" class="text-sm hover:text-blue-200">
-                            <i class="fas fa-sign-out-alt ml-1"></i>
-                            تسجيل الخروج
-                        </button>
-                    </form>
-                </div>
-            </div>
+<body class="bg-dashboard min-h-screen font-app">
+    @include('layouts.partials.nav')
+
+    <main class="w-full px-4 py-6">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-[rgba(var(--primary-500),0.2)] p-6">
+                {{ $slot }}
         </div>
-    </nav>
-
-    <!-- Sidebar and Main Content -->
-    <div class="flex">
-        <!-- Sidebar -->
-        <aside class="w-64 bg-white shadow-lg min-h-screen">
-            <nav class="mt-8">
-                <div class="px-4 space-y-2">
-                    @php
-                        $user = auth()->user();
-                        if ($user->hasRole('agency-admin') || $user->hasRole('roles-manager') || $user->hasRole('users-manager') || $user->hasRole('permissions-manager')) {
-                            $dashboardRoute = route('agency.dashboard');
-                        } elseif ($user->can('users.view')) {
-                            $dashboardRoute = route('agency.users');
-                        } elseif ($user->can('roles.view')) {
-                            $dashboardRoute = route('agency.roles');
-                        } elseif ($user->can('permissions.view')) {
-                            $dashboardRoute = route('agency.permissions');
-                        } else {
-                            $dashboardRoute = route('agency.dashboard');
-                        }
-                    @endphp
-                    <a href="{{ route('agency.dashboard') }}"
-                       class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors {{ request()->routeIs('agency.dashboard') ? 'bg-blue-50 text-blue-600' : '' }}">
-                        <i class="fas fa-tachometer-alt ml-2"></i>
-                        لوحة التحكم
-                    </a>
-                    
-                    @can('users.view')
-                    <a href="{{ route('agency.users') }}" 
-                       class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors {{ request()->routeIs('agency.users') ? 'bg-blue-50 text-blue-600' : '' }}">
-                        <i class="fas fa-users ml-2"></i>
-                        المستخدمين
-                    </a>
-                    @endcan
-                    
-                    @can('roles.view')
-                    <a href="{{ route('agency.roles') }}" 
-                       class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors {{ request()->routeIs('agency.roles') ? 'bg-blue-50 text-blue-600' : '' }}">
-                        <i class="fas fa-user-tag ml-2"></i>
-                        الأدوار
-                    </a>
-                    @endcan
-                    
-                    @can('permissions.view')
-                    <a href="{{ route('agency.permissions') }}" 
-                       class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors {{ request()->routeIs('agency.permissions') ? 'bg-blue-50 text-blue-600' : '' }}">
-                        <i class="fas fa-shield-alt ml-2"></i>
-                        الصلاحيات
-                    </a>
-                    @endcan
-                    
-                    {{--
-                    <a href="{{ route('agency.services') }}" 
-                       class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors {{ request()->routeIs('agency.services') ? 'bg-blue-50 text-blue-600' : '' }}">
-                        <i class="fas fa-concierge-bell ml-2"></i>
-                        الخدمات
-                    </a>
-                    <a href="{{ route('agency.employees') }}" 
-                       class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors {{ request()->routeIs('agency.employees') ? 'bg-blue-50 text-blue-600' : '' }}">
-                        <i class="fas fa-user-tie ml-2"></i>
-                        الموظفين
-                    </a>
-                    <a href="{{ route('agency.reports') }}" 
-                       class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors {{ request()->routeIs('agency.reports') ? 'bg-blue-50 text-blue-600' : '' }}">
-                        <i class="fas fa-chart-bar ml-2"></i>
-                        التقارير
-                    </a>
-                    --}}
-                </div>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="flex-1 p-8">
-            @if (session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            @if (session('error'))
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    {{ session('error') }}
-                </div>
-            @endif
-
-            {{ $slot }}
-        </main>
-    </div>
+    </main>
 
     @livewireScripts
+
+<script>
+function updateTheme(theme) {
+    fetch('/update-theme', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ theme_color: theme })
+            }).then(response => {
+        if (response.ok) {
+            window.location.reload();
+        } else {
+                    alert('فشل في تغيير الثيم');
+                }
+            }).catch(() => alert('فشل الاتصال بالخادم'));
+        }
+
+        document.addEventListener('click', e => {
+    if (!e.target.closest('.group-theme-selector')) {
+                document.querySelector('.theme-selector-menu')?.classList.add('hidden');
+    }
+});
+
+        document.querySelector('.group-theme-selector button')?.addEventListener('click', e => {
+    e.stopPropagation();
+            document.querySelector('.theme-selector-menu')?.classList.toggle('hidden');
+});
+</script>
 </body>
 </html>

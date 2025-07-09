@@ -9,6 +9,13 @@ class Login extends Component
 {
     public $email = '';
     public $password = '';
+    public $showPassword = false;
+    public $remember = false;
+
+    public function togglePassword()
+    {
+        $this->showPassword = !$this->showPassword;
+    }
 
     public function login()
     {
@@ -21,26 +28,44 @@ class Login extends Component
             'password.required' => 'كلمة المرور مطلوبة',
         ]);
 
-        if (Auth::attempt(['email' => $this->email, 'password' => $this->password])) {
+        if (Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
             session()->regenerate();
             $user = Auth::user();
+            // منع الدخول إذا انتهت فترة اشتراك الوكالة
+            if ($user->agency && $user->agency->subscription_end_date && now()->greaterThan($user->agency->subscription_end_date)) {
+                Auth::logout();
+                session()->flash('error', 'انتهت فترة اشتراك وكالتك ولا يمكنك الدخول. يرجى التواصل مع الإدارة لتجديد الاشتراك.');
+                return;
+            }
+            // منع الدخول إذا كانت حالة الوكالة غير نشطة أو موقوفة
+            if ($user->agency && $user->agency->status !== 'active') {
+                Auth::logout();
+                session()->flash('error', 'وكالتك غير نشطة، يرجى التواصل مع الإدارة.');
+                return;
+            }
+            // منع الدخول إذا كان حساب المستخدم نفسه غير نشط أو موقوف
+            if (isset($user->is_active) && !$user->is_active) {
+                Auth::logout();
+                session()->flash('error', 'حسابك غير نشط أو موقوف، يرجى التواصل مع الإدارة.');
+                return;
+            }
             \Log::info('User roles after login: ' . json_encode($user->getRoleNames()));
             if ($user->hasRole('super-admin')) {
-                return redirect()->intended('/admin/dashboard');
+                return redirect()->to('/admin/dashboard');
             } elseif ($user->hasRole('agency-admin')) {
-                return redirect()->intended('/agency/dashboard');
+                return redirect()->to('/agency/dashboard');
             } elseif ($user->agency_id) {
                 if ($user->can('users.view')) {
-                    return redirect()->intended('/agency/users');
+                    return redirect()->to('/agency/users');
                 } elseif ($user->can('roles.view')) {
-                    return redirect()->intended('/agency/dashboard');
+                    return redirect()->to('/agency/dashboard');
                 } elseif ($user->can('permissions.view')) {
-                    return redirect()->intended('/agency/permissions');
+                    return redirect()->to('/agency/permissions');
                 } else {
-                    return redirect()->intended('/agency/dashboard');
+                    return redirect()->to('/agency/dashboard');
                 }
             } else {
-                return redirect('/');
+                return redirect()->to('/');
             }
         } else {
             session()->flash('error', 'بيانات الدخول غير صحيحة');

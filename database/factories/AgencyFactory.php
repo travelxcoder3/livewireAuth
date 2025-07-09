@@ -21,6 +21,7 @@ class AgencyFactory extends Factory
             'status' => 'active',
             'license_expiry_date' => $this->faker->date,
             'currency' => 'SAR',
+            'main_branch_name' => 'الفرع الرئيسي',
         ];
     }
 } 

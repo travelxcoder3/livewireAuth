@@ -51,13 +51,13 @@
 
 <!-- توزيع المستخدمين حسب الأدوار -->
 <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">توزيع المستخدمين حسب الأدوار</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">توزيع المستخدمين حسب الأدوار</h2>
     @if($stats['users_by_role']->count() > 0)
         <div class="space-y-4">
             @foreach($stats['users_by_role'] as $roleName => $users)
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div class="flex items-center">
-                        <span class="font-medium text-gray-700">{{ $roleName }}</span>
+                        <span class="font-medium text-gray-900">{{ $roleName }}</span>
                         <span class="mr-4 text-sm text-gray-500">({{ $users->count() }} مستخدم)</span>
                     </div>
                     <div class="flex items-center">
@@ -80,17 +80,17 @@
 
 <!-- آخر المستخدمين المضافين -->
 <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">آخر المستخدمين المضافين</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">آخر المستخدمين المضافين</h2>
     @if($stats['recent_users']->count() > 0)
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 text-gray-900">
                     <tr>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الاسم</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">البريد الإلكتروني</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الدور</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الإنشاء</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">الاسم</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">البريد الإلكتروني</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">الدور</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">الحالة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">تاريخ الإنشاء</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -133,7 +133,7 @@
 
 <!-- معلومات الوكالة -->
 <div class="bg-white rounded-lg shadow p-6">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">معلومات الوكالة</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">معلومات الوكالة</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <p class="text-gray-600">اسم الوكالة</p>

@@ -1,195 +1,151 @@
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">مرحباً بك في نظام إدارة الوكالات</h1>
-        <p class="text-gray-600">لوحة تحكم مدير النظام لإدارة وكالات السفر</p>
+<div class="py-8 px-2 sm:px-6 lg:px-12 xl:px-24">
+    <!-- عنوان الداشبورد -->
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-extrabold text-black flex items-center gap-3">
+            <svg class="h-9 w-9 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke-width="2" />
+            </svg>
+            لوحة التحكم الرئيسية
+        </h1>
+        <span class="text-lg text-gray-700 font-semibold">مرحباً بك في نظام إدارة الوكالات</span>
     </div>
-
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Agencies -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-emerald-100 text-emerald-600">
-                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                    </svg>
-                </div>
-                <div class="mr-4">
-                    <p class="text-sm font-medium text-gray-600">إجمالي الوكالات</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ $totalAgencies }}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Active Agencies -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-green-100 text-green-600">
-                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div class="mr-4">
-                    <p class="text-sm font-medium text-gray-600">الوكالات النشطة</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ $activeAgencies }}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending Agencies -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div class="mr-4">
-                    <p class="text-sm font-medium text-gray-600">الوكالات المعلقة</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ $pendingAgencies }}</p>
+    <!-- صف الكروت والرسم البياني -->
+    <div class="flex flex-col lg:flex-row gap-8 items-stretch">
+        <!-- الرسم البياني على اليمين -->
+        <div class="w-full lg:w-1/4 flex justify-center lg:justify-start">
+            <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-xs flex flex-col items-center h-full min-h-[320px]">
+                <h2 class="text-xl font-extrabold text-black mb-4 flex items-center gap-2 justify-center lg:justify-start">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full border-2 border-emerald-400">
+                        <svg class="h-4 w-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke-width="2" />
+                        </svg>
+                    </span>
+                    توزيع حالة الوكالات
+                </h2>
+                <div class="flex flex-col items-center w-full">
+                    <div class="flex justify-center mb-4">
+                        <div class="w-36 h-36">
+                            <canvas id="agenciesStatusChart" width="144" height="144" style="width:144px; height:144px; max-width:100%;"></canvas>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2 w-full mt-2">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-block w-5 h-5 rounded-full border-2" style="background: rgb(var(--primary-500)); border-color: rgb(var(--primary-500));"></span>
+                            <span class="font-semibold" style="color: rgb(var(--primary-500));">نشطة</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-block w-5 h-5 rounded-full border-2" style="background: rgb(var(--primary-100)); border-color: rgb(var(--primary-100));"></span>
+                            <span class="font-semibold" style="color: rgb(var(--primary-100));">معلقة</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-block w-5 h-5 rounded-full border-2" style="background: rgb(var(--primary-600)); border-color: rgb(var(--primary-600));"></span>
+                            <span class="font-semibold" style="color: rgb(var(--primary-600));">غير نشطة</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Agency Admins -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                    </svg>
+        <!-- الكروت على اليسار -->
+        <div class="w-full lg:w-3/4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 h-full">
+                <!-- كرت مدراء الوكالات -->
+                <div class="group rounded-3xl shadow-2xl p-6 flex flex-col items-center justify-center gap-4 transition-transform duration-200 hover:scale-105 cursor-pointer min-h-[220px] h-full" style="background: linear-gradient(135deg, rgb(var(--primary-100)), #fff); border-top: 4px solid rgb(var(--primary-500));">
+                    <div class="rounded-full p-5 shadow-lg mb-2" style="background: rgb(var(--primary-500)); color: var(--theme-on-primary);">
+                        <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M20 8v6M23 11h-6"/>
+                        </svg>
+                    </div>
+                    <div class="text-4xl font-extrabold text-black drop-shadow">{{ $totalAgencyAdmins }}</div>
+                    <div class="text-gray-900 text-base font-semibold tracking-wide">مدراء الوكالات</div>
                 </div>
-                <div class="mr-4">
-                    <p class="text-sm font-medium text-gray-600">مديري الوكالات</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ $totalAgencyAdmins }}</p>
+                <!-- كرت الوكالات المعلقة -->
+                <div class="group rounded-3xl shadow-2xl p-6 flex flex-col items-center justify-center gap-4 transition-transform duration-200 hover:scale-105 cursor-pointer min-h-[220px] h-full" style="background: linear-gradient(135deg, rgb(var(--primary-100)), #fff); border-top: 4px solid rgb(var(--primary-500));">
+                    <div class="rounded-full p-5 shadow-lg mb-2" style="background: rgb(var(--primary-500)); color: var(--theme-on-primary);">
+                        <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="text-4xl font-extrabold text-black drop-shadow">{{ $pendingAgencies }}</div>
+                    <div class="text-gray-900 text-base font-semibold tracking-wide">الوكالات المعلقة</div>
+                </div>
+                <!-- كرت الوكالات النشطة -->
+                <div class="group rounded-3xl shadow-2xl p-6 flex flex-col items-center justify-center gap-4 transition-transform duration-200 hover:scale-105 cursor-pointer min-h-[220px] h-full" style="background: linear-gradient(135deg, rgb(var(--primary-100)), #fff); border-top: 4px solid rgb(var(--primary-500));">
+                    <div class="rounded-full p-5 shadow-lg mb-2" style="background: rgb(var(--primary-500)); color: var(--theme-on-primary);">
+                        <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="text-4xl font-extrabold text-black drop-shadow">{{ $activeAgencies }}</div>
+                    <div class="text-gray-900 text-base font-semibold tracking-wide">الوكالات النشطة</div>
+                </div>
+                <!-- كرت إجمالي الوكالات -->
+                <div class="group rounded-3xl shadow-2xl p-6 flex flex-col items-center justify-center gap-4 transition-transform duration-200 hover:scale-105 cursor-pointer min-h-[220px] h-full" style="background: linear-gradient(135deg, rgb(var(--primary-100)), #fff); border-top: 4px solid rgb(var(--primary-500));">
+                    <div class="rounded-full p-5 shadow-lg mb-2" style="background: rgb(var(--primary-500)); color: var(--theme-on-primary);">
+                        <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <div class="text-4xl font-extrabold text-black drop-shadow">{{ $totalAgencies }}</div>
+                    <div class="text-gray-900 text-base font-semibold tracking-wide">إجمالي الوكالات</div>
+                </div>
+                <!-- كرت الوكالات غير النشطة -->
+                <div class="group rounded-3xl shadow-2xl p-6 flex flex-col items-center justify-center gap-4 transition-transform duration-200 hover:scale-105 cursor-pointer min-h-[220px] h-full" style="background: linear-gradient(135deg, rgb(var(--primary-100)), #fff); border-top: 4px solid rgb(var(--primary-500));">
+                    <div class="rounded-full p-5 shadow-lg mb-2" style="background: rgb(var(--primary-500)); color: var(--theme-on-primary);">
+                        <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </div>
+                    <div class="text-4xl font-extrabold text-black drop-shadow">{{ $inactiveAgencies }}</div>
+                    <div class="text-gray-900 text-base font-semibold tracking-wide">الوكالات غير النشطة</div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">إجراءات سريعة</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <a href="{{ route('admin.add-agency') }}" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition duration-200">
-                <div class="p-2 rounded-full bg-emerald-100 text-emerald-600 mr-4">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-800">إضافة وكالة جديدة</h3>
-                    <p class="text-sm text-gray-600">إضافة وكالة سفر جديدة مع تعيين مدير لها</p>
-                </div>
-            </a>
-            
-            <a href="{{ route('admin.agencies') }}" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition duration-200">
-                <div class="p-2 rounded-full bg-blue-100 text-blue-600 mr-4">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-800">عرض جميع الوكالات</h3>
-                    <p class="text-sm text-gray-600">إدارة وتعديل الوكالات الموجودة</p>
-                </div>
-            </a>
-            
-            <button wire:click="createPermissionsForAllAgencies" 
-                    class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition duration-200">
-                <div class="p-2 rounded-full bg-purple-100 text-purple-600 mr-4">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-800">إنشاء الصلاحيات الأساسية</h3>
-                    <p class="text-sm text-gray-600">إنشاء الصلاحيات والأدوار لجميع الوكالات</p>
-                </div>
-            </button>
-            
-            <button wire:click="createPermissionsForExistingAgencies" 
-                    class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition duration-200">
-                <div class="p-2 rounded-full bg-orange-100 text-orange-600 mr-4">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-800">إنشاء الصلاحيات للوكالات الموجودة</h3>
-                    <p class="text-sm text-gray-600">إنشاء الصلاحيات والأدوار للوكالات الموجودة فقط</p>
-                </div>
-            </button>
         </div>
     </div>
 
-    <!-- Recent Agencies -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-bold text-gray-800">آخر الوكالات المضافة</h2>
-        </div>
+    <!-- جدول آخر الوكالات المضافة -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mt-8">
+        <h2 class="text-xl font-bold text-black mb-4 flex items-center gap-2">
+            <svg class="h-6 w-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-9 9 9"/>
+            </svg>
+            آخر الوكالات المضافة
+        </h2>
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            اسم الوكالة
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            البريد الإلكتروني
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            مدير الوكالة
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            الحالة
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            تاريخ الإضافة
-                        </th>
+                        <th class="px-4 py-2 text-right text-gray-900 font-semibold">اسم الوكالة</th>
+                        <th class="px-4 py-2 text-right text-gray-900 font-semibold">الهاتف</th>
+                        <th class="px-4 py-2 text-right text-gray-900 font-semibold">البريد الإلكتروني</th>
+                        <th class="px-4 py-2 text-right text-gray-900 font-semibold">المدير</th>
+                        <th class="px-4 py-2 text-right text-gray-900 font-semibold">الحالة</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-100">
                     @forelse($recentAgencies as $agency)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ $agency->name }}</div>
-                                <div class="text-sm text-gray-500">{{ $agency->phone }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ $agency->email }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                        <tr class="hover:bg-emerald-50 transition">
+                            <td class="px-4 py-2 font-bold text-black">{{ $agency->name }}</td>
+                            <td class="px-4 py-2">{{ $agency->phone }}</td>
+                            <td class="px-4 py-2">{{ $agency->email }}</td>
+                            <td class="px-4 py-2">
                                 @if($agency->admin)
-                                    <div class="text-sm font-medium text-gray-900">{{ $agency->admin->name }}</div>
-                                    <div class="text-sm text-gray-500">{{ $agency->admin->email }}</div>
+                                    <span class="font-semibold text-black">{{ $agency->admin->name }}</span>
+                                    <span class="block text-xs text-gray-700">{{ $agency->admin->email }}</span>
                                 @else
-                                    <span class="text-sm text-red-500">لم يتم تعيين مدير</span>
+                                    <span class="text-xs text-red-500">لم يتم تعيين مدير</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-4 py-2">
                                 @if($agency->status === 'active')
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                        نشطة
-                                    </span>
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">نشطة</span>
                                 @else
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        معلقة
-                                    </span>
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">معلقة</span>
                                 @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ $agency->created_at->format('Y-m-d') }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                                لا توجد وكلات مسجلة حالياً
-                            </td>
+                            <td colspan="5" class="text-center py-6 text-gray-400">لا توجد وكالات مضافة مؤخراً</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -197,3 +153,40 @@
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function getThemeColor(variable, fallback) {
+        const val = getComputedStyle(document.documentElement).getPropertyValue(variable);
+        return val ? 'rgb(' + val.trim() + ')' : fallback;
+    }
+    var ctx = document.getElementById('agenciesStatusChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['نشطة', 'معلقة', 'غير نشطة'],
+            datasets: [{
+                data: [{{ $activeAgencies }} , {{ $pendingAgencies }}, {{ $totalAgencies - $activeAgencies - $pendingAgencies }}],
+                backgroundColor: [
+                    getThemeColor('--primary-500', '#10b981'),
+                    getThemeColor('--primary-100', '#facc15'),
+                    getThemeColor('--primary-600', '#f87171')
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        font: { family: 'Tajawal, sans-serif', size: 14 }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>

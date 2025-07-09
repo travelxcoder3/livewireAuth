@@ -1,7 +1,7 @@
 <div>
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">مرحباً بك في {{ $this->agencyInfo->name }}</h1>
-        <p class="text-gray-600">
+        <h1 class="text-3xl font-bold text-black mb-2">مرحباً بك في {{ $this->agencyInfo->name }}</h1>
+        <p class="text-gray-900">
             @switch($this->dashboardType)
                 @case('comprehensive')
                     لوحة التحكم الشاملة - عرض جميع الإحصائيات
@@ -14,6 +14,15 @@
                     @break
                 @case('permissions-focused')
                     لوحة التحكم - إدارة الصلاحيات
+                    @break
+                @case('service-types-focused')
+                    لوحة تحكم إدارة الخدمات
+                    @break
+                @case('sales-focused')
+                    لوحة تحكم إدارة المبيعات
+                    @break
+                @case('hr-focused')
+                    لوحة تحكم إدارة الموارد البشرية
                     @break
                 @default
                     لوحة التحكم المبسطة
@@ -41,7 +50,22 @@
             <!-- لوحة التحكم تركز على الصلاحيات -->
             @include('livewire.agency.dashboard.permissions-focused')
             @break
-            
+        
+        @case('service-types-focused')
+            <!-- لوحة تحكم إدارة الخدمات -->
+            @include('livewire.agency.dashboard.service-types-focused')
+            @break
+        
+        @case('sales-focused')
+            <!-- لوحة تحكم إدارة المبيعات -->
+            @include('livewire.agency.dashboard.sales-focused')
+            @break
+        
+        @case('hr-focused')
+            <!-- لوحة تحكم إدارة الموارد البشرية -->
+            @include('livewire.agency.dashboard.hr-focused')
+            @break
+        
         @default
             <!-- لوحة التحكم المبسطة -->
             @include('livewire.agency.dashboard.simple')

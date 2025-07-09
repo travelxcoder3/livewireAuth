@@ -37,6 +37,14 @@ class Dashboard extends Component
         if ($user->hasRole('permissions-manager')) {
             return 'permissions-focused';
         }
+        // أولوية لدور مدير المبيعات
+        if ($user->hasRole('sales-manager')) {
+            return 'sales-focused';
+        }
+        // أولوية لدور مدير الموارد البشرية
+        if ($user->hasRole('hr-manager')) {
+            return 'hr-focused';
+        }
         // إذا كان لديه صلاحية users.view فقط
         if ($user->can('users.view')) {
             return 'users-focused';
@@ -48,6 +56,18 @@ class Dashboard extends Component
         // إذا كان لديه صلاحية permissions.view فقط
         if ($user->can('permissions.view')) {
             return 'permissions-focused';
+        }
+        // إذا كان لديه صلاحية service_types.view فقط
+        if ($user->can('service_types.view')) {
+            return 'service-types-focused';
+        }
+        // إذا كان لديه صلاحية sales.view فقط
+        if ($user->can('sales.view')) {
+            return 'sales-focused';
+        }
+        // إذا كان لديه صلاحية employees.view فقط
+        if ($user->can('employees.view')) {
+            return 'hr-focused';
         }
         // المستخدم العادي - لوحة تحكم مبسطة
         return 'simple';
@@ -224,6 +244,12 @@ class Dashboard extends Component
                 break;
             case 'simple':
                 $title .= ' (مبسطة)';
+                break;
+            case 'sales-focused':
+                $title .= ' (مبيعات)';
+                break;
+            case 'hr-focused':
+                $title .= ' (الموارد البشرية)';
                 break;
         }
 

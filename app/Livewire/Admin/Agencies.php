@@ -4,9 +4,12 @@ namespace App\Livewire\Admin;
 
 use Livewire\Component;
 use App\Models\Agency;
+use Livewire\WithPagination;
 
 class Agencies extends Component
 {
+    use WithPagination;
+
     // متغيرات المودال
     public $showEditModal = false;
     public $showDeleteModal = false;
@@ -24,15 +27,42 @@ class Agencies extends Component
     public $license_expiry_date;
     public $description;
     public $max_users;
+    public $main_branch_name;
+    public $landline;
+    public $currency;
+    public $status;
+    
 
     public $successMessage;
+    public $perPage = 10; // عدد الصفوف لكل صفحة
+    public $showAll = false; // عرض كل البيانات
 
     public function render()
     {
-        $agencies = Agency::with('admin')->get();
+        $query = Agency::with('admin')
+                      ->orderBy('created_at', 'desc');
+
+        if ($this->showAll) {
+            $agencies = $query->get();
+        } else {
+            $agencies = $query->paginate($this->perPage);
+        }
+
         return view('livewire.admin.agencies', compact('agencies'))
             ->layout('layouts.admin');
     }
+    public function toggleShowAll()
+    {
+        $this->showAll = !$this->showAll;
+        $this->resetPage();
+    }
+
+    // public function render()
+    // {
+    //     $agencies = Agency::with('admin')->get();
+    //     return view('livewire.admin.agencies', compact('agencies'))
+    //         ->layout('layouts.admin');
+    // }
 
     public function showEditModal($id)
     {
@@ -48,6 +78,10 @@ class Agencies extends Component
         $this->license_expiry_date = $agency->license_expiry_date;
         $this->description = $agency->description;
         $this->max_users = $agency->max_users;
+        $this->main_branch_name = $agency->main_branch_name;
+        $this->landline = $agency->landline;
+        $this->currency = $agency->currency;
+        $this->status = $agency->status;
         $this->showEditModal = true;
     }
 
@@ -63,6 +97,10 @@ class Agencies extends Component
             'tax_number' => 'required|string',
             'license_expiry_date' => 'required|date',
             'max_users' => 'required|integer|min:1',
+            'main_branch_name' => 'required|string|max:255',
+            'landline' => 'nullable|string|max:30',
+            'currency' => 'required|string|max:10',
+            'status' => 'required|string',
         ]);
         $agency = Agency::findOrFail($this->editAgencyId);
         $agency->update([
@@ -76,6 +114,10 @@ class Agencies extends Component
             'license_expiry_date' => $this->license_expiry_date,
             'description' => $this->description,
             'max_users' => $this->max_users,
+            'main_branch_name' => $this->main_branch_name,
+            'landline' => $this->landline,
+            'currency' => $this->currency,
+            'status' => $this->status,
         ]);
         $this->showEditModal = false;
         $this->successMessage = 'تم تحديث بيانات الوكالة بنجاح';

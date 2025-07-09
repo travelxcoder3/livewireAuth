@@ -3,22 +3,28 @@
 namespace App\Livewire\Agency;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Auth;
 
 class Roles extends Component
 {
-    public $roles;
-    public $permissions;
+    use WithPagination;
+    public $showForm = false;
+public $description;
+public $permissions = [];
+public $availablePermissions = []; // يجب تمرير الصلاحيات من الكومبوننت
+
     public $showAddModal = false;
     public $showEditModal = false;
     public $editingRole = null;
-    
+
     // حقول إضافة دور جديد
     public $name = '';
     public $selectedPermissions = [];
-    
+    public $showEditPermissions = false;
+
     // حقول تعديل الدور
     public $edit_name = '';
     public $edit_selectedPermissions = [];
@@ -31,15 +37,7 @@ class Roles extends Component
 
     public function mount()
     {
-        $this->loadRoles();
         $this->loadPermissions();
-    }
-
-    public function loadRoles()
-    {
-        $this->roles = Role::where('agency_id', Auth::user()->agency_id)
-            ->with('permissions')
-            ->get();
     }
 
     public function loadPermissions()
@@ -50,68 +48,62 @@ class Roles extends Component
     public function addRole()
     {
         $this->validate();
-        
+
         $role = Role::create([
             'name' => $this->name,
             'guard_name' => 'web',
             'agency_id' => Auth::user()->agency_id,
         ]);
-        
+
         $role->syncPermissions($this->selectedPermissions);
-        
-        $this->reset(['name', 'selectedPermissions']);
-        $this->showAddModal = false;
-        $this->loadRoles();
-        
-        session()->flash('success', 'تم إضافة الدور بنجاح');
+
+        $this->reset(['name', 'selectedPermissions', 'showForm', 'editingRole']);
+        session()->flash('message', 'تم إضافة الدور بنجاح');
     }
 
     public function editRole($roleId)
     {
-        $this->editingRole = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($roleId);
-        $this->edit_name = $this->editingRole->name;
-        $this->edit_selectedPermissions = $this->editingRole->permissions->pluck('name')->toArray();
-        $this->showEditModal = true;
+        $role = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($roleId);
+        $this->editingRole = $role;
+        $this->name = $role->name;
+        $this->selectedPermissions = $role->permissions->pluck('name')->toArray();
+        $this->showForm = true;
     }
 
     public function updateRole()
     {
-        $this->validate([
-            'edit_name' => 'required|string|max:255',
-            'edit_selectedPermissions' => 'required|array|min:1',
-            'edit_selectedPermissions.*' => 'exists:permissions,name',
-        ]);
-        
-        $this->editingRole->update(['name' => $this->edit_name]);
-        $this->editingRole->syncPermissions($this->edit_selectedPermissions);
-        
-        $this->showEditModal = false;
-        $this->editingRole = null;
-        $this->loadRoles();
-        
-        session()->flash('success', 'تم تحديث الدور بنجاح');
+        $this->validate();
+        if (!$this->editingRole) return;
+        $this->editingRole->update(['name' => $this->name]);
+        $this->editingRole->syncPermissions($this->selectedPermissions);
+        $this->reset(['name', 'selectedPermissions', 'showForm', 'editingRole']);
+        session()->flash('message', 'تم تحديث الدور بنجاح');
     }
 
     public function deleteRole($roleId)
     {
         $role = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($roleId);
-        
-        // لا يمكن حذف الأدوار الأساسية
         if (in_array($role->name, ['super-admin', 'agency-admin'])) {
-            session()->flash('error', 'لا يمكن حذف الأدوار الأساسية');
+            session()->flash('message', 'لا يمكن حذف الأدوار الأساسية');
             return;
         }
-        
         $role->delete();
-        
-        $this->loadRoles();
-        session()->flash('success', 'تم حذف الدور بنجاح');
+        session()->flash('message', 'تم حذف الدور بنجاح');
     }
 
     public function render()
     {
-        return view('livewire.agency.roles')
-            ->layout('layouts.agency')
-            ->title('إدارة الأدوار - ' . Auth::user()->agency->name);
+        $roles = Role::where('agency_id', Auth::user()->agency_id)
+            ->with('permissions')
+            ->withCount('users')
+            ->orderBy('id', 'desc')
+            ->paginate(10);
+
+        return view('livewire.agency.roles', [
+            'roles' => $roles,
+            'permissions' => $this->permissions,
+        ])
+        ->layout('layouts.agency')
+        ->title('إدارة الأدوار - ' . Auth::user()->agency->name);
     }
-} 
+}

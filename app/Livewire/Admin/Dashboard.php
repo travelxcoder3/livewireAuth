@@ -12,6 +12,7 @@ class Dashboard extends Component
 {
     public function mount()
     {
+        
         // التحقق من أن المستخدم سوبر أدمن
         if (!Auth::user()->hasRole('super-admin')) {
             return redirect('/login');
@@ -89,6 +90,7 @@ class Dashboard extends Component
         $totalAgencies = Agency::count();
         $activeAgencies = Agency::where('status', 'active')->count();
         $pendingAgencies = Agency::where('status', 'pending')->count();
+        $inactiveAgencies = Agency::where('status', 'inactive')->count();
         $totalAgencyAdmins = User::whereHas('roles', function($query) {
             $query->where('name', 'agency-admin');
         })->count();
@@ -102,6 +104,7 @@ class Dashboard extends Component
             'totalAgencies',
             'activeAgencies', 
             'pendingAgencies',
+            'inactiveAgencies',
             'totalAgencyAdmins',
             'recentAgencies'
         ))->layout('layouts.admin')

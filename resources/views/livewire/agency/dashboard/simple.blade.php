@@ -40,7 +40,7 @@
 
 <!-- معلومات الوكالة -->
 <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">معلومات الوكالة</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">معلومات الوكالة</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <p class="text-gray-600">اسم الوكالة</p>
@@ -63,7 +63,7 @@
 
 <!-- رسالة ترحيب -->
 <div class="bg-white rounded-lg shadow p-6">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">مرحباً بك في النظام</h2>
+    <h2 class="text-xl font-semibold text-black mb-4">مرحباً بك في النظام</h2>
     <div class="text-gray-600">
         <p class="mb-4">أنت الآن في لوحة التحكم المبسطة. يمكنك الوصول إلى الميزات المتاحة لك من خلال القائمة الجانبية.</p>
         <p class="mb-4">إذا كنت تحتاج إلى صلاحيات إضافية، يرجى التواصل مع مدير النظام.</p>

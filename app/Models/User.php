@@ -22,9 +22,15 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'user_name',
+        'phone',
         'email',
         'password',
         'agency_id',
+        'is_active',
+        'department_id',
+        'position_id',
+        'must_change_password',
     ];
 
     /**
@@ -47,11 +53,23 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 
     public function agency()
     {
         return $this->belongsTo(Agency::class, 'agency_id');
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function position()
+    {
+        return $this->belongsTo(Position::class, 'position_id');
     }
 }

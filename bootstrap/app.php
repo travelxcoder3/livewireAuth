@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // تسجيل Middleware الخاص بـ Spatie role
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'ensureCurrency' => \App\Http\Middleware\EnsureAgencyCurrencyIsSet::class,
+            'mustChangePassword' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
+            'check.agency.subscription' => \App\Http\Middleware\CheckAgencySubscription::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
