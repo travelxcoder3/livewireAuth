@@ -53,51 +53,75 @@
                         </div>
                         <div class="text-gray-500 text-xs">{{ $role->name }}</div>
                     </td>
-                    <!-- تم حذف خلية الوصف -->
-                    <td class="px-3 py-2">
-                        <div class="flex flex-wrap gap-1">
-                            @foreach(array_slice($role->permissions->pluck('name')->toArray(), 0, 3) as $perm)
-                                <span class="px-2 py-0.5 rounded-full bg-[rgba(var(--primary-100),0.5)] text-[10px] font-medium border border-[rgba(var(--primary-200),0.5)] text-[rgb(var(--primary-700))]">
-                                    {{ $perm }}
-                                </span>
-                            @endforeach
-                            @if($role->permissions->count() > 3)
-                                <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">+{{ $role->permissions->count() - 3 }}</span>
-                            @endif
-                        </div>
-                    </td>
-                    <td class="px-3 py-2 text-center">{{ $role->users_count ?? 0 }}</td>
-                    <td class="px-3 py-2">{{ $role->created_at->format('Y-m-d') }}</td>
-                    <td class="px-3 py-2">
-                        <div class="flex gap-2">
-                            @can('roles.edit')
-                            <button wire:click="editRole({{ $role->id }})" class="text-sm text-[rgb(var(--primary-600))] hover:underline">تعديل</button>
-                            @endcan
+                    <!-- زر عرض الصلاحيات -->
+                    <td class="px-3 py-2 text-center">
+                            <button wire:click="showPermissions({{ $role->id }})"
+                                class="text-xs text-[rgb(var(--primary-600))] hover:underline">
+                                عرض
+                            </button>
+                        </td>
 
-                            @can('roles.delete')
-                            @if(!in_array($role->name, ['super-admin', 'agency-admin']))
-                            <button wire:click="deleteRole({{ $role->id }})"
-                                    onclick="return confirm('هل أنت متأكد من حذف هذا الدور؟')"
-                                    class="text-sm text-red-600 hover:underline">حذف</button>
-                            @endif
-                            @endcan
-                        </div>
-                    </td>
-                </tr>
+                        <td class="px-3 py-2 text-center">{{ $role->users_count ?? 0 }}</td>
+                        <td class="px-3 py-2">{{ $role->created_at->format('Y-m-d') }}</td>
+                        <td class="px-3 py-2">
+                            <div class="flex gap-2">
+                                @can('roles.edit')
+                                    <button wire:click="editRole({{ $role->id }})"
+                                        class="text-sm text-[rgb(var(--primary-600))] hover:underline">تعديل</button>
+                                @endcan
+
+                                @can('roles.delete')
+                                    @if (!in_array($role->name, ['super-admin', 'agency-admin']))
+                                        <button wire:click="deleteRole({{ $role->id }})"
+                                            onclick="return confirm('هل أنت متأكد من حذف هذا الدور؟')"
+                                            class="text-sm text-red-600 hover:underline">حذف</button>
+                                    @endif
+                                @endcan
+                            </div>
+                        </td>
+                    </tr>
                 @empty
-                <tr>
-                    <td colspan="6" class="text-center py-4 text-gray-400">لا توجد أدوار حالياً</td>
-                </tr>
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-gray-400">لا توجد أدوار حالياً</td>
+                    </tr>
                 @endforelse
             </tbody>
         </table>
-
+                   
         @if($roles->hasPages())
         <div class="px-4 py-2 border-t border-gray-200">
             {{ $roles->links() }}
         </div>
         @endif
     </div>
+
+    <!-- النافذة المنبثقة لعرض الصلاحيات -->
+    @if ($showPermissionsModal)
+        <div class="fixed inset-0 z-50 bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4 text-sm">
+                <h3 class="text-lg font-bold border-b pb-2 text-gray-700">
+                    الصلاحيات الخاصة بـ: {{ $selectedRoleName }}
+                </h3>
+
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($selectedRolePermissions as $permission)
+                        <span
+                            class="bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-700))] px-3 py-1 rounded-full text-xs">
+                            {{ $permission }}
+                        </span>
+                    @endforeach
+                </div>
+
+                <div class="text-end pt-4">
+                    <button wire:click="$set('showPermissionsModal', false)"
+                        class="bg-white text-[rgb(var(--primary-700))] border border-[rgb(var(--primary-300))] px-4 py-1 rounded shadow hover:bg-[rgb(var(--primary-100))] hover:text-[rgb(var(--primary-800))] text-xs transition">
+                        إغلاق
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- نافذة إضافة/تعديل -->
     @if($showForm)
@@ -155,6 +179,7 @@
         $openModules = $openModules ?? [];
     @endphp
 
+    <!-- أزرار الأقسام -->
     <!-- شبكة الأقسام -->
 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 mb-3">
     @foreach($grouped as $module => $perms)
@@ -207,7 +232,7 @@
                             {{ $perm->name }}
                         </span>
                         <input type="checkbox" wire:model="selectedPermissions" value="{{ $perm->name }}"
-                               class="h-4 w-4 text-[rgb(var(--primary-600))] border-gray-300 rounded focus:ring-[rgb(var(--primary-500))]" />
+       class="h-4 w-4 border-gray-300 rounded accent-[rgb(var(--primary-500))] focus:ring-2 focus:ring-[rgb(var(--primary-500))] transition" />
                     </label>
                 @endforeach
             </div>
@@ -215,10 +240,7 @@
         @endif
     @endforeach
 </div>
-</div>
-
 @endif
-
                     @error('selectedPermissions') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
 
@@ -226,7 +248,6 @@
         </div>
     </div>
     @endif
-
     <!-- رسالة نجاح -->
     @if(session()->has('message'))
     <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition

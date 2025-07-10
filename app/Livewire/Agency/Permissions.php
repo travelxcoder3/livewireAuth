@@ -137,13 +137,13 @@ class Permissions extends Component
     public function updatePermission()
     {
         session()->flash('error', 'تعديل الصلاحيات غير مسموح.');
-        return;
+            return;
     }
 
     public function deletePermission($permissionId)
     {
         session()->flash('error', 'حذف الصلاحيات غير مسموح.');
-        return;
+            return;
     }
 
     public function createBasicPermissions()

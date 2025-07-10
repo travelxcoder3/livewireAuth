@@ -70,55 +70,55 @@
                         <i class="fas {{ $iconMap[$module] ?? $iconMap['default'] }} text-[rgb(var(--primary-500))] text-xl"></i>
                         <span>قسم: {{ __(ucfirst($module)) }}</span>
                     </h3>
-                    <div class="overflow-x-auto">
+            <div class="overflow-x-auto">
                         <table class="min-w-full divide-y rounded-xl overflow-hidden divide-gray-200">
                             <thead style="background:rgba(var(--primary-100),0.5)">
-                                <tr>
+                        <tr>
                                     <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">اسم الصلاحية</th>
                                     <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">عدد الأدوار</th>
                                     <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">الإجراء</th>
                                     <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">الإجراءات</th>
-                                </tr>
-                            </thead>
+                        </tr>
+                    </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
                                 @foreach($perms as $permission)
-                                    <tr>
+                            <tr>
                                         <td class="px-4 py-2 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="text-sm font-medium text-gray-900">{{ $permission->name }}</div>
-                                                @php
-                                                    $basicPermissions = [
-                                                        'users.view', 'users.create', 'users.edit', 'users.delete',
-                                                        'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
-                                                        'permissions.view', 'permissions.manage'
-                                                    ];
-                                                @endphp
-                                                @if(in_array($permission->name, $basicPermissions))
-                                                    <span class="mr-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                        أساسية
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        </td>
+                                    <div class="flex items-center">
+                                        <div class="text-sm font-medium text-gray-900">{{ $permission->name }}</div>
+                                        @php
+                                            $basicPermissions = [
+                                                'users.view', 'users.create', 'users.edit', 'users.delete',
+                                                'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
+                                                'permissions.view', 'permissions.manage'
+                                            ];
+                                        @endphp
+                                        @if(in_array($permission->name, $basicPermissions))
+                                            <span class="mr-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                أساسية
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
                                         <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                                            {{ $permission->roles_count ?? 0 }}
-                                        </td>
+                                    {{ $permission->roles_count ?? 0 }}
+                                </td>
                                         <td class="px-4 py-2 whitespace-nowrap">
-                                            @php
-                                                $parts = explode('.', $permission->name);
-                                                $action = $parts[1] ?? '';
-                                            @endphp
+                                    @php
+                                        $parts = explode('.', $permission->name);
+                                        $action = $parts[1] ?? '';
+                                    @endphp
                                             <span class="text-xs font-semibold text-[rgb(var(--primary-500))]">{{ ucfirst($action) }}</span>
-                                        </td>
+                                </td>
                                         <td class="px-4 py-2 whitespace-nowrap text-sm font-medium">
-                                            <div class="flex space-x-2 space-x-reverse">
+                                    <div class="flex space-x-2 space-x-reverse">
                                                 {{-- تم إخفاء أزرار التعديل والحذف بناءً على سياسة النظام --}}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
                     </div>
                 </div>
             @endforeach

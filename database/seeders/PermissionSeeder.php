@@ -21,10 +21,6 @@ class PermissionSeeder extends Seeder
         'permissions.create',
         'permissions.edit',
         'permissions.delete',
-        'reports.view',
-        'reports.export',
-        'settings.view',
-        'settings.edit',
         // صلاحيات المبيعات
         'sales.view',
         'sales.create',
@@ -71,11 +67,6 @@ class PermissionSeeder extends Seeder
         'sequences.create',
         'sequences.edit',
         'sequences.delete',
-        // صلاحيات التحصيلات
-        'collections.view',
-        'collections.create',
-        'collections.edit',
-        'collections.delete',
         // صلاحيات الأقسام
         'departments.view',
         'departments.create',
@@ -93,9 +84,6 @@ class PermissionSeeder extends Seeder
         // إعدادات النظام
         'system.settings.view',
         'system.settings.edit',
-        // تقارير متقدمة
-        'reports.custom',
-        'reports.download',
         // أرشفة واستعادة
         'users.archive',
         'users.restore',
