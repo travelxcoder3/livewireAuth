@@ -11,9 +11,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Carbon;
-
+use Livewire\WithFileUploads;
 class AddAgency extends Component
 {
+     use WithFileUploads;
     // بيانات الوكالة
     public $agency_name;
     public $agency_email;
@@ -41,7 +42,7 @@ class AddAgency extends Component
     public $successMessage;
     public $max_users = 3;
 
-
+    public $logo;
     protected function rules()
     {
         return [
@@ -60,7 +61,7 @@ class AddAgency extends Component
             'currency' => 'required|string|max:10',
             'main_branch_name' => 'required|string|max:255',
             'max_users' => 'required|integer|min:1|max:100',
-
+            'logo' => 'nullable|image|max:2048',
             'admin_name' => 'required|string|max:255',
             'admin_email' => ['required','email','unique:users,email'],
             'admin_password' => 'required|string|min:6',
@@ -70,7 +71,10 @@ class AddAgency extends Component
     public function save()
     {
         $this->validate();
-
+         $logoPath = null;
+        if ($this->logo) {
+            $logoPath = $this->logo->store('logos', 'public');
+        }
         DB::beginTransaction();
         try {
             $agency = Agency::create([
@@ -87,7 +91,7 @@ class AddAgency extends Component
                 'currency' => $this->currency,
                 'main_branch_name' => $this->main_branch_name,
                 'status' => $this->status,
-                'logo' => null,
+                'logo' => $logoPath,
                 'max_users' => $this->max_users,
 
                 // ✅ تواريخ الاشتراك

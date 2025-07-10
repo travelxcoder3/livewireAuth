@@ -11,10 +11,14 @@ use Illuminate\Support\Facades\Auth;
 class Roles extends Component
 {
     use WithPagination;
+    public $showPermissionsModal = false;
+    public $selectedRolePermissions = [];
+    public $selectedRoleName = '';
+
     public $showForm = false;
-public $description;
-public $permissions = [];
-public $availablePermissions = []; // يجب تمرير الصلاحيات من الكومبوننت
+    public $description;
+    public $permissions = [];
+    public $availablePermissions = []; // يجب تمرير الصلاحيات من الكومبوننت
 
     public $showAddModal = false;
     public $showEditModal = false;
@@ -29,6 +33,9 @@ public $availablePermissions = []; // يجب تمرير الصلاحيات من 
     public $edit_name = '';
     public $edit_selectedPermissions = [];
 
+    public $showPermissions = false;
+    public $openModules = [];
+
     protected $rules = [
         'name' => 'required|string|max:255',
         'selectedPermissions' => 'required|array|min:1',
@@ -38,6 +45,14 @@ public $availablePermissions = []; // يجب تمرير الصلاحيات من 
     public function mount()
     {
         $this->loadPermissions();
+    }
+
+    public function showPermissions($roleId)
+    {
+        $role = Role::with('permissions')->findOrFail($roleId);
+        $this->selectedRolePermissions = $role->permissions->pluck('name')->toArray();
+        $this->selectedRoleName = $role->display_name ?? $role->name;
+        $this->showPermissionsModal = true;
     }
 
     public function loadPermissions()
@@ -89,6 +104,11 @@ public $availablePermissions = []; // يجب تمرير الصلاحيات من 
         }
         $role->delete();
         session()->flash('message', 'تم حذف الدور بنجاح');
+    }
+
+    public function toggleModule($module)
+    {
+        $this->openModules[$module] = !($this->openModules[$module] ?? false);
     }
 
     public function render()

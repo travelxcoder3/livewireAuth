@@ -125,29 +125,103 @@
                 <!-- الصلاحيات -->
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-2">الصلاحيات</label>
-                    <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                        @foreach($permissions as $perm)
-                        <label class="flex items-center text-xs">
-                            <input type="checkbox" wire:model="selectedPermissions" value="{{ $perm->name }}"
-                                   class="h-4 w-4 rounded border-gray-300 text-[rgb(var(--primary-600))] focus:ring-[rgb(var(--primary-500))]" />
-                            <span class="mr-2">{{ $perm->name }}</span>
-                        </label>
-                        @endforeach
-                    </div>
+                    <button type="button" wire:click="$toggle('showPermissions')"
+                        class="mb-3 bg-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-600))] text-white px-4 py-1 rounded-lg shadow text-xs font-bold transition">
+                        {{ $showPermissions ? 'إخفاء الصلاحيات' : 'عرض الصلاحيات' }}
+                    </button>
+                    @if($showPermissions)
+    @php
+        $iconMap = [
+            'users' => 'fa-user-friends',
+            'roles' => 'fa-user-shield',
+            'permissions' => 'fa-key',
+            'service_types' => 'fa-cogs',
+            'employees' => 'fa-id-badge',
+            'reports' => 'fa-chart-bar',
+            'settings' => 'fa-cog',
+            'customers' => 'fa-users',
+            'sales' => 'fa-cash-register',
+            'departments' => 'fa-building',
+            'branches' => 'fa-code-branch',
+            'providers' => 'fa-truck',
+            'collections' => 'fa-archive',
+            'dynamic_lists' => 'fa-list',
+            'intermediaries' => 'fa-user-tie',
+            'default' => 'fa-layer-group',
+        ];
+        $grouped = $permissions->groupBy(function($item) {
+            return explode('.', $item->name)[0] ?? 'أخرى';
+        });
+        $openModules = $openModules ?? [];
+    @endphp
+
+    <!-- شبكة الأقسام -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 mb-3">
+    @foreach($grouped as $module => $perms)
+        <button type="button" wire:click="toggleModule('{{ $module }}')"
+            class="w-full text-center px-2 py-1.5 rounded-md text-xs font-bold transition border border-theme
+                @if(!empty($openModules[$module])) bg-[rgb(var(--primary-500))] text-white shadow @else bg-white text-[rgb(var(--primary-600))] @endif
+                hover:bg-[rgb(var(--primary-100))]">
+            <i class="fas {{ $iconMap[$module] ?? $iconMap['default'] }} mr-1 text-xs"></i>
+            {{ __(ucfirst($module)) }}
+        </button>
+    @endforeach
+</div>
+
+<!-- زر الإلغاء والإضافة -->
+<div class="flex justify-end gap-3 mt-6">
+    <button type="button" wire:click="$set('showForm', false)"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition text-sm">إلغاء</button>
+
+    <button type="submit"
+            class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition text-sm"
+            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+        {{ $editingRole ? 'تحديث' : 'إضافة' }}
+    </button>
+</div>
+
+
+
+<!-- لوحات الصلاحيات تظهر يسار نافذة الإضافة مباشرة -->
+<div class="absolute top-0 right-[calc(100%+0.75rem)] z-40 space-y-3"
+     wire:ignore.self>
+    @foreach($grouped as $module => $perms)
+        @if(!empty($openModules[$module]))
+        <div class="bg-white border border-gray-200 rounded-xl shadow p-4 w-[300px]">
+            <!-- رأس -->
+            <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center gap-2 font-bold text-[rgb(var(--primary-700))] text-sm">
+                    <i class="fas {{ $iconMap[$module] ?? $iconMap['default'] }} text-[rgb(var(--primary-500))]"></i>
+                    {{ __(ucfirst($module)) }}
+                </div>
+                <button type="button" wire:click="toggleModule('{{ $module }}')"
+                        class="text-gray-500 hover:text-red-500 text-lg font-bold">&times;</button>
+            </div>
+
+            <!-- قائمة الصلاحيات -->
+            <div class="space-y-2 text-xs">
+                @foreach($perms as $perm)
+                    <label class="flex items-center justify-between border-b pb-1">
+                        <span class="flex items-center gap-2 text-gray-700 font-medium">
+                            <i class="fas fa-check-circle text-[rgb(var(--primary-500))] text-sm"></i>
+                            {{ $perm->name }}
+                        </span>
+                        <input type="checkbox" wire:model="selectedPermissions" value="{{ $perm->name }}"
+                               class="h-4 w-4 text-[rgb(var(--primary-600))] border-gray-300 rounded focus:ring-[rgb(var(--primary-500))]" />
+                    </label>
+                @endforeach
+            </div>
+        </div>
+        @endif
+    @endforeach
+</div>
+</div>
+
+@endif
+
                     @error('selectedPermissions') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
 
-                <!-- الأزرار -->
-                <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" wire:click="$set('showForm', false)"
-                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition text-sm">إلغاء</button>
-
-                    <button type="submit"
-                            class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition text-sm"
-                            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        {{ $editingRole ? 'تحديث' : 'إضافة' }}
-                    </button>
-                </div>
             </form>
         </div>
     </div>

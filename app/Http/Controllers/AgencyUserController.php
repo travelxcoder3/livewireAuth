@@ -52,6 +52,16 @@ class AgencyUserController extends Controller
             'password' => bcrypt($validated['password']),
             'agency_id' => $user->agency_id,
         ]);
+        // تحديث صلاحيات دور أدمن الوكالة ليشمل جميع صلاحيات الوكالة
+        if ($validated['role'] === 'agency-admin') {
+            $agencyAdminRole = \Spatie\Permission\Models\Role::where('name', 'agency-admin')
+                ->where('agency_id', $user->agency_id)
+                ->first();
+            if ($agencyAdminRole) {
+                $allPermissions = \Spatie\Permission\Models\Permission::where('agency_id', $user->agency_id)->pluck('name')->toArray();
+                $agencyAdminRole->syncPermissions($allPermissions);
+            }
+        }
         $newUser->assignRole($validated['role']);
         return response()->json([
             'message' => 'تم إضافة المستخدم بنجاح',

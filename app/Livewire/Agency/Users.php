@@ -75,6 +75,16 @@ class Users extends Component
         ]);
         
         $user->assignRole($this->role);
+        // تحديث صلاحيات دور أدمن الوكالة إذا كان الدور هو agency-admin
+        if ($this->role === 'agency-admin') {
+            $agencyAdminRole = Role::where('name', 'agency-admin')
+                ->where('agency_id', Auth::user()->agency_id)
+                ->first();
+            if ($agencyAdminRole) {
+                $allPermissions = \Spatie\Permission\Models\Permission::where('agency_id', Auth::user()->agency_id)->pluck('name')->toArray();
+                $agencyAdminRole->syncPermissions($allPermissions);
+            }
+        }
         
         $this->reset(['name', 'email', 'password', 'role', 'is_active']);
         $this->showAddModal = false;
@@ -114,6 +124,16 @@ class Users extends Component
         }
         
         $this->editingUser->syncRoles([$this->edit_role]);
+        // تحديث صلاحيات دور أدمن الوكالة إذا كان الدور هو agency-admin
+        if ($this->edit_role === 'agency-admin') {
+            $agencyAdminRole = Role::where('name', 'agency-admin')
+                ->where('agency_id', Auth::user()->agency_id)
+                ->first();
+            if ($agencyAdminRole) {
+                $allPermissions = \Spatie\Permission\Models\Permission::where('agency_id', Auth::user()->agency_id)->pluck('name')->toArray();
+                $agencyAdminRole->syncPermissions($allPermissions);
+            }
+        }
         
         $this->showEditModal = false;
         $this->editingUser = null;

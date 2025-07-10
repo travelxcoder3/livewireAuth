@@ -21,8 +21,8 @@
                     @endcan
                 </div>
             @else
-                <div class="text-green-600 bg-green-100 px-4 py-2 rounded-lg">
-                    <i class="fas fa-check ml-2"></i>
+                <div class="text-[rgb(var(--primary-600))] bg-[rgba(var(--primary-100),0.25)] border border-theme px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i class="fas fa-check ml-2 text-[rgb(var(--primary-500))]"></i>
                     جميع الصلاحيات الأساسية موجودة
                 </div>
             @endif
@@ -36,73 +36,92 @@
         </div>
         
         @if($permissions->count() > 0)
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم الصلاحية</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عدد الأدوار</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النوع</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($permissions as $permission)
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="text-sm font-medium text-gray-900">{{ $permission->name }}</div>
-                                        @php
-                                            $basicPermissions = [
-                                                'users.view', 'users.create', 'users.edit', 'users.delete',
-                                                'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
-                                                'permissions.view', 'permissions.manage'
-                                            ];
-                                        @endphp
-                                        @if(in_array($permission->name, $basicPermissions))
-                                            <span class="mr-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                أساسية
-                                            </span>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $permission->roles_count ?? 0 }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @php
-                                        $parts = explode('.', $permission->name);
-                                        $module = $parts[0] ?? '';
-                                        $action = $parts[1] ?? '';
-                                    @endphp
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium text-gray-900">{{ ucfirst($module) }}</span>
-                                        <span class="text-xs text-gray-500">{{ ucfirst($action) }}</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex space-x-2 space-x-reverse">
-                                        @can('permissions.edit')
-                                        <button wire:click="editPermission({{ $permission->id }})" 
-                                                class="text-blue-600 hover:text-blue-900">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        @endcan
-                                        @can('permissions.delete')
-                                        @if(!in_array($permission->name, $basicPermissions))
-                                            <button wire:click="deletePermission({{ $permission->id }})" 
-                                                    onclick="return confirm('هل أنت متأكد من حذف هذه الصلاحية؟')"
-                                                    class="text-red-600 hover:text-red-900">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        @endif
-                                        @endcan
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            @php
+                $grouped = $permissions->groupBy(function($item) {
+                    return explode('.', $item->name)[0] ?? 'أخرى';
+                });
+            @endphp
+
+            @php
+                $iconMap = [
+                    'users' => 'fa-user-friends',
+                    'roles' => 'fa-user-shield',
+                    'permissions' => 'fa-key',
+                    'service_types' => 'fa-cogs',
+                    'employees' => 'fa-id-badge',
+                    'reports' => 'fa-chart-bar',
+                    'settings' => 'fa-cog',
+                    'customers' => 'fa-users',
+                    'sales' => 'fa-cash-register',
+                    'departments' => 'fa-building',
+                    'branches' => 'fa-code-branch',
+                    'providers' => 'fa-truck',
+                    'collections' => 'fa-archive',
+                    'dynamic_lists' => 'fa-list',
+                    'intermediaries' => 'fa-user-tie',
+                    'default' => 'fa-layer-group',
+                ];
+            @endphp
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            @foreach($grouped as $module => $perms)
+                <div class="bg-white/80 border border-theme rounded-2xl shadow-xl p-4 flex flex-col transition hover:shadow-2xl hover:scale-[1.02] duration-200">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-[rgb(var(--primary-600))]">
+                        <i class="fas {{ $iconMap[$module] ?? $iconMap['default'] }} text-[rgb(var(--primary-500))] text-xl"></i>
+                        <span>قسم: {{ __(ucfirst($module)) }}</span>
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y rounded-xl overflow-hidden divide-gray-200">
+                            <thead style="background:rgba(var(--primary-100),0.5)">
+                                <tr>
+                                    <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">اسم الصلاحية</th>
+                                    <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">عدد الأدوار</th>
+                                    <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">الإجراء</th>
+                                    <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                @foreach($perms as $permission)
+                                    <tr>
+                                        <td class="px-4 py-2 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="text-sm font-medium text-gray-900">{{ $permission->name }}</div>
+                                                @php
+                                                    $basicPermissions = [
+                                                        'users.view', 'users.create', 'users.edit', 'users.delete',
+                                                        'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
+                                                        'permissions.view', 'permissions.manage'
+                                                    ];
+                                                @endphp
+                                                @if(in_array($permission->name, $basicPermissions))
+                                                    <span class="mr-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                        أساسية
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                            {{ $permission->roles_count ?? 0 }}
+                                        </td>
+                                        <td class="px-4 py-2 whitespace-nowrap">
+                                            @php
+                                                $parts = explode('.', $permission->name);
+                                                $action = $parts[1] ?? '';
+                                            @endphp
+                                            <span class="text-xs font-semibold text-[rgb(var(--primary-500))]">{{ ucfirst($action) }}</span>
+                                        </td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex space-x-2 space-x-reverse">
+                                                {{-- تم إخفاء أزرار التعديل والحذف بناءً على سياسة النظام --}}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endforeach
             </div>
         @else
             <div class="text-center py-8">

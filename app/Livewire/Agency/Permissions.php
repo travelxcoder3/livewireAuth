@@ -108,11 +108,18 @@ class Permissions extends Component
             return;
         }
         
-        \Spatie\Permission\Models\Permission::create([
+        $permission = \Spatie\Permission\Models\Permission::create([
             'name' => $this->name,
             'guard_name' => 'web',
             'agency_id' => Auth::user()->agency_id,
         ]);
+        // ربط الصلاحية الجديدة بدور أدمن الوكالة تلقائيًا
+        $agencyAdminRole = \Spatie\Permission\Models\Role::where('name', 'agency-admin')
+            ->where('agency_id', Auth::user()->agency_id)
+            ->first();
+        if ($agencyAdminRole) {
+            $agencyAdminRole->givePermissionTo($permission->name);
+        }
         
         $this->reset(['name']);
         $this->showAddModal = false;
@@ -123,59 +130,20 @@ class Permissions extends Component
 
     public function editPermission($permissionId)
     {
-        $this->editingPermission = Permission::where('agency_id', Auth::user()->agency_id)->findOrFail($permissionId);
-        $this->edit_name = $this->editingPermission->name;
-        $this->showEditModal = true;
+        session()->flash('error', 'تعديل الصلاحيات غير مسموح.');
+        return;
     }
 
     public function updatePermission()
     {
-        $this->validate([
-            'edit_name' => 'required|string|max:255',
-        ]);
-        
-        // تحقق من وجود الصلاحية مسبقاً لنفس الوكالة (باستثناء الصلاحية الحالية)
-        $exists = \Spatie\Permission\Models\Permission::where('name', $this->edit_name)
-            ->where('agency_id', Auth::user()->agency_id)
-            ->where('guard_name', 'web')
-            ->where('id', '!=', $this->editingPermission->id)
-            ->exists();
-        if ($exists) {
-            session()->flash('error', 'هذه الصلاحية موجودة بالفعل ولا يمكن تكرارها.');
-            return;
-        }
-        
-        $this->editingPermission->update(['name' => $this->edit_name]);
-        
-        $this->showEditModal = false;
-        $this->editingPermission = null;
-        $this->loadPermissions();
-        
-        session()->flash('success', 'تم تحديث الصلاحية بنجاح');
+        session()->flash('error', 'تعديل الصلاحيات غير مسموح.');
+        return;
     }
 
     public function deletePermission($permissionId)
     {
-        $permission = Permission::where('agency_id', Auth::user()->agency_id)->findOrFail($permissionId);
-        
-        // لا يمكن حذف الصلاحيات الأساسية
-        $basicPermissions = [
-            'users.view', 'users.create', 'users.edit', 'users.delete',
-            'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
-            'permissions.view', 'permissions.create', 'permissions.edit', 'permissions.delete',
-            'reports.view', 'reports.export',
-            'settings.view', 'settings.edit',
-        ];
-        
-        if (in_array($permission->name, $basicPermissions)) {
-            session()->flash('error', 'لا يمكن حذف الصلاحيات الأساسية');
-            return;
-        }
-        
-        $permission->delete();
-        
-        $this->loadPermissions();
-        session()->flash('success', 'تم حذف الصلاحية بنجاح');
+        session()->flash('error', 'حذف الصلاحيات غير مسموح.');
+        return;
     }
 
     public function createBasicPermissions()

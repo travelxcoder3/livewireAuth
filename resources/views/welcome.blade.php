@@ -1,3 +1,9 @@
+@php
+    use App\Services\ThemeService;
+    $themeName = ThemeService::getSystemTheme();
+    $colors = ThemeService::getCurrentThemeColors($themeName);
+@endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -7,12 +13,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 min-h-screen">
-    @php
-        use App\Services\ThemeService;
-        $themeName = ThemeService::getSystemTheme();
-        $colors = ThemeService::getCurrentThemeColors($themeName);
-    @endphp
+<body class="min-h-screen" style="background: linear-gradient(to bottom right, rgba({{ $colors['primary-100'] }}, 0.4), rgba({{ $colors['primary-500'] }}, 0.3), rgba({{ $colors['primary-600'] }}, 0.3));">
+
 
     <!-- Navigation Header -->
     <nav class="bg-white/90 backdrop-blur-md shadow-lg" style="border-bottom: 1px solid rgba({{ $colors['primary-500'] }}, 0.2);">
@@ -58,7 +60,7 @@
                     
                     <div class="space-y-4">
                         <div class="flex items-center space-x-4 space-x-reverse">
-                            <div class="flex items-center justify-center w-8 h-8 bg-emerald-100 rounded-full" style="background-color: rgba({{ $colors['primary-500'] }}, 0.1);">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background-color: rgba({{ $colors['primary-500'] }}, 0.1);">
                                 <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: rgb({{ $colors['primary-500'] }});">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -207,7 +209,9 @@
     <div class="py-16 bg-gradient-to-r from-emerald-500 to-teal-500" style="background: linear-gradient(to right, rgb({{ $colors['primary-500'] }}), rgb({{ $colors['primary-600'] }}));">
         <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">ابدأ في إدارة وكالة سفرك اليوم</h2>
-            <p class="text-xl text-emerald-100 mb-8">انضم إلى مئات وكالات السفر التي تثق بنا لإدارة أعمالها</p>
+                <p class="text-xl mb-8" style="color: rgba(255, 255, 255, 0.85);">
+                    انضم إلى مئات وكالات السفر التي تثق بنا لإدارة أعمالها
+                </p>
             <a href="/login" class="bg-white text-emerald-600 px-8 py-4 rounded-xl font-bold text-lg transition duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block" style="color: rgb({{ $colors['primary-500'] }});">
                 تسجيل الدخول الآن
             </a>
@@ -215,41 +219,45 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-12">
+    <footer class="bg-white text-black py-12 border-t border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid md:grid-cols-4 gap-8">
                 <div>
                     <div class="flex items-center mb-4">
-                        <svg class="h-8 w-8 text-emerald-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: rgb({{ $colors['primary-500'] }});">
+                        <svg class="h-8 w-8 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: rgb({{ $colors['primary-500'] }});">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <h3 class="text-xl font-bold">نظام السفر</h3>
                     </div>
-                    <p class="text-gray-300">منصة متكاملة لإدارة وكالات السفر بكل احترافية وكفاءة</p>
+                    <p class="text-gray-600">منصة متكاملة لإدارة وكالات السفر بكل احترافية وكفاءة</p>
                 </div>
+
                 <div>
                     <h4 class="font-bold mb-4">الخدمات</h4>
-                    <ul class="space-y-2 text-gray-300">
+                    <ul class="space-y-2 text-gray-600">
                         <li>حجوزات الطيران</li>
                         <li>حجوزات الفنادق</li>
                         <li>الباقات السياحية</li>
                         <li>التأمين السياحي</li>
                     </ul>
                 </div>
+
                 <div>
                     <h4 class="font-bold mb-4">الدعم</h4>
-                    <ul class="space-y-2 text-gray-300">
+                    <ul class="space-y-2 text-gray-600">
                         <li>الدعم الفني</li>
                         <li>الأسئلة الشائعة</li>
                         <li>الدليل الإرشادي</li>
                         <li>التواصل معنا</li>
                     </ul>
                 </div>
+
                 <div>
                     <h4 class="font-bold mb-4">تواصل معنا</h4>
-                    <div class="space-y-2 text-gray-300">
+                    <div class="space-y-2 text-gray-600">
                         <p>البريد الإلكتروني: info@travelsystem.com</p>
                         <p>الهاتف: +967 771178499</p>
+
                         <div class="flex space-x-4 space-x-reverse mt-4">
                             <a href="#" class="text-emerald-400 hover:text-emerald-300" style="color: rgb({{ $colors['primary-500'] }});">
                                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -270,11 +278,13 @@
                     </div>
                 </div>
             </div>
-            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
+
+            <div class="border-t border-gray-200 mt-8 pt-8 text-center text-gray-600">
                 <p>&copy; 2024 نظام إدارة وكالات السفر. جميع الحقوق محفوظة.</p>
             </div>
         </div>
     </footer>
+
 
     @livewireScripts
 </body>

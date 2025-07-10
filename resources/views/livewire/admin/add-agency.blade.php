@@ -122,6 +122,7 @@
                 <div class="grid md:grid-cols-3 gap-3">
                         <div class="{{ $containerClass }}">
                             <input type="file" wire:model="logo" class="{{ $fieldClass }}" />
+
                             <label class="{{ $labelClass }}">شعار الوكالة</label>
                         @error('logo') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
