@@ -40,7 +40,7 @@
             <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
                 <thead class="bg-gray-100 text-gray-600">
                     <tr>
-                        <th class="px-2 py-1">#</th>
+                        <th class="px-2 py-1">نوع الخدمة</th>
                         <th class="px-2 py-1">اسم المزود</th>
                         <th class="px-2 py-1">النوع</th>
                         <th class="px-2 py-1">معلومات التواصل</th>
@@ -50,7 +50,7 @@
                 <tbody class="bg-white divide-y divide-gray-100">
                     @forelse($providers as $provider)
                         <tr class="hover:bg-gray-50">
-                            <td class="px-2 py-1 whitespace-nowrap">{{ $loop->iteration }}</td>
+                            <td class="px-2 py-1 text-xs">{{ $provider->service?->label ?? '-' }} </td>
                             <td class="px-2 py-1 font-medium">{{ $provider->name }}</td>
                             <td class="px-2 py-1">
                                 @if($provider->type)
@@ -122,6 +122,18 @@
                         <label class="{{ $labelClass }}">معلومات التواصل</label>
                         @error('contact_info') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
+                    <!-- نوع الخدمة -->
+                    <div class="{{ $containerClass }}">
+                        <select wire:model.defer="service_item_id" class="{{ $fieldClass }}">
+                            <option value="">اختر نوع الخدمة</option>
+                            @foreach ($services as $service)
+                                <option value="{{ $service->id }}">{{ $service->label }}</option>
+                            @endforeach
+                        </select>
+                        <label class="{{ $labelClass }}">نوع الخدمة</label>
+                        @error('service_item_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
 
                     <div class="flex justify-end gap-3 pt-4">
                         <button type="button" wire:click="$set('showModal', false)"

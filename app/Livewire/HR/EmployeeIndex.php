@@ -153,8 +153,12 @@ class EmployeeIndex extends Component
         $user->save();
 
         session()->flash('success', 'تم إضافة الموظف بنجاح.');
+        
+        // إعادة تعيين البحث والفلاتر
+        $this->reset(['search', 'department_id', 'position_id']);
+        $this->resetPage(); // لإعادة تعيين الصفحة إذا كنت تستخدم التقسيم
+        
         $this->closeForm();
-        $this->dispatch('$refresh');
     }
 
     public function refreshEmployees()

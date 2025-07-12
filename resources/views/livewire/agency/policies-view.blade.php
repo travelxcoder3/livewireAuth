@@ -20,7 +20,7 @@
                             <h3 class="text-lg font-semibold" style="color: rgb(var(--primary-700));">
                                 {{ $policy->title }}
                             </h3>
-                            <span class="text-xs px-2 py-1 rounded-full" style="background-color: rgba(var(--primary-100), 0.5); color: rgb(var(--primary-700));">
+                            <span class="text-xs px-2 py-1 rounded-full" style="background-color: rgba(var(--primary-100), 0.1); color: rgb(var(--primary-700));">
                                 السياسة #{{ $loop->iteration }}
                             </span>
                         </div>

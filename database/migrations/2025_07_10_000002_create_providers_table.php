@@ -14,6 +14,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('type')->nullable(); // airline, hotel, car rental...
             $table->json('contact_info')->nullable(); // يمكن استخدامه مستقبلاً
+            $table->foreignId('service_item_id')  // هذا هو البند الديناميكي المرتبط
+                    ->nullable()
+                    ->constrained('dynamic_list_items')
+                    ->nullOnDelete();
             $table->timestamps();
         });
     }

@@ -46,6 +46,7 @@ class DynamicListItem extends Model
             ->withDefault(); // تجنب الأخطاء عند عدم وجود قائمة رئيسية
     }
 
+    
     /**
      * العلاقة مع البنود الفرعية
      *
@@ -73,5 +74,12 @@ public function dynamicList()
 {
     return $this->belongsTo(\App\Models\DynamicList::class, 'dynamic_list_id');
 }
+
+// app/Models/DynamicListItem.php
+public function sales()
+{
+    return $this->hasMany(\App\Models\Sale::class, 'service_item_id');
+}
+
 
 }

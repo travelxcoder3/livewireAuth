@@ -21,7 +21,7 @@ class Users extends Component
     public $email = '';
     public $password = '';
     public $role = '';
-    public $is_active = true;
+    public $is_active = false;
     
     // حقول تعديل المستخدم
     public $edit_name = '';
