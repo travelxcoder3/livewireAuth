@@ -127,7 +127,7 @@ class Dashboard extends Component
     // إحصائيات تركز على الصلاحيات (لمدير الصلاحيات)
     public function getPermissionsStatsProperty()
     {
-        $permissions = \Spatie\Permission\Models\Permission::where('agency_id', Auth::user()->agency_id)
+        $permissions = \Spatie\Permission\Models\Permission::whereNull('agency_id')
             ->withCount('roles')
             ->orderByDesc('roles_count')
             ->get();
@@ -188,7 +188,7 @@ class Dashboard extends Component
 
     public function getPermissionsCountProperty()
     {
-        return \Spatie\Permission\Models\Permission::where('agency_id', Auth::user()->agency_id)->count();
+        return \Spatie\Permission\Models\Permission::whereNull('agency_id')->count();
     }
 
     public function getMostUsedRoleProperty()
@@ -201,7 +201,7 @@ class Dashboard extends Component
 
     public function getMostUsedPermissionProperty()
     {
-        return \Spatie\Permission\Models\Permission::where('agency_id', Auth::user()->agency_id)
+        return \Spatie\Permission\Models\Permission::whereNull('agency_id')
             ->withCount('roles')
             ->orderByDesc('roles_count')
             ->first();
@@ -217,7 +217,7 @@ class Dashboard extends Component
 
     public function getRecentPermissionsProperty()
     {
-        return \Spatie\Permission\Models\Permission::where('agency_id', Auth::user()->agency_id)
+        return \Spatie\Permission\Models\Permission::whereNull('agency_id')
             ->latest()
             ->take(5)
             ->get();

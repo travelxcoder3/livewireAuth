@@ -64,7 +64,7 @@
                 </label>
             </div>
 
-            <div class="flex items-center text-xs" style="color: rgb(var(--primary-700));">
+            <div class="flex items-center text-xs" style="color: rgb(var(--primary-700));" wire:key="count-{{ $employees->total() }}">
                 عدد الموظفين: {{ $employees->total() }}
             </div>
         </div>
@@ -72,7 +72,7 @@
 
     <!-- نافذة إضافة/تعديل الموظف -->
     @if($showForm)
-    <div class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center backdrop-blur-sm">
+    <div class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center backdrop-blur-sm" wire:key="modal-{{ $editingEmployee ?? 'new' }}-{{ now() }}">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
             <button wire:click="closeForm"
                     class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">
@@ -83,7 +83,7 @@
                 {{ $editingEmployee ? 'تعديل الموظف' : 'إضافة موظف جديد' }}
             </h3>
 
-            <form wire:submit.prevent="{{ $editingEmployee ? 'updateEmployee' : 'addEmployee' }}" class="space-y-4 text-sm">
+            <form wire:submit.prevent="{{ $editingEmployee ? 'updateEmployee' : 'addEmployee' }}" class="space-y-4 text-sm" wire:key="employee-form-{{ $editingEmployee ?? 'new' }}-{{ now() }}">
                 @php
                     $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
                     $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]';
@@ -194,7 +194,7 @@
     @endif
 
     <!-- جدول الموظفين -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden" wire:key="employees-table-{{ $employees->count() }}-{{ now() }}">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
                 <thead class="bg-gray-100 text-gray-600">
@@ -213,7 +213,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
                     @forelse($employees as $employee)
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50" wire:key="employee-{{ $employee->id }}">
                             <td class="px-2 py-1 whitespace-nowrap">{{ $loop->iteration }}</td>
                             <td class="px-2 py-1">{{ $employee->name }}</td>
                             <td class="px-2 py-1">{{ $employee->user_name ?? '—' }}</td>
@@ -248,7 +248,7 @@
 
         <!-- Pagination -->
         @if($employees->hasPages())
-            <div class="px-4 py-2 border-t border-gray-200">
+            <div class="px-4 py-2 border-t border-gray-200" wire:key="pagination-{{ $employees->currentPage() }}">
                 {{ $employees->links() }}
             </div>
         @endif

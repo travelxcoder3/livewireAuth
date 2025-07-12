@@ -7,7 +7,7 @@ use Spatie\Permission\Models\Permission;
 
 class PermissionSeeder extends Seeder
 {
-    // الصلاحيات الأساسية التي سيتم إنشاؤها لكل وكالة
+    // الصلاحيات الأساسية العامة لجميع الوكالات
     protected $basicPermissions = [
         'users.view',
         'users.create',
@@ -38,6 +38,11 @@ class PermissionSeeder extends Seeder
         'providers.create',
         'providers.edit',
         'providers.delete',
+        // صلاحيات الوسطاء
+        'intermediaries.view',
+        'intermediaries.create',
+        'intermediaries.edit',
+        'intermediaries.delete',
         // صلاحيات العملاء
         'customers.view',
         'customers.create',
@@ -84,6 +89,8 @@ class PermissionSeeder extends Seeder
         // إعدادات النظام
         'system.settings.view',
         'system.settings.edit',
+        'theme.view',
+        'theme.edit',
         // أرشفة واستعادة
         'users.archive',
         'users.restore',
@@ -124,23 +131,30 @@ class PermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        $agencies = \App\Models\Agency::all();
-        foreach ($agencies as $agency) {
-            $this->createPermissionsForAgency($agency->id);
-        }
+        // إنشاء الصلاحيات العامة مرة واحدة فقط
+        $this->createGlobalPermissions();
     }
 
     /**
-     * إنشاء الصلاحيات الأساسية لوكالة معينة
+     * إنشاء الصلاحيات العامة لجميع الوكالات
      */
-    public function createPermissionsForAgency($agencyId)
+    public function createGlobalPermissions()
     {
         foreach ($this->basicPermissions as $permissionName) {
             Permission::firstOrCreate([
                 'name' => $permissionName,
                 'guard_name' => 'web',
-                'agency_id' => $agencyId,
             ]);
         }
+    }
+
+    /**
+     * إنشاء الصلاحيات الأساسية لوكالة معينة (للتوافق مع الكود القديم)
+     * @deprecated استخدم createGlobalPermissions بدلاً من هذه الدالة
+     */
+    public function createPermissionsForAgency($agencyId)
+    {
+        // الآن الصلاحيات عامة، لا حاجة لإنشاء صلاحيات خاصة لكل وكالة
+        $this->createGlobalPermissions();
     }
 } 

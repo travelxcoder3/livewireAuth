@@ -59,14 +59,6 @@ class Agency extends Model
     }
     
     /**
-     * إنشاء الصلاحيات الأساسية للوكالة
-     */
-    public function createBasicPermissions()
-    {
-        $permissionSeeder = new \Database\Seeders\PermissionSeeder();
-        $permissionSeeder->createPermissionsForAgency($this->id);
-    }
-    /**
      * إنشاء دور agency-admin للوكالة
      */
     public function createAgencyAdminRole()
@@ -77,29 +69,43 @@ class Agency extends Model
             'agency_id' => $this->id,
         ]);
 
-        // ربط الدور بجميع الصلاحيات
+        // ربط الدور بجميع الصلاحيات العامة
         $role->givePermissionTo([
             'users.view', 'users.create', 'users.edit', 'users.delete',
             'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
             'permissions.view', 'permissions.create', 'permissions.edit', 'permissions.delete',
-            'reports.view', 'reports.export','sales.view','sales.create','sales.edit','sales.delete',
-            'settings.view', 'settings.edit','service_types.view','service_types.create','service_types.edit','service_types.delete',
-            'departments.view','departments.create','departments.edit','departments.delete',
+            'sales.view','sales.create','sales.edit','sales.delete',
             'customers.view','customers.create','customers.edit','customers.delete',
+            'providers.view','providers.create','providers.edit','providers.delete',
+            'service_types.view','service_types.create','service_types.edit','service_types.delete',
             'employees.view','employees.create','employees.edit','employees.delete',
+            'users.view','users.create','users.edit','users.delete',
+            'roles.view','roles.create','roles.edit','roles.delete',
+            'permissions.view','permissions.create','permissions.edit','permissions.delete',
+            'lists.view','lists.create','lists.edit','lists.delete',
+            'sequences.view','sequences.create','sequences.edit','sequences.delete',
+            'agency.profile.view','agency.profile.edit',
+            'currency.view','currency.edit',
+            'system.settings.view','system.settings.edit',
+            'theme.view','theme.edit',
             'branches.view','branches.create','branches.edit','branches.delete',
-            'branches.view','branches.create','branches.edit','branches.delete',
+            'departments.view','departments.create','departments.edit','departments.delete',
+            'positions.view','positions.create','positions.edit','positions.delete',
+            'intermediaries.view','intermediaries.create','intermediaries.edit','intermediaries.delete',
+            'accounts.view','accounts.create','accounts.edit','accounts.delete',
+            'sales.reports.view',
         ]);
-// ربط الدور بجميع الصلاحيات الخاصة بالوكالة
-        // $allPermissions = Permission::where('agency_id', $this->id)->pluck('name')->toArray();
-        // $role->syncPermissions($allPermissions);
 
-        // return $role;
         return $role;
     }
 
     public function serviceTypes()
     {
         return $this->hasMany(ServiceType::class);
+    }
+
+    public function policies()
+    {
+        return $this->hasMany(AgencyPolicy::class);
     }
 }

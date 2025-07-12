@@ -124,6 +124,7 @@ class EmployeeIndex extends Component
 
         session()->flash('success', 'تم تحديث بيانات الموظف بنجاح.');
         $this->closeForm();
+        $this->dispatch('$refresh');
     }
 
     public function addEmployee()
@@ -153,6 +154,13 @@ class EmployeeIndex extends Component
 
         session()->flash('success', 'تم إضافة الموظف بنجاح.');
         $this->closeForm();
+        $this->dispatch('$refresh');
+    }
+
+    public function refreshEmployees()
+    {
+        // إعادة تحميل البيانات
+        $this->render();
     }
 
     public function render()

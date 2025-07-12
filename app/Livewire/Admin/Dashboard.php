@@ -64,12 +64,15 @@ class Dashboard extends Component
         $agencies = Agency::all();
         $permissionSeeder = new PermissionSeeder();
         
+        // إنشاء الصلاحيات العامة مرة واحدة
+        $permissionSeeder->createGlobalPermissions();
+        
+        // إنشاء دور agency-admin لكل وكالة
         foreach ($agencies as $agency) {
-            $permissionSeeder->createPermissionsForAgency($agency->id);
             $agency->createAgencyAdminRole();
         }
         
-        session()->flash('success', "تم إنشاء الصلاحيات والأدوار لـ {$agencies->count()} وكالة بنجاح");
+        session()->flash('success', "تم إنشاء الصلاحيات العامة وربطها بـ {$agencies->count()} وكالة بنجاح");
     }
 
     public function createPermissionsForExistingAgencies()
@@ -77,12 +80,15 @@ class Dashboard extends Component
         $agencies = Agency::all();
         $permissionSeeder = new PermissionSeeder();
         
+        // إنشاء الصلاحيات العامة مرة واحدة
+        $permissionSeeder->createGlobalPermissions();
+        
+        // إنشاء دور agency-admin لكل وكالة
         foreach ($agencies as $agency) {
-            $permissionSeeder->createPermissionsForAgency($agency->id);
             $agency->createAgencyAdminRole();
         }
         
-        session()->flash('success', "تم إنشاء الصلاحيات والأدوار لـ {$agencies->count()} وكالة موجودة بنجاح");
+        session()->flash('success', "تم إنشاء الصلاحيات العامة وربطها بـ {$agencies->count()} وكالة موجودة بنجاح");
     }
 
     public function render()

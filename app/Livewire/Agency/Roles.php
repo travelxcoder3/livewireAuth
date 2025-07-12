@@ -45,9 +45,12 @@ class Roles extends Component
     public function mount()
     {
         $this->loadPermissions();
+        $this->showForm = false;
+        $this->showPermissions = false;
+        $this->openModules = [];
     }
 
-    public function showPermissions($roleId)
+    public function showRolePermissions($roleId)
     {
         $role = Role::with('permissions')->findOrFail($roleId);
         $this->selectedRolePermissions = $role->permissions->pluck('name')->toArray();
@@ -57,12 +60,98 @@ class Roles extends Component
 
     public function loadPermissions()
     {
-        $this->permissions = Permission::where('agency_id', Auth::user()->agency_id)->get();
+        // جلب الصلاحيات العامة لجميع الوكالات
+        $this->permissions = Permission::whereNull('agency_id')->get();
+    }
+
+    // دالة اختيار جميع الصلاحيات
+    public function selectAllPermissions()
+    {
+        $this->selectedPermissions = $this->permissions->pluck('name')->toArray();
+        session()->flash('message', 'تم اختيار جميع الصلاحيات (' . count($this->selectedPermissions) . ' صلاحية)');
+    }
+
+    // دالة إلغاء اختيار جميع الصلاحيات
+    public function deselectAllPermissions()
+    {
+        $this->selectedPermissions = [];
+        session()->flash('message', 'تم إلغاء اختيار جميع الصلاحيات');
+    }
+
+    // دالة اختيار جميع صلاحيات قسم معين
+    public function selectAllModulePermissions($module)
+    {
+        $modulePermissions = $this->permissions->filter(function($permission) use ($module) {
+            return str_starts_with($permission->name, $module . '.');
+        })->pluck('name')->toArray();
+        
+        // إضافة الصلاحيات الجديدة دون تكرار
+        $this->selectedPermissions = array_unique(array_merge($this->selectedPermissions, $modulePermissions));
+        session()->flash('message', "تم اختيار جميع صلاحيات قسم {$module} (" . count($modulePermissions) . " صلاحية)");
+    }
+
+    // دالة إلغاء اختيار جميع صلاحيات قسم معين
+    public function deselectAllModulePermissions($module)
+    {
+        $modulePermissions = $this->permissions->filter(function($permission) use ($module) {
+            return str_starts_with($permission->name, $module . '.');
+        })->pluck('name')->toArray();
+        
+        // إزالة صلاحيات القسم المحدد
+        $this->selectedPermissions = array_diff($this->selectedPermissions, $modulePermissions);
+        session()->flash('message', "تم إلغاء اختيار جميع صلاحيات قسم {$module} (" . count($modulePermissions) . " صلاحية)");
+    }
+
+    // دالة للتحقق من اختيار جميع صلاحيات قسم معين
+    public function isModuleFullySelected($module)
+    {
+        $modulePermissions = $this->permissions->filter(function($permission) use ($module) {
+            return str_starts_with($permission->name, $module . '.');
+        })->pluck('name')->toArray();
+        
+        $selectedModulePermissions = array_intersect($this->selectedPermissions, $modulePermissions);
+        
+        return count($selectedModulePermissions) === count($modulePermissions) && count($modulePermissions) > 0;
+    }
+
+    // دالة للتحقق من اختيار بعض صلاحيات قسم معين
+    public function isModulePartiallySelected($module)
+    {
+        $modulePermissions = $this->permissions->filter(function($permission) use ($module) {
+            return str_starts_with($permission->name, $module . '.');
+        })->pluck('name')->toArray();
+        
+        $selectedModulePermissions = array_intersect($this->selectedPermissions, $modulePermissions);
+        
+        return count($selectedModulePermissions) > 0 && count($selectedModulePermissions) < count($modulePermissions);
+    }
+
+    public function closeForm()
+    {
+        $this->resetForm();
+    }
+
+    public function resetForm()
+    {
+        $this->reset([
+            'name', 
+            'selectedPermissions', 
+            'editingRole',
+            'showPermissions',
+            'openModules'
+        ]);
+        $this->showForm = false;
     }
 
     public function addRole()
     {
         $this->validate();
+
+        // التحقق من وجود صلاحيات مختارة
+        if (empty($this->selectedPermissions)) {
+            session()->flash('error', 'يجب اختيار صلاحية واحدة على الأقل');
+            return;
+        }
 
         $role = Role::create([
             'name' => $this->name,
@@ -72,8 +161,8 @@ class Roles extends Component
 
         $role->syncPermissions($this->selectedPermissions);
 
-        $this->reset(['name', 'selectedPermissions', 'showForm', 'editingRole']);
-        session()->flash('message', 'تم إضافة الدور بنجاح');
+        $this->closeForm();
+        session()->flash('message', 'تم إضافة الدور بنجاح مع ' . count($this->selectedPermissions) . ' صلاحية');
     }
 
     public function editRole($roleId)
@@ -89,19 +178,33 @@ class Roles extends Component
     {
         $this->validate();
         if (!$this->editingRole) return;
+        
+        // التحقق من وجود صلاحيات مختارة
+        if (empty($this->selectedPermissions)) {
+            session()->flash('error', 'يجب اختيار صلاحية واحدة على الأقل');
+            return;
+        }
+        
         $this->editingRole->update(['name' => $this->name]);
         $this->editingRole->syncPermissions($this->selectedPermissions);
-        $this->reset(['name', 'selectedPermissions', 'showForm', 'editingRole']);
-        session()->flash('message', 'تم تحديث الدور بنجاح');
+        $this->closeForm();
+        session()->flash('message', 'تم تحديث الدور بنجاح مع ' . count($this->selectedPermissions) . ' صلاحية');
     }
 
     public function deleteRole($roleId)
     {
         $role = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($roleId);
         if (in_array($role->name, ['super-admin', 'agency-admin'])) {
-            session()->flash('message', 'لا يمكن حذف الأدوار الأساسية');
+            session()->flash('error', 'لا يمكن حذف الأدوار الأساسية');
             return;
         }
+        
+        // التحقق من وجود مستخدمين مرتبطين بالدور
+        if ($role->users()->count() > 0) {
+            session()->flash('error', 'لا يمكن حذف الدور لوجود مستخدمين مرتبطين به');
+            return;
+        }
+        
         $role->delete();
         session()->flash('message', 'تم حذف الدور بنجاح');
     }

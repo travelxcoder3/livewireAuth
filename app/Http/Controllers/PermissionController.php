@@ -10,9 +10,8 @@ class PermissionController extends Controller
     // عرض جميع الصلاحيات
     public function index()
     {
-        $user = auth()->user();
-        // فقط أدمن الوكالة يدير الصلاحيات
-        $permissions = Permission::where('agency_id', $user->agency_id)->get();
+        // جلب الصلاحيات العامة لجميع الوكالات
+        $permissions = Permission::whereNull('agency_id')->get();
         return response()->json($permissions);
     }
 
@@ -21,14 +20,14 @@ class PermissionController extends Controller
     {
         $user = auth()->user();
         
-        // التحقق من وجود الصلاحية لنفس الوكالة
+        // التحقق من وجود الصلاحية
         $exists = Permission::where('name', $request->name)
             ->where('guard_name', 'web')
-            ->where('agency_id', $user->agency_id)
+            ->whereNull('agency_id')
             ->exists();
             
         if ($exists) {
-            return response()->json(['message' => 'هذه الصلاحية موجودة بالفعل لهذه الوكالة'], 422);
+            return response()->json(['message' => 'هذه الصلاحية موجودة بالفعل'], 422);
         }
         
         $validated = $request->validate([
@@ -38,8 +37,8 @@ class PermissionController extends Controller
         $permission = Permission::create([
             'name' => $validated['name'],
             'guard_name' => 'web',
-            'agency_id' => $user->agency_id,
         ]);
+        
         // ربط الصلاحية الجديدة بدور أدمن الوكالة تلقائيًا
         $agencyAdminRole = \Spatie\Permission\Models\Role::where('name', 'agency-admin')
             ->where('agency_id', $user->agency_id)

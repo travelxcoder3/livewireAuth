@@ -1,3 +1,7 @@
+@php
+    $showPoliciesLink = Auth::user()->hasRole('agency-admin') || Auth::user()->can('policies.view');
+    $showPoliciesLinkUser = Auth::check() && Auth::user()->agency_id !== null && !Auth::user()->hasRole('agency-admin');
+@endphp 
 <nav class="w-full flex items-center justify-between px-6 shadow-sm rounded-t-2xl nav-gradient"
     style="padding-top: 8px; padding-bottom: 8px; min-height:48px;">
 
@@ -127,6 +131,12 @@
                     تهيئة العمولات
                 </a>
                 @endif
+                @if (Auth::user()->hasRole('agency-admin'))
+                <a href="{{ route('agency.policies') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+                    <i class="fas fa-file-contract"></i>
+                    سياسات الوكالة
+                </a>
+                @endif
             </div>
         </div>
         @endif
@@ -172,6 +182,14 @@
         @endif --> 
 
         <!-- الموارد البشرية -->
+        @php
+            $showHRDropdown = Auth::user()->hasRole('agency-admin')
+                || Auth::user()->can('employees.view')
+                || Auth::user()->can('roles.view')
+                || Auth::user()->can('users.view')
+                || Auth::user()->can('permissions.view');
+        @endphp
+        @if($showHRDropdown)
         <div class="relative group nav-item flex items-center px-2 py-1 rounded-full">
             <a href="#" class="flex items-center">
                 <span class="nav-icon bg-[rgb(var(--primary-500))] rounded-full p-1 shadow">
@@ -210,6 +228,7 @@
                 @endif
             </div>
         </div>
+        @endif
 
       
 
@@ -251,6 +270,21 @@
         </div>
         @endif
 
+        
+
+        <!--سياسات الشركة لمستخدمي الوكالة-->
+        @if($showPoliciesLinkUser)
+            <div class="nav-item flex items-center px-2 py-1 rounded-full {{ request()->routeIs('agency.policies.view') ? 'active' : '' }}">
+                <a href="{{ route('agency.policies.view') }}" class="flex items-center">
+                    <span class="nav-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16h8M8 12h6m-6-4h4M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                        </svg>
+                    </span>
+                    <span class="nav-text text-xs text-white whitespace-nowrap mr-2">سياسات الوكالة</span>
+                </a>
+            </div>
+        @endif
     
 
     <!-- أدوات التحكم (الثيم، اللغة، المستخدم) في أقصى الشريط فقط -->
@@ -277,15 +311,21 @@
                     <circle cx="12" cy="8" r="3.2" fill="#fff" />
                 </svg>
             </button>
-            <div class="user-dropdown-menu left-0 right-auto mt-2" style="min-width: 180px;">
+            <div class="user-dropdown-menu left-0 right-auto mt-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-100" style="min-width: 180px;">
                 <div class="px-4 py-3 border-b border-gray-100">
                     <div class="font-bold text-gray-800 text-base">{{ Auth::user()->name ?? 'User Name' }}</div>
-                    <div class="text-xs text-gray-500 mt-1">{{ Auth::user()->role->name ?? 'الدور غير محدد' }}</div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        @php
+                            $userRoles = Auth::user()->getRoleNames();
+                            $roleName = $userRoles->isNotEmpty() ? $userRoles->first() : 'الدور غير محدد';
+                        @endphp
+                        {{ $roleName }}
+                    </div>
                 </div>
                 <form method="POST" action="{{ route('logout') }}" class="m-0 p-0">
                     @csrf
                     <button type="submit"
-                        class="w-full text-right px-4 py-2 text-red-600 hover:bg-red-50 font-semibold transition">تسجيل
+                        class="w-full text-right px-4 py-2 text-red-600 hover:bg-red-50 font-semibold transition rounded-b-xl">تسجيل
                         الخروج</button>
                 </form>
             </div>

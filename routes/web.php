@@ -40,6 +40,7 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
 use App\Livewire\Agency\Accounts;
+use App\Livewire\Agency\AgencyPolicies;
 
 
 
@@ -148,6 +149,8 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
         Route::get('/employees/create', EmployeeCreate::class)->name('employees.create');
         Route::get('/employees/edit/{employee}', EmployeeEdit::class)->name('employees.edit');
     });
+    Route::get('/policies', AgencyPolicies::class)->name('policies');
+    Route::get('/policies/view', \App\Livewire\Agency\PoliciesView::class)->name('policies.view');
 });
 // Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
 //     ->middleware(['auth', 'agency']);
