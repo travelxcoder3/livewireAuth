@@ -27,37 +27,16 @@
         </div>
 
         <!-- جدول العرض -->
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-                <thead class="bg-gray-100 text-gray-600">
-                    <tr>
-                        <th class="px-2 py-1">#</th>
-                        <th class="px-2 py-1">اسم نوع الخدمة</th>
-                        <th class="px-2 py-1">الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
-                    @forelse($serviceTypes as $type)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-2 py-1 whitespace-nowrap">{{ $loop->iteration }}</td>
-                            <td class="px-2 py-1 font-medium">{{ $type->name }}</td>
-                            <td class="px-2 py-1 whitespace-nowrap">
-                                @can('service_types.edit')
-                                <button wire:click="showEditModal({{ $type->id }})"
-                                        class="font-medium text-xs mx-1" style="color: rgb(var(--primary-600));">
-                                    تعديل
-                                </button>
-                                @endcan
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" class="text-center py-4 text-gray-400">لا توجد أنواع خدمات مسجلة</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        @php
+            use App\Tables\ServiceTypeTable;
+            $columns = ServiceTypeTable::columns();
+            // تجهيز الصفوف مع إضافة رقم التكرار
+            $rows = $serviceTypes->map(function($type, $i) {
+                $type->iteration = $i + 1;
+                return $type;
+            });
+        @endphp
+        <x-data-table :rows="$rows" :columns="$columns" />
     </div>
 
     <!-- النافذة المنبثقة -->

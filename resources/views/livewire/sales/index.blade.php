@@ -1,4 +1,7 @@
 @php
+    use App\Tables\SalesTable;
+    $columns = SalesTable::columns();
+
     $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
     $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]';
     $containerClass = 'relative mt-1';
@@ -379,75 +382,7 @@
         </div>
 
         <!-- جدول المبيعات -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-                    <thead class="bg-gray-100 text-gray-600">
-                        <tr>
-                            <th class="px-2 py-1">التاريخ</th>
-                            <th class="px-2 py-1">المستفيد</th>
-                            <th class="px-2 py-1">العميل</th>
-                            <th class="px-2 py-1">الخدمة</th>
-                            <th class="px-2 py-1">المزود</th>
-                            <th class="px-2 py-1">الوسيط</th>
-                            <th class="px-2 py-1">Buy</th>
-                            <th class="px-2 py-1">Sell</th>
-                            <th class="px-2 py-1">الربح</th>
-                            <th class="px-2 py-1">المبلغ</th>
-                            <th class="px-2 py-1">الحساب</th>
-                            <th class="px-2 py-1">المرجع</th>
-                            <th class="px-2 py-1">PNR</th>
-                            <th class="px-2 py-1">Route</th>
-                            <th class="px-2 py-1">الحالة</th>
-                            <th class="px-2 py-1">الموظف</th>
-                            <th class="px-2 py-1">خيارات</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-100">
-                        @forelse ($sales as $sale)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-2 py-1 whitespace-nowrap">{{ $sale->sale_date }}</td>
-                                <td class="px-2 py-1">{{ $sale->beneficiary_name }}</td>
-                                <td class="px-2 py-1">{{ $sale->customer->name ?? '-' }}</td>
-                                <td class="px-2 py-1">{{ $sale->serviceType->name ?? '-' }}</td>
-                                <td class="px-2 py-1">{{ $sale->provider->name ?? '-' }}</td>
-                                <td class="px-2 py-1">{{ $sale->intermediary->name ?? '-' }}</td>
-                                <td class="px-2 py-1" style="color: rgb(var(--primary-500)); font-weight: 600;">{{ number_format($sale->usd_buy, 2) }}</td>
-                                <td class="px-2 py-1" style="color: rgb(var(--primary-600)); font-weight: 600;">{{ number_format($sale->usd_sell, 2) }}</td>
-                                <td class="px-2 py-1" style="color: rgb(var(--primary-700)); font-weight: 600;">{{ number_format($sale->sale_profit, 2) }}</td>
-                                <td class="px-2 py-1">{{ number_format($sale->amount_paid, 2) }}</td>
-                                <td class="px-2 py-1">{{ $sale->account->name ?? '-' }}</td>
-                                <td class="px-2 py-1">{{ $sale->reference }}</td>
-                                <td class="px-2 py-1">{{ $sale->pnr }}</td>
-                                <td class="px-2 py-1">{{ $sale->route }}</td>
-                                <td class="px-2 py-1">
-                                    <span class="px-2 py-1 rounded-full text-xs 
-                                        {{ $sale->status == 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                        {{ $sale->status == 'paid' ? 'مدفوع' : 'غير مدفوع' }}
-                                    </span>
-                                </td>
-                                <td class="px-2 py-1">{{ $sale->user->name ?? '-' }}</td>
-                                <td class="px-2 py-1 whitespace-nowrap">
-                                    <button wire:click="duplicate({{ $sale->id }})"
-                                        class="font-medium text-xs mx-1" style="color: rgb(var(--primary-600)); hover:color: rgb(var(--primary-800));">تكرار</button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="17" class="text-center py-4 text-gray-400">لا توجد عمليات بيع</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            @if($sales->hasPages())
-                <div class="px-4 py-2 border-t border-gray-200">
-                    {{ $sales->links() }}
-                </div>
-            @endif
-        </div>
+        <x-data-table :rows="$sales" :columns="$columns" />
 
         <!-- رسائل النظام -->
         @if(session()->has('message'))

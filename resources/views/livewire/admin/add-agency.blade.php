@@ -145,47 +145,49 @@
                         @error('subscription_end_date') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                         </div>
                     </div>
-    <!-- ... الحقول الأخرى ... -->
-    <div class="{{ $containerClass }}">
-        <input type="number" wire:model.defer="max_users" class="{{ $fieldClass }}" placeholder="الحد الأقصى للمستخدمين" min="1" max="100" />
-        <label class="{{ $labelClass }}">الحد الأقصى للمستخدمين</label>
-        @error('max_users') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                </div>
-    <!-- ... باقي الحقول ... -->
-                    <!-- بيانات الأدمن -->
-                <div class="border-t border-gray-200 pt-6 mt-6">
-                     <h3 class="text-lg font-bold mb-4 text-center text-black">
+                <!-- ... الحقول الأخرى ... -->
+                <div class="{{ $containerClass }}">
+                    <input type="number" wire:model.defer="max_users" class="{{ $fieldClass }}" placeholder="الحد الأقصى للمستخدمين" min="1" max="100" />
+                    <label class="{{ $labelClass }}">الحد الأقصى للمستخدمين</label>
+                    @error('max_users') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                <!-- ... باقي الحقول ... -->
+            <div class="border-t border-gray-200 pt-6 mt-6">
+                <h3 class="text-lg font-bold mb-4 text-center text-black">
+                    بيانات أدمن الوكالة
+                </h3>
 
-                            بيانات أدمن الوكالة
-                        </h3>
+                <div class="flex flex-wrap md:flex-nowrap justify-between items-end gap-2">
 
-                    <div class="grid md:grid-cols-3 gap-3">
-                            <div class="{{ $containerClass }}">
-                                <input type="text" wire:model.defer="admin_name" class="{{ $fieldClass }}" placeholder="اسم الأدمن" />
-                                <label class="{{ $labelClass }}">اسم الأدمن</label>
+                    <!-- الحقول الثلاثة -->
+                    <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-[82%]">
+                        <div class="{{ $containerClass }} w-full md:w-1/3">
+                            <input type="text" wire:model.defer="admin_name" class="{{ $fieldClass }}" placeholder="اسم الأدمن" />
+                            <label class="{{ $labelClass }}">اسم الأدمن</label>
                             @error('admin_name') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                         </div>
-                            <div class="{{ $containerClass }}">
-                                <input type="email" wire:model.defer="admin_email" class="{{ $fieldClass }}" placeholder="بريد الأدمن" />
-                                <label class="{{ $labelClass }}">بريد الأدمن</label>
+
+                        <div class="{{ $containerClass }} w-full md:w-1/3">
+                            <input type="email" wire:model.defer="admin_email" class="{{ $fieldClass }}" placeholder="بريد الأدمن" />
+                            <label class="{{ $labelClass }}">بريد الأدمن</label>
                             @error('admin_email') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                         </div>
-                            <div class="{{ $containerClass }}">
-                                <input type="password" wire:model.defer="admin_password" class="{{ $fieldClass }}" placeholder="كلمة المرور" />
-                                <label class="{{ $labelClass }}">كلمة المرور</label>
+
+                        <div class="{{ $containerClass }} w-full md:w-1/3">
+                            <input type="password" wire:model.defer="admin_password" class="{{ $fieldClass }}" placeholder="كلمة المرور" />
+                            <label class="{{ $labelClass }}">كلمة المرور</label>
                             @error('admin_password') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                            </div>
+                        </div>
+                    </div>
+
+                    <!-- الزر -->
+                    <div class="w-full md:w-[18%] flex justify-end">
+                        <x-button.primary-button type="submit" width="w-80">
+                            حفظ الوكالة
+                        </x-button.primary-button>
                     </div>
                 </div>
-
-                    <!-- زر الحفظ -->
-                <div class="mt-8 flex justify-center">
-                    <button type="submit" 
-                            class="text-white font-bold px-8 py-3 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                            style="background: linear-gradient(to right, rgb({{ $colors['primary-500'] }}) 0%, rgb({{ $colors['primary-600'] }}) 100%);">
-                        حفظ الوكالة
-                    </button>
-                </div>
+            </div>
             </form>
         </div>
     </div>

@@ -9,7 +9,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 
-    <x-theme-provider />
+    <x-theme.theme-provider />
 
     <style>
         body.bg-dashboard { background: #e7e8fd !important; }

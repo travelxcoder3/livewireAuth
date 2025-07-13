@@ -68,51 +68,11 @@
     </div>
 
     <!-- جدول العملاء -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-                <thead class="bg-gray-100 text-gray-600">
-                    <tr>
-                        <th class="px-2 py-1">الاسم</th>
-                        <th class="px-2 py-1">البريد</th>
-                        <th class="px-2 py-1">الهاتف</th>
-                        <th class="px-2 py-1">العنوان</th>
-                        <th class="px-2 py-1">تاريخ الإضافة</th>
-                        <th class="px-2 py-1">إجراءات</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
-                    @forelse ($customers as $customer)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-2 py-1">{{ $customer->name }}</td>
-                            <td class="px-2 py-1">{{ $customer->email ?? '-' }}</td>
-                            <td class="px-2 py-1">{{ $customer->phone ?? '-' }}</td>
-                            <td class="px-2 py-1">{{ $customer->address ?? '-' }}</td>
-                            <td class="px-2 py-1 whitespace-nowrap">{{ $customer->created_at->format('Y-m-d') }}</td>
-                            <td class="px-2 py-1 whitespace-nowrap">
-                                <button wire:click="edit({{ $customer->id }})"
-                                    class="font-medium text-xs mx-1"
-                                    style="color: rgb(var(--primary-600));">
-                                    تعديل
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-gray-400">لا يوجد عملاء حتى الآن</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        @if($customers->hasPages())
-            <div class="px-4 py-2 border-t border-gray-200">
-                {{ $customers->links() }}
-            </div>
-        @endif
-    </div>
+    @php
+        use App\Tables\CustomerTable;
+        $columns = CustomerTable::columns();
+    @endphp
+    <x-data-table :rows="$customers" :columns="$columns" />
 
     <!-- Toast Success -->
     @if(session()->has('success'))

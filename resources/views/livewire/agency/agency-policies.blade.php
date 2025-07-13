@@ -14,40 +14,20 @@
 
     <!-- جدول عرض السياسات -->
     <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        @if($policies->isEmpty())
+        @php
+            use App\Tables\PolicyTable;
+            $columns = PolicyTable::columns();
+            // تجهيز البيانات مع index
+            $rows = $policies->map(function($policy, $i) {
+                $policy->index = $i + 1;
+                $policy->content = \Illuminate\Support\Str::limit(strip_tags($policy->content), 80);
+                return $policy;
+            });
+        @endphp
+        @if($rows->isEmpty())
             <p class="text-gray-500 text-sm p-4">لا توجد سياسات مضافة بعد.</p>
         @else
-            <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-                <thead class="bg-gray-100 text-gray-600">
-                    <tr>
-                        <th class="px-2 py-1">#</th>
-                        <th class="px-2 py-1">العنوان</th>
-                        <th class="px-2 py-1">المحتوى</th>
-                        <th class="px-2 py-1">الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
-                    @foreach($policies as $index => $policy)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-2 py-1">{{ $index + 1 }}</td>
-                            <td class="px-2 py-1 font-medium" style="color: rgb(var(--primary-700));">{{ $policy->title }}</td>
-                            <td class="px-2 py-1 text-gray-600">{{ \Illuminate\Support\Str::limit(strip_tags($policy->content), 80) }}</td>
-                            <td class="px-2 py-1">
-                                <div class="flex gap-2">
-                                    <button wire:click="edit({{ $policy->id }})" 
-                                        class="text-xs font-medium" style="color: rgb(var(--primary-600));">
-                                        تعديل
-                                    </button>
-                                    <button wire:click="confirmDelete({{ $policy->id }})" 
-                                        class="text-xs font-medium text-red-600 hover:text-red-800">
-                                        حذف
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+            <x-data-table :rows="$rows" :columns="$columns" />
         @endif
     </div>
 

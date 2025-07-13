@@ -194,65 +194,11 @@
     @endif
 
     <!-- جدول الموظفين -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden" wire:key="employees-table-{{ $employees->count() }}-{{ now() }}">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-                <thead class="bg-gray-100 text-gray-600">
-                    <tr>
-                        <th class="px-2 py-1">#</th>
-                        <th class="px-2 py-1">الاسم</th>
-                        <th class="px-2 py-1">اسم المستخدم</th>
-                        <th class="px-2 py-1">البريد الإلكتروني</th>
-                        <th class="px-2 py-1">الهاتف</th>
-                        <th class="px-2 py-1">الفرع</th>
-                        <th class="px-2 py-1">القسم</th>
-                        <th class="px-2 py-1">الوظيفة</th>
-                        <th class="px-2 py-1">تاريخ الإنشاء</th>
-                        <th class="px-2 py-1">إجراءات</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
-                    @forelse($employees as $employee)
-                        <tr class="hover:bg-gray-50" wire:key="employee-{{ $employee->id }}">
-                            <td class="px-2 py-1 whitespace-nowrap">{{ $loop->iteration }}</td>
-                            <td class="px-2 py-1">{{ $employee->name }}</td>
-                            <td class="px-2 py-1">{{ $employee->user_name ?? '—' }}</td>
-                            <td class="px-2 py-1">{{ $employee->email }}</td>
-                            <td class="px-2 py-1">{{ $employee->phone ?? '—' }}</td>
-                            <td class="px-2 py-1">{{ $employee->branch ?? '—' }}</td>
-                            <td class="px-2 py-1">{{ $employee->department?->name ?? '—' }}</td>
-                            <td class="px-2 py-1">{{ $employee->position?->name ?? '—' }}</td>
-                            <td class="px-2 py-1 whitespace-nowrap">{{ $employee->created_at->format('Y-m-d') }}</td>
-                            <td class="px-2 py-1 whitespace-nowrap">
-                                <div class="flex gap-2">
-                                    @can('employees.edit')
-                                    <button wire:click="editEmployee({{ $employee->id }})"
-                                            class="font-medium text-xs" style="color: rgb(var(--primary-600));">
-                                        تعديل
-                                    </button>
-                                    @endcan
-                                  
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="10" class="text-center py-4 text-gray-400">
-                                لا توجد نتائج مطابقة لبحثك.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        @if($employees->hasPages())
-            <div class="px-4 py-2 border-t border-gray-200" wire:key="pagination-{{ $employees->currentPage() }}">
-                {{ $employees->links() }}
-            </div>
-        @endif
-    </div>
+    @php
+        use App\Tables\EmployeeTable;
+        $columns = EmployeeTable::columns();
+    @endphp
+    <x-data-table :rows="$employees" :columns="$columns" />
 
     <style>
         .peer:placeholder-shown + label {

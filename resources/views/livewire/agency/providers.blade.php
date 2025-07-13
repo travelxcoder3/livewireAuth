@@ -1,8 +1,10 @@
 @php
     use App\Services\ThemeService;
+    use App\Tables\ProviderTable;
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
     $user = auth()->user();
+    $columns = ProviderTable::columns($user);
 @endphp
 
 <div class="space-y-6">
@@ -37,48 +39,7 @@
 
         <!-- جدول المزودين -->
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-                <thead class="bg-gray-100 text-gray-600">
-                    <tr>
-                        <th class="px-2 py-1">نوع الخدمة</th>
-                        <th class="px-2 py-1">اسم المزود</th>
-                        <th class="px-2 py-1">النوع</th>
-                        <th class="px-2 py-1">معلومات التواصل</th>
-                        <th class="px-2 py-1">الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
-                    @forelse($providers as $provider)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-2 py-1 text-xs">{{ $provider->service?->label ?? '-' }} </td>
-                            <td class="px-2 py-1 font-medium">{{ $provider->name }}</td>
-                            <td class="px-2 py-1">
-                                @if($provider->type)
-                                    <span class="inline-flex px-1.5 py-0.5 text-2xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        {{ $provider->type }}
-                                    </span>
-                                @else
-                                    -
-                                @endif
-                            </td>
-                            <td class="px-2 py-1 text-xs whitespace-pre-line">{{ $provider->contact_info ?? '-' }}</td>
-                            <td class="px-2 py-1 whitespace-nowrap">
-                                @if($user->can('providers.edit'))
-                                <button wire:click="showEditModal({{ $provider->id }})"
-                                        class="font-medium text-xs mx-1"
-                                        style="color: rgb(var(--primary-600));">
-                                    تعديل
-                                </button>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-gray-400">لا توجد مزودين مسجلين</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+            <x-data-table :rows="$providers" :columns="$columns" />
         </div>
     </div>
 

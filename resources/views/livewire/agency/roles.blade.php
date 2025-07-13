@@ -125,8 +125,8 @@
 
     <!-- النافذة المنبثقة لعرض الصلاحيات -->
     @if ($showPermissionsModal)
-        <div class="fixed inset-0 z-50 bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4 text-sm">
+    <div class="fixed inset-0 z-50 bg-white/20 backdrop-blur-sm flex items-start justify-center pt-24">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4 text-sm">
                 <h3 class="text-lg font-bold border-b pb-2 text-gray-700">
                     الصلاحيات الخاصة بـ: {{ $selectedRoleName }}
                 </h3>

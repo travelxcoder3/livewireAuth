@@ -1,12 +1,49 @@
 
 @php
     use App\Services\ThemeService;
+    use App\Tables\CollectionTable;
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
 
     $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
     $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]';
     $containerClass = 'relative mt-1';
+
+    $columns = CollectionTable::columns();
+    // تجهيز البيانات مع القيم المحسوبة
+    $rows = $sales->map(function($sale, $i) {
+        $totalInvoice = $sale->usd_sell ?? 0;
+        $paidFromSales = $sale->amount_received ?? 0;
+        $paidFromCollections = $sale->collections->sum('amount');
+        $paidTotal = $paidFromSales + $paidFromCollections;
+        $remaining = $totalInvoice - $paidTotal;
+        $debtAge = $sale->sale_date ? round(abs(now()->diffInDays($sale->sale_date, false))) : null;
+        return (object) [
+            'id' => $sale->id,
+            'index' => $i + 1,
+            'beneficiary_name' => $sale->beneficiary_name ?? '-',
+            'remaining' => $remaining,
+            'last_payment' => optional($sale->collections->last())->payment_date ?? '-',
+            'debt_age' => $debtAge ? $debtAge . ' يوم' : '-',
+            'customer_type' => optional($sale->collections->last()?->customerType)->label ?? '-',
+            'debt_type' => optional($sale->collections->last()?->debtType)->label ?? '-',
+            'customer_response' => optional($sale->collections->last()?->customerResponse)->label ?? '-',
+            'customer_relation' => optional($sale->collections->last()?->customerRelation)->label ?? '-',
+        ];
+    });
+    // معالجة url في actions
+    foreach ($columns as &$col) {
+        if (isset($col['actions'])) {
+            foreach ($col['actions'] as &$action) {
+                if (isset($action['url']) && is_callable($action['url'])) {
+                    foreach ($rows as $row) {
+                        $row->{$action['type'].'_url'} = $action['url']($row);
+                    }
+                    $action['url'] = null;
+                }
+            }
+        }
+    }
 @endphp
 
 <div class="space-y-6">
@@ -60,70 +97,11 @@
     </div>
 
     <!-- جدول التحصيلات -->
-    <div class="bg-white rounded-xl shadow overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-100 text-gray-600 text-xs">
-                <tr class="text-center">
-                    <th class="px-2 py-2">#</th>
-                    <th class="px-2 py-2">اسم العميل</th>
-                    <th class="px-2 py-2">الرصيد</th>
-                    <th class="px-2 py-2">آخر سداد</th>
-                    <th class="px-2 py-2">عمر الدين</th>
-                    <th class="px-2 py-2">نوع العميل</th>
-                    <th class="px-2 py-2">نوع المديونية</th>
-                    <th class="px-2 py-2">تجاوب العميل</th>
-                    <th class="px-2 py-2">نوع الارتباط</th>
-                    <th class="px-2 py-2">الإجراء</th>
-                </tr>
-            </thead>
-            <tbody class="text-center text-xs divide-y divide-gray-100">
-                @forelse($sales as $index => $sale)
-                    <tr>
-                        <td class="px-2 py-2">{{ $loop->iteration }}</td>
-                        <td class="px-2 py-2">{{ $sale->beneficiary_name ?? '-' }}</td>
-                       @php
-                            $totalInvoice = $sale->usd_sell ?? 0;
-                            $paidFromSales = $sale->amount_received ?? 0;
-                            $paidFromCollections = $sale->collections->sum('amount');
-                            $paidTotal = $paidFromSales + $paidFromCollections;
-                            $remaining = $totalInvoice - $paidTotal;
-                        @endphp
+    <x-data-table :rows="$rows" :columns="$columns" />
 
-                        <td class="px-2 py-2 font-bold text-red-600">
-                            {{ number_format($remaining, 2) }}
-                        </td>
-
-                        <td class="px-2 py-2">{{ optional($sale->collections->last())->payment_date ?? '-' }}</td>
-                        <td class="px-2 py-2">
-                            @php
-                                $debtAge = round(abs(now()->diffInDays($sale->sale_date, false)));
-                            @endphp
-                            {{ $debtAge }} يوم
-                        </td>
-                        <td class="px-2 py-2">{{ optional($sale->collections->last()?->customerType)->label ?? '-' }}</td>
-                        <td class="px-2 py-2">{{ optional($sale->collections->last()?->debtType)->label ?? '-' }}</td>
-                        <td class="px-2 py-2">{{ optional($sale->collections->last()?->customerResponse)->label ?? '-' }}</td>
-                        <td class="px-2 py-2">{{ optional($sale->collections->last()?->customerRelation)->label ?? '-' }}</td>
-                        <td class="px-2 py-2">
-                         <a href="{{ route('agency.collection.details', $sale->id) }}"
-                            class="text-white text-xs px-3 py-1 bg-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-600))] rounded-lg shadow">
-                                تفاصيل المديونية
-                            </a>
-
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="10" class="py-4 text-center text-gray-400">لا توجد بيانات</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-
-        @if($sales->hasPages())
-            <div class="px-4 py-2 border-t border-gray-200">
-                {{ $sales->links() }}
-            </div>
-        @endif
-    </div>
+    @if($sales->hasPages())
+        <div class="px-4 py-2 border-t border-gray-200">
+            {{ $sales->links() }}
+        </div>
+    @endif
 </div>

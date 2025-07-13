@@ -142,77 +142,13 @@ $containerClass = 'relative mt-1';
     <!-- جدول العمليات -->
      <div class="h-6"></div>
 
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-                <thead class="bg-gray-100 text-gray-600">
-                    <tr>
-                        <th class="px-2 py-1 cursor-pointer" wire:click="sortBy('created_at')">
-                            التاريخ
-                            @if($sortField === 'created_at')
-                                @if($sortDirection === 'asc')
-                                    ↑
-                                @else
-                                    ↓
-                                @endif
-                            @endif
-                        </th>
-                        <th class="px-2 py-1">اسم المستفيد</th>
-                        <th class="px-2 py-1">نوع الخدمة</th>
-                        <th class="px-2 py-1">المسار</th>
-                        <th class="px-2 py-1">PNR</th>
-                        <th class="px-2 py-1">المرجع</th>
-                        <th class="px-2 py-1">الحدث</th>
-                        <th class="px-2 py-1 cursor-pointer" wire:click="sortBy('usd_sell')">
-                            سعر البيع
-                            @if($sortField === 'usd_sell')
-                                @if($sortDirection === 'asc')
-                                    ↑
-                                @else
-                                    ↓
-                                @endif
-                            @endif
-                        </th>
-                        <th class="px-2 py-1 cursor-pointer" wire:click="sortBy('usd_buy')">
-                            سعر الشراء
-                            @if($sortField === 'usd_buy')
-                                @if($sortDirection === 'asc')
-                                    ↑
-                                @else
-                                    ↓
-                                @endif
-                            @endif
-                        </th>
-                        <th class="px-2 py-1">المزود</th>
-                        <th class="px-2 py-1">الحساب</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
-                    @foreach ($sales as $sale)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-2 py-1">{{ $sale->created_at->format('Y-m-d') }}</td>
-                            <td class="px-2 py-1">{{ $sale->beneficiary_name ?? '-' }}</td>
-                            <td class="px-2 py-1">{{ $sale->serviceType->name ?? '-' }}</td>
-                            <td class="px-2 py-1">{{ $sale->route ?? '-' }}</td>
-                            <td class="px-2 py-1">{{ $sale->pnr ?? '-' }}</td>
-                            <td class="px-2 py-1">{{ $sale->reference ?? '-' }}</td>
-                            <td class="px-2 py-1">{{ $sale->action ?? '-' }}</td>
-                            <td class="px-2 py-1 font-bold" style="color: rgb(var(--primary-600));">
-                                {{ number_format($sale->usd_sell, 2) }}
-                            </td>
-                            <td class="px-2 py-1 font-bold" style="color: rgb(var(--primary-500));">
-                                {{ number_format($sale->usd_buy, 2) }}
-                            </td>
-                            <td class="px-2 py-1">{{ $sale->provider->name ?? '-' }}</td>
-                            <td class="px-2 py-1">{{ $sale->account->name ?? '-' }}</td>
-                           
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+    @php
+    use App\Tables\AccountTable;
+    $columns = AccountTable::columns();
+@endphp
+<x-data-table :rows="$sales" :columns="$columns" />
 
-        <!-- Pagination -->
+    <!-- Pagination -->
         @if($sales->hasPages())
             <div class="px-4 py-2 border-t border-gray-200">
                 {{ $sales->links() }}

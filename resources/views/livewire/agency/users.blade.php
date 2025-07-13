@@ -15,61 +15,17 @@
     </div>
 
     <!-- جدول المستخدمين -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-            <thead class="bg-gray-100 text-gray-600">
-                <tr>
-                    <th class="px-2 py-1">الاسم</th>
-                    <th class="px-2 py-1">البريد الإلكتروني</th>
-                    <th class="px-2 py-1">الدور</th>
-                    <th class="px-2 py-1">الحالة</th>
-                    <th class="px-2 py-1">الإجراءات</th>
-                        </tr>
-                    </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
-                @forelse($users as $user)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-2 py-1 font-medium">{{ $user->name }}</td>
-                        <td class="px-2 py-1">{{ $user->email }}</td>
-                        <td class="px-2 py-1">
-                            @if($user->roles->first())
-                                <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-                                    {{ $user->roles->first()->name }}
-                                        </span>
-                                    @else
-                                <span class="text-xs text-gray-400">بدون دور</span>
-                                    @endif
-                                </td>
-                        <td class="px-2 py-1">
-                            <button wire:click="toggleUserStatus({{ $user->id }})"
-                                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                    style="{{ $user->is_active 
-                                        ? 'background-color: rgba(var(--primary-500), 0.1); color: rgb(var(--primary-500));' 
-                                        : 'background-color: rgba(239, 68, 68, 0.1); color: rgb(239, 68, 68);' }}">
-                                {{ $user->is_active ? 'نشط' : 'غير نشط' }}
-                            </button>
-                        </td>
-                        <td class="px-2 py-1">
-                            <div class="flex gap-2">
-                                        @can('users.edit')
-                                        <button wire:click="editUser({{ $user->id }})" 
-                                        class="text-xs font-medium" style="color: rgb(var(--primary-600));">
-                                    تعديل
-                                        </button>
-                                        @endcan
-                                    </div>
-                                </td>
-                            </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="text-center py-4 text-gray-400">
-                            لا يوجد مستخدمين حالياً
-                        </td>
-                    </tr>
-                @endforelse
-                    </tbody>
-                </table>
-            </div>
+    @php
+        use App\Tables\UserTable;
+        $columns = UserTable::columns();
+        // تجهيز الصفوف مع الحقول المخصصة
+        $rows = $users->map(function($user) {
+            $user->role_display = $user->roles->first()?->name ?? 'بدون دور';
+            $user->status_display = $user->is_active ? 'نشط' : 'غير نشط';
+            return $user;
+        });
+    @endphp
+    <x-data-table :rows="$rows" :columns="$columns" />
 
     <!-- مودال الإضافة / التعديل -->
     @if($showAddModal || $showEditModal)

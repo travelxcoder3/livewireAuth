@@ -12,59 +12,11 @@
     @endcan
 
     <!-- جدول التسلسلات -->
-    <div class="overflow-x-auto bg-white rounded-xl shadow-lg border border-gray-200">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        اسم التسلسل
-                    </th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        نوع الإجراء
-                    </th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        الإجراءات
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @forelse ($sequences as $sequence)
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 text-right">
-                            {{ $sequence->name }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right">
-                            {{ $sequence->action_type }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                            <div class="inline-flex gap-12 rtl:gap-12">
-                                <button wire:click="viewSequence({{ $sequence->id }})"
-                                    class="text-[rgb(var(--primary-600))] border border-[rgb(var(--primary-600))] hover:bg-[rgba(var(--primary-100),0.5)] px-4 py-1 rounded-md text-xs font-medium transition">
-                                    عرض التسلسل
-                                </button>
-
-                                @can('sequences.edit')
-                                <button wire:click="editSequence({{ $sequence->id }})"
-                                    class="text-amber-600 border border-amber-600 hover:bg-amber-50 px-4 py-1 rounded-md text-xs font-medium transition">
-                                    تعديل
-                                </button>
-                                @endcan
-                            </div>
-                        </td>
-
-
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3"
-                            class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 font-semibold">
-                            لا توجد تسلسلات حالياً
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+    @php
+        use App\Tables\ApprovalSequenceTable;
+        $columns = ApprovalSequenceTable::columns();
+    @endphp
+    <x-data-table :rows="$sequences" :columns="$columns" />
 
     <!-- مودال العرض -->
     <div x-show="openViewModal" x-cloak x-transition

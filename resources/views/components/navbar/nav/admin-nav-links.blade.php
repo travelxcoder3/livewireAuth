@@ -9,7 +9,7 @@
 
 <div class="flex items-center gap-1 sm:gap-2 h-full">
     @foreach($navLinks as $link)
-        <x-icon-button
+        <x-navbar.buttons.icon-button
             :href="route($link['route'])"
             :label="$link['label']"
             class="nav-item flex items-center px-2 py-1 rounded-full {{ request()->routeIs($link['route'] . '*') ? 'active' : '' }}"
@@ -17,6 +17,6 @@
             <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="{{ $link['icon'] }}"/>
             </svg>
-        </x-icon-button>
+        </x-navbar.buttons.icon-button>
     @endforeach
 </div> 
