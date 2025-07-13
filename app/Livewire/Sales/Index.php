@@ -19,7 +19,7 @@ class Index extends Component
     public $beneficiary_name, $sale_date, $service_item_id, $provider_id,
     $intermediary_id, $usd_buy, $usd_sell, $commission, $route, $pnr, $reference,
     $status, $amount_paid, $depositor_name, $account_id, $customer_id, $sale_profit = 0,
-    $payment_method, $payment_type, $receipt_number, $phone_number;
+    $payment_method, $payment_type, $receipt_number, $phone_number ,$service_type_id;
 
 
     public $editingSale = null;
@@ -54,7 +54,7 @@ class Index extends Component
         return [
             'beneficiary_name' => 'nullable|string|max:255',
             'sale_date' => 'required|date',
-            'service_item_id' => 'required|exists:dynamic_list_items,id',
+            'service_type_id' => 'required|exists:dynamic_list_items,id',
             'provider_id' => 'nullable|exists:providers,id',
             'intermediary_id' => 'nullable|exists:intermediaries,id',
             'usd_buy' => 'nullable|numeric',
@@ -84,7 +84,7 @@ class Index extends Component
         Sale::create([
             'beneficiary_name' => $this->beneficiary_name,
             'sale_date' => $this->sale_date,
-            'service_item_id' => $this->service_item_id,
+            'service_type_id' => $this->service_type_id,
             'provider_id' => $this->provider_id,
             'intermediary_id' => $this->intermediary_id,
             'usd_buy' => $this->usd_buy,
@@ -118,7 +118,7 @@ class Index extends Component
 
         $this->beneficiary_name = $sale->beneficiary_name;
         $this->sale_date = $sale->sale_date;
-        $this->service_item_id = $sale->service_item_id;
+        $this->service_type_id = $sale->service_type_id;
         $this->provider_id = $sale->provider_id;
         $this->intermediary_id = $sale->intermediary_id;
         $this->usd_buy = $sale->usd_buy;
@@ -145,7 +145,7 @@ class Index extends Component
         $this->reset([
             'beneficiary_name',
             'sale_date',
-            'service_item_id',
+            'service_type_id',
             'provider_id',
             'intermediary_id',
             'usd_buy',

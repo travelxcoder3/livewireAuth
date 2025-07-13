@@ -1,5 +1,5 @@
 @php
-    use App\Tables\SalesTable;
+use App\Tables\SalesTable;
     $columns = SalesTable::columns();
 
     $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
@@ -15,28 +15,30 @@
                 <!-- نوع الخدمة + الحالة -->
                 <div class="lg:col-span-3 grid grid-cols-2 gap-4 items-end">
                     <!-- نوع الخدمة -->
-  <!-- حقل نوع الخدمة -->
-<div class="{{ $containerClass }}">
-    <select wire:model="service_item_id" wire:change="$refresh" class="{{ $fieldClass }}">
-        <option value="">نوع الخدمة</option>
-        @foreach($services as $service)
-            <option value="{{ $service->id }}">{{ $service->label }}</option>
-        @endforeach
-    </select>
-    <label class="{{ $labelClass }}">نوع الخدمة</label>
-    @error('service_item_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-</div>
+                    <x-input-field
+                        wireModel="service_type_id"
+                        label="نوع الخدمة"
+                        placeholder="اختر نوع الخدمة"
+                        :isSelect="true"
+                        :options="$services->pluck('label', 'id')->toArray()"
+                        containerClass="{{ $containerClass }}"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('service_type_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- الحالة -->
-                    <div class="{{ $containerClass }}">
-                        <select wire:model="status" class="{{ $fieldClass }}">
-                            <option value="">الحالة</option>
-                            <option value="paid">مدفوع</option>
-                            <option value="unpaid">غير مدفوع</option>
-                        </select>
-                        <label class="{{ $labelClass }}">الحالة</label>
-                        @error('status') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="status"
+                        label="الحالة"
+                        placeholder="الحالة"
+                        :isSelect="true"
+                        :options="['paid' => 'مدفوع', 'unpaid' => 'غير مدفوع']"
+                        containerClass="{{ $containerClass }}"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('status') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- كارد الإحصائيات -->
@@ -90,148 +92,220 @@
                 <!-- السطر الأول -->
                 <div class="grid grid-cols-12 gap-3">
                     <!-- اسم المستفيد -->
-                    <div class="col-span-3 {{ $containerClass }}">
-                        <input type="text" wire:model="beneficiary_name" class="{{ $fieldClass }}" placeholder="اسم المستفيد" />
-                        <label class="{{ $labelClass }}">اسم المستفيد</label>
-                    </div>
+                    <x-input-field
+                        wireModel="beneficiary_name"
+                        label="اسم المستفيد"
+                        placeholder="ادخل اسم المستفيد"
+                        containerClass="col-span-3 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('beneficiary_name') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- المسار -->
-                    <div class="col-span-3 {{ $containerClass }}">
-                        <input type="text" wire:model="route" class="{{ $fieldClass }}" placeholder="المسار / التفاصيل" />
-                        <label class="{{ $labelClass }}">المسار / التفاصيل</label>
-                    </div>
+                    <x-input-field
+                        wireModel="route"
+                        label="المسار / التفاصيل"
+                        placeholder="المسار / التفاصيل"
+                        containerClass="col-span-3 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('route') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- طريقة الدفع -->
-                    <div class="col-span-3 {{ $containerClass }}">
-                        <select wire:model="payment_method" class="{{ $fieldClass }}">
-                            <option value="">اختر</option>
-                            <option value="كاش">كاش</option>
-                            <option value="حوالة">حوالة</option>
-                        </select>
-                        <label class="{{ $labelClass }}">طريقة الدفع</label>
-                    </div>
+                    <x-select-field
+    label="طريقة الدفع"
+    :options="['cash' => 'كاش', 'transfer' => 'حوالة']"
+    wireModel="payment_method"
+    placeholder="اختر طريقة الدفع"
+    containerClass="col-span-3"
+/>
+
+                    @error('payment_method') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- اسم المودع -->
-                    <div class="col-span-3 {{ $containerClass }}">
-                        <input type="text" wire:model="depositor_name" class="{{ $fieldClass }}" placeholder="اسم المودع" />
-                        <label class="{{ $labelClass }}">اسم المودع</label>
-                    </div>
+                    <x-input-field
+                        wireModel="depositor_name"
+                        label="اسم المودع"
+                        placeholder="اسم المودع"
+                        containerClass="col-span-3 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('depositor_name') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="grid grid-cols-24 gap-3">
                     <!-- الرقم -->
-                    <div class="col-span-2 {{ $containerClass }}">
-                        <input type="text" wire:model="receipt_number" class="{{ $fieldClass }}" placeholder="رقم السند" />
-                        <label class="{{ $labelClass }}">رقم السند</label>
-                        @error('receipt_number') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="receipt_number"
+                        label="رقم السند"
+                        placeholder="رقم السند"
+                        containerClass="col-span-2 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('receipt_number') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- تاريخ البيع -->
-                    <div class="col-span-4 {{ $containerClass }}">
-                        <input type="date" wire:model="sale_date" class="{{ $fieldClass }}" placeholder="تاريخ البيع" />
-                        <label class="{{ $labelClass }}">تاريخ البيع</label>
-                        @error('sale_date') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        type="date"
+                        wireModel="sale_date"
+                        label="تاريخ البيع"
+                        placeholder="تاريخ البيع"
+                        containerClass="col-span-4 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('sale_date') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- PNR -->
-                    <div class="col-span-3 {{ $containerClass }}">
-                        <input type="text" wire:model="pnr" class="{{ $fieldClass }}" placeholder="PNR" />
-                        <label class="{{ $labelClass }}">PNR</label>
-                        @error('pnr') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="pnr"
+                        label="PNR"
+                        placeholder="PNR"
+                        containerClass="col-span-3 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('pnr') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- المرجع -->
-                    <div class="col-span-3 {{ $containerClass }}">
-                        <input type="text" wire:model="reference" class="{{ $fieldClass }}" placeholder="المرجع" />
-                        <label class="{{ $labelClass }}">المرجع</label>
-                        @error('reference') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="reference"
+                        label="المرجع"
+                        placeholder="المرجع"
+                        containerClass="col-span-3 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('reference') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- وسيلة الدفع -->
-                    <div class="col-span-6 {{ $containerClass }}">
-                        <input type="text" wire:model="payment_type" class="{{ $fieldClass }}" placeholder="وسيلة الدفع" />
-                        <label class="{{ $labelClass }}">وسيلة الدفع</label>
-                        @error('payment_type') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="payment_type"
+                        label="وسيلة الدفع"
+                        placeholder="وسيلة الدفع"
+                        containerClass="col-span-6 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('payment_type') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- رقم الهاتف -->
-                    <div class="col-span-6 {{ $containerClass }}">
-                        <input type="text" wire:model="phone_number" class="{{ $fieldClass }}" placeholder="رقم الهاتف" />
-                        <label class="{{ $labelClass }}">رقم الهاتف</label>
-                        @error('phone_number') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="phone_number"
+                        label="رقم الهاتف"
+                        placeholder="رقم الهاتف"
+                        containerClass="col-span-6 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('phone_number') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- الصف الثالث -->
                 <div class="grid md:grid-cols-4 gap-3">
-                    <div class="{{ $containerClass }}">
-                        <select wire:model="intermediary_id" class="{{ $fieldClass }}">
-                            <option value="">العميل عبر</option>
-                            @foreach($intermediaries as $i)
-                                <option value="{{ $i->id }}">{{ $i->name }}</option>
-                            @endforeach
-                        </select>
-                        <label class="{{ $labelClass }}">العميل عبر</label>
-                        @error('intermediary_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
-<!-- حقل المزود -->
-<div class="{{ $containerClass }}">
-    <select wire:model="provider_id" class="{{ $fieldClass }}">
-        <option value="">اختر المزود</option>
-        @foreach($providers as $provider)
-            <option value="{{ $provider->id }}">{{ $provider->name }}</option>
-        @endforeach
-    </select>
-    <label class="{{ $labelClass }}">المزود</label>
-    @error('provider_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-</div>
+                    <!-- العميل عبر -->
+                    <x-input-field
+                        wireModel="intermediary_id"
+                        label="العميل عبر"
+                        placeholder="العميل عبر"
+                        :isSelect="true"
+                        :options="$intermediaries->pluck('name', 'id')->toArray()"
+                        containerClass="{{ $containerClass }}"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('intermediary_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
+                    <!-- المزود -->
+                    <x-input-field
+                        wireModel="provider_id"
+                        label="المزود"
+                        placeholder="اختر المزود"
+                        :isSelect="true"
+                        :options="$providers->pluck('name', 'id')->toArray()"
+                        containerClass="{{ $containerClass }}"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('provider_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
-                    <div class="{{ $containerClass }}">
-                        <select wire:model="customer_id" class="{{ $fieldClass }}">
-                            <option value="">العميل</option>
-                            @foreach($customers as $customer)
-                                <option value="{{ $customer->id }}">{{ $customer->name }}</option>
-                            @endforeach
-                        </select>
-                        <label class="{{ $labelClass }}">العميل</label>
-                        @error('customer_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <!-- العميل -->
+                    <x-input-field
+                        wireModel="customer_id"
+                        label="العميل"
+                        placeholder="العميل"
+                        :isSelect="true"
+                        :options="$customers->pluck('name', 'id')->toArray()"
+                        containerClass="{{ $containerClass }}"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('customer_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
-                    <div class="{{ $containerClass }}">
-                        <select wire:model="account_id" class="{{ $fieldClass }}">
-                            <option value="">الحساب</option>
-                            @foreach($accounts as $account)
-                                <option value="{{ $account->id }}">{{ $account->name }}</option>
-                            @endforeach
-                        </select>
-                        <label class="{{ $labelClass }}">الحساب</label>
-                        @error('account_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <!-- الحساب -->
+                    <x-input-field
+                        wireModel="account_id"
+                        label="الحساب"
+                        placeholder="الحساب"
+                        :isSelect="true"
+                        :options="$accounts->pluck('name', 'id')->toArray()"
+                        containerClass="{{ $containerClass }}"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
+                    @error('account_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- الصف الرابع -->
                 <div class="grid grid-cols-12 gap-3 items-end">
+                    
                     <!-- USD Buy -->
-                    <div class="col-span-1 {{ $containerClass }}">
-                        <input type="number" wire:model="usd_buy" wire:change="calculateProfit" step="0.01" class="{{ $fieldClass }} text-sm py-1 px-2" placeholder="USD Buy" />
-                        <label class="{{ $labelClass }}">USD Buy</label>
-                        @error('usd_buy') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="usd_buy"
+                        label="USD Buy"
+                        type="number"
+                        placeholder="USD Buy"
+                        containerClass="col-span-1 relative"
+                        fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
+                        labelClass="{{ $labelClass }}"
+                        height="h-9"
+                         wireChange="calculateProfit"
+                        step="0.01"
+                    />
+                    @error('usd_buy') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- USD Sell -->
-                    <div class="col-span-1 {{ $containerClass }}">
-                        <input type="number" wire:model="usd_sell" wire:change="calculateProfit" step="0.01" class="{{ $fieldClass }} text-sm py-1 px-2" placeholder="USD Sell" />
-                        <label class="{{ $labelClass }}">USD Sell</label>
-                        @error('usd_sell') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="usd_sell"
+                        label="USD Sell"
+                        type="number"
+                        placeholder="USD Sell"
+                        containerClass="col-span-1 relative"
+                        fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
+                        labelClass="{{ $labelClass }}"
+                        height="h-9"
+                        wireChange="calculateProfit"
+                        step="0.01"
+                    />
+                    @error('usd_sell') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- العمولة -->
-                    <div class="col-span-1 {{ $containerClass }}">
-                        <input type="number" wire:model="commission" step="0.01" class="{{ $fieldClass }} text-sm py-1 px-2" placeholder="العمولة" />
-                        <label class="{{ $labelClass }}">العمولة</label>
-                        @error('commission') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        wireModel="commission"
+                        label="العمولة"
+                        type="number"
+                        placeholder="العمولة"
+                        containerClass="col-span-1 relative"
+                        fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
+                        labelClass="{{ $labelClass }}"
+                        height="h-9"
+                        step="0.01"
+                    />
+                    @error('commission') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- الربح + المبلغ المدفوع + المتبقي -->
                     <div class="col-span-4 flex items-end gap-4">
@@ -242,12 +316,19 @@
                         </div>
 
                         <!-- المبلغ المدفوع -->
-                        <div class="relative w-full max-w-xs">
-                            <input type="number" wire:model="amount_paid" wire:change="calculateDue"
-                                class="{{ $fieldClass }} text-sm py-1 px-2" step="0.01" placeholder="المبلغ المدفوع" />
-                            <label class="{{ $labelClass }}">المبلغ المدفوع</label>
-                            @error('amount_paid') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                        </div>
+                        <x-input-field
+                            wireModel="amount_paid"
+                            label="المبلغ المدفوع"
+                            type="number"
+                            placeholder="المبلغ المدفوع"
+                            containerClass="relative w-full max-w-xs"
+                            fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
+                            labelClass="{{ $labelClass }}"
+                            height="h-9"
+                            wireChange="calculateDue"
+                            step="0.01"
+                        />
+                        @error('amount_paid') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                         <!-- المتبقي -->
                         <div class="text-xs font-semibold text-[rgb(var(--primary-600))]">
@@ -276,6 +357,8 @@
             </form>
         </div>
         @endcan
+
+    
 
         <!-- نافذة اختيار نوع التقرير -->
         <div id="reportModal" class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center hidden backdrop-blur-sm">
@@ -384,6 +467,7 @@
         <!-- جدول المبيعات -->
         <x-data-table :rows="$sales" :columns="$columns" />
 
+
         <!-- رسائل النظام -->
         @if(session()->has('message'))
             <div x-data="{ show: true }"
@@ -397,43 +481,48 @@
         @endif
 
         <style>
-            .peer:placeholder-shown + label {
-                top: 0.75rem;
-                font-size: 0.875rem;
-                color: #6b7280;
-            }
-            
-            .peer:not(:placeholder-shown) + label,
-            .peer:focus + label {
-                top: -0.5rem;
-                font-size: 0.75rem;
-                color: rgb(var(--primary-600));
-            }
+    /* إعدادات الخيار الأساسي */
+    /* حاوية الـ select المخصصة */
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
 
-            select:required:invalid {
-                color: #6b7280;
-            }
-            
-            select option {
-                color: #111827;
-            }
+.select-wrapper select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: white;
+    padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    width: 100%;
+    font-size: 0.875rem;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.2s ease-in-out;
+}
 
-            @media (max-width: 768px) {
-                .flex-col.md\:flex-row > .md\:w-1\/2 {
-                    width: 100% !important;
-                }
-            }
+.select-wrapper select:hover {
+    border-color: rgb(var(--primary-500));
+    box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.15);
+}
 
-            /* تأثير hover للأزرار */
-            button[style*="linear-gradient(to right, rgb(var(--primary-500))"]:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(var(--primary-500), 0.2);
-            }
+/* السهم المخصص */
+.select-wrapper::after {
+    content: '▾';
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: rgb(var(--primary-500));
+    font-size: 0.75rem;
+}
 
-            button[style*="linear-gradient(to right, rgb(var(--primary-500))"]:active {
-                transform: translateY(0);
-            }
-        </style>
+</style>
+
     </div>
 </div>
 

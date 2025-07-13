@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->foreignId('agency_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('customer_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('service_type_id')->constrained()->onDelete('restrict');
+            $table->foreignId('service_type_id')->constrained('dynamic_list_items')->onDelete('restrict');
             $table->foreignId('provider_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('intermediary_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('account_id')->nullable()->constrained()->onDelete('set null');

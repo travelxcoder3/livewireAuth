@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\View\Components;
 
-use Livewire\Component;
+use Illuminate\View\Component;
 
 class InputField extends Component
 {
@@ -14,10 +14,10 @@ class InputField extends Component
     public $fieldClass;
     public $labelClass;
     public $options = [];
-    public $isSelect = false; // أضف هذا السطر
+    public $isSelect = false;
 
     public function render()
     {
-        return view('livewire.input-field');
+        return view('components.input-field');
     }
 }
