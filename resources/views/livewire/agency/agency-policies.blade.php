@@ -53,7 +53,7 @@
 
     <!-- النافذة المنبثقة لإضافة / تعديل سياسة -->
     @if($showModal)
-        <div class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center backdrop-blur-sm">
+        <div class="fixed inset-0 z-50 bg-black/10 flex items-start justify-center pt-24 backdrop-blur-sm">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
                 <button wire:click="$set('showModal', false)"
                         class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">

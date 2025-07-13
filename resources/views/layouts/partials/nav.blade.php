@@ -248,8 +248,8 @@
                 <span class="nav-text text-xs text-white whitespace-nowrap mr-2">الحسابات</span>
             </a>
             <div class="dropdown-accounts absolute right-0 top-full mt-2 min-w-[200px] bg-[rgb(var(--primary-100))] rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('financial-reports.view'))
-                <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('accounts.view'))
+                <a href="{{ route('agency.accounts') }}"" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center gap-2">
                     <i class="fas fa-file-invoice-dollar"></i>
                     التقارير المالية
                 </a>

@@ -149,6 +149,7 @@ class EmployeeIndex extends Component
         $user->branch = $this->branch;
         $user->user_name = $this->user_name;
         $user->password = bcrypt($this->password);
+        $user->is_active = false;
         $user->agency_id = Auth::user()->agency_id;
         $user->save();
 
