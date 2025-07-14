@@ -112,7 +112,39 @@ class ThemeService
     public static function getCurrentThemeColors($themeName)
     {
         $colors = self::getThemeColors();
+        // If HEX color, generate palette
+        if (preg_match('/^#?([A-Fa-f0-9]{6})$/', $themeName, $matches)) {
+            $hex = ltrim($themeName, '#');
+            $rgb = self::hexToRgb($hex);
+            return [
+                'primary-100' => self::adjustBrightness($rgb, 40), // lighter
+                'primary-500' => implode(', ', $rgb), // base
+                'primary-600' => self::adjustBrightness($rgb, -30), // darker
+            ];
+        }
         return $colors[$themeName] ?? $colors['emerald'];
+    }
+
+    // Convert HEX to RGB array
+    public static function hexToRgb($hex)
+    {
+        $hex = ltrim($hex, '#');
+        return [
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2)),
+        ];
+    }
+
+    // Adjust brightness: positive for lighter, negative for darker
+    public static function adjustBrightness($rgb, $steps)
+    {
+        $out = array_map(function($c) use ($steps) {
+            $v = $c + $steps;
+            $v = max(0, min(255, $v));
+            return $v;
+        }, $rgb);
+        return implode(', ', $out);
     }
 
 
@@ -120,8 +152,12 @@ public static function getSystemTheme()
 {
     try {
         $setting = SystemSetting::first();
-        if ($setting && in_array($setting->theme_color, self::getAvailableThemes())) {
-            return $setting->theme_color;
+        if ($setting) {
+            $theme = $setting->theme_color;
+            // Accept both HEX and theme names
+            if (in_array($theme, self::getAvailableThemes()) || preg_match('/^#?([A-Fa-f0-9]{6})$/', $theme)) {
+                return $theme;
+            }
         }
         return 'emerald'; // القيمة الافتراضية
     } catch (\Exception $e) {

@@ -23,7 +23,38 @@ $themes = ThemeService::getThemeColors();
                             style="background-color: rgb({{ $theme['primary-500'] }})"></button>
                 @endif
             @endforeach
+            <!-- HEX color picker -->
+            <div class="col-span-3 flex items-center gap-2 mt-2">
+                <input type="color" id="customHexColor" class="h-8 w-8 rounded-full border cursor-pointer" style="padding:0;" onchange="handleHexColorChange(this.value)" />
+                <input type="text" id="customHexInput" maxlength="7" placeholder="#1abc9c" class="border rounded px-2 py-1 text-xs w-20" onchange="handleHexColorChange(this.value)" />
+                <button onclick="submitHexColor()"
+                        class="ml-2 px-2 py-1 rounded text-white text-xs transition duration-200 shadow"
+                        style="background: rgb(var(--primary-500));">
+                    تطبيق
+                </button>
+            </div>
         </div>
+        <script>
+        function handleHexColorChange(val) {
+            let hex = val.trim();
+            if(hex[0] !== '#') hex = '#' + hex;
+            document.getElementById('customHexColor').value = hex;
+            document.getElementById('customHexInput').value = hex;
+        }
+        function submitHexColor() {
+            let hex = document.getElementById('customHexInput').value.trim();
+            if(hex[0] !== '#') hex = '#' + hex;
+            if(/^#([A-Fa-f0-9]{6})$/.test(hex)) {
+                @if(Auth::user()->hasRole('super-admin'))
+                    updateSystemTheme(hex);
+                @else
+                    updateTheme(hex);
+                @endif
+            } else {
+                alert('يرجى إدخال كود لون HEX صالح مثل #1abc9c');
+            }
+        }
+        </script>
     </div>
 </div>
 @endif

@@ -1,3 +1,8 @@
+@php
+    $user = Auth::user();
+    $displayName = $name ?? ($user ? $user->name : 'User Name');
+    $displayRole = $role ?? ($user ? $user->getRoleNames()->first() : 'الدور غير محدد');
+@endphp
 <div class="relative group-user-dropdown" tabindex="0">
     <button
         class="flex items-center justify-center h-10 w-10 rounded-full border-2 border-theme bg-white/10 focus:outline-none focus:ring-2 focus-ring-theme">
@@ -9,8 +14,8 @@
     </button>
     <div class="user-dropdown-menu left-0 right-auto mt-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-100" style="min-width: 180px;">
         <div class="px-4 py-3 border-b border-gray-100">
-            <div class="font-bold text-gray-800 text-base">{{ $name ?? 'User Name' }}</div>
-            <div class="text-xs text-gray-500 mt-1">{{ $role ?? 'الدور غير محدد' }}</div>
+            <div class="font-bold text-gray-800 text-base">{{ $displayName }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ $displayRole ?? 'الدور غير محدد' }}</div>
         </div>
         <form method="POST" action="{{ $logoutRoute ?? route('logout') }}" class="m-0 p-0">
             @csrf

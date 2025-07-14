@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Sale;
 use App\Models\ServiceType;
 use App\Models\Provider;
-
+use App\Models\DynamicListItem;
 class Accounts extends Component
 {
     use WithPagination;
@@ -60,7 +60,16 @@ class Accounts extends Component
     public function mount()
     {
         $this->currency = auth()->user()->agency->currency ?? 'USD';
-        $this->serviceTypes = ServiceType::where('agency_id', auth()->user()->agency_id)->get();
+  
+
+        $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
+            $q->where('name', 'قائمة الخدمات')
+            ->where(function ($query) {
+                $query->whereNull('agency_id') // القوائم النظامية
+                        ->orWhere('agency_id', auth()->user()->agency_id); // أو قوائم الوكالة
+            });
+        })->orderBy('order')->get();
+
         $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
     }
 

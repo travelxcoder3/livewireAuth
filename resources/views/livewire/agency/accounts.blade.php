@@ -31,67 +31,87 @@ $containerClass = 'relative mt-1';
     <!-- فلاتر البحث -->
     <div class="bg-white rounded-xl shadow-md p-4">
         <div class="grid md:grid-cols-4 gap-4">
-            <div class="{{ $containerClass }}">
-            <input type="text" wire:model.live.debounce.500ms="search" class="{{ $fieldClass }}" placeholder="ابحث في جميع الحقول...">
-                <label class="{{ $labelClass }}">بحث عام</label>
-            </div>
+           <x-input-field
+                name="search"
+                label="بحث عام"
+                wireModel="search"
+                placeholder="ابحث في جميع الحقول..."
+                containerClass="relative"
+                fieldClass="{{ $fieldClass }}"
+            />
 
             <!-- نوع الخدمة -->
-<div class="{{ $containerClass }}">
-    <select wire:model.live="serviceTypeFilter" class="{{ $fieldClass }}">
-        <option value="">جميع أنواع الخدمات</option>
-        @foreach($serviceTypes as $type)
-            <option value="{{ $type->id }}">{{ $type->name }}</option>
-        @endforeach
-    </select>
-    <label class="{{ $labelClass }}">نوع الخدمة</label>
-</div>
+            <x-select-field
+                label="نوع الخدمة"
+                name="service_type"
+                wireModel="serviceTypeFilter"
+                :options="$serviceTypes->pluck('label', 'id')->toArray()"
+                placeholder="جميع أنواع الخدمات"
+                containerClass="relative"
+            />
 
 <!-- المزود -->
-<div class="{{ $containerClass }}">
-    <select wire:model.live="providerFilter" class="{{ $fieldClass }}">
-        <option value="">جميع المزودين</option>
-        @foreach($providers as $provider)
-            <option value="{{ $provider->id }}">{{ $provider->name }}</option>
-        @endforeach
-    </select>
-    <label class="{{ $labelClass }}">المزود</label>
-</div>
+            <x-select-field
+                label="المزود"
+                name="provider"
+                wireModel="providerFilter"
+                :options="$providers->pluck('name', 'id')->toArray()"
+                placeholder="جميع المزودين"
+                containerClass="relative"
+            />
+
+
 
 <!-- الحساب -->
-<div class="{{ $containerClass }}">
-    <select wire:model.live="accountFilter" class="{{ $fieldClass }}">
-        <option value="">جميع الحسابات</option>
-        @foreach($accounts as $account)
-            <option value="{{ $account->id }}">{{ $account->name }}</option>
-        @endforeach
-    </select>
-    <label class="{{ $labelClass }}">الحساب</label>
-</div>
+            <x-select-field
+                label="الحساب"
+                name="account"
+                wireModel="accountFilter"
+                :options="$accounts->pluck('name', 'id')->toArray()"
+                placeholder="جميع الحسابات"
+                containerClass="relative"
+            />
+
 
 <!-- من تاريخ -->
-<div class="{{ $containerClass }}">
-    <input type="date" wire:model.live="startDate" class="{{ $fieldClass }}" placeholder="من تاريخ">
-    <label class="{{ $labelClass }}">من تاريخ</label>
-</div>
+            <x-input-field
+                name="start_date"
+                label="من تاريخ"
+                wireModel="startDate"
+                type="date"
+                containerClass="relative"
+                fieldClass="{{ $fieldClass }}"
+            />
 
 <!-- إلى تاريخ -->
-<div class="{{ $containerClass }}">
-    <input type="date" wire:model.live="endDate" class="{{ $fieldClass }}" placeholder="إلى تاريخ">
-    <label class="{{ $labelClass }}">إلى تاريخ</label>
-</div>
+            <x-input-field
+                name="end_date"
+                label="إلى تاريخ"
+                wireModel="endDate"
+                type="date"
+                containerClass="relative"
+                fieldClass="{{ $fieldClass }}"
+            />
 
 <!-- PNR -->
-<div class="{{ $containerClass }}">
-    <input type="text" wire:model.live.debounce.500ms="pnrFilter" class="{{ $fieldClass }}" placeholder="بحث بـ PNR">
-    <label class="{{ $labelClass }}">PNR</label>
-</div>
+            <x-input-field
+                name="pnr"
+                label="PNR"
+                wireModel="pnrFilter"
+                placeholder="بحث بـ PNR"
+                containerClass="relative"
+                fieldClass="{{ $fieldClass }}"
+            />
 
 <!-- المرجع -->
-<div class="{{ $containerClass }}">
-    <input type="text" wire:model.live.debounce.500ms="referenceFilter" class="{{ $fieldClass }}" placeholder="بحث بالمرجع">
-    <label class="{{ $labelClass }}">المرجع</label>
-</div>
+            <x-input-field
+                name="reference"
+                label="المرجع"
+                wireModel="referenceFilter"
+                placeholder="بحث بالمرجع"
+                containerClass="relative"
+                fieldClass="{{ $fieldClass }}"
+            />
         </div>
 
 <div class="flex flex-col md:flex-row justify-end items-center gap-2 mt-3">
@@ -148,7 +168,7 @@ $containerClass = 'relative mt-1';
 @endphp
 <x-data-table :rows="$sales" :columns="$columns" />
 
-        <!-- Pagination -->
+    <!-- Pagination -->
         @if($sales->hasPages())
             <div class="px-4 py-2 border-t border-gray-200">
                 {{ $sales->links() }}

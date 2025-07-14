@@ -20,14 +20,15 @@
         $finalFieldClass = "$width $height $fieldClass";
     @endphp
 
-        <input type="{{ $type }}"
-               wire:model="{{ $wireModel }}"
-               @if($wireChange) wire:change="{{ $wireChange }}" @endif
-               @if($wireInput) wire:input="{{ $wireInput }}" @endif
-               name="{{ $name }}"
-               id="{{ $name }}"
-               class="{{ $finalFieldClass }}"
-               placeholder="{{ $placeholder ?: ' ' }}" />
+      <input type="{{ $type }}"
+       @if($wireModel) wire:model.live.debounce.500ms="{{ $wireModel }}" @endif
+       @if($wireChange) wire:change="{{ $wireChange }}" @endif
+       @if($wireInput) wire:input="{{ $wireInput }}" @endif
+       name="{{ $name }}"
+       id="{{ $name }}"
+       class="{{ $finalFieldClass }}"
+       placeholder="{{ $placeholder ?: ' ' }}" />
+
    
     <label for="{{ $name }}" class="{{ $labelClass }}">{{ $label }}</label>
 

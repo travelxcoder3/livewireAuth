@@ -45,7 +45,22 @@ class Profile extends Component
             'logo' => 'nullable|image|max:2048',
         ]);
 
-        $this->tempLogoUrl = $this->logo->temporaryUrl();
+        // رفع الشعار مباشرة عند اختياره
+        if ($this->logo) {
+            if ($this->agency->logo && Storage::disk('public')->exists($this->agency->logo)) {
+                Storage::disk('public')->delete($this->agency->logo);
+            }
+
+            $logoPath = $this->logo->store('agencies/logos', 'public');
+            $this->agency->logo = $logoPath;
+            $this->agency->save();
+
+            $this->logoPreview = Storage::url($logoPath) . '?v=' . now()->timestamp;
+            $this->logo = null;
+            $this->tempLogoUrl = null;
+
+            session()->flash('success', 'تم رفع الشعار بنجاح!');
+        }
     }
 
  public function update()

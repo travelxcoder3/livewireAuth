@@ -1,7 +1,7 @@
 @php
     use Illuminate\Support\Str;
-    $name = $name ?? 'Travel X';
-    $logo = $logo ?? null;
+    $name = Auth::user()->agency->name ?? 'Travel X';
+    $logo = Auth::user()->agency->logo ?? null;
     $class = $class ?? '';
     $isUrl = $logo && (Str::startsWith($logo, ['http://', 'https://', '/']));
 @endphp
