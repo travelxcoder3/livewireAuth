@@ -40,8 +40,12 @@
                                                 $url = $action['url'] ?? null;
                                             @endphp
                                             @if($show)
-                                                @if($url)
-                                                    <a href="{{ $url }}" class="font-medium text-xs {{ $class }} flex items-center gap-1">
+                                                @php
+                                                    // استخدم الرابط من row إذا كان موجودًا
+                                                    $actionUrl = $url ?? (isset($action['type']) && isset($row->{$action['type'].'_url'}) ? $row->{$action['type'].'_url'} : null);
+                                                @endphp
+                                                @if($actionUrl)
+                                                    <a href="{{ $actionUrl }}" class="font-medium text-xs {{ $class }} flex items-center gap-1">
                                                         @if($icon)
                                                             <i class="{{ $icon }}"></i>
                                                         @endif
