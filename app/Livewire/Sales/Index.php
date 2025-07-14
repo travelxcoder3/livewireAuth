@@ -16,7 +16,7 @@ class Index extends Component
 {
     use WithPagination;
 
-    public $beneficiary_name, $sale_date, $service_item_id, $provider_id,
+    public $beneficiary_name, $sale_date, $provider_id,
     $intermediary_id, $usd_buy, $usd_sell, $commission, $route, $pnr, $reference,
     $status, $amount_paid, $depositor_name, $account_id, $customer_id, $sale_profit = 0,
     $payment_method, $payment_type, $receipt_number, $phone_number ,$service_type_id;
@@ -172,20 +172,18 @@ class Index extends Component
     {
         $this->resetForm();
     }
-    public function updatedServiceItemId()
-    {
-        $this->provider_id = null; // إعادة تعيين المزود المختار
-    }
-    public function getFilteredProviders()
+  public function updatedServiceTypeId()
 {
-    $query = Provider::query();
+    $this->provider_id = null;
+}
 
-    if ($this->service_item_id) {
-        $query->where('service_item_id', $this->service_item_id);
+    public function getFilteredProviders()
+    {
+        return Provider::when($this->service_type_id, function ($query) {
+            $query->where('service_item_id', $this->service_type_id);
+        })->get();
     }
 
-    return $query->get();
-}
 
 public function render()
 {
@@ -196,13 +194,8 @@ public function render()
     })->get();
     
     // جلب المزودين بناءً على نوع الخدمة المحدد
-    $providers = Provider::query();
-    
-    if ($this->service_item_id) {
-        $providers->where('service_item_id', $this->service_item_id);
-    }
-    
-    $providers = $providers->get();
+   $providers = $this->getFilteredProviders();
+
     
     $intermediaries = Intermediary::all();
     $customers = Customer::all();

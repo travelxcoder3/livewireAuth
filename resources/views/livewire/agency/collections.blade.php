@@ -99,9 +99,9 @@
     <!-- جدول التحصيلات -->
     <x-data-table :rows="$rows" :columns="$columns" />
 
-    @if($sales->hasPages())
-        <div class="px-4 py-2 border-t border-gray-200">
-            {{ $sales->links() }}
-        </div>
-    @endif
+        @if($sales->hasPages())
+            <div class="px-4 py-2 border-t border-gray-200">
+                {{ $sales->links() }}
+            </div>
+        @endif
 </div>

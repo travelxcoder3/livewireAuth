@@ -148,7 +148,7 @@ $containerClass = 'relative mt-1';
 @endphp
 <x-data-table :rows="$sales" :columns="$columns" />
 
-    <!-- Pagination -->
+        <!-- Pagination -->
         @if($sales->hasPages())
             <div class="px-4 py-2 border-t border-gray-200">
                 {{ $sales->links() }}

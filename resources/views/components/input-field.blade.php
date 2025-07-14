@@ -4,7 +4,6 @@
     'placeholder' => '',
     'wireModel' => '',
     'type' => 'text',
-    'isSelect' => false,
     'options' => [],
     'width' => 'w-full',
     'height' => '',
@@ -21,18 +20,6 @@
         $finalFieldClass = "$width $height $fieldClass";
     @endphp
 
-    @if($isSelect)
-        <select wire:model="{{ $wireModel }}" 
-                name="{{ $name }}" 
-                id="{{ $name }}" 
-                class="{{ $finalFieldClass }}"
-                @if($wireChange) wire:change="{{ $wireChange }}" @endif>
-            <option value="">{{ $placeholder }}</option>
-            @foreach($options as $key => $value)
-                <option value="{{ $key }}">{{ $value }}</option>
-            @endforeach
-        </select>
-    @else
         <input type="{{ $type }}"
                wire:model="{{ $wireModel }}"
                @if($wireChange) wire:change="{{ $wireChange }}" @endif
@@ -41,8 +28,7 @@
                id="{{ $name }}"
                class="{{ $finalFieldClass }}"
                placeholder="{{ $placeholder ?: ' ' }}" />
-    @endif
-
+   
     <label for="{{ $name }}" class="{{ $labelClass }}">{{ $label }}</label>
 
     @error($wireModel)

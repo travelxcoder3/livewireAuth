@@ -147,7 +147,6 @@
 
     html, body {
         height: 100%;
-        overflow: hidden;
     }
 
     @media (max-width: 1024px) {

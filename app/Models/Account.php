@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Account;
 use Illuminate\Support\Facades\Auth;
 use Livewire\WithPagination;
 

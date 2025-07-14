@@ -1,10 +1,10 @@
 @php
 use App\Tables\SalesTable;
-    $columns = SalesTable::columns();
+$columns = SalesTable::columns();
 
-    $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
-    $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]';
-    $containerClass = 'relative mt-1';
+$fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
+$labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]';
+$containerClass = 'relative mt-1';
 @endphp
 
 <div>
@@ -15,11 +15,10 @@ use App\Tables\SalesTable;
                 <!-- نوع الخدمة + الحالة -->
                 <div class="lg:col-span-3 grid grid-cols-2 gap-4 items-end">
                     <!-- نوع الخدمة -->
-                    <x-input-field
+                    <x-select-field
                         wireModel="service_type_id"
                         label="نوع الخدمة"
                         placeholder="اختر نوع الخدمة"
-                        :isSelect="true"
                         :options="$services->pluck('label', 'id')->toArray()"
                         containerClass="{{ $containerClass }}"
                         fieldClass="{{ $fieldClass }}"
@@ -28,11 +27,10 @@ use App\Tables\SalesTable;
                     @error('service_type_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- الحالة -->
-                    <x-input-field
+                    <x-select-field
                         wireModel="status"
                         label="الحالة"
                         placeholder="الحالة"
-                        :isSelect="true"
                         :options="['paid' => 'مدفوع', 'unpaid' => 'غير مدفوع']"
                         containerClass="{{ $containerClass }}"
                         fieldClass="{{ $fieldClass }}"
@@ -115,13 +113,14 @@ use App\Tables\SalesTable;
 
                     <!-- طريقة الدفع -->
                     <x-select-field
-    label="طريقة الدفع"
-    :options="['cash' => 'كاش', 'transfer' => 'حوالة']"
-    wireModel="payment_method"
-    placeholder="اختر طريقة الدفع"
-    containerClass="col-span-3"
-/>
-
+                        wireModel="payment_method"
+                        label="طريقة الدفع"
+                        placeholder="اختر طريقة الدفع"
+                        :options="['cash' => 'كاش', 'transfer' => 'حوالة']"
+                        containerClass="col-span-3 relative"
+                        fieldClass="{{ $fieldClass }}"
+                        labelClass="{{ $labelClass }}"
+                    />
                     @error('payment_method') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- اسم المودع -->
@@ -208,11 +207,10 @@ use App\Tables\SalesTable;
                 <!-- الصف الثالث -->
                 <div class="grid md:grid-cols-4 gap-3">
                     <!-- العميل عبر -->
-                    <x-input-field
+                    <x-select-field
                         wireModel="intermediary_id"
                         label="العميل عبر"
                         placeholder="العميل عبر"
-                        :isSelect="true"
                         :options="$intermediaries->pluck('name', 'id')->toArray()"
                         containerClass="{{ $containerClass }}"
                         fieldClass="{{ $fieldClass }}"
@@ -221,11 +219,10 @@ use App\Tables\SalesTable;
                     @error('intermediary_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- المزود -->
-                    <x-input-field
+                    <x-select-field
                         wireModel="provider_id"
                         label="المزود"
                         placeholder="اختر المزود"
-                        :isSelect="true"
                         :options="$providers->pluck('name', 'id')->toArray()"
                         containerClass="{{ $containerClass }}"
                         fieldClass="{{ $fieldClass }}"
@@ -234,11 +231,10 @@ use App\Tables\SalesTable;
                     @error('provider_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- العميل -->
-                    <x-input-field
+                    <x-select-field
                         wireModel="customer_id"
                         label="العميل"
-                        placeholder="العميل"
-                        :isSelect="true"
+                        placeholder="اختر العميل"
                         :options="$customers->pluck('name', 'id')->toArray()"
                         containerClass="{{ $containerClass }}"
                         fieldClass="{{ $fieldClass }}"
@@ -247,11 +243,10 @@ use App\Tables\SalesTable;
                     @error('customer_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- الحساب -->
-                    <x-input-field
+                    <x-select-field
                         wireModel="account_id"
                         label="الحساب"
-                        placeholder="الحساب"
-                        :isSelect="true"
+                        placeholder="اختر الحساب"
                         :options="$accounts->pluck('name', 'id')->toArray()"
                         containerClass="{{ $containerClass }}"
                         fieldClass="{{ $fieldClass }}"
@@ -262,7 +257,6 @@ use App\Tables\SalesTable;
 
                 <!-- الصف الرابع -->
                 <div class="grid grid-cols-12 gap-3 items-end">
-                    
                     <!-- USD Buy -->
                     <x-input-field
                         wireModel="usd_buy"
@@ -273,7 +267,7 @@ use App\Tables\SalesTable;
                         fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
                         labelClass="{{ $labelClass }}"
                         height="h-9"
-                         wireChange="calculateProfit"
+                        wireChange="calculateProfit"
                         step="0.01"
                     />
                     @error('usd_buy') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
@@ -358,8 +352,6 @@ use App\Tables\SalesTable;
         </div>
         @endcan
 
-    
-
         <!-- نافذة اختيار نوع التقرير -->
         <div id="reportModal" class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center hidden backdrop-blur-sm">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
@@ -389,7 +381,6 @@ use App\Tables\SalesTable;
                         تقرير مخصص
                     </button>
 
-                    
                     <button type="button" onclick="closeReportModal()"
                         class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-3 rounded-xl shadow transition 
                             duration-300 text-sm mt-4">
@@ -467,7 +458,6 @@ use App\Tables\SalesTable;
         <!-- جدول المبيعات -->
         <x-data-table :rows="$sales" :columns="$columns" />
 
-
         <!-- رسائل النظام -->
         @if(session()->has('message'))
             <div x-data="{ show: true }"
@@ -479,50 +469,6 @@ use App\Tables\SalesTable;
                 {{ session('message') }}
             </div>
         @endif
-
-        <style>
-    /* إعدادات الخيار الأساسي */
-    /* حاوية الـ select المخصصة */
-.select-wrapper {
-    position: relative;
-    display: inline-block;
-    width: 100%;
-}
-
-.select-wrapper select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-color: white;
-    padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 0.5rem;
-    width: 100%;
-    font-size: 0.875rem;
-    color: #333;
-    cursor: pointer;
-    transition: border-color 0.2s ease-in-out;
-}
-
-.select-wrapper select:hover {
-    border-color: rgb(var(--primary-500));
-    box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.15);
-}
-
-/* السهم المخصص */
-.select-wrapper::after {
-    content: '▾';
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-    color: rgb(var(--primary-500));
-    font-size: 0.75rem;
-}
-
-</style>
-
     </div>
 </div>
 
