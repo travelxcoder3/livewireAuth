@@ -135,7 +135,7 @@
                         </div>
 
                         <!-- البنود الفرعية (تظهر عند توسيع البند الرئيسي) -->
-                        @if(in_array($item->id, $expandedItems))
+                        @if(in_array($item->id, $expandedItems) && !auth()->user()->hasRole('super-admin'))
                             @foreach ($item->subItems as $sub)
                                 <div class="flex justify-between items-center gap-2 pl-8 text-xs">
                                     @if ($editingSubItemId === $sub->id)
@@ -190,6 +190,7 @@
                 @endforeach
 
                 <!-- نموذج إضافة بند رئيسي جديد -->
+                @if(!auth()->user()->hasRole('super-admin'))
                 <div class="flex items-center gap-2 ml-4 mt-2">
                     <input type="text" wire:model.defer="itemLabel.{{ $list->id }}" placeholder="اسم البند"
                         class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary-500 focus:outline-none shadow-sm">
@@ -199,6 +200,7 @@
                         + إضافة بند
                     </button>
                 </div>
+                @endif
                 @error("itemLabel.$list->id")
                     <span class="text-red-500 text-xs ml-8">{{ $message }}</span>
                 @enderror

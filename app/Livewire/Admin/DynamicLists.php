@@ -211,6 +211,9 @@ class DynamicLists extends Component
      */
     public function addItem(int $listId): void
     {
+        if (Auth::user()->hasRole('super-admin')) {
+            throw new AuthorizationException('السوبر أدمن لا يمكنه إضافة البنود الفرعية');
+        }
         $this->validate([
             "itemLabel.$listId" => 'required|string|max:255',
         ], [], [
@@ -248,6 +251,9 @@ class DynamicLists extends Component
      */
     public function updateItem(): void
     {
+        if (Auth::user()->hasRole('super-admin')) {
+            throw new AuthorizationException('السوبر أدمن لا يمكنه تعديل البنود الفرعية');
+        }
         $this->validate([
             'editingItemLabel' => 'required|string|max:255',
         ], [], [
@@ -280,6 +286,9 @@ class DynamicLists extends Component
      */
     public function deleteItem(int $itemId): void
     {
+        if (Auth::user()->hasRole('super-admin')) {
+            throw new AuthorizationException('السوبر أدمن لا يمكنه حذف البنود الفرعية');
+        }
         $item = DynamicListItem::findOrFail($itemId);
 
         if (!$this->canEditItem($item)) {
@@ -299,6 +308,9 @@ class DynamicLists extends Component
      */
     public function addSubItem(int $itemId): void
     {
+        if (Auth::user()->hasRole('super-admin')) {
+            throw new AuthorizationException('السوبر أدمن لا يمكنه إضافة البنود الفرعية');
+        }
         $this->validate([
             "subItemLabel.$itemId" => 'required|string|min:2|max:100',
         ]);
@@ -334,6 +346,9 @@ class DynamicLists extends Component
      */
     public function updateSubItem(): void
     {
+        if (Auth::user()->hasRole('super-admin')) {
+            throw new AuthorizationException('السوبر أدمن لا يمكنه تعديل البنود الفرعية');
+        }
         $this->validate([
             'editingSubItemLabel' => 'required|string|min:2|max:100',
         ]);
@@ -364,6 +379,9 @@ class DynamicLists extends Component
      */
     public function deleteSubItem(int $subItemId): void
     {
+        if (Auth::user()->hasRole('super-admin')) {
+            throw new AuthorizationException('السوبر أدمن لا يمكنه حذف البنود الفرعية');
+        }
         $subItem = DynamicListItemSub::findOrFail($subItemId);
 
         if (!$this->canEditSub($subItem)) {
