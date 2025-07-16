@@ -179,7 +179,8 @@ class Index extends Component
     public function getFilteredProviders()
     {
         return Provider::query()
-            ->where('agency_id', Auth::user()->agency_id) // ✅ فقط المزودين التابعين لنفس الوكالة
+            ->where('agency_id', Auth::user()->agency_id)
+            ->where('status', 'approved') // فقط المزودين المعتمدين
             ->when(
                 $this->service_type_id,
                 fn($q) =>
@@ -191,38 +192,42 @@ class Index extends Component
 
     public function render()
     {
-        $sales = Sale::with(['user', 'provider', 'service', 'customer', 'account'])->latest()->paginate(10);
+        $user = Auth::user();
+        $agency = $user->agency;
+
+        if ($agency->parent_id) {
+            // المستخدم في فرع: يعرض فقط عمليات الفرع
+            $salesQuery = Sale::where('agency_id', $agency->id);
+        } else {
+            // المستخدم في وكالة رئيسية: يعرض عمليات الوكالة وكل الفروع التابعة لها
+            $branchIds = $agency->branches()->pluck('id')->toArray();
+            $allAgencyIds = array_merge([$agency->id], $branchIds);
+            $salesQuery = Sale::whereIn('agency_id', $allAgencyIds);
+        }
+
+        $sales = $salesQuery->with(['user', 'provider', 'service', 'customer', 'account'])->latest()->paginate(10);
 
         $services = \App\Models\DynamicListItem::whereHas('list', function ($query) {
             $query->where('name', 'قائمة الخدمات');
         })->get();
 
-        // جلب المزودين بناءً على نوع الخدمة المحدد
         $providers = $this->getFilteredProviders();
-
-
         $intermediaries = Intermediary::all();
         $customers = Customer::all();
         $accounts = Account::all();
 
-        $salesQuery = Sale::where('agency_id', Auth::user()->agency_id)
-            ->whereDate('sale_date', now()->toDateString());
-
         // إجمالي البيع = مجموع usd_sell
         $this->totalAmount = $salesQuery->sum('usd_sell');
-
         // المبلغ المحصل = amount_paid
         $this->totalReceived = $salesQuery->sum('amount_paid');
-
         // الآجل = إجمالي البيع - المحصل
         $this->totalPending = $this->totalAmount - $this->totalReceived;
-
         // الربح الإجمالي
         $this->totalProfit = $salesQuery->sum('sale_profit');
 
         return view('livewire.sales.index', [
             'sales' => $sales,
-            'services' => $services, // تم تغيير الاسم من serviceTypes إلى services
+            'services' => $services,
             'providers' => $providers,
             'intermediaries' => $intermediaries,
             'customers' => $customers,

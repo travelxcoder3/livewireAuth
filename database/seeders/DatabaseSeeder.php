@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         // $this->call(PermissionSeeder::class); // تم تعطيله لأن الصلاحيات تُنشأ تلقائيًا لكل وكالة
         $this->call(CreatePermissionsForExistingAgenciesSeeder::class);
         $this->call(SystemDynamicListsSeeder::class); // Seeder القوائم
-
+        // $this->call(AgencySeeder::class);
        
     }
 }

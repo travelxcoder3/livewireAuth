@@ -24,12 +24,12 @@ class Agency extends Model
         'status',
         'license_expiry_date',
         'max_users',
-        'main_branch_name',
         'landline', 
         'currency',
         'subscription_start_date',
         'subscription_end_date',
-        'theme_color'
+        'theme_color',
+        'parent_id', // تمت الإضافة هنا
     ];
 
     protected $casts = [
@@ -84,5 +84,31 @@ class Agency extends Model
     public function policies()
     {
         return $this->hasMany(AgencyPolicy::class);
+    }
+
+    /**
+     * Get all branches for this agency (if main agency)
+     */
+    public function branches()
+    {
+        return $this->hasMany(Agency::class, 'parent_id');
+    }
+
+    /**
+     * Get the main agency for this branch (if branch)
+     */
+    public function parent()
+    {
+        return $this->belongsTo(Agency::class, 'parent_id');
+    }
+
+    /**
+     * Get all users for this agency and its branches
+     */
+    public function allUsersWithBranches()
+    {
+        $agencyIds = $this->branches()->pluck('id')->toArray();
+        $agencyIds[] = $this->id;
+        return \App\Models\User::whereIn('agency_id', $agencyIds)->get();
     }
 }

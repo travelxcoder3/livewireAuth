@@ -18,6 +18,7 @@ class AccountTable
             ['key' => 'usd_buy', 'label' => 'سعر الشراء', 'format' => 'money', 'color' => 'primary-500', 'sortable' => true],
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'account.name', 'label' => 'الحساب'],
+            ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
         ];
     }
 } 

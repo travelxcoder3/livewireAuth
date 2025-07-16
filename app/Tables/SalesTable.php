@@ -23,31 +23,21 @@ class SalesTable
             ['key' => 'route', 'label' => 'Route'],
             ['key' => 'status', 'label' => 'الحالة', 'format' => 'status'],
             ['key' => 'user.name', 'label' => 'الموظف'],
+            ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
             [
                 'key' => 'actions',
                 'label' => 'الإجراءات',
                 'actions' => [
-                    [
-                        'type' => 'edit',
-                        'label' => 'تعديل',
-                        'icon' => 'fa fa-edit',
-                        'class' => 'text-blue-600 hover:text-blue-800',
-                        'method' => 'editSale',
-                        'can' => auth()->user()->can('sales.edit')
-                    ],
-                    [
-                        'type' => 'delete',
-                        'label' => 'حذف',
-                        'icon' => 'fa fa-trash',
-                        'class' => 'text-red-600 hover:text-red-800',
-                        'confirm' => true,
-                        'can' => auth()->user()->can('sales.delete')
-                    ],
+                    
+                       
                     [
                         'type' => 'duplicate',
                         'label' => 'تكرار',
                         'icon' => 'fa fa-copy',
-                        'class' => 'text-amber-600 hover:text-amber-800'
+                        'class' => 'text-amber-600 hover:text-amber-800',
+                        'showIf' => function($row) {
+                            return $row->agency_id == auth()->user()->agency_id;
+                        },
                     ]
                 ]
             ]

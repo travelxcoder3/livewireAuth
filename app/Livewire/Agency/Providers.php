@@ -5,6 +5,8 @@ namespace App\Livewire\Agency;
 use Livewire\Component;
 use App\Models\Provider;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\NewProviderApprovalRequest;
+use Illuminate\Support\Facades\Notification;
 
 class Providers extends Component
 {
@@ -44,7 +46,7 @@ class Providers extends Component
 
     public function fetchProviders()
     {
-        $this->providers = \App\Models\Provider::with('service') // ✅ مهم لتحميل اسم الخدمة
+        $this->providers = \App\Models\Provider::with('service')
             ->where('agency_id', Auth::user()->agency_id)
             ->latest()
             ->get();
@@ -75,27 +77,59 @@ class Providers extends Component
     {
         $this->validate();
 
-        if ($this->editMode) {
-            Provider::findOrFail($this->providerId)->update([
+        $user = Auth::user();
+        $agency = $user->agency;
+
+        // Debug: تحقق من نوع الوكالة
+        if ($agency->parent_id) {
+            session()->flash('debug', 'المستخدم في فرع. parent_id=' . $agency->parent_id);
+            // المستخدم في فرع: إضافة المزود بحالة pending + طلب موافقة
+            $provider = Provider::create([
+                'agency_id' => $agency->id,
                 'name' => $this->name,
                 'type' => $this->type,
                 'contact_info' => $this->contact_info,
                 'service_item_id' => $this->service_item_id,
+                'status' => 'pending',
             ]);
-            session()->flash('message', 'تم تحديث المزود بنجاح.');
+
+            // جلب الوكالة الرئيسية
+            $mainAgency = $agency->parent;
+            // جلب تسلسل الموافقات الخاص بإضافة مزودين
+            $approvalSequence = \App\Models\ApprovalSequence::where('agency_id', $mainAgency->id)
+                ->where('action_type', 'add_provider')
+                ->first();
+            if ($approvalSequence) {
+                session()->flash('debug', 'تم العثور على تسلسل موافقات. id=' . $approvalSequence->id);
+                $approvalRequest = \App\Models\ApprovalRequest::create([
+                    'approval_sequence_id' => $approvalSequence->id,
+                    'model_type' => \App\Models\Provider::class,
+                    'model_id' => $provider->id,
+                    'status' => 'pending',
+                    'requested_by' => $user->id,
+                    'agency_id' => $agency->id,
+                ]);
+                session()->flash('debug', 'تم إنشاء طلب الموافقة بنجاح.');
+                // إرسال إشعار لجميع مدراء الوكالة الرئيسية
+                $mainAdmins = $mainAgency->users()->whereHas('roles', function($q){ $q->where('name', 'agency-admin'); })->get();
+                Notification::send($mainAdmins, new NewProviderApprovalRequest($approvalRequest));
+                session()->flash('message', 'تم إرسال طلب إضافة المزود للوكالة الرئيسية للموافقة.');
+            } else {
+                session()->flash('error', 'لا يوجد تسلسل موافقات لإضافة مزودين في الوكالة الرئيسية. يرجى إنشاء تسلسل موافقات أولاً.');
+            }
         } else {
+            session()->flash('debug', 'المستخدم في الوكالة الرئيسية (وليس فرع).');
+            // المستخدم في الوكالة الرئيسية: إضافة المزود مباشرة بحالة approved
             Provider::create([
-                'agency_id' => Auth::user()->agency_id,
+                'agency_id' => $agency->id,
                 'name' => $this->name,
                 'type' => $this->type,
                 'contact_info' => $this->contact_info,
                 'service_item_id' => $this->service_item_id,
+                'status' => 'approved',
             ]);
             session()->flash('message', 'تمت إضافة المزود بنجاح.');
         }
-        
-        
-
         $this->showModal = false;
         $this->fetchProviders();
     }

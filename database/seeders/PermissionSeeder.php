@@ -86,6 +86,9 @@ class PermissionSeeder extends Seeder
         'notifications.view',
         'notifications.send',
         'notifications.delete',
+        // صلاحيات الموافقات
+        'approvals.view',
+        'approvals.manage',
         // إعدادات النظام
         'system.settings.view',
         'system.settings.edit',

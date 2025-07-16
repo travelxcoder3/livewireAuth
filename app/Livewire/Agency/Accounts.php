@@ -173,21 +173,34 @@ class Accounts extends Component
 
  public function render()
 {
-    $accounts = Account::where('agency_id', Auth::user()->agency_id)
+    $user = Auth::user();
+    $agency = $user->agency;
+
+    // جلب الحسابات الخاصة بوكالة المستخدم الحالي فقط (كما هو)
+    $accounts = Account::where('agency_id', $agency->id)
         ->latest()
         ->get();
 
-    $filteredSalesQuery = Sale::with(['serviceType', 'provider', 'account'])
-        ->where('agency_id', Auth::user()->agency_id)
-      ->when($this->search, function ($query) {
-    $searchTerm = '%' . $this->search . '%';
-    $query->where(function ($q) use ($searchTerm) {
-        $q->where('beneficiary_name', 'like', $searchTerm)
-          ->orWhere('reference', 'like', $searchTerm)
-          ->orWhere('pnr', 'like', $searchTerm);
-    });
-})
+    // تحديد الوكالات المطلوبة في العمليات
+    if ($agency->parent_id) {
+        // فرع: يعرض فقط عملياته
+        $agencyIds = [$agency->id];
+    } else {
+        // وكالة رئيسية: يعرض عمليات الوكالة وكل الفروع التابعة لها
+        $branchIds = $agency->branches()->pluck('id')->toArray();
+        $agencyIds = array_merge([$agency->id], $branchIds);
+    }
 
+    $filteredSalesQuery = Sale::with(['serviceType', 'provider', 'account', 'agency'])
+        ->whereIn('agency_id', $agencyIds)
+        ->when($this->search, function ($query) {
+            $searchTerm = '%' . $this->search . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('beneficiary_name', 'like', $searchTerm)
+                  ->orWhere('reference', 'like', $searchTerm)
+                  ->orWhere('pnr', 'like', $searchTerm);
+            });
+        })
         ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
         ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
         ->when($this->accountFilter, fn($q) => $q->where('account_id', $this->accountFilter))

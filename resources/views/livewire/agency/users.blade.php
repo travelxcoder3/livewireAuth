@@ -22,6 +22,7 @@
         $rows = $users->map(function($user) {
             $user->role_display = $user->roles->first()?->name ?? 'بدون دور';
             $user->status_display = $user->is_active ? 'نشط' : 'غير نشط';
+            $user->agency_name = $user->agency->name ?? '-';
             return $user;
         });
     @endphp

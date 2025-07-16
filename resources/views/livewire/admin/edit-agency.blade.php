@@ -13,11 +13,6 @@
                 @error('agency_name') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
             </div>
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-2">اسم الفرع الرئيسي</label>
-                <input type="text" wire:model.defer="main_branch_name" class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-theme focus:border-theme" />
-                @error('main_branch_name') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
-            </div>
-            <div>
                 <label class="block text-sm font-bold text-gray-700 mb-2">البريد الإلكتروني للوكالة</label>
                 <input type="email" wire:model.defer="agency_email" class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-theme focus:border-theme" />
                 @error('agency_email') <span class="text-xs text-red-500">{{ $message }}</span> @enderror

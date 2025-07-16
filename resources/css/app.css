@@ -140,9 +140,9 @@
     display: none;
     position: absolute;
     top: 110%;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
+    left: auto;
+    right: 0;
+    transform: none;
     min-width: 180px;
     background: #fff;
     border-radius: 14px;
@@ -153,8 +153,9 @@
     padding: 0;
     animation: fadeIn 0.2s;
 }
+.group-user-dropdown:hover .user-dropdown-menu,
 .group-user-dropdown:focus-within .user-dropdown-menu {
-    display: block;
+    display: block !important;
 }
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -165,4 +166,46 @@
     border: none;
     outline: none;
     cursor: pointer;
+}
+
+.group:hover .dropdown-sales,
+.dropdown-sales:hover,
+.group:focus-within .dropdown-sales,
+.group:active .dropdown-sales {
+    display: block !important;
+}
+.group:hover .dropdown-settings,
+.dropdown-settings:hover,
+.group:focus-within .dropdown-settings,
+.group:active .dropdown-settings {
+    display: block !important;
+}
+.group:hover .dropdown-users,
+.dropdown-users:hover,
+.group:focus-within .dropdown-users,
+.group:active .dropdown-users {
+    display: block !important;
+}
+.group:hover .dropdown-accounts,
+.dropdown-accounts:hover,
+.group:focus-within .dropdown-accounts,
+.group:active .dropdown-accounts {
+    display: block !important;
+}
+
+.dropdown-link-hover {
+    color: #000 !important;
+    background: #fff !important;
+    transition: background 0.15s, color 0.15s;
+}
+.dropdown-link-hover i {
+    color: #000 !important;
+    transition: color 0.15s;
+}
+.dropdown-link-hover:hover, .dropdown-link-hover:focus {
+    background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%) !important;
+    color: #fff !important;
+}
+.dropdown-link-hover:hover i, .dropdown-link-hover:focus i {
+    color: #fff !important;
 }

@@ -24,6 +24,15 @@
                     {{ $successMessage }}
                 </div>
             @endif
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             @error('general')
                 <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-lg text-center">
                     {{ $message }}
@@ -42,25 +51,26 @@
                         <div class="{{ $containerClass }}">
                             <input type="text" wire:model.defer="agency_name" class="{{ $fieldClass }}" placeholder="اسم الوكالة" />
                             <label class="{{ $labelClass }}">اسم الوكالة</label>
-                            @error('name')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+                            @error('agency_name')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
         {{ $message }}
     </span>
 @enderror
 
                     </div>
                         <div class="{{ $containerClass }}">
-                            <input type="text" wire:model.defer="main_branch_name" class="{{ $fieldClass }}" placeholder="اسم الفرع الرئيسي" />
-                            <label class="{{ $labelClass }}">اسم الفرع الرئيسي</label>
-                        @error('main_branch_name')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
-        {{ $message }}
-    </span>
-@enderror
-
+                            <select wire:model.defer="parent_id" class="{{ $fieldClass }}">
+                                <option value="">وكالة رئيسية (بدون أب)</option>
+                                @foreach($mainAgencies as $mainAgency)
+                                    <option value="{{ $mainAgency->id }}">{{ $mainAgency->name }}</option>
+                                @endforeach
+                            </select>
+                            <label class="{{ $labelClass }}">الوكالة الرئيسية</label>
+                            @error('parent_id') <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
                         <div class="{{ $containerClass }}">
                             <input type="email" wire:model.defer="agency_email" class="{{ $fieldClass }}" placeholder="البريد الإلكتروني للوكالة" />
                             <label class="{{ $labelClass }}">البريد الإلكتروني</label>
-                            @error('email')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+                            @error('agency_email')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
         {{ $message }}
     </span>
 @enderror
@@ -72,7 +82,7 @@
                         <div class="{{ $containerClass }}">
                             <input type="text" wire:model.defer="agency_phone" class="{{ $fieldClass }}" placeholder="رقم الهاتف" />
                             <label class="{{ $labelClass }}">رقم الهاتف</label>
-                            @error('phone')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+                            @error('agency_phone')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
         {{ $message }}
     </span>
 @enderror

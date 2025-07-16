@@ -160,13 +160,6 @@
                         <label class="{{ $labelClass }}">رقم الهاتف</label>
                         @error('phone') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    <!-- الفرع -->
-                    <div class="{{ $containerClass }}">
-                        <input wire:model="branch" type="text" class="{{ $fieldClass }}" placeholder="الفرع" />
-                        <label class="{{ $labelClass }}">الفرع</label>
-                        @error('branch') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
                 </div>
 
                 <!-- اسم المستخدم -->

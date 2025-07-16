@@ -31,6 +31,9 @@
                                         @foreach($col['actions'] as $action)
                                             @php
                                                 $show = $action['can'] ?? true;
+                                                if (isset($action['showIf']) && is_callable($action['showIf'])) {
+                                                    $show = $show && call_user_func($action['showIf'], $row);
+                                                }
                                                 $label = $action['label'] ?? ($action['type'] ?? '');
                                                 $icon = $action['icon'] ?? null;
                                                 // إذا لم يتم تحديد كلاس، استخدم لون الثيم الأساسي

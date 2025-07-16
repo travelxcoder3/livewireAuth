@@ -1,7 +1,7 @@
 @if($href ?? null)
     <a
         href="{{ $href }}"
-        class="flex items-center px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 transition {{ $class ?? '' }} {{ request()->routeIs('agency.dashboard') && $label == 'الرئيسية' ? 'active' : '' }}"
+        class="flex items-center px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 transition focus:outline-none focus:ring-0 focus:border-0 border-0 ring-0 outline-none {{ $class ?? '' }} {{ request()->routeIs('agency.dashboard') && $label == 'الرئيسية' ? 'active' : '' }}"
         @if($tooltip ?? null) title="{{ $tooltip }}" @endif
         {{ $attributes }}
     >
@@ -23,7 +23,7 @@
     </a>
 @else
     <button type="button"
-        class="flex items-center px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 transition {{ $class ?? '' }}"
+        class="flex items-center px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 transition focus:outline-none focus:ring-0 focus:border-0 border-0 ring-0 outline-none {{ $class ?? '' }}"
         @if($tooltip ?? null) title="{{ $tooltip }}" @endif
         {{ $attributes }}>
         <span class="nav-icon">

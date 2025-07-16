@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('branch')->nullable()->after('phone');
+        Schema::table('providers', function (Blueprint $table) {
+            $table->string('status')->default('pending')->after('service_item_id');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('branch');
+        Schema::table('providers', function (Blueprint $table) {
+            $table->dropColumn('status');
         });
     }
-}; 
+};

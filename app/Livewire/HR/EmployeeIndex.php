@@ -28,7 +28,6 @@ class EmployeeIndex extends Component
     public $password = '';
     public $password_confirmation = '';
     public $phone = '';
-    public $branch = '';
     public $user_name = '';
     public $editingEmployee = null;
 
@@ -66,7 +65,7 @@ class EmployeeIndex extends Component
 
     public function createEmployee()
     {
-        $this->reset(['name', 'email', 'password', 'password_confirmation', 'department_id', 'position_id', 'phone', 'branch', 'user_name', 'editingEmployee']);
+        $this->reset(['name', 'email', 'password', 'password_confirmation', 'department_id', 'position_id', 'phone', 'user_name', 'editingEmployee']);
         $this->showForm = true;
     }
 
@@ -85,7 +84,6 @@ class EmployeeIndex extends Component
         $this->department_id = $employee->department_id;
         $this->position_id = $employee->position_id;
         $this->phone = $employee->phone;
-        $this->branch = $employee->branch;
         $this->user_name = $employee->user_name;
         $this->showForm = true;
     }
@@ -104,7 +102,6 @@ class EmployeeIndex extends Component
             'department_id' => 'required|exists:departments,id',
             'position_id' => 'required|exists:positions,id',
             'phone' => 'nullable|string|max:20',
-            'branch' => 'nullable|string|max:255',
             'user_name' => 'nullable|string|max:255',
             'password' => 'nullable|string|min:6|confirmed',
         ]);
@@ -115,7 +112,6 @@ class EmployeeIndex extends Component
         $employee->department_id = $this->department_id;
         $employee->position_id = $this->position_id;
         $employee->phone = $this->phone;
-        $employee->branch = $this->branch;
         $employee->user_name = $this->user_name;
         if ($this->password) {
             $employee->password = bcrypt($this->password);
@@ -135,7 +131,6 @@ class EmployeeIndex extends Component
             'department_id' => 'required|exists:departments,id',
             'position_id' => 'required|exists:positions,id',
             'phone' => 'nullable|string|max:20',
-            'branch' => 'nullable|string|max:255',
             'user_name' => 'nullable|string|max:255',
             'password' => 'required|string|min:6|confirmed',
         ]);
@@ -146,7 +141,6 @@ class EmployeeIndex extends Component
         $user->department_id = $this->department_id;
         $user->position_id = $this->position_id;
         $user->phone = $this->phone;
-        $user->branch = $this->branch;
         $user->user_name = $this->user_name;
         $user->password = bcrypt($this->password);
         $user->is_active = false;
@@ -170,8 +164,18 @@ class EmployeeIndex extends Component
 
     public function render()
     {
+        $agency = Auth::user()->agency;
+        // إذا كان المستخدم في وكالة رئيسية
+        if ($agency && $agency->parent_id === null) {
+            $agencyIds = $agency->branches()->pluck('id')->toArray();
+            $agencyIds[] = $agency->id;
+        } else {
+            // إذا كان في فرع، اعرض فقط موظفي الفرع
+            $agencyIds = [$agency->id];
+        }
+
         $employees = User::with(['department', 'position'])
-            ->where('agency_id', Auth::user()->agency_id)
+            ->whereIn('agency_id', $agencyIds)
             ->when($this->search, function ($query) {
                 $searchTerm = '%' . $this->search . '%';
                 $query->where(function ($q) use ($searchTerm) {

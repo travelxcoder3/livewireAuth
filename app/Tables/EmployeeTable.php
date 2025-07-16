@@ -25,7 +25,10 @@ class EmployeeTable
                         'label' => 'تعديل',
                         'icon' => 'fa fa-edit',
                         'method' => 'editEmployee',
-                        'can' => auth()->user()->can('employees.edit')
+                        'can' => auth()->user()->can('employees.edit'),
+                        'showIf' => function($row) {
+                            return $row->agency_id == auth()->user()->agency_id;
+                        },
                     ]
                 ]
             ]

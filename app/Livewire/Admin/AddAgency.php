@@ -27,8 +27,9 @@ class AddAgency extends Component
     public $license_expiry_date;
     public $description;
     public $currency = 'SAR';
-    public $main_branch_name;
     public $status = 'active';
+    public $parent_id;
+    public $mainAgencies = [];
 
     // ✅ حقول الاشتراك
     public $subscription_start_date;
@@ -59,18 +60,32 @@ class AddAgency extends Component
             'subscription_start_date' => 'required|date|before_or_equal:subscription_end_date',
             'subscription_end_date' => 'required|date|after_or_equal:subscription_start_date',
             'currency' => 'required|string|max:10',
-            'main_branch_name' => 'required|string|max:255',
+            // حذف شرط main_branch_name
             'max_users' => 'required|integer|min:1|max:100',
             'logo' => 'nullable|image|max:2048',
             'admin_name' => 'required|string|max:255',
             'admin_email' => ['required','email','unique:users,email'],
             'admin_password' => 'required|string|min:6',
+            'parent_id' => 'nullable|exists:agencies,id',
         ];
+    }
+
+    public function mount()
+    {
+        $this->mainAgencies = \App\Models\Agency::whereNull('parent_id')->get();
     }
 
     public function save()
     {
         $this->validate();
+
+        // تحويل parent_id إلى integer أو null
+        if ($this->parent_id === "" || $this->parent_id === null) {
+            $this->parent_id = null;
+        } else {
+            $this->parent_id = (int) $this->parent_id;
+        }
+
          $logoPath = null;
         if ($this->logo) {
             $logoPath = $this->logo->store('logos', 'public');
@@ -89,14 +104,12 @@ class AddAgency extends Component
                 'license_expiry_date' => $this->license_expiry_date,
                 'description' => $this->description,
                 'currency' => $this->currency,
-                'main_branch_name' => $this->main_branch_name,
                 'status' => $this->status,
                 'logo' => $logoPath,
                 'max_users' => $this->max_users,
-
-                // ✅ تواريخ الاشتراك
                 'subscription_start_date' => $this->subscription_start_date,
                 'subscription_end_date' => $this->subscription_end_date,
+                'parent_id' => $this->parent_id,
             ]);
 
             // إنشاء الصلاحيات الأساسية للوكالة
@@ -145,7 +158,7 @@ class AddAgency extends Component
             $admin->assignRole($agencyAdminRole);
 
             DB::commit();
-            $this->reset(['agency_name','agency_email','agency_phone', 'landline','agency_address','license_number','commercial_record','tax_number','license_expiry_date','description','currency', 'main_branch_name','subscription_start_date','subscription_end_date','admin_name','admin_email','admin_password']);
+            $this->reset(['agency_name','agency_email','agency_phone', 'landline','agency_address','license_number','commercial_record','tax_number','license_expiry_date','description','currency', 'subscription_start_date','subscription_end_date','admin_name','admin_email','admin_password']);
             $this->successMessage = 'تمت إضافة الوكالة بنجاح مع تعيين أدمن خاص بها.';
         } catch (\Exception $e) {
             DB::rollBack();

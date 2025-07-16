@@ -32,7 +32,7 @@
             :active="request()->routeIs('agency.sales.*') || request()->routeIs('agency.collections') || request()->routeIs('agency.invoices.*')"
             dropdown="true"
         />
-        <div class="dropdown-sales absolute right-0 top-full mt-2 min-w-[200px] bg-[rgb(var(--primary-100))] rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
+        <div class="dropdown-sales absolute right-0 top-full min-w-[200px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block group-focus-within:block transition-opacity duration-200">
             <x-navbar.buttons.dropdown-link
                 :href="route('agency.sales.index')"
                 icon="fas fa-plus-circle"
@@ -75,7 +75,7 @@
             :active="request()->routeIs('agency.profile') || request()->routeIs('agency.dynamic-lists') || request()->routeIs('agency.approval-sequences') || request()->routeIs('agency.policies')"
             dropdown="true"
         />
-        <div class="dropdown-settings absolute right-0 top-full mt-2 min-w-[220px] bg-[rgb(var(--primary-100))] rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
+        <div class="dropdown-settings absolute right-0 top-full min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block group-focus-within:block transition-opacity duration-200">
             <x-navbar.buttons.dropdown-link
                 :href="route('agency.profile')"
                 icon="fas fa-building"
@@ -135,7 +135,7 @@
             :active="request()->routeIs('agency.hr.employees.*') || request()->routeIs('agency.roles') || request()->routeIs('agency.users') || request()->routeIs('agency.permissions')"
             dropdown="true"
         />
-        <div class="dropdown-users absolute right-0 top-full mt-2 min-w-[200px] bg-[rgb(var(--primary-100))] rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
+        <div class="dropdown-users absolute right-0 top-full min-w-[200px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block group-focus-within:block transition-opacity duration-200">
             <x-navbar.buttons.dropdown-link
                 :href="route('agency.hr.employees.index')"
                 icon="fas fa-users"
@@ -167,6 +167,7 @@
     <!-- الحسابات -->
     @php
         $showAccountsDropdown = Auth::user()->hasRole('agency-admin')
+            || Auth::user()->can('accounts.view')
             || Auth::user()->can('financial-reports.view')
             || Auth::user()->can('customers.view')
             || Auth::user()->can('providers.view');
@@ -182,7 +183,7 @@
             :active="request()->routeIs('agency.accounts') || request()->routeIs('agency.customers.add') || request()->routeIs('agency.providers')"
             dropdown="true"
         />
-        <div class="dropdown-accounts absolute right-0 top-full mt-2 min-w-[200px] bg-[rgb(var(--primary-100))] rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
+        <div class="dropdown-accounts absolute right-0 top-full min-w-[200px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block group-focus-within:block transition-opacity duration-200">
             <x-navbar.buttons.dropdown-link
                 :href="route('agency.accounts')"
                 icon="fas fa-file-invoice-dollar"
@@ -215,4 +216,7 @@
             :active="request()->routeIs('agency.policies.view')"
         />
     @endif
+
+    <!-- الموافقات (للادمن الرئيسي فقط) -->
+    {{-- تم حذف زر الموافقات بناءً على طلب المستخدم، الوصول فقط عبر الإشعارات --}}
 </div> 

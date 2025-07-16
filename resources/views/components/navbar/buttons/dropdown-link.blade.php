@@ -1,6 +1,12 @@
+@php
+    use App\Services\ThemeService;
+    $theme = ThemeService::getSystemTheme();
+    $themeColors = ThemeService::getCurrentThemeColors($theme);
+    $primaryColor = $themeColors['primary-500'] ?? '16, 185, 129';
+@endphp
 @if($show ?? true)
     @if($href && $href !== '#')
-        <a href="{{ $href }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+        <a href="{{ $href }}" class="dropdown-link-hover block px-4 py-2 flex items-center gap-2 transition-colors duration-150" style="--dropdown-hover-bg: rgb({{ $primaryColor }});">
             @if(trim($slot))
                 {{ $slot }}
             @else
@@ -8,7 +14,7 @@
             @endif
         </a>
     @else
-        <span class="block px-4 py-2 text-gray-700 flex items-center gap-2 cursor-default hover:bg-gray-100">
+        <span class="dropdown-link-hover block px-4 py-2 flex items-center gap-2 cursor-default transition-colors duration-150" style="--dropdown-hover-bg: rgb({{ $primaryColor }});">
             @if(trim($slot))
                 {{ $slot }}
             @else

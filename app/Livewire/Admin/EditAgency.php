@@ -9,7 +9,6 @@ class EditAgency extends Component
 {
     public $agencyId;
     public $agency_name;
-    public $main_branch_name;
     public $agency_email;
     public $agency_phone;
     public $landline;
@@ -30,7 +29,6 @@ class EditAgency extends Component
     {
         $this->agencyId = $agency->id;
         $this->agency_name = $agency->name;
-        $this->main_branch_name = $agency->main_branch_name;
         $this->agency_email = $agency->email;
         $this->agency_phone = $agency->phone;
         $this->landline = $agency->landline;
@@ -51,7 +49,6 @@ class EditAgency extends Component
     {
         $this->validate([
             'agency_name' => 'required|string|max:255',
-            'main_branch_name' => 'required|string|max:255',
             'agency_email' => 'required|email',
             'agency_phone' => 'required|string|max:30',
             'landline' => 'nullable|string|max:30',
@@ -69,7 +66,6 @@ class EditAgency extends Component
         $agency = Agency::findOrFail($this->agencyId);
         $agency->update([
             'name' => $this->agency_name,
-            'main_branch_name' => $this->main_branch_name,
             'email' => $this->agency_email,
             'phone' => $this->agency_phone,
             'landline' => $this->landline,

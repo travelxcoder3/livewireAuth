@@ -74,7 +74,6 @@
                         <tr>
                             <th class="px-3 py-2 whitespace-nowrap">الشعار</th>
                             <th class="px-3 py-2 whitespace-nowrap text-gray-900">اسم الوكالة</th>
-                            <th class="px-3 py-2 whitespace-nowrap">الفرع الرئيسي</th>
                             <th class="px-3 py-2 whitespace-nowrap">البريد الإلكتروني</th>
                             <th class="px-3 py-2 whitespace-nowrap">الهاتف</th>
                             <th class="px-3 py-2 whitespace-nowrap">العملة</th>
@@ -105,7 +104,6 @@
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 font-medium">{{ $agency->name }}</td>
-                                <td class="px-3 py-2">{{ $agency->main_branch_name }}</td>
                                 <td class="px-3 py-2">{{ $agency->email }}</td>
                                 <td class="px-3 py-2">
                                     <div>{{ $agency->phone }}</div>

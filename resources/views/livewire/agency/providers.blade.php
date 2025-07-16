@@ -7,6 +7,17 @@
     $columns = ProviderTable::columns($user);
 @endphp
 
+{{-- رسائل الجلسة للتصحيح --}}
+@if (session('message'))
+    <div style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 6px; margin-bottom: 10px;">{{ session('message') }}</div>
+@endif
+@if (session('error'))
+    <div style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 6px; margin-bottom: 10px;">{{ session('error') }}</div>
+@endif
+@if (session('debug'))
+    <div style="background: #fef9c3; color: #92400e; padding: 10px; border-radius: 6px; margin-bottom: 10px;">{{ session('debug') }}</div>
+@endif
+
 <div class="space-y-6">
     <!-- العنوان والرسائل -->
     <div class="flex justify-between items-center">

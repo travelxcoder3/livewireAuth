@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('agencies', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // اسم الوكالة
-            $table->string('main_branch_name'); // اسم الفرع الرئيسي
             $table->string('email')->unique(); // البريد الإلكتروني
             $table->string('phone')->nullable(); // رقم الهاتف
             $table->string('landline')->nullable(); // الهاتف الثابت
@@ -34,7 +33,6 @@ return new class extends Migration
             $table->timestamps();
         });
     }
-
     /**
      * Reverse the migrations.
      */

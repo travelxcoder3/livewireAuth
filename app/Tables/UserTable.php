@@ -22,6 +22,13 @@ class UserTable
                 'headerClass' => 'px-2 py-1',
             ],
             [
+                'label' => 'الوكالة/الفرع',
+                'field' => 'agency_name',
+                'key' => 'agency_name',
+                'class' => 'px-2 py-1',
+                'headerClass' => 'px-2 py-1',
+            ],
+            [
                 'label' => 'الدور',
                 'field' => 'role_display',
                 'key' => 'role_display',
@@ -49,7 +56,11 @@ class UserTable
                         'method' => 'editUser',
                         'permission' => 'users.edit',
                         'class' => 'text-xs font-medium',
+                        'showIf' => function($user) {
+                            return $user->agency_id == auth()->user()->agency_id;
+                        },
                     ],
+                    // يمكنك إضافة زر حذف بنفس الشرط إذا كان موجودًا
                 ],
             ],
         ];

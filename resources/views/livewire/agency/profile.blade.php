@@ -46,10 +46,6 @@
                         <label class="{{ $labelClass }}">اسم الوكالة</label>
                     </div>
                     <div class="{{ $containerClass }}">
-                        <div class="{{ $readonlyFieldClass }}">{{ $agency->main_branch_name ?? 'غير محدد' }}</div>
-                        <label class="{{ $labelClass }}">اسم الفرع الرئيسي</label>
-                    </div>
-                    <div class="{{ $containerClass }}">
                         <div class="{{ $readonlyFieldClass }}">{{ $agency->currency ?? 'غير محدد' }}</div>
                         <label class="{{ $labelClass }}">العملة</label>
                     </div>

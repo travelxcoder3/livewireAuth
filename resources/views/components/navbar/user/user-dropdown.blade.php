@@ -12,8 +12,9 @@
             <circle cx="12" cy="8" r="3.2" fill="#fff" />
         </svg>
     </button>
-    <div class="user-dropdown-menu left-0 right-auto mt-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-100" style="min-width: 180px;">
-        <div class="px-4 py-3 border-b border-gray-100">
+    <div class="user-dropdown-menu left-auto right-0 mt-2 bg-white/40 backdrop-blur-sm rounded-xl shadow-lg border border-gray-100"
+    style="min-width: 180px; margin-right: -8rem;">
+            <div class="px-4 py-3 border-b border-gray-100">
             <div class="font-bold text-gray-800 text-base">{{ $displayName }}</div>
             <div class="text-xs text-gray-500 mt-1">{{ $displayRole ?? 'الدور غير محدد' }}</div>
         </div>

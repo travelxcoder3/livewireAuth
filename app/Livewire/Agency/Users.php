@@ -46,10 +46,14 @@ class Users extends Component
 
     public function loadUsers()
     {
-        $this->users = User::where('agency_id', Auth::user()->agency_id)
-            ->where('id', '!=', Auth::user()->id)
-            ->with('roles')
-            ->get();
+        $agency = Auth::user()->agency;
+        if ($agency && $agency->parent_id === null) {
+            // وكالة رئيسية: اعرض جميع المستخدمين في الوكالة وفروعها
+            $this->users = $agency->allUsersWithBranches();
+        } else {
+            // فرع: اعرض فقط مستخدمي الفرع
+            $this->users = $agency->users;
+        }
     }
 
     public function loadRoles()
@@ -81,7 +85,10 @@ class Users extends Component
                 ->where('agency_id', Auth::user()->agency_id)
                 ->first();
             if ($agencyAdminRole) {
-                $allPermissions = \Spatie\Permission\Models\Permission::where('agency_id', Auth::user()->agency_id)->pluck('name')->toArray();
+                $allPermissions = \Spatie\Permission\Models\Permission::where(function($q) {
+                    $q->where('agency_id', Auth::user()->agency_id)
+                      ->orWhereNull('agency_id');
+                })->pluck('name')->toArray();
                 $agencyAdminRole->syncPermissions($allPermissions);
             }
         }
@@ -95,58 +102,65 @@ class Users extends Component
 
     public function editUser($userId)
     {
-        $this->editingUser = User::findOrFail($userId);
-        $this->edit_name = $this->editingUser->name;
-        $this->edit_email = $this->editingUser->email;
-        $this->edit_role = $this->editingUser->roles->first()->name ?? '';
-        $this->edit_is_active = $this->editingUser->is_active;
+        $user = User::findOrFail($userId);
+        if ($user->agency_id != Auth::user()->agency_id) {
+            abort(403, 'غير مصرح لك بتعديل مستخدمي الفروع');
+        }
+        $this->editingUser = $user;
+        $this->edit_name = $user->name;
+        $this->edit_email = $user->email;
+        $this->edit_role = $user->roles->first()->name ?? '';
+        $this->edit_is_active = $user->is_active;
         $this->showEditModal = true;
     }
 
     public function updateUser()
     {
+        $user = $this->editingUser;
+        if ($user->agency_id != Auth::user()->agency_id) {
+            abort(403, 'غير مصرح لك بتحديث مستخدمي الفروع');
+        }
         $this->validate([
             'edit_name' => 'required|string|max:255',
-            'edit_email' => 'required|email|unique:users,email,' . $this->editingUser->id,
+            'edit_email' => 'required|email|unique:users,email,' . $user->id,
             'edit_password' => 'nullable|string|min:6',
             'edit_role' => 'required|exists:roles,name',
             'edit_is_active' => 'boolean',
         ]);
-        
-        $this->editingUser->update([
+        $user->update([
             'name' => $this->edit_name,
             'email' => $this->edit_email,
             'is_active' => $this->edit_is_active,
         ]);
-        
         if ($this->edit_password) {
-            $this->editingUser->update(['password' => Hash::make($this->edit_password)]);
+            $user->update(['password' => Hash::make($this->edit_password)]);
         }
-        
-        $this->editingUser->syncRoles([$this->edit_role]);
-        // تحديث صلاحيات دور أدمن الوكالة إذا كان الدور هو agency-admin
+        $user->syncRoles([$this->edit_role]);
         if ($this->edit_role === 'agency-admin') {
             $agencyAdminRole = Role::where('name', 'agency-admin')
                 ->where('agency_id', Auth::user()->agency_id)
                 ->first();
             if ($agencyAdminRole) {
-                $allPermissions = \Spatie\Permission\Models\Permission::where('agency_id', Auth::user()->agency_id)->pluck('name')->toArray();
+                $allPermissions = \Spatie\Permission\Models\Permission::where(function($q) {
+                    $q->where('agency_id', Auth::user()->agency_id)
+                      ->orWhereNull('agency_id');
+                })->pluck('name')->toArray();
                 $agencyAdminRole->syncPermissions($allPermissions);
             }
         }
-        
         $this->showEditModal = false;
         $this->editingUser = null;
         $this->loadUsers();
-        
         session()->flash('success', 'تم تحديث المستخدم بنجاح');
     }
 
     public function deleteUser($userId)
     {
         $user = User::findOrFail($userId);
+        if ($user->agency_id != Auth::user()->agency_id) {
+            abort(403, 'غير مصرح لك بحذف مستخدمي الفروع');
+        }
         $user->delete();
-        
         $this->loadUsers();
         session()->flash('success', 'تم حذف المستخدم بنجاح');
     }
@@ -154,8 +168,10 @@ class Users extends Component
     public function toggleUserStatus($userId)
     {
         $user = User::findOrFail($userId);
+        if ($user->agency_id != Auth::user()->agency_id) {
+            abort(403, 'غير مصرح لك بتغيير حالة مستخدمي الفروع');
+        }
         $user->update(['is_active' => !$user->is_active]);
-        
         $this->loadUsers();
         session()->flash('success', 'تم تغيير حالة المستخدم بنجاح');
     }

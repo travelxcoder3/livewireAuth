@@ -11,6 +11,7 @@ class ProviderTable
             ['key' => 'name', 'label' => 'اسم المزود', 'class' => 'font-medium'],
             ['key' => 'type', 'label' => 'النوع', 'format' => 'badge'],
             ['key' => 'contact_info', 'label' => 'معلومات التواصل'],
+            ['key' => 'status', 'label' => 'الحالة'],
             [
                 'key' => 'actions',
                 'label' => 'الإجراءات',
