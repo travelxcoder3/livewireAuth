@@ -158,6 +158,7 @@ class AddAgency extends Component
             $admin->assignRole($agencyAdminRole);
 
             DB::commit();
+            $this->mainAgencies = \App\Models\Agency::whereNull('parent_id')->get();
             $this->reset(['agency_name','agency_email','agency_phone', 'landline','agency_address','license_number','commercial_record','tax_number','license_expiry_date','description','currency', 'subscription_start_date','subscription_end_date','admin_name','admin_email','admin_password']);
             $this->successMessage = 'تمت إضافة الوكالة بنجاح مع تعيين أدمن خاص بها.';
         } catch (\Exception $e) {

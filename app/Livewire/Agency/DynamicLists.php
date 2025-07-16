@@ -163,6 +163,36 @@ class DynamicLists extends Component
     }
 
     /**
+     * إضافة بند رئيسي جديد
+     * @param int $listId
+     * @throws AuthorizationException
+     */
+    public function addItem($listId)
+    {
+        $this->validate([
+            "itemLabel.$listId" => 'required|string|max:255',
+        ]);
+
+        $list = DynamicList::findOrFail($listId);
+        $user = Auth::user();
+
+        // التحقق من الصلاحيات
+        if (!$this->canEditList($list)) {
+            throw new AuthorizationException("لا تملك صلاحية التعديل على هذه القائمة.");
+        }
+
+        $order = $list->items()->max('order') + 1;
+
+        $list->items()->create([
+            'label' => $this->itemLabel[$listId],
+            'order' => $order,
+        ]);
+
+        $this->itemLabel[$listId] = '';
+        $this->dispatch('item-added', listId: $listId);
+    }
+
+    /**
      * بدء تعديل البند الفرعي
      * @param int $subItemId
      * @throws AuthorizationException
@@ -171,7 +201,7 @@ class DynamicLists extends Component
     {
         $subItem = DynamicListItemSub::findOrFail($subItemId);
 
-        if (!Auth::user()->canEditList($subItem->item->list)) {
+        if (!$this->canEditList($subItem->item->list)) {
             throw new AuthorizationException("لا تملك صلاحية التعديل.");
         }
 
@@ -191,7 +221,7 @@ class DynamicLists extends Component
 
         $subItem = DynamicListItemSub::findOrFail($this->editingSubItemId);
 
-        if (!Auth::user()->canEditList($subItem->item->list)) {
+        if (!$this->canEditList($subItem->item->list)) {
             throw new AuthorizationException("لا تملك صلاحية التعديل.");
         }
 
@@ -210,7 +240,7 @@ class DynamicLists extends Component
     {
         $subItem = DynamicListItemSub::with('item.list')->findOrFail($subItemId);
 
-        if (!Auth::user()->canEditList($subItem->item->list)) {
+        if (!$this->canEditList($subItem->item->list)) {
             throw new AuthorizationException("لا تملك صلاحية الحذف.");
         }
 
@@ -239,8 +269,8 @@ class DynamicLists extends Component
     }
 
     public function canEditList($list)
-{
-    return auth()->user()->isAgencyAdmin() && $list->agency_id === auth()->user()->agency_id;
-}
+    {
+        return auth()->user()->hasRole('agency-admin') && $list->agency_id === auth()->user()->agency_id;
+    }
 
 }

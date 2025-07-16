@@ -3,10 +3,14 @@
 namespace App\Livewire\Admin;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use App\Models\Agency;
+use Illuminate\Support\Facades\Storage;
 
 class EditAgency extends Component
 {
+    use WithFileUploads;
+
     public $agencyId;
     public $agency_name;
     public $agency_email;
@@ -23,9 +27,11 @@ class EditAgency extends Component
     public $subscription_end_date;
     public $description;
     public $max_users;
-    public $successMessage;
     public $parent_agency_id;
     public $agenciesList = [];
+    public $logo;
+    public $tempLogoUrl;
+    public $logoPreview;
 
     public function mount(Agency $agency)
     {
@@ -46,14 +52,24 @@ class EditAgency extends Component
         $this->description = $agency->description;
         $this->max_users = $agency->max_users ?? 1;
         $this->parent_agency_id = $agency->parent_agency_id;
+        $this->logoPreview = $agency->logo_url ? Storage::url($agency->logo_url) : asset('images/default-agency-logo.png');
         $this->agenciesList = Agency::where('id', '!=', $agency->id)->pluck('name', 'id')->toArray();
+    }
+
+    public function updatedLogo()
+    {
+        $this->validate([
+            'logo' => 'image|max:2048', // 2MB Max
+        ]);
+        
+        $this->tempLogoUrl = $this->logo->temporaryUrl();
     }
 
     public function updateAgency()
     {
         $this->validate([
             'agency_name' => 'required|string|max:255',
-            'agency_email' => 'required|email',
+            'agency_email' => 'required|email|unique:agencies,email,'.$this->agencyId,
             'agency_phone' => 'required|string|max:30',
             'landline' => 'nullable|string|max:30',
             'currency' => 'required|string|max:10',
@@ -67,9 +83,12 @@ class EditAgency extends Component
             'subscription_end_date' => 'required|date|after_or_equal:subscription_start_date',
             'max_users' => 'required|integer|min:1',
             'parent_agency_id' => 'nullable|exists:agencies,id',
+            'logo' => 'nullable|image|max:2048',
         ]);
+
         $agency = Agency::findOrFail($this->agencyId);
-        $agency->update([
+        
+        $updateData = [
             'name' => $this->agency_name,
             'email' => $this->agency_email,
             'phone' => $this->agency_phone,
@@ -86,8 +105,21 @@ class EditAgency extends Component
             'description' => $this->description,
             'max_users' => $this->max_users,
             'parent_agency_id' => $this->parent_agency_id,
-        ]);
-        $this->successMessage = 'تم تحديث بيانات الوكالة بنجاح';
+        ];
+
+        // Handle logo upload
+        if ($this->logo) {
+            // Delete old logo if exists
+            if ($agency->logo_url) {
+                Storage::delete($agency->logo_url);
+            }
+            
+            $logoPath = $this->logo->store('public/agency-logos');
+            $updateData['logo_url'] = str_replace('public/', '', $logoPath);
+        }
+
+        $agency->update($updateData);
+
         return redirect()->route('admin.agencies')->with('message', 'تم تحديث بيانات الوكالة بنجاح');
     }
 
@@ -97,4 +129,4 @@ class EditAgency extends Component
             'agenciesList' => $this->agenciesList,
         ])->layout('layouts.admin');
     }
-} 
+}

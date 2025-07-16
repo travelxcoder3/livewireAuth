@@ -129,7 +129,7 @@ class DynamicLists extends Component
         ]);
 
         $user = Auth::user();
-        $isSuperAdmin = $use->hasRole('super-admin');
+        $isSuperAdmin = $user->hasRole('super-admin');
 
         DynamicList::create([
             'name' => $this->newListName,

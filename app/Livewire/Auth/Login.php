@@ -52,20 +52,27 @@ class Login extends Component
             \Log::info('User roles after login: ' . json_encode($user->getRoleNames()));
             if ($user->hasRole('super-admin')) {
                 return redirect()->to('/admin/dashboard');
+                return false;
             } elseif ($user->hasRole('agency-admin')) {
                 return redirect()->to('/agency/dashboard');
+                return false;
             } elseif ($user->agency_id) {
                 if ($user->can('users.view')) {
                     return redirect()->to('/agency/users');
+                    return false;
                 } elseif ($user->can('roles.view')) {
                     return redirect()->to('/agency/dashboard');
+                    return false;
                 } elseif ($user->can('permissions.view')) {
                     return redirect()->to('/agency/permissions');
+                    return false;
                 } else {
                     return redirect()->to('/agency/dashboard');
+                    return false;
                 }
             } else {
                 return redirect()->to('/');
+                return false;
             }
         } else {
             session()->flash('error', 'بيانات الدخول غير صحيحة');
