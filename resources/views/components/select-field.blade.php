@@ -6,6 +6,7 @@
     'wireModel' => '',
     'placeholder' => 'اختر',
     'containerClass' => 'relative',
+    'errorName' => '',
 ])
 
 <div
@@ -52,5 +53,10 @@
         @endforeach
     </div>
 
+
     <input type="hidden" name="{{ $name }}" :value="selected">
-</div>
+<span class="text-xs block min-h-[0.75rem] leading-tight mt-0.5">
+    @error($errorName ?: $wireModel)
+        <span class="text-red-600">{{ $message }}</span>
+    @enderror
+</span></div>

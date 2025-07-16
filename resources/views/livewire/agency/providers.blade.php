@@ -97,8 +97,8 @@
                     <!-- نوع الخدمة -->
                     <div class="{{ $containerClass }}">
                         <select wire:model.defer="service_item_id" class="{{ $fieldClass }}">
-                            <option value="">اختر نوع الخدمة</option>
-                            @foreach ($services as $service)
+                        <option value="">اسم الخدمة</option>
+                        @foreach ($services as $service)
                                 <option value="{{ $service->id }}">{{ $service->label }}</option>
                             @endforeach
                         </select>

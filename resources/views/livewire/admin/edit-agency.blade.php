@@ -85,6 +85,16 @@
                 <input type="date" wire:model.defer="subscription_end_date" class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-theme focus:border-theme" />
                 @error('subscription_end_date') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
             </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">الوكالة الأب (اختياري)</label>
+                <select wire:model.defer="parent_agency_id" class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-theme focus:border-theme">
+                    <option value="">بدون</option>
+                    @foreach($agenciesList as $id => $name)
+                        <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
+                </select>
+                @error('parent_agency_id') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
+            </div>
         </div>
         <div>
             <label class="block text-sm font-bold text-gray-700 mb-2">وصف الوكالة (اختياري)</label>

@@ -10,8 +10,9 @@ class SyncAgencyAdminPermissionsSeeder extends Seeder
 {
     public function run()
     {
-        $allPermissions = Permission::pluck('name')->toArray();
-        $roles = Role::where('name', 'agency-admin')->get();
+        // جلب كل الصلاحيات كـ Collection وليس فقط الأسماء
+        $allPermissions = \Spatie\Permission\Models\Permission::all();
+        $roles = \Spatie\Permission\Models\Role::where('name', 'agency-admin')->get();
         foreach ($roles as $role) {
             $role->syncPermissions($allPermissions);
         }

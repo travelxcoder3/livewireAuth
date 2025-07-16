@@ -11,7 +11,7 @@ class AddCustomer extends Component
 {
     use WithPagination;
 
-    public $name, $email, $phone, $address;
+    public $name, $email, $phone, $address, $has_commission = false;
 
   
     public function render()
@@ -34,6 +34,7 @@ public function edit($id)
     $this->email = $customer->email;
     $this->phone = $customer->phone;
     $this->address = $customer->address;
+    $this->has_commission = $customer->has_commission;
 }
 
 public function save()
@@ -53,6 +54,7 @@ public function save()
             'email' => $this->email,
             'phone' => $this->phone,
             'address' => $this->address,
+            'has_commission' => $this->has_commission,
         ]);
         session()->flash('success', 'تم تحديث بيانات العميل بنجاح');
     } else {
@@ -63,6 +65,7 @@ public function save()
             'email' => $this->email,
             'phone' => $this->phone,
             'address' => $this->address,
+            'has_commission' => $this->has_commission,
         ]);
         session()->flash('success', 'تم إضافة العميل بنجاح');
     }
@@ -72,7 +75,7 @@ public function save()
 
 public function resetFields()
 {
-    $this->reset(['name', 'email', 'phone', 'address', 'editingId']);
+    $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission']);
 }
 
 }

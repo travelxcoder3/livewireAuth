@@ -1,69 +1,124 @@
 @php
 use App\Tables\SalesTable;
 $columns = SalesTable::columns();
-
-$fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
-$labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]';
-$containerClass = 'relative mt-1';
 @endphp
 
 <div>
     <div>
+        <!-- رسائل النجاح والخطأ -->
+        @if($successMessage)
+            <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-lg text-center">
+                {{ $successMessage }}
+            </div>
+        @endif
+
+        @error('general')
+            <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-lg text-center">
+                {{ $message }}
+            </div>
+        @enderror
+
+           <!-- رسائل النظام -->
+        @if(session()->has('message'))
+            <div x-data="{ show: true }"
+                 x-init="setTimeout(() => show = false, 2000)"
+                 x-show="show"
+                 x-transition
+                 class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm" 
+                 style="background-color: rgb(var(--primary-500));">
+                {{ session('message') }}
+            </div>
+        @endif
+
+   <div class="mb-6 grid grid-cols-12 gap-4 items-center">
+    <!-- العنوان في اليسار -->
+    <div class="col-span-3 flex items-center justify-start">
+        <h1 class="text-2xl font-bold text-[rgb(var(--primary-700))]">إدارة المبيعات</h1>
+    </div>
+
+    <!-- الكروت داخل كارد رئيسي في الوسط -->
+    <div class="col-span-6">
+        <div class="bg-white border shadow rounded-xl px-4 py-2 flex justify-center gap-x-4 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
+            <!-- الربح -->
+            <div class="flex flex-col items-center px-2">
+                <span class="text-[rgb(var(--primary-600))]">الربح</span>
+                <span>{{ number_format($totalProfit, 2) }} {{ $currency }}</span>
+            </div>
+            <!-- العمولة -->
+            <div class="flex flex-col items-center px-2">
+                <span class="text-[rgb(var(--primary-600))]">العمولة</span>
+                <span>{{ number_format($sales->sum('commission'), 2) }} {{ $currency }}</span>
+            </div>
+            <!-- العمولة المستحقة -->
+            <div class="flex flex-col items-center px-2">
+                <span class="text-[rgb(var(--primary-600))]">العمولة المستحقة</span>
+                <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- كارد الإحصائيات المالية في اليمين -->
+    <div class="col-span-3">
+        <div class="bg-white border shadow rounded-xl px-4 py-2 flex justify-center gap-x-4 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
+            <div class="flex flex-col items-center px-2">
+                <span class="text-[rgb(var(--primary-600))]">الإجمالي</span>
+                <span>{{ number_format($totalAmount, 2) }} {{ $currency }}</span>
+            </div>
+            <div class="flex flex-col items-center px-2">
+                <span class="text-[rgb(var(--primary-600))]">المحصلة</span>
+                <span>{{ number_format($totalReceived, 2) }} {{ $currency }}</span>
+            </div>
+            <div class="flex flex-col items-center px-2">
+                <span class="text-[rgb(var(--primary-600))]">الآجلة</span>
+                <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+
         <div class="space-y-6">
             <!-- الصف العلوي -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
                 <!-- نوع الخدمة + الحالة -->
-                <div class="lg:col-span-3 grid grid-cols-2 gap-4 items-end">
+                <div class="lg:col-span-4 grid grid-cols-2 gap-4 items-end">
                     <!-- نوع الخدمة -->
-                    <x-select-field
-                        wireModel="service_type_id"
-                        label="نوع الخدمة"
-                        placeholder="اختر نوع الخدمة"
-                        :options="$services->pluck('label', 'id')->toArray()"
-                        containerClass="{{ $containerClass }}"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
-                    />
-                    @error('service_type_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+                        <x-select-field
+                            wireModel="service_type_id"
+                            label="نوع الخدمة"
+                            :options="$services->pluck('label', 'id')->toArray()"
+                            placeholder="اسم الخدمة"
+                            fieldClass="peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm ..."
+                            labelClass="..."
+                        />
+
 
                     <!-- الحالة -->
                     <x-select-field
                         wireModel="status"
                         label="الحالة"
-                        placeholder="الحالة"
-                        :options="['paid' => 'مدفوع', 'unpaid' => 'غير مدفوع']"
-                        containerClass="{{ $containerClass }}"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        :options="[
+                            'issued' => 'تم الإصدار',
+                            'refunded' => 'تم الاسترداد',
+                            'canceled' => 'تم الإلغاء',
+                            'pending' => 'قيد الانتظار',
+                            'reissued' => 'إعادة الإصدار',
+                            'void' => 'لاغية',
+                            'paid' => 'مدفوعة',
+                            'unpaid' => 'غير مدفوعة'
+                        ]"
+                        placeholder=" الحالة"
+                        containerClass="relative mt-1"
+                        fieldClass="peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm placeholder-transparent text-gray-600 
+                                    focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] transition duration-200"
+                        labelClass="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
+                                    peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]"
                     />
-                    @error('status') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                </div>
-
-                <!-- كارد الإحصائيات -->
-                <div class="lg:col-span-6">
-                    <div class="bg-white rounded-xl shadow-md border px-6 py-3 flex justify-center gap-x-4 items-center text-xs font-semibold text-gray-700 whitespace-nowrap mx-auto">
-                        <div class="flex items-center gap-1">
-                            <span class="text-[rgb(var(--primary-600))]">إجمالي:</span>
-                            <span>{{ number_format($totalAmount, 2) }} {{ $currency }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="text-[rgb(var(--primary-600))]">محصلة:</span>
-                            <span>{{ number_format($totalReceived, 2) }} {{ $currency }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="text-[rgb(var(--primary-600))]">آجلة:</span>
-                            <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="text-[rgb(var(--primary-600))]">العمولة:</span>
-                            <span>{{ number_format($sales->sum('commission'), 2) }} {{ $currency }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="text-[rgb(var(--primary-600))]">الربح:</span>
-                            <span>{{ number_format($totalProfit, 2) }} {{ $currency }}</span>
-                        </div>
-                    </div>
-                </div>
+                  
+                
+               </div>
+                 <!-- المساحة الفارغة -->
+                <div class="lg:col-span-5"></div>
 
                 <!-- الأزرار -->
                 <div class="lg:col-span-3 flex justify-end gap-2">
@@ -89,265 +144,247 @@ $containerClass = 'relative mt-1';
             <form wire:submit.prevent="save" class="space-y-4 text-sm" id="mainForm">
                 <!-- السطر الأول -->
                 <div class="grid grid-cols-12 gap-3">
+                
                     <!-- اسم المستفيد -->
                     <x-input-field
-                        wireModel="beneficiary_name"
+                        name="beneficiary_name"
                         label="اسم المستفيد"
-                        placeholder="ادخل اسم المستفيد"
-                        containerClass="col-span-3 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
-                    />
-                    @error('beneficiary_name') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-
+                        wireModel="beneficiary_name"
+                        placeholder="اسم المستفيد"
+                        containerClass="relative mt-1 col-span-3"
+                        errorName="beneficiary_name"
+                                        />
+                
+                      
                     <!-- المسار -->
                     <x-input-field
-                        wireModel="route"
+                        name="route"
                         label="المسار / التفاصيل"
+                        wireModel="route"
                         placeholder="المسار / التفاصيل"
-                        containerClass="col-span-3 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        containerClass="relative mt-1 col-span-3"
+                        errorName="route"
                     />
-                    @error('route') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-
+                  
                     <!-- طريقة الدفع -->
                     <x-select-field
                         wireModel="payment_method"
                         label="طريقة الدفع"
-                        placeholder="اختر طريقة الدفع"
-                        :options="['cash' => 'كاش', 'transfer' => 'حوالة']"
-                        containerClass="col-span-3 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        :options="[
+                            'kash' => 'كاش',
+                            'part' => 'جزئي',
+                            'all' => 'كامل جزئي'
+                        ]"
+                        placeholder=" طريقة الدفع"
+                        containerClass="relative mt-1 col-span-3"
+                        errorName="payment_method"
                     />
-                    @error('payment_method') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- اسم المودع -->
                     <x-input-field
-                        wireModel="depositor_name"
+                        name="depositor_name"
                         label="اسم المودع"
+                        wireModel="depositor_name"
                         placeholder="اسم المودع"
-                        containerClass="col-span-3 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        containerClass="relative mt-1 col-span-3"
+                        errorName="depositor_name"
                     />
-                    @error('depositor_name') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="grid grid-cols-24 gap-3">
                     <!-- الرقم -->
                     <x-input-field
-                        wireModel="receipt_number"
-                        label="رقم السند"
-                        placeholder="رقم السند"
-                        containerClass="col-span-2 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        name="phone_number"
+                        label="رقم الهاتف"
+                        wireModel="phone_number"
+                        placeholder="رقم الهاتف"
+                        type="text"
+                        containerClass="relative mt-1 col-span-3"
+                        errorName="phone_number"
                     />
-                    @error('receipt_number') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- تاريخ البيع -->
                     <x-input-field
-                        type="date"
-                        wireModel="sale_date"
+                        name="sale_date"
                         label="تاريخ البيع"
+                        wireModel="sale_date"
                         placeholder="تاريخ البيع"
-                        containerClass="col-span-4 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        type="date"
+                        containerClass="relative mt-1 col-span-3"
+                        errorName="sale_date"
                     />
-                    @error('sale_date') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- PNR -->
                     <x-input-field
-                        wireModel="pnr"
+                        name="pnr"
                         label="PNR"
+                        wireModel="pnr"
                         placeholder="PNR"
-                        containerClass="col-span-3 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        containerClass="relative mt-1 col-span-3"
+                        errorName="pnr"
                     />
-                    @error('pnr') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- المرجع -->
                     <x-input-field
+                        name="reference"
+                        label="الرقم المرجعي"
                         wireModel="reference"
-                        label="المرجع"
-                        placeholder="المرجع"
-                        containerClass="col-span-3 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        placeholder="الرقم المرجعي"
+                        containerClass="relative mt-1 col-span-3"
+                        errorName="reference"
                     />
-                    @error('reference') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- وسيلة الدفع -->
-                    <x-input-field
+                    <x-select-field
                         wireModel="payment_type"
                         label="وسيلة الدفع"
-                        placeholder="وسيلة الدفع"
-                        containerClass="col-span-6 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        :options="[
+                            'creamy' => 'كريمي',
+                            'kash' => 'كاش',
+                            'visa' => 'فيزا'
+                        ]"
+                        placeholder=" وسيلة الدفع"
+                        containerClass="relative mt-1 col-span-6"
+                        errorName="payment_type"
                     />
-                    @error('payment_type') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
-                    <!-- رقم الهاتف -->
+                    <!-- رقم السند -->
                     <x-input-field
-                        wireModel="phone_number"
-                        label="رقم الهاتف"
-                        placeholder="رقم الهاتف"
-                        containerClass="col-span-6 relative"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        name="receipt_number"
+                        label="رقم السند"
+                        wireModel="receipt_number"
+                        placeholder="رقم السند"
+                        containerClass="relative mt-1 col-span-6"
+                        errorName="receipt_number"
                     />
-                    @error('phone_number') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- الصف الثالث -->
                 <div class="grid md:grid-cols-4 gap-3">
                     <!-- العميل عبر -->
                     <x-select-field
-                        wireModel="intermediary_id"
+                        wireModel="customer_via"
                         label="العميل عبر"
-                        placeholder="العميل عبر"
-                        :options="$intermediaries->pluck('name', 'id')->toArray()"
-                        containerClass="{{ $containerClass }}"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        :options="[
+                            'whatsapp' => 'واتساب',
+                            'viber' => 'فايبر',
+                            'instagram' => 'إنستغرام',
+                            'other' => 'أخرى'
+                        ]"
+                        placeholder="العميل عبر  "
+                        containerClass="relative mt-1"
+                        errorName="customer_via"
                     />
-                    @error('intermediary_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- المزود -->
                     <x-select-field
                         wireModel="provider_id"
                         label="المزود"
-                        placeholder="اختر المزود"
                         :options="$providers->pluck('name', 'id')->toArray()"
-                        containerClass="{{ $containerClass }}"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        placeholder=" المزود"
+                        containerClass="relative mt-1"
+                        errorName="provider_id"
                     />
-                    @error('provider_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
                     <!-- العميل -->
                     <x-select-field
                         wireModel="customer_id"
-                        label="العميل"
-                        placeholder="اختر العميل"
+                        label="حساب العميل"
                         :options="$customers->pluck('name', 'id')->toArray()"
-                        containerClass="{{ $containerClass }}"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                        placeholder="حساب العميل"
+                        containerClass="relative mt-1"
+                        errorName="customer_id"
                     />
-                    @error('customer_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
 
-                    <!-- الحساب -->
-                    <x-select-field
-                        wireModel="account_id"
-                        label="الحساب"
-                        placeholder="اختر الحساب"
-                        :options="$accounts->pluck('name', 'id')->toArray()"
-                        containerClass="{{ $containerClass }}"
-                        fieldClass="{{ $fieldClass }}"
-                        labelClass="{{ $labelClass }}"
+                    <!-- العمولة -->
+                    @if($showCommission)
+                    <x-input-field
+                        name="commission"
+                        label="العمولة"
+                        wireModel="commission"
+                        placeholder="العمولة"
+                        type="number"
+                        step="0.01"
+                        containerClass="relative mt-1"
                     />
-                    @error('account_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+                    @endif
                 </div>
 
                 <!-- الصف الرابع -->
-                <div class="grid grid-cols-12 gap-3 items-end">
-                    <!-- USD Buy -->
-                    <x-input-field
-                        wireModel="usd_buy"
-                        label="USD Buy"
-                        type="number"
-                        placeholder="USD Buy"
-                        containerClass="col-span-1 relative"
-                        fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
-                        labelClass="{{ $labelClass }}"
-                        height="h-9"
-                        wireChange="calculateProfit"
-                        step="0.01"
-                    />
-                    @error('usd_buy') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+               <!-- الصف الرابع -->
+<div class="grid grid-cols-24 gap-3 items-end">
+    <!-- USD Buy -->
+    <x-input-field
+        name="usd_buy"
+        label="مبلغ الشراء"
+        wireModel="usd_buy"
+        placeholder="مبلغ الشراء"
+        type="number"
+        step="0.01"
+        wireChange="calculateProfit"
+        containerClass="relative mt-1 col-span-3"
+        fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
+    />
 
-                    <!-- USD Sell -->
-                    <x-input-field
-                        wireModel="usd_sell"
-                        label="USD Sell"
-                        type="number"
-                        placeholder="USD Sell"
-                        containerClass="col-span-1 relative"
-                        fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
-                        labelClass="{{ $labelClass }}"
-                        height="h-9"
-                        wireChange="calculateProfit"
-                        step="0.01"
-                    />
-                    @error('usd_sell') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+    <!-- USD Sell -->
+    <x-input-field
+        name="usd_sell"
+        label="مبلغ البيع"
+        wireModel="usd_sell"
+        placeholder="مبلغ البيع"
+        type="number"
+        step="0.01"
+        wireChange="calculateProfit"
+        containerClass="relative mt-1 col-span-3"
+        fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
+    />
 
-                    <!-- العمولة -->
-                    <x-input-field
-                        wireModel="commission"
-                        label="العمولة"
-                        type="number"
-                        placeholder="العمولة"
-                        containerClass="col-span-1 relative"
-                        fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
-                        labelClass="{{ $labelClass }}"
-                        height="h-9"
-                        step="0.01"
-                    />
-                    @error('commission') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+    <!-- المبلغ المدفوع -->
+    @if($payment_method !== 'all')
+    <x-input-field
+        name="amount_paid"
+        label="المبلغ المدفوع"
+        wireModel="amount_paid"
+        placeholder="المبلغ المدفوع"
+        type="number"
+        step="0.01"
+        wireChange="calculateDue"
+        containerClass="relative mt-1 col-span-3"
+        fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
+    />
+    @endif
 
-                    <!-- الربح + المبلغ المدفوع + المتبقي -->
-                    <div class="col-span-4 flex items-end gap-4">
-                        <!-- الربح -->
-                        <div class="text-xs font-semibold text-[rgb(var(--primary-600))]">
-                            <span>الربح:</span>
-                            <span>{{ number_format($sale_profit, 2) }}</span>
-                        </div>
+    <!-- الربح -->
+    <div class="col-span-3 flex items-end text-xs font-semibold text-[rgb(var(--primary-600))]">
+        <div>
+            <span>الربح:</span>
+            <span>{{ number_format($sale_profit, 2) }}</span>
+        </div>
+    </div>
 
-                        <!-- المبلغ المدفوع -->
-                        <x-input-field
-                            wireModel="amount_paid"
-                            label="المبلغ المدفوع"
-                            type="number"
-                            placeholder="المبلغ المدفوع"
-                            containerClass="relative w-full max-w-xs"
-                            fieldClass="{{ $fieldClass }} text-sm py-1 px-2"
-                            labelClass="{{ $labelClass }}"
-                            height="h-9"
-                            wireChange="calculateDue"
-                            step="0.01"
-                        />
-                        @error('amount_paid') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+    <!-- المتبقي -->
+    <div class="col-span-3 flex items-end text-xs font-semibold text-[rgb(var(--primary-600))]">
+        <div>
+            <span>المتبقي:</span>
+            <span>{{ number_format($amount_due, 2) }}</span>
+        </div>
+    </div>
 
-                        <!-- المتبقي -->
-                        <div class="text-xs font-semibold text-[rgb(var(--primary-600))]">
-                            <span>المتبقي:</span>
-                            <span>{{ number_format($amount_due, 2) }}</span>
-                        </div>
-                    </div>
+    <!-- الأزرار -->
+    <div class="col-span-9 flex justify-end gap-3">
+        <button wire:click="resetFields"
+                class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+            تنظيف الحقول
+        </button>
 
-                    <!-- مساحة فارغة -->
-                    <div class="col-span-2"></div>
+        <button type="submit"
+                class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
+                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+            تاكيد 
+        </button>
+    </div>
+</div>
 
-                    <!-- الأزرار -->
-                    <div class="col-span-3 flex flex-row gap-3 items-end justify-end">
-                        <button wire:click="resetFields"
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
-                            تنظيف الحقول
-                        </button>
-
-                        <button type="submit"
-                                class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                            حفظ العملية
-                        </button>
-                    </div>
-                </div>
             </form>
         </div>
         @endcan
@@ -458,17 +495,7 @@ $containerClass = 'relative mt-1';
         <!-- جدول المبيعات -->
         <x-data-table :rows="$sales" :columns="$columns" />
 
-        <!-- رسائل النظام -->
-        @if(session()->has('message'))
-            <div x-data="{ show: true }"
-                 x-init="setTimeout(() => show = false, 2000)"
-                 x-show="show"
-                 x-transition
-                 class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm" 
-                 style="background-color: rgb(var(--primary-500));">
-                {{ session('message') }}
-            </div>
-        @endif
+     
     </div>
 </div>
 

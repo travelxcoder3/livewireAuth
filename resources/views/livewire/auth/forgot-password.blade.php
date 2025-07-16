@@ -1,6 +1,3 @@
-@extends('layouts.app')
-
-@section('content')
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-4">
     <div class="w-full max-w-md">
         <div class="bg-white/90 rounded-3xl shadow-2xl p-8 space-y-8 border border-emerald-100 backdrop-blur-md">
@@ -41,4 +38,3 @@
         </div>
     </div>
 </div>
-@endsection

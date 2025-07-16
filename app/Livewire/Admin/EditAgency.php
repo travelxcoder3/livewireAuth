@@ -24,6 +24,8 @@ class EditAgency extends Component
     public $description;
     public $max_users;
     public $successMessage;
+    public $parent_agency_id;
+    public $agenciesList = [];
 
     public function mount(Agency $agency)
     {
@@ -43,6 +45,8 @@ class EditAgency extends Component
         $this->subscription_end_date = $agency->subscription_end_date ? (is_string($agency->subscription_end_date) ? $agency->subscription_end_date : $agency->subscription_end_date->format('Y-m-d')) : '';
         $this->description = $agency->description;
         $this->max_users = $agency->max_users ?? 1;
+        $this->parent_agency_id = $agency->parent_agency_id;
+        $this->agenciesList = Agency::where('id', '!=', $agency->id)->pluck('name', 'id')->toArray();
     }
 
     public function updateAgency()
@@ -62,6 +66,7 @@ class EditAgency extends Component
             'subscription_start_date' => 'required|date|before_or_equal:subscription_end_date',
             'subscription_end_date' => 'required|date|after_or_equal:subscription_start_date',
             'max_users' => 'required|integer|min:1',
+            'parent_agency_id' => 'nullable|exists:agencies,id',
         ]);
         $agency = Agency::findOrFail($this->agencyId);
         $agency->update([
@@ -80,6 +85,7 @@ class EditAgency extends Component
             'subscription_end_date' => $this->subscription_end_date,
             'description' => $this->description,
             'max_users' => $this->max_users,
+            'parent_agency_id' => $this->parent_agency_id,
         ]);
         $this->successMessage = 'تم تحديث بيانات الوكالة بنجاح';
         return redirect()->route('admin.agencies')->with('message', 'تم تحديث بيانات الوكالة بنجاح');
@@ -87,6 +93,8 @@ class EditAgency extends Component
 
     public function render()
     {
-        return view('livewire.admin.edit-agency')->layout('layouts.admin');
+        return view('livewire.admin.edit-agency', [
+            'agenciesList' => $this->agenciesList,
+        ])->layout('layouts.admin');
     }
 } 

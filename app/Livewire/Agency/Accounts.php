@@ -3,7 +3,7 @@ namespace App\Livewire\Agency;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Account;
+use App\Models\Customer;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Sale;
 use App\Models\ServiceType;
@@ -177,7 +177,7 @@ class Accounts extends Component
     $agency = $user->agency;
 
     // جلب الحسابات الخاصة بوكالة المستخدم الحالي فقط (كما هو)
-    $accounts = Account::where('agency_id', $agency->id)
+    $customers = Customer::where('agency_id', Auth::user()->agency_id)
         ->latest()
         ->get();
 
@@ -191,7 +191,7 @@ class Accounts extends Component
         $agencyIds = array_merge([$agency->id], $branchIds);
     }
 
-    $filteredSalesQuery = Sale::with(['serviceType', 'provider', 'account', 'agency'])
+    $filteredSalesQuery = Sale::with(['service', 'provider', 'account', 'customer'])
         ->whereIn('agency_id', $agencyIds)
         ->when($this->search, function ($query) {
             $searchTerm = '%' . $this->search . '%';
@@ -212,7 +212,7 @@ class Accounts extends Component
     $totalSales = $filteredSalesQuery->clone()->sum('usd_sell'); // لحساب الإجمالي الصحيح
     $sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
 
-    return view('livewire.agency.accounts', compact('accounts', 'sales', 'totalSales'))
+    return view('livewire.agency.accounts', compact('customers', 'sales', 'totalSales'))
         ->layout('layouts.agency');
 }
 

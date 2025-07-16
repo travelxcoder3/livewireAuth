@@ -24,15 +24,6 @@
                     {{ $successMessage }}
                 </div>
             @endif
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul>
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
             @error('general')
                 <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-lg text-center">
                     {{ $message }}

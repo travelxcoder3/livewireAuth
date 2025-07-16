@@ -30,6 +30,8 @@ class Sale extends Model
         'amount_paid',
         'depositor_name',
         'sale_profit',
+        'customer_via'
+
     ];
 
         protected $casts = [
@@ -47,7 +49,7 @@ class Sale extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(\App\Models\Customer::class);
     }
 
     public function serviceType()
@@ -77,7 +79,7 @@ class Sale extends Model
 
     public function service()
     {
-        return $this->belongsTo(\App\Models\DynamicListItem::class, 'service_item_id');
+        return $this->belongsTo(\App\Models\DynamicListItem::class, 'service_type_id');
     }
     
     public function items()

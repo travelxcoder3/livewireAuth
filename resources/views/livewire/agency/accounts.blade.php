@@ -65,9 +65,9 @@ $containerClass = 'relative mt-1';
 <!-- الحساب -->
             <x-select-field
                 label="الحساب"
-                name="account"
-                wireModel="accountFilter"
-                :options="$accounts->pluck('name', 'id')->toArray()"
+                name="customers"
+                wireModel="customersFilter"
+                :options="$customers->pluck('name', 'id')->toArray()"
                 placeholder="جميع الحسابات"
                 containerClass="relative"
             />

@@ -50,7 +50,13 @@
                     @error('address') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                 </div>
             </div>
-
+            <div class="flex items-center mt-3 col-span-4">
+                <input type="checkbox" wire:model.defer="has_commission" id="has_commission"
+                    class="rounded border-gray-300 text-[rgb(var(--primary-600))] shadow-sm focus:ring-[rgb(var(--primary-500))]">
+                <label for="has_commission" class="text-sm text-gray-700 mr-2">
+                    هل لهذا العميل عمولة؟
+                </label>
+            </div>
             <!-- الأزرار -->
             <div class="flex flex-col sm:flex-row justify-center gap-3 pt-4">
                 <button type="submit"

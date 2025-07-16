@@ -1,10 +1,10 @@
+<div>
 @php
     use App\Services\ThemeService;
 
     $themeName = ThemeService::getSystemTheme();
     $colors = ThemeService::getCurrentThemeColors($themeName);
 @endphp
-<div>
 <div class="flex flex-col h-screen overflow-hidden bg-gray-50">
     <!-- القسم العلوي -->
     <div class="flex-none p-4">

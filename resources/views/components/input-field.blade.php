@@ -9,6 +9,7 @@
     'height' => '',
     'wireChange' => null,
     'wireInput' => null,
+    'errorName' => '', 
     'containerClass' => 'relative mt-1',
     'fieldClass' => 'peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm placeholder-transparent text-gray-600 
                     focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] transition duration-200',
@@ -31,8 +32,9 @@
 
    
     <label for="{{ $name }}" class="{{ $labelClass }}">{{ $label }}</label>
-
-    @error($wireModel)
-        <span class="text-red-600 text-xs">{{ $message }}</span>
+    <span class="text-xs block min-h-[0.75rem] leading-tight mt-0.5">
+    @error($errorName ?: $wireModel)
+        <span class="text-red-600">{{ $message }}</span>
     @enderror
+</span>
 </div>

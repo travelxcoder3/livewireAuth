@@ -96,12 +96,7 @@ $containerClass = 'relative mt-1';
 
             <!-- نوع الإجراء -->
             <div class="{{ $containerClass }} mb-4">
-                <select wire:model="action_type" class="{{ $fieldClass }}">
-                    <option value="">-- اختر نوع الإجراء --</option>
-                    @foreach ($actionTypes as $type)
-                        <option value="{{ $type }}">{{ $type }}</option>
-                    @endforeach
-                </select>
+                <input type="text" wire:model="action_type" class="{{ $fieldClass }}" placeholder="اكتب نوع الإجراء" />
                 <label class="{{ $labelClass }}">نوع الإجراء</label>
                 @error('action_type') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
@@ -174,14 +169,9 @@ $containerClass = 'relative mt-1';
                 @error('editName') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <!-- نوع الإجراء -->
+            <!-- نوع الإجراء (تعديل) -->
             <div class="{{ $containerClass }} mb-4">
-                <select wire:model="editActionType" class="{{ $fieldClass }}">
-                    <option value="">-- اختر نوع الإجراء --</option>
-                    @foreach ($actionTypes as $type)
-                        <option value="{{ $type }}">{{ $type }}</option>
-                    @endforeach
-                </select>
+                <input type="text" wire:model="editActionType" class="{{ $fieldClass }}" placeholder="اكتب نوع الإجراء" />
                 <label class="{{ $labelClass }}">نوع الإجراء</label>
                 @error('editActionType') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             </div>

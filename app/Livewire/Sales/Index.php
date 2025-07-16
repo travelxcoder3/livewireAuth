@@ -11,17 +11,21 @@ use App\Models\Account;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use App\Models\Beneficiary;
 
 class Index extends Component
 {
     use WithPagination;
 
     public $beneficiary_name, $sale_date, $provider_id,
-        $intermediary_id, $usd_buy, $usd_sell, $commission, $route, $pnr, $reference,
+        $customer_via, $usd_buy, $usd_sell, $commission, $route, $pnr, $reference,
         $status, $amount_paid, $depositor_name, $account_id, $customer_id, $sale_profit = 0,
         $payment_method, $payment_type, $receipt_number, $phone_number, $service_type_id;
 
 
+    public $showCommission = false;
     public $editingSale = null;
     public $currency;
     public $totalAmount = 0;           // إجمالي البيع
@@ -39,79 +43,6 @@ class Index extends Component
         })->get();
     }
 
-    public function mount()
-    {
-        $this->currency = auth()->user()->agency->currency ?? 'USD';
-        $this->sale_date = now()->format('Y-m-d'); // تاريخ اليوم كافتراض
-        $this->fetchServices(); // ✅ صحيح
-
-    }
-
-
-
-    protected function rules()
-    {
-        return [
-            'beneficiary_name' => 'nullable|string|max:255',
-            'sale_date' => 'required|date',
-            'service_type_id' => 'required|exists:dynamic_list_items,id',
-            'provider_id' => 'nullable|exists:providers,id',
-            'intermediary_id' => 'nullable|exists:intermediaries,id',
-            'usd_buy' => 'nullable|numeric',
-            'usd_sell' => 'nullable|numeric',
-            'commission' => 'nullable|numeric',
-            'route' => 'nullable|string',
-            'pnr' => 'nullable|string',
-            'reference' => 'nullable|string',
-            'status' => 'nullable|string',
-            'amount_paid' => 'nullable|numeric',
-            'depositor_name' => 'nullable|string',
-            'account_id' => 'nullable|exists:accounts,id',
-            'customer_id' => 'nullable|exists:customers,id',
-            'sale_profit' => 'nullable|numeric',
-            'payment_method' => 'nullable|string',
-            'payment_type' => 'nullable|string',
-            'receipt_number' => 'nullable|string',
-            'phone_number' => 'nullable|string',
-        ];
-    }
-
-
-    public function save()
-    {
-        $this->validate();
-
-        Sale::create([
-            'beneficiary_name' => $this->beneficiary_name,
-            'sale_date' => $this->sale_date,
-            'service_type_id' => $this->service_type_id,
-            'provider_id' => $this->provider_id,
-            'intermediary_id' => $this->intermediary_id,
-            'usd_buy' => $this->usd_buy,
-            'usd_sell' => $this->usd_sell,
-            'commission' => $this->commission,
-            'route' => $this->route,
-            'pnr' => $this->pnr,
-            'reference' => $this->reference,
-            'status' => $this->status,
-            'amount_paid' => $this->amount_paid,
-            'depositor_name' => $this->depositor_name,
-            'account_id' => $this->account_id,
-            'customer_id' => $this->customer_id,
-            'sale_profit' => $this->sale_profit,
-            'payment_method' => $this->payment_method,
-            'payment_type' => $this->payment_type,
-            'receipt_number' => $this->receipt_number,
-            'phone_number' => $this->phone_number,
-            'user_id' => Auth::id(),
-            'agency_id' => Auth::user()->agency_id,
-        ]);
-
-
-        $this->resetForm();
-        session()->flash('message', 'تمت إضافة العملية بنجاح');
-    }
-
     public function duplicate($id)
     {
         $sale = Sale::findOrFail($id);
@@ -120,7 +51,7 @@ class Index extends Component
         $this->sale_date = $sale->sale_date;
         $this->service_type_id = $sale->service_type_id;
         $this->provider_id = $sale->provider_id;
-        $this->intermediary_id = $sale->intermediary_id;
+        $this->customer_via = $sale->customer_via;
         $this->usd_buy = $sale->usd_buy;
         $this->usd_sell = $sale->usd_sell;
         $this->commission = $sale->commission;
@@ -130,7 +61,6 @@ class Index extends Component
         $this->status = $sale->status;
         $this->amount_paid = $sale->amount_paid;
         $this->depositor_name = $sale->depositor_name;
-        $this->account_id = $sale->account_id;
         $this->customer_id = $sale->customer_id;
         $this->sale_profit = $sale->sale_profit;
         $this->payment_method = $sale->payment_method;
@@ -147,7 +77,7 @@ class Index extends Component
             'sale_date',
             'service_type_id',
             'provider_id',
-            'intermediary_id',
+            'customer_via',
             'usd_buy',
             'usd_sell',
             'commission',
@@ -157,7 +87,6 @@ class Index extends Component
             'status',
             'amount_paid',
             'depositor_name',
-            'account_id',
             'customer_id',
             'sale_profit',
             'payment_method',
@@ -196,16 +125,33 @@ class Index extends Component
         $agency = $user->agency;
 
         if ($agency->parent_id) {
-            // المستخدم في فرع: يعرض فقط عمليات الفرع
-            $salesQuery = Sale::where('agency_id', $agency->id);
+            if ($user->hasRole('agency-admin')) {
+                // أدمن الفرع: يرى كل عمليات الفرع
+                $userIds = $agency->users()->pluck('id')->toArray();
+                $salesQuery = Sale::where('agency_id', $agency->id)
+                                  ->whereIn('user_id', $userIds);
+            } else {
+                // مستخدم عادي في الفرع: يرى فقط عملياته
+                $salesQuery = Sale::where('agency_id', $agency->id)
+                                  ->where('user_id', $user->id);
+            }
         } else {
-            // المستخدم في وكالة رئيسية: يعرض عمليات الوكالة وكل الفروع التابعة لها
-            $branchIds = $agency->branches()->pluck('id')->toArray();
-            $allAgencyIds = array_merge([$agency->id], $branchIds);
-            $salesQuery = Sale::whereIn('agency_id', $allAgencyIds);
+            if ($user->hasRole('agency-admin')) {
+                // أدمن الوكالة الرئيسية: يرى كل العمليات (الوكالة + الفروع)
+                $branchIds = $agency->branches()->pluck('id')->toArray();
+                $allAgencyIds = array_merge([$agency->id], $branchIds);
+                $salesQuery = Sale::whereIn('agency_id', $allAgencyIds);
+            } else {
+                // مستخدم عادي في الوكالة الرئيسية: يرى فقط عملياته
+                $salesQuery = Sale::where('agency_id', $agency->id)
+                                  ->where('user_id', $user->id);
+            }
         }
 
-        $sales = $salesQuery->with(['user', 'provider', 'service', 'customer', 'account'])->latest()->paginate(10);
+        $sales = $salesQuery
+            ->with(['user', 'provider', 'service', 'customer', 'account'])
+            ->latest()
+            ->paginate(10);
 
         $services = \App\Models\DynamicListItem::whereHas('list', function ($query) {
             $query->where('name', 'قائمة الخدمات');
@@ -273,4 +219,132 @@ class Index extends Component
             $this->calculateDue();
         }
     }
+    public $successMessage;
+
+    public function mount()
+    {
+        $this->currency = auth()->user()->agency->currency ?? 'USD';
+        $this->sale_date = now()->format('Y-m-d');
+        $this->fetchServices();
+    }
+
+    protected function rules()
+    {
+        $rules = [
+            'beneficiary_name' => 'required|string|max:255',
+            'sale_date' => 'required|date',
+            'service_type_id' => 'required|exists:dynamic_list_items,id',
+            'provider_id' => 'nullable|exists:providers,id',
+            'customer_via' => 'nullable|in:whatsapp,viber,instagram,other',
+            'usd_buy' => 'required|numeric|min:0',
+            'usd_sell' => 'required|numeric|min:0|gte:usd_buy',
+            'commission' => 'nullable|numeric',
+            'route' => 'required|string|max:255',
+            'pnr' => 'nullable|string|max:50',
+            'reference' => 'nullable|string|max:50',
+            'amount_paid' => 'nullable|numeric|min:0',
+            'depositor_name' => 'required|string|max:255',
+            'customer_id' => 'nullable|exists:customers,id',
+            'sale_profit' => 'nullable|numeric',
+            'receipt_number' => 'nullable|string|max:50',
+            'phone_number' => 'nullable|string|max:20',
+            'status' => 'required|in:issued,refunded,canceled,pending,reissued,void,paid,unpaid',
+            'payment_method' => 'required|in:kash,part,all',
+            'payment_type' => 'required|in:creamy,kash,visa',
+        ];
+
+        // قواعد إضافية حسب طريقة الدفع
+        switch ($this->payment_method) {
+            case 'kash':
+                $rules['customer_id'] = 'prohibited';
+               $rules['amount_paid'] = ['required', 'numeric', function ($attribute, $value, $fail) {
+                                                                        if (floatval($value) !== floatval($this->usd_sell)) {
+                                                                            $fail('عند الدفع كاش، يجب دفع المبلغ كاملًا.');
+                                                                        }
+                                                                    }];
+
+                break;
+            case 'part':
+                $rules['customer_id'] = 'required';
+                $rules['amount_paid'] = 'required|numeric|min:0|lt:' . $this->usd_sell;
+                break;
+            case 'all':
+                $rules['customer_id'] = 'required';
+                $rules['amount_paid'] = 'prohibited';
+                break;
+        }
+
+        return $rules;
+    }
+
+    protected $messages = [
+        'usd_sell.gte' => 'يجب أن يكون سعر البيع أكبر أو يساوي سعر الشراء',
+        'customer_id.prohibited' => 'لا يمكن تحديد حساب عند الدفع كاش.',
+        'amount_paid.max' => 'يجب أن يكون المبلغ المدفوع مساويًا أو أقل من قيمة البيع.',
+        'customer_id.required' => 'يجب تحديد حساب عند الدفع الجزئي أو على الحساب.',
+        'amount_paid.lt' => 'المبلغ الجزئي يجب أن يكون أقل من قيمة البيع.',
+        'amount_paid.required' => 'يجب إدخال المبلغ المدفوع عند الدفع الجزئي.',
+        'amount_paid.prohibited' => 'لا يجب إدخال مبلغ مدفوع عند الدفع على الحساب.',
+    ];
+
+    public function updatedCustomerId($value)
+    {
+        $customer = Customer::find($value);
+        $this->showCommission = $customer && $customer->has_commission;
+    }
+
+    public function save()
+    {
+        $this->validate();
+
+        // التأكد من وجود مستفيد بنفس الرقم داخل نفس الوكالة
+        if ($this->beneficiary_name && $this->phone_number) {
+            $existing = Beneficiary::where('agency_id', Auth::user()->agency_id)
+                ->where('phone_number', $this->phone_number)
+                ->first();
+
+            if (!$existing) {
+                Beneficiary::create([
+                    'agency_id' => Auth::user()->agency_id,
+                    'name' => $this->beneficiary_name,
+                    'phone_number' => $this->phone_number,
+                ]);
+            }
+        }
+
+        // إذا كانت طريقة الدفع "كامل جزئي" نجبر المبلغ المدفوع على الصفر
+        if ($this->payment_method === 'all') {
+            $this->amount_paid = 0;
+        }
+
+        Sale::create([
+            'beneficiary_name' => $this->beneficiary_name,
+            'sale_date' => $this->sale_date,
+            'service_type_id' => $this->service_type_id,
+            'provider_id' => $this->provider_id,
+            'customer_via' => $this->customer_via,
+            'usd_buy' => $this->usd_buy,
+            'usd_sell' => $this->usd_sell,
+            'commission' => $this->commission,
+            'route' => $this->route,
+            'pnr' => $this->pnr,
+            'reference' => $this->reference,
+            'status' => $this->status,
+            'amount_paid' => $this->amount_paid,
+            'depositor_name' => $this->depositor_name,
+            'customer_id' => $this->customer_id,
+            'sale_profit' => $this->sale_profit,
+            'payment_method' => $this->payment_method,
+            'payment_type' => $this->payment_type,
+            'receipt_number' => $this->receipt_number,
+            'phone_number' => $this->phone_number,
+            'customer_via' => $this->customer_via,
+            'user_id' => Auth::id(),
+            'agency_id' => Auth::user()->agency_id,
+        ]);
+
+        $this->resetForm();
+        $this->successMessage = 'تمت إضافة العملية بنجاح';
+    }
+
 }

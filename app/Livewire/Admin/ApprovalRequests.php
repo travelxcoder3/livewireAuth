@@ -26,6 +26,7 @@ class ApprovalRequests extends Component
                 Notification::send($user, new ProviderApprovalResult($provider, 'approved'));
             }
         }
+        $this->dispatch('providerStatusUpdated');
     }
 
     public function reject($id)
@@ -44,6 +45,7 @@ class ApprovalRequests extends Component
                 Notification::send($user, new ProviderApprovalResult($provider, 'rejected'));
             }
         }
+        $this->dispatch('providerStatusUpdated');
     }
 
     public function render()

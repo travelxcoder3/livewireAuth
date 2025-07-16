@@ -68,7 +68,7 @@ class ApprovalSequences extends Component
     {
         $this->validate([
             'editName' => 'required|string|max:255',
-            'editActionType' => 'required|in:' . implode(',', $this->actionTypes),
+            'editActionType' => 'required|string|max:255',
             'editApprovers' => 'required|array|min:1',
             'editApprovers.*' => 'required|exists:users,id',
         ]);
@@ -145,7 +145,7 @@ class ApprovalSequences extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'action_type' => 'required|in:' . implode(',', $this->actionTypes),
+            'action_type' => 'required|string|max:255',
             'approvers' => 'required|array|min:1',
             'approvers.*' => 'required|exists:users,id',
         ]);

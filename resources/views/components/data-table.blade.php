@@ -22,10 +22,18 @@
                                     {{ number_format($value, 2) }}
                                 @elseif(isset($col['format']) && $col['format'] === 'date' && $value)
                                     {{ \Illuminate\Support\Carbon::parse($value)->format('Y-m-d') }}
-                                @elseif(isset($col['format']) && $col['format'] === 'status')
-                                    <span class="px-2 py-1 rounded-full text-xs {{ $value == 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                        {{ $value == 'paid' ? 'مدفوع' : 'غير مدفوع' }}
-                                    </span>
+                                    @elseif(isset($col['format']) && $col['format'] === 'status')
+                                @switch($value)
+                                    @case('paid') مدفوع @break
+                                    @case('unpaid') غير مدفوع @break
+                                    @case('issued') تم الإصدار @break
+                                    @case('reissued') أعيد إصداره @break
+                                    @case('refunded') تم الاسترداد @break
+                                    @case('canceled') ملغي @break
+                                    @case('pending') قيد الانتظار @break
+                                    @case('void') ملغي نهائي @break
+                                    @default {{ $value }}
+                                @endswitch
                                 @elseif(isset($col['key']) && $col['key'] === 'actions' && isset($col['actions']) && is_array($col['actions']))
                                     <div class="flex gap-2">
                                         @foreach($col['actions'] as $action)
@@ -68,7 +76,35 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    {{ $value ?? '-' }}
+                                @php
+                                    $translatedValue = $value;
+
+                                    // ترجمة الحقول النصية
+                                    if ($col['key'] === 'payment_method') {
+                                        $translatedValue = match($value) {
+                                            'kash' => 'كاش',
+                                            'part' => 'جزئي',
+                                            'all' => 'كامل جزئي',
+                                            default => $value
+                                        };
+                                    } elseif ($col['key'] === 'payment_type') {
+                                        $translatedValue = match($value) {
+                                            'creamy' => 'كريمي',
+                                            'kash' => 'كاش',
+                                            'visa' => 'فيزا',
+                                            default => $value
+                                        };
+                                    } elseif ($col['key'] === 'customer_via') {
+                                        $translatedValue = match($value) {
+                                            'whatsapp' => 'واتساب',
+                                            'viber' => 'فايبر',
+                                            'instagram' => 'إنستغرام',
+                                            'other' => 'أخرى',
+                                            default => $value
+                                        };
+                                    }
+                                @endphp
+                                {{ $translatedValue !== null && $translatedValue !== '' ? $translatedValue : '-' }}
                                 @endif
                             </td>
                         @endforeach
