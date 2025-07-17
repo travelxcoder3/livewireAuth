@@ -24,6 +24,10 @@ class DynamicLists extends Component
     public ?int $editingSubItemId = null; // معرف البند الفرعي قيد التعديل
     public string $editingSubItemLabel = ''; // نص البند الفرعي قيد التعديل
 
+    // خصائص تعديل البنود الرئيسية
+    public ?int $editingItemId = null;
+    public string $editingItemLabel = '';
+
     // حالات خاصة بالنسخ
     public bool $isCloning = false; // حالة النسخ الحالية
     public array $clonedListsCache = []; // تخزين مؤقت للقوائم المنسوخة
@@ -176,20 +180,31 @@ class DynamicLists extends Component
         $list = DynamicList::findOrFail($listId);
         $user = Auth::user();
 
+        \Log::info('DynamicLists/addItem user:', ['id' => $user->id, 'role' => $user->getRoleNames(), 'agency_id' => $user->agency_id]);
+        \Log::info('DynamicLists/addItem list:', ['id' => $list->id, 'agency_id' => $list->agency_id, 'is_system' => $list->is_system, 'original_id' => $list->original_id]);
+
+        // إذا كانت القائمة نظامية وليست منسوخة للوكالة، أنشئ نسخة للوكالة
+        if ($list->is_system && ($list->agency_id === null || $list->agency_id != $user->agency_id)) {
+            $clonedList = $this->getOrCreateClonedList($list, $user->agency_id);
+            $list = $clonedList;
+        }
+
         // التحقق من الصلاحيات
         if (!$this->canEditList($list)) {
             throw new AuthorizationException("لا تملك صلاحية التعديل على هذه القائمة.");
         }
 
+        // حماية قبل الاستخدام
+
         $order = $list->items()->max('order') + 1;
 
         $list->items()->create([
-            'label' => $this->itemLabel[$listId],
+            'label' => $this->itemLabel[$list->id],
             'order' => $order,
         ]);
 
-        $this->itemLabel[$listId] = '';
-        $this->dispatch('item-added', listId: $listId);
+        unset($this->itemLabel[$list->id]);
+        $this->dispatch('item-added', listId: $list->id);
     }
 
     /**
@@ -258,6 +273,60 @@ class DynamicLists extends Component
     }
 
     /**
+     * بدء تعديل البند الرئيسي
+     * @param int $itemId
+     */
+    public function startEditItem($itemId)
+    {
+        $item = DynamicListItem::findOrFail($itemId);
+        $this->editingItemId = $item->id;
+        $this->editingItemLabel = $item->label;
+    }
+
+    /**
+     * تحديث البند الرئيسي
+     * @throws AuthorizationException
+     */
+    public function updateItem()
+    {
+        $this->validate([
+            'editingItemLabel' => 'required|string|max:255',
+        ]);
+
+        $item = DynamicListItem::findOrFail($this->editingItemId);
+
+        if (!$this->canEditList($item->list)) {
+            throw new AuthorizationException("لا تملك صلاحية التعديل.");
+        }
+
+        $item->update(['label' => $this->editingItemLabel]);
+
+        $this->editingItemId = null;
+        $this->editingItemLabel = '';
+        $this->dispatch('item-updated');
+    }
+
+    /**
+     * حذف البند الرئيسي
+     * @param int $itemId
+     * @throws AuthorizationException
+     */
+    public function deleteItem($itemId)
+    {
+        $item = DynamicListItem::findOrFail($itemId);
+
+        if (!$this->canEditList($item->list)) {
+            throw new AuthorizationException("لا تملك صلاحية الحذف.");
+        }
+
+        // حذف البنود الفرعية أولاً
+        $item->subItems()->delete();
+        $item->delete();
+
+        $this->dispatch('item-deleted');
+    }
+
+    /**
      * عرض المكون
      * @return \Illuminate\Contracts\View\View
      */
@@ -270,7 +339,7 @@ class DynamicLists extends Component
 
     public function canEditList($list)
     {
-        return auth()->user()->hasRole('agency-admin') && $list->agency_id === auth()->user()->agency_id;
+        return $list->isEditableBy(auth()->user());
     }
 
 }

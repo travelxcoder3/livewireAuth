@@ -64,8 +64,15 @@ class ShowCollectionDetails extends Component
             return;
         }
 
-        $this->services = DynamicListItemSub::whereHas('parentItem', function($q) {
-            $q->whereHas('dynamicList', fn($q) => $q->where('name', 'قائمة الخدمات'));
+        $agencyId = Auth::user()->agency_id;
+        $this->services = DynamicListItemSub::whereHas('parentItem', function($q) use ($agencyId) {
+            $q->whereHas('dynamicList', function($q) use ($agencyId) {
+                $q->where('name', 'قائمة الخدمات')
+                  ->where(function($q) use ($agencyId) {
+                      $q->where('agency_id', $agencyId)
+                        ->orWhereNull('agency_id');
+                  });
+            });
         })->get()->map(function ($service) {
             return ['id' => $service->id, 'name' => $service->label, 'amount' => 0, 'paid' => 0];
         })->toArray();

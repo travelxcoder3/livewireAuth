@@ -90,7 +90,7 @@ class ApprovalSequences extends Component
 
         $this->showEditModal = false;
         $this->dispatch('sequenceSaved');
-        $this->dispatchBrowserEvent('notify', ['type' => 'success', 'message' => 'تم تعديل التسلسل بنجاح.']);
+        $this->dispatch('notify', ['type' => 'success', 'message' => 'تم تعديل التسلسل بنجاح.']);
         return redirect()->route('agency.approval-sequences');
 
     }
@@ -141,32 +141,32 @@ class ApprovalSequences extends Component
         unset($this->approvers[$index]);
         $this->approvers = array_values($this->approvers);
     }
-    public function saveSequence()
-    {
-        $this->validate([
-            'name' => 'required|string|max:255',
-            'action_type' => 'required|string|max:255',
-            'approvers' => 'required|array|min:1',
-            'approvers.*' => 'required|exists:users,id',
+    
+public function saveSequence()
+{
+    $this->validate([
+        'name' => 'required|string|max:255',
+        'action_type' => 'required|string|max:255',
+        'approvers' => 'required|array|min:1',
+        'approvers.*' => 'required|exists:users,id',
+    ]);
+
+    $sequence = ApprovalSequence::create([
+        'agency_id' => auth()->user()->agency_id,
+        'name' => $this->name,
+        'action_type' => $this->action_type,
+    ]);
+
+    foreach ($this->approvers as $index => $userId) {
+        $sequence->users()->create([
+            'user_id' => $userId,
+            'step_order' => $index + 1,
         ]);
-
-        $sequence = ApprovalSequence::create([
-            'agency_id' => auth()->user()->agency_id,
-            'name' => $this->name,
-            'action_type' => $this->action_type,
-        ]);
-
-        foreach ($this->approvers as $index => $userId) {
-            $sequence->users()->create([
-                'user_id' => $userId,
-                'step_order' => $index + 1,
-            ]);
-        }
-
-        return redirect()->route('agency.approval-sequences');
-        $this->dispatchBrowserEvent('notify', ['type' => 'success', 'message' => 'تم إضافة التسلسل بنجاح.']);
-
     }
+
+    $this->dispatch('notify', ['type' => 'success', 'message' => 'تم إضافة التسلسل بنجاح.']);
+    return redirect()->route('agency.approval-sequences');
+}
 
 
 

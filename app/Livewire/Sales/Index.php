@@ -159,7 +159,7 @@ class Index extends Component
 
         $providers = $this->getFilteredProviders();
         $intermediaries = Intermediary::all();
-        $customers = Customer::all();
+        $customers = Customer::where('agency_id', Auth::user()->agency_id)->get();
         $accounts = Account::all();
 
         // إجمالي البيع = مجموع usd_sell

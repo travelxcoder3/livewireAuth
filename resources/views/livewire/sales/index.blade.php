@@ -340,6 +340,7 @@ $columns = SalesTable::columns();
     />
 
     <!-- المبلغ المدفوع -->
+    <div class="col-span-3"> 
     @if($payment_method !== 'all')
     <x-input-field
         name="amount_paid"
@@ -353,6 +354,7 @@ $columns = SalesTable::columns();
         fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
     />
     @endif
+    </div>
 
     <!-- الربح -->
     <div class="col-span-3 flex items-end text-xs font-semibold text-[rgb(var(--primary-600))]">

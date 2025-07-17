@@ -119,9 +119,13 @@ class Providers extends Component
                         'requested_by' => $user->id,
                         'agency_id' => $agency->id,
                     ]);
-                    // إرسال إشعار لجميع مدراء الوكالة الرئيسية
-                    $mainAdmins = $mainAgency->users()->whereHas('roles', function($q){ $q->where('name', 'agency-admin'); })->get();
-                    Notification::send($mainAdmins, new NewProviderApprovalRequest($approvalRequest));
+
+                    // إرسال إشعار لكل أدمن في الوكالة الرئيسية
+                    $mainAdmins = \App\Models\User::where('agency_id', $mainAgency->id)
+                        ->role('agency-admin')
+                        ->get();
+
+                    \Illuminate\Support\Facades\Notification::send($mainAdmins, new \App\Notifications\NewProviderApprovalRequest($approvalRequest));
                 } else {
                     // لا تعرض أي رسالة خطأ إذا لم يوجد تسلسل موافقات
                 }

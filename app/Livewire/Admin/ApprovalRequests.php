@@ -50,13 +50,8 @@ class ApprovalRequests extends Component
 
     public function render()
     {
-        $mainAgency = auth()->user()->agency;
-        // إذا كان المستخدم في الوكالة الرئيسية
-        $agencyIds = $mainAgency->branches()->pluck('id')->toArray();
-        $agencyIds[] = $mainAgency->id;
-        $requests = \App\Models\ApprovalRequest::where('status', 'pending')
-            ->whereIn('agency_id', $agencyIds)
-            ->latest()->get();
+        // جلب جميع الطلبات المعلقة بدون فلترة agency_id
+        $requests = \App\Models\ApprovalRequest::where('status', 'pending')->latest()->get();
         return view('livewire.admin.approval-requests', compact('requests'))
             ->layout('layouts.agency');
     }

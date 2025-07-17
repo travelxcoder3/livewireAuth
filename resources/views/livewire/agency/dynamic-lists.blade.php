@@ -49,18 +49,34 @@ $colors = ThemeService::getCurrentThemeColors($themeName);
                     @foreach ($list->items as $item)
                         <div class="bg-gray-50 border rounded-lg p-4 mb-4" wire:key="item-{{ $item->id }}">
                             <div class="flex justify-between items-center mb-3">
-                                <span class="text-gray-800 font-medium">{{ $item->label }}</span>
-                                <div class="flex items-center gap-2">
-                                    <button wire:click="startEditItem({{ $item->id }})"
-                                        class="text-primary-700 border border-primary-600 hover:bg-primary-50 px-3 py-1 rounded-xl text-xs font-medium transition shadow-sm">
-                                        تعديل
-                                    </button>
-                                    <button wire:click="deleteItem({{ $item->id }})"
-                                        onclick="return confirm('هل أنت متأكد من حذف البند الرئيسي؟')"
-                                        class="text-red-600 border border-red-500 hover:bg-red-50 px-3 py-1 rounded-xl text-xs font-medium transition shadow-sm">
-                                        حذف
-                                    </button>
-                                </div>
+                                @if ($editingItemId === $item->id)
+                                    <form wire:submit.prevent="updateItem" class="flex items-center gap-2 w-full">
+                                        <input type="text" wire:model.defer="editingItemLabel"
+                                            class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white">
+                                        <button type="submit"
+                                            class="text-white font-bold px-3 py-1.5 rounded-md text-xs transition"
+                                            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                                            حفظ
+                                        </button>
+                                        <button type="button" wire:click="$set('editingItemId', null)"
+                                            class="border border-gray-400 hover:bg-gray-100 px-3 py-1.5 rounded-md text-xs font-medium text-gray-600 transition">
+                                            إلغاء
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-gray-800 font-medium">{{ $item->label }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <button wire:click="startEditItem({{ $item->id }})"
+                                            class="text-primary-700 border border-primary-600 hover:bg-primary-50 px-3 py-1 rounded-xl text-xs font-medium transition shadow-sm">
+                                            تعديل
+                                        </button>
+                                        <button wire:click="deleteItem({{ $item->id }})"
+                                            onclick="return confirm('هل أنت متأكد من حذف البند الرئيسي؟')"
+                                            class="text-red-600 border border-red-500 hover:bg-red-50 px-3 py-1 rounded-xl text-xs font-medium transition shadow-sm">
+                                            حذف
+                                        </button>
+                                    </div>
+                                @endif
                             </div>
                             <ul class="space-y-3">
                                 @foreach ($item->subItems as $sub)
@@ -123,7 +139,7 @@ $colors = ThemeService::getCurrentThemeColors($themeName);
                         </div>
                     @endforeach
                     <div class="flex items-center gap-2 mt-4">
-                        <input type="text" wire:model.defer="itemLabel.{{ $list->id }}" placeholder="اسم البند الرئيسي"
+                        <input type="text" wire:model="itemLabel.{{ $list->id }}" placeholder="اسم البند الرئيسي"
                             class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white">
                         <button wire:click="addItem({{ $list->id }})"
                             class="text-white font-bold px-4 py-2 rounded-md text-xs transition duration-300 hover:shadow-lg whitespace-nowrap"
