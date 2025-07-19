@@ -205,6 +205,17 @@
         </div>
     </div>
     @endif
+    @if(Auth::user()->hasRole('agency-admin') && !Auth::user()->agency->parent_id)
+    <div class="relative group nav-item flex items-center px-2 py-1 rounded-full">
+        <x-navbar.buttons.icon-button
+            icon="fas fa-tasks"
+            tooltip="طلبات الموافقة"
+            label="طلبات الموافقة"
+            href="{{ route('agency.approvals.index') }}"
+            :active="request()->routeIs('agency.approvals.index')"
+        />
+    </div>
+    @endif
 
     <!--سياسات الشركة لمستخدمي الوكالة-->
     @if($showPoliciesLinkUser)

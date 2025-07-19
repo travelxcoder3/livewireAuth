@@ -27,26 +27,20 @@
             إدارة الأدوار والصلاحيات
         </h2>
         @can('roles.create')
-        <button wire:click="$set('showForm', true)" 
-                class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+        <x-primary-button wire:click="$set('showForm', true)">
             + إضافة دور جديد
-        </button>
+        </x-primary-button>
         @endcan
     </div>
 
     <!-- حقل البحث -->
     <div class="bg-white rounded-xl shadow-md p-4">
-        <div class="relative mt-1">
-            <input wire:model.live="search" 
-                   type="text" 
-                   class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer"
-                   placeholder=" ">
-            <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
-                <i class="fas fa-search ml-1"></i>
-                بحث في الأدوار
-            </label>
-        </div>
+        <x-input-field 
+            wireModel="search"
+            label="بحث في الأدوار"
+            placeholder=" "
+            icon="fas fa-search"
+        />
     </div>
 
     <!-- جدول الأدوار -->
@@ -78,11 +72,18 @@
                     </td>
                     <!-- زر عرض الصلاحيات -->
                     <td class="px-3 py-2 text-center">
-                        <button wire:click="showRolePermissions({{ $role->id }})"
-                            class="bg-[rgb(var(--primary-100))] hover:bg-[rgb(var(--primary-200))] text-[rgb(var(--primary-700))] px-2 py-1 rounded-lg text-xs font-medium transition duration-200">
+                        <x-primary-button 
+                            wire:click="showRolePermissions({{ $role->id }})"
+                            color="primary-100"
+                            textColor="primary-700"
+                            padding="px-2 py-1"
+                            fontSize="text-xs"
+                            rounded="rounded-lg"
+                            gradient="false"
+                        >
                             <i class="fas fa-eye ml-1"></i>
                             عرض
-                        </button>
+                        </x-primary-button>
                     </td>
 
                     <td class="px-3 py-2 text-center">{{ $role->users_count ?? 0 }}</td>
@@ -126,38 +127,46 @@
     <!-- النافذة المنبثقة لعرض الصلاحيات -->
     @if ($showPermissionsModal)
     <div class="fixed inset-0 z-50 bg-white/20 backdrop-blur-sm flex items-start justify-center pt-24">
-    <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4 text-sm">
-                <h3 class="text-lg font-bold border-b pb-2 text-gray-700">
-                    الصلاحيات الخاصة بـ: {{ $selectedRoleName }}
-                </h3>
+        <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4 text-sm">
+            <h3 class="text-lg font-bold border-b pb-2 text-gray-700">
+                الصلاحيات الخاصة بـ: {{ $selectedRoleName }}
+            </h3>
 
-                <!-- عداد الصلاحيات -->
-                <div class="bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-700))] border border-[rgb(var(--primary-200))] px-3 py-2 rounded-lg text-sm font-bold">
-                    <i class="fas fa-check-circle mr-1"></i>
-                    {{ count($selectedRolePermissions) }} صلاحية
-                </div>
+            <!-- عداد الصلاحيات -->
+            <div class="bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-700))] border border-[rgb(var(--primary-200))] px-3 py-2 rounded-lg text-sm font-bold">
+                <i class="fas fa-check-circle mr-1"></i>
+                {{ count($selectedRolePermissions) }} صلاحية
+            </div>
 
-                <div class="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
-                    @if(count($selectedRolePermissions) > 0)
-                        @foreach ($selectedRolePermissions as $permission)
-                            <span
-                                class="bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-700))] px-3 py-1 rounded-full text-xs">
-                                {{ $permission }}
-                            </span>
-                        @endforeach
-                    @else
-                        <span class="text-gray-500 text-sm">لا توجد صلاحيات لهذا الدور</span>
-                    @endif
-                </div>
+            <div class="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
+                @if(count($selectedRolePermissions) > 0)
+                    @foreach ($selectedRolePermissions as $permission)
+                        <span
+                            class="bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-700))] px-3 py-1 rounded-full text-xs">
+                            {{ $permission }}
+                        </span>
+                    @endforeach
+                @else
+                    <span class="text-gray-500 text-sm">لا توجد صلاحيات لهذا الدور</span>
+                @endif
+            </div>
 
-                <div class="text-end pt-4">
-                    <button wire:click="$set('showPermissionsModal', false)"
-                        class="bg-white text-[rgb(var(--primary-700))] border border-[rgb(var(--primary-300))] px-4 py-1 rounded shadow hover:bg-[rgb(var(--primary-100))] hover:text-[rgb(var(--primary-800))] text-xs transition">
-                        إغلاق
-                    </button>
-                </div>
+            <div class="text-end pt-4">
+                <x-primary-button 
+                    wire:click="$set('showPermissionsModal', false)"
+                    color="white"
+                    textColor="primary-700"
+                    padding="px-4 py-1"
+                    fontSize="text-xs"
+                    rounded="rounded"
+                    gradient="false"
+                    :border="true"
+                >
+                    إغلاق
+                </x-primary-button>
             </div>
         </div>
+    </div>
     @endif
 
     <!-- نافذة إضافة/تعديل -->
@@ -181,40 +190,65 @@
                 </h3>
 
                 <form wire:submit.prevent="{{ $editingRole ? 'updateRole' : 'addRole' }}" class="space-y-4 text-sm">
-                    <!-- اسم الدور (كما هو) -->
-                    <div class="relative">
-                        <input wire:model.defer="name" type="text"
-                               class="w-full peer border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:outline-none"
-                               placeholder=" " />
-                        <label class="absolute right-3 top-2 text-xs text-gray-500 transition-all peer-focus:-top-2 peer-focus:text-[rgb(var(--primary-600))] bg-white px-1">
-                            اسم الدور
-                        </label>
-                        @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <!-- اسم الدور -->
+                    <x-input-field 
+                        wireModel="name"
+                        label="اسم الدور"
+                        placeholder=" "
+                        errorName="name"
+                    />
 
                     <!-- قسم الصلاحيات مع تعديلات طفيفة للحفاظ على التنسيق -->
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-2">الصلاحيات</label>
                         
-                        <!-- أزرار التحكم (كما هي) -->
+                        <!-- أزرار التحكم -->
                         <div class="flex flex-wrap gap-2 mb-3">
-                            <button type="button" wire:click="selectAllPermissions"
-                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg shadow-md text-xs font-bold transition duration-200 transform hover:scale-105">
-                                <i class="fas fa-check-double ml-1"></i>
-                                اختيار الكل
-                            </button>
-                            <button type="button" wire:click="deselectAllPermissions"
-                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg shadow-md text-xs font-bold transition duration-200 transform hover:scale-105">
+                           
+
+                             <x-primary-button 
+                                                type="button"
+                                               wire:click="selectAllPermissions"
+                                                textColor="white"
+                                                padding="px-2 py-1"
+                                                fontSize="text-xs"
+                                                rounded="rounded-lg"
+                                                :border="true"
+                                                rounded="rounded-lg"
+                                            >
+                                                <i class="fas fa-check ml-1"></i>
+                                                اختيار الكل
+                                            </x-primary-button>
+
+                            
+                           <x-primary-button 
+                                type="button"
+                                wire:click="deselectAllPermissions"
+                                color="white"
+                                textColor="primary-700"
+                                :border="true"
+                                padding="px-3 py-2"
+                                fontSize="text-xs"
+                                rounded="rounded-lg"
+                                gradient="false"
+                            >
                                 <i class="fas fa-times ml-1"></i>
                                 إلغاء الكل
-                            </button>
-                            <button type="button" wire:click="$toggle('showPermissions')"
-                                class="bg-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-600))] text-white px-4 py-2 rounded-lg shadow-md text-xs font-bold transition duration-200 transform hover:scale-105">
+                            </x-primary-button>
+
+                            
+                            <x-primary-button 
+                                type="button"
+                                wire:click="$toggle('showPermissions')"
+                                padding="px-4 py-2"
+                                fontSize="text-xs"
+                                rounded="rounded-lg"
+                            >
                                 <i class="fas {{ $showPermissions ? 'fa-eye-slash' : 'fa-eye' }} ml-1"></i>
                                 {{ $showPermissions ? 'إخفاء الصلاحيات' : 'عرض الصلاحيات' }}
-                            </button>
+                            </x-primary-button>
                             
-                            <!-- عداد الصلاحيات المختارة (كما هو) -->
+                            <!-- عداد الصلاحيات المختارة -->
                             <div class="bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-700))] px-3 py-2 rounded-lg text-xs font-bold border border-[rgb(var(--primary-200))]">
                                 <i class="fas fa-check-circle ml-1"></i>
                                 {{ count($selectedPermissions) }} صلاحية مختارة
@@ -247,7 +281,7 @@
                             $openModules = $openModules ?? [];
                         @endphp
 
-                        <!-- شبكة الأقسام (كما هي مع إضافة overflow-auto) -->
+                        <!-- شبكة الأقسام -->
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 mb-3">
                             @foreach($grouped as $module => $perms)
                                 @php
@@ -277,7 +311,7 @@
                             @endforeach
                         </div>
 
-                        <!-- لوحات الصلاحيات (كما هي مع إضافة max-height و overflow-auto) -->
+                        <!-- لوحات الصلاحيات -->
                         <div class="absolute top-0 right-[calc(100%+0.75rem)] z-40 space-y-3 max-h-[80vh] overflow-y-auto"
                              wire:ignore.self>
                             @foreach($grouped as $module => $perms)
@@ -309,28 +343,62 @@
                                         </div>
                                         
                                         @if($this->isModuleFullySelected($module))
-                                            <button type="button" wire:click="deselectAllModulePermissions('{{ $module }}')"
-                                                class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105">
+                                            <x-primary-button 
+                                                type="button"
+                                                wire:click="deselectAllModulePermissions('{{ $module }}')"
+                                                color="red-500"
+                                                textColor="white"
+                                                padding="px-2 py-1"
+                                                fontSize="text-xs"
+                                                rounded="rounded-lg"
+                                            >
                                                 <i class="fas fa-times ml-1"></i>
                                                 إلغاء الكل
-                                            </button>
+                                            </x-primary-button>
                                         @elseif($this->isModulePartiallySelected($module))
-                                            <button type="button" wire:click="selectAllModulePermissions('{{ $module }}')"
-                                                class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105">
-                                                <i class="fas fa-check ml-1"></i>
+                                           <x-primary-button 
+                                                type="button"
+                                                wire:click="selectAllModulePermissions('{{ $module }}')"
+                                               color="red-500"
+                                                textColor="white"
+                                                padding="px-2 py-1"
+                                                fontSize="text-xs"
+                                                rounded="rounded-lg"
+                                                :border="true"
+                                                rounded="rounded-lg"
+                                                gradient="false"
+                                            >
+                                                <i class="fas fa-check ml-1 text-[rgb(var(--primary-700))]"></i>
                                                 اختيار الكل
-                                            </button>
-                                            <button type="button" wire:click="deselectAllModulePermissions('{{ $module }}')"
-                                                class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105">
+                                            </x-primary-button>
+
+                                            <x-primary-button 
+                                                type="button"
+                                                wire:click="deselectAllModulePermissions('{{ $module }}')"
+                                                color="red-500"
+                                                textColor="white"
+                                                padding="px-2 py-1"
+                                                fontSize="text-xs"
+                                                rounded="rounded-lg"
+                                            >
                                                 <i class="fas fa-times ml-1"></i>
                                                 إلغاء الكل
-                                            </button>
+                                            </x-primary-button>
                                         @else
-                                            <button type="button" wire:click="selectAllModulePermissions('{{ $module }}')"
-                                                class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105">
+                                            <x-primary-button 
+                                                type="button"
+                                                wire:click="selectAllModulePermissions('{{ $module }}')"
+                                                textColor="white"
+                                                padding="px-2 py-1"
+                                                fontSize="text-xs"
+                                                rounded="rounded-lg"
+                                                :border="true"
+                                                rounded="rounded-lg"
+                                                gradient="false"
+                                            >
                                                 <i class="fas fa-check ml-1"></i>
                                                 اختيار الكل
-                                            </button>
+                                            </x-primary-button>
                                         @endif
                                     </div>
 
@@ -359,20 +427,31 @@
                         @error('selectedPermissions') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
 
-                    <!-- زر الإلغاء والإضافة (كما هو) -->
+                    <!-- زر الإلغاء والإضافة -->
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" wire:click="closeForm"
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow-md transition duration-200 transform hover:scale-105 text-sm">
+                        <x-primary-button 
+                            type="button"
+                            wire:click="closeForm"
+                            color="gray-200"
+                            textColor="gray-800"
+                            padding="px-4 py-2"
+                            fontSize="text-sm"
+                            rounded="rounded-xl"
+                            gradient="false"
+                        >
                             <i class="fas fa-times ml-1"></i>
                             إلغاء
-                        </button>
+                        </x-primary-button>
 
-                        <button type="submit"
-                                class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-200 transform hover:scale-105 text-sm"
-                                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                        <x-primary-button 
+                            type="submit"
+                            padding="px-4 py-2"
+                            fontSize="text-sm"
+                            rounded="rounded-xl"
+                        >
                             <i class="fas {{ $editingRole ? 'fa-save' : 'fa-plus' }} ml-1"></i>
                             {{ $editingRole ? 'تحديث' : 'إضافة' }}
-                        </button>
+                        </x-primary-button>
                     </div>
                 </form>
             </div>

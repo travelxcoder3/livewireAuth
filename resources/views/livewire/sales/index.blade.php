@@ -374,7 +374,7 @@ $columns = SalesTable::columns();
 
     <!-- الأزرار -->
     <div class="col-span-9 flex justify-end gap-3">
-        <button wire:click="resetFields"
+        <button type="button" wire:click="resetFields" 
                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
             تنظيف الحقول
         </button>

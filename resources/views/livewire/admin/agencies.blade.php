@@ -81,8 +81,7 @@
                             <th class="px-3 py-2 whitespace-nowrap">رقم الرخصة</th>
                             <th class="px-3 py-2 whitespace-nowrap">السجل التجاري</th>
                             <th class="px-3 py-2 whitespace-nowrap">الرقم الضريبي</th>
-                            <th class="px-3 py-2 whitespace-nowrap">الحالة</th>
-                            <th class="px-3 py-2 whitespace-nowrap">انتهاء الرخصة</th>
+                            <th class="px-3 py-2 whitespace-nowrap">الوكالة الرئيسية</th>
                             <th class="px-3 py-2 whitespace-nowrap">بداية الاشتراك</th>
                             <th class="px-3 py-2 whitespace-nowrap">نهاية الاشتراك</th>
                             <th class="px-3 py-2 whitespace-nowrap">المستخدمين</th>
@@ -117,7 +116,21 @@
                                 <td class="px-3 py-2">{{ $agency->commercial_record }}</td>
                                 <td class="px-3 py-2">{{ $agency->tax_number }}</td>
                                 <td class="px-3 py-2">
-                                    @if($agency->status == 'active')
+                                    @if($agency->parent_id)
+                                        {{ optional($agency->parent)->name ?? '—' }}
+                                    @else
+                                        <span class="text-xs text-gray-500">رئيسية</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2">
+                                    @php
+                                        $isExpired = $agency->subscription_end_date && $agency->subscription_end_date < now();
+                                    @endphp
+                                    @if($isExpired)
+                                        <span class="px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">
+                                            غير نشطة 
+                                        </span>
+                                    @elseif($agency->status == 'active')
                                         <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium">
                                             نشطة
                                         </span>
@@ -131,7 +144,6 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-3 py-2">{{ $agency->license_expiry_date->format('Y-m-d') }}</td>
                                 <td class="px-3 py-2">
                                     @if($agency->subscription_start_date)
                                         <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md">
@@ -169,7 +181,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="14" class="text-center py-4 text-gray-400">لا توجد وكلات مسجلة</td>
+                                <td colspan="16" class="text-center py-4 text-gray-400">لا توجد وكلات مسجلة</td>
                             </tr>
                         @endforelse
                     </tbody>

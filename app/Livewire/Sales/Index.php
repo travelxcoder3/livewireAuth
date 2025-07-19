@@ -94,11 +94,20 @@ class Index extends Component
             'receipt_number',
             'phone_number'
         ]);
+
+        // تنظيف الحقول المحسوبة يدويًا
+        $this->sale_profit = 0;
+        $this->amount_due = 0;
+        $this->showCommission = false;
     }
+
 
     public function resetFields()
     {
         $this->resetForm();
+        $this->resetValidation();
+        $this->successMessage = null;
+
     }
     public function updatedServiceTypeId()
     {
@@ -259,7 +268,7 @@ class Index extends Component
                 $rules['customer_id'] = 'prohibited';
                $rules['amount_paid'] = ['required', 'numeric', function ($attribute, $value, $fail) {
                                                                         if (floatval($value) !== floatval($this->usd_sell)) {
-                                                                            $fail('عند الدفع كاش، يجب دفع المبلغ كاملًا.');
+                                                                            $fail('الدفع كاش، يشترط الدفع كامل.');
                                                                         }
                                                                     }];
 

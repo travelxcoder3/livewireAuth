@@ -38,6 +38,8 @@ class ApprovalRequests extends Component
             if ($user) {
                 Notification::send($user, new ProviderApprovalResult($provider, 'approved'));
             }
+            // بث حدث Livewire لتحديث المزودين في الفروع
+            $this->dispatch('providerStatusUpdated')->to('App\\Livewire\\Agency\\Providers');
         }
         $this->markNotificationAsReadIfExists();
         return redirect()->route('agency.approvals.index');
@@ -57,6 +59,8 @@ class ApprovalRequests extends Component
             if ($user) {
                 Notification::send($user, new ProviderApprovalResult($provider, 'rejected'));
             }
+            // بث حدث Livewire لتحديث المزودين في الفروع
+            $this->dispatch('providerStatusUpdated')->to('App\\Livewire\\Agency\\Providers');
         }
         $this->markNotificationAsReadIfExists();
         return redirect()->route('agency.approvals.index');

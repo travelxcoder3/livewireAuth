@@ -24,7 +24,7 @@ class Providers extends Component
     protected $rules = [
         'name' => 'required|string|max:255',
         'type' => 'nullable|string|max:255',
-        'contact_info' => 'nullable|string',
+        'contact_info' => 'nullable|regex:/^[0-9]+$/|min:7|max:20',
         'service_item_id' => 'nullable|exists:dynamic_list_items,id',
     ];
     
@@ -106,10 +106,12 @@ class Providers extends Component
 
                 // جلب الوكالة الرئيسية
                 $mainAgency = $agency->parent;
+                \Log::info('قبل جلب التسلسل', ['mainAgency_id' => $mainAgency?->id]);
                 // جلب تسلسل الموافقات الخاص بإضافة مزودين
                 $approvalSequence = \App\Models\ApprovalSequence::where('agency_id', $mainAgency->id)
-                    ->where('action_type', 'add_provider')
+                    ->where('action_type', 'manage_provider')
                     ->first();
+                \Log::info('بعد جلب التسلسل', ['approvalSequence' => $approvalSequence?->id]);
                 if ($approvalSequence) {
                     $approvalRequest = \App\Models\ApprovalRequest::create([
                         'approval_sequence_id' => $approvalSequence->id,
@@ -119,15 +121,19 @@ class Providers extends Component
                         'requested_by' => $user->id,
                         'agency_id' => $agency->id,
                     ]);
-
-                    // إرسال إشعار لكل أدمن في الوكالة الرئيسية
+                    \Log::info('بعد إنشاء طلب الموافقة', ['approvalRequest' => $approvalRequest->id]);
                     $mainAdmins = \App\Models\User::where('agency_id', $mainAgency->id)
                         ->role('agency-admin')
                         ->get();
-
-                    \Illuminate\Support\Facades\Notification::send($mainAdmins, new \App\Notifications\NewProviderApprovalRequest($approvalRequest));
+                    \Log::info('الأدمن المستهدفون', ['ids' => $mainAdmins->pluck('id')->toArray()]);
+                    if ($mainAdmins->count() > 0) {
+                        \Illuminate\Support\Facades\Notification::send($mainAdmins, new \App\Notifications\NewProviderApprovalRequest($approvalRequest));
+                        \Log::info('تم إرسال إشعار NewProviderApprovalRequest للأدمن');
+                    } else {
+                        \Log::warning('لا يوجد أدمن في الوكالة الرئيسية لإرسال الإشعار لهم');
+                    }
                 } else {
-                    // لا تعرض أي رسالة خطأ إذا لم يوجد تسلسل موافقات
+                    \Log::info('لا يوجد تسلسل موافقات');
                 }
             } else {
                 // المستخدم في الوكالة الرئيسية: إضافة المزود مباشرة بحالة approved

@@ -18,7 +18,7 @@
     <div style="background: #fef9c3; color: #92400e; padding: 10px; border-radius: 6px; margin-bottom: 10px;">{{ session('debug') }}</div>
 @endif
 
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.3s>
     <!-- العنوان والرسائل -->
     <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold"

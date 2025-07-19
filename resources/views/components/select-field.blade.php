@@ -16,18 +16,21 @@
 <div
     x-data="{
         open: false,
-        selected: '{{ $selected }}',
+        selected: @entangle($wireModel),
         menuWidth: 0,
         searchQuery: '',
         init() {
             this.menuWidth = this.$refs.trigger.offsetWidth;
         },
+        options: {{ json_encode($options) }},
+
         get filteredOptions() {
-            if (!this.searchQuery) return {{ json_encode($options) }};
-            return Object.entries({{ json_encode($options) }}).filter(
+            if (!this.searchQuery) return Object.entries(this.options);
+            return Object.entries(this.options).filter(
                 ([key, value]) => value.toLowerCase().includes(this.searchQuery.toLowerCase())
             );
         },
+
         isOptionVisible(key, value) {
             if (!this.searchQuery) return true;
             return value.toLowerCase().includes(this.searchQuery.toLowerCase());
@@ -42,7 +45,7 @@
         x-ref="trigger"
         class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs cursor-pointer flex justify-between items-center peer"
     >
-        <span x-text="selected || '{{ $placeholder }}'" class="truncate"></span>
+        <span x-text="options[selected] || '{{ $placeholder }}'" class="truncate"></span>
         <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
              viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 9l6 6 6-6"/>
@@ -77,16 +80,16 @@
         @endif
 
         <!-- عرض جميع الخيارات مع إخفاء/إظهار حسب البحث -->
-        @foreach($options as $key => $value)
-            <div
-                x-show="isOptionVisible('{{ $key }}', '{{ $value }}')"
-                @click="selected = '{{ $value }}'; $wire.set('{{ $wireModel }}', '{{ $key }}'); open = false"
-                class="px-3 py-2 hover:bg-[rgb(var(--primary-100))] text-sm text-gray-700 cursor-pointer transition"
-                :class="{ 'bg-[rgb(var(--primary-500))] text-white': selected === '{{ $value }}' }"
-            >
-                {{ $value }}
-            </div>
-        @endforeach
+<template x-for="[key, value] in filteredOptions" :key="key">
+    <div
+        @click="selected = key; $wire.set('{{ $wireModel }}', key); open = false"
+        class="px-3 py-2 hover:bg-[rgb(var(--primary-100))] text-sm text-gray-700 cursor-pointer transition"
+        :class="{ 'bg-[rgb(var(--primary-500))] text-white': selected === key }"
+    >
+        <span x-text="value"></span>
+    </div>
+</template>
+
     </div>
 
     <!-- حقل مخفي للقيمة المحددة -->

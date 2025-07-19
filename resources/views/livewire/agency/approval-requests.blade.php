@@ -1,4 +1,4 @@
-<div>
+<div wire:poll.2s>
     @can('approvals.view')
         <div class="space-y-6">
             <h2 class="text-xl font-bold mb-4">طلبات الموافقة على المزودين</h2>
