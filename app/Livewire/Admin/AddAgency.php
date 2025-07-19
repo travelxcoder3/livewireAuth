@@ -124,28 +124,11 @@ class AddAgency extends Component
             ]);
             
             // ربط دور agency-admin بجميع الصلاحيات
-            $agencyAdminRole->givePermissionTo([
-                'sales.view', 'sales.create', 'sales.edit', 'sales.delete', 'sales.report',
-                'customers.view', 'customers.create', 'customers.edit', 'customers.delete',
-                'providers.view', 'providers.create', 'providers.edit', 'providers.delete',
-                'service_types.view', 'service_types.create', 'service_types.edit', 'service_types.delete',
-                'employees.view', 'employees.create', 'employees.edit', 'employees.delete',
-                'users.view', 'users.create', 'users.edit', 'users.delete',
-                'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
-                'permissions.view', 'permissions.create', 'permissions.edit', 'permissions.delete',
-                'lists.view', 'lists.create', 'lists.edit', 'lists.delete',
-                'sequences.view', 'sequences.create', 'sequences.edit', 'sequences.delete',
-                'agency.profile.view', 'agency.profile.edit',
-                'currency.view', 'currency.edit',
-                'system.settings.view', 'system.settings.edit',
-                'theme.view', 'theme.edit',
-                'branches.view', 'branches.create', 'branches.edit', 'branches.delete',
-                'departments.view', 'departments.create', 'departments.edit', 'departments.delete',
-                'positions.view', 'positions.create', 'positions.edit', 'positions.delete',
-                'intermediaries.view', 'intermediaries.create', 'intermediaries.edit', 'intermediaries.delete',
-                'accounts.view', 'accounts.create', 'accounts.edit', 'accounts.delete',
-                'sales.reports.view',
-            ]);
+            $allPermissions = \Spatie\Permission\Models\Permission::where('agency_id', $agency->id)
+                ->orWhereNull('agency_id')
+                ->pluck('name')
+                ->toArray();
+            $agencyAdminRole->syncPermissions($allPermissions);
             
             $admin = User::create([
                 'name' => $this->admin_name,

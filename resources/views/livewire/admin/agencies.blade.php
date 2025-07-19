@@ -82,8 +82,10 @@
                             <th class="px-3 py-2 whitespace-nowrap">السجل التجاري</th>
                             <th class="px-3 py-2 whitespace-nowrap">الرقم الضريبي</th>
                             <th class="px-3 py-2 whitespace-nowrap">الوكالة الرئيسية</th>
+                            <th class="px-3 py-2 whitespace-nowrap">الحاله</th>
                             <th class="px-3 py-2 whitespace-nowrap">بداية الاشتراك</th>
                             <th class="px-3 py-2 whitespace-nowrap">نهاية الاشتراك</th>
+                            <th class="px-3 py-2 whitespace-nowrap">حالة الاشتراك</th> <!-- العمود الجديد -->
                             <th class="px-3 py-2 whitespace-nowrap">المستخدمين</th>
                             <th class="px-3 py-2 whitespace-nowrap">الإجراءات</th>
                         </tr>
@@ -170,6 +172,13 @@
                                         <span class="text-gray-400">—</span>
                                     @endif
                                 </td>
+                                <td class="px-3 py-2">
+                                    @if($agency->subscription_end_date && $agency->subscription_end_date < now())
+                                        <span class="px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">منتهي</span>
+                                    @else
+                                        <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium">مستمر</span>
+                                    @endif
+                                </td>
                                 <td class="px-3 py-2 text-center">{{ $agency->max_users }}</td>
                                 <td class="px-3 py-2 whitespace-nowrap">
                                     <a href="{{ route('admin.edit-agency', $agency->id) }}"
@@ -181,7 +190,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="16" class="text-center py-4 text-gray-400">لا توجد وكلات مسجلة</td>
+                                <td colspan="17" class="text-center py-4 text-gray-400">لا توجد وكالات مسجلة</td>
                             </tr>
                         @endforelse
                     </tbody>

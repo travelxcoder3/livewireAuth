@@ -26,28 +26,7 @@ class SystemDynamicListsSeeder extends Seeder
         [
             'name' => 'قائمة التحصيل',
             'original_id' => 3,
-            'items' => [
-                [
-                    'label' => 'نوع العميل',
-                    'sub_items' => ['جيد', 'متعثر', 'خطر']
-                ],
-                [
-                    'label' => 'نوع المديونية',
-                    'sub_items' => ['جيدة السداد', 'متأخرة جدا في السداد', 'شبه معدومة', 'معدومة']
-                ],
-                [
-                    'label' => 'تجاوب العميل',
-                    'sub_items' => ['متجاوب', 'مماطل', 'منكر']
-                ],
-                [
-                    'label' => 'نوع ارتباطه بالشركة',
-                    'sub_items' => ['عميل المكتب', 'معرفة شخصية مع موظف', 'تحويل من موظف']
-                ],
-                [
-                    'label' => 'سبب التأخر',
-                    'sub_items' => ['خطأ من الموظف', 'ظرف طارئ', 'سوء متابعة']
-                ]
-            ]
+            'items' => []
         ],
         [
             'name' => 'طرق التسديد',
@@ -57,11 +36,18 @@ class SystemDynamicListsSeeder extends Seeder
         [
             'name' => 'الصناديق والبنوك',
             'original_id' => 5,
-            'items' => [
-                ['label' => 'صناديق', 'sub_items' => []],
-                ['label' => 'بنوك', 'sub_items' => []]
-            ]
-        ]
+            'items' => []
+        ],
+        [
+            'name' => 'قائمة الأقسام',
+            'original_id' => 6,
+            'items' => []
+        ],
+        [
+            'name' => 'قائمة المسمى الوظيفي',
+            'original_id' => 7,
+            'items' => []
+        ],
     ];
 
     /**
