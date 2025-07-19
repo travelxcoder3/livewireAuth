@@ -31,6 +31,8 @@ class User extends Authenticatable
         'department_id',
         'position_id',
         'must_change_password',
+        'sales_target',
+        'main_target'
     ];
 
     /**
@@ -63,18 +65,20 @@ class User extends Authenticatable
         return $this->belongsTo(Agency::class, 'agency_id');
     }
 
-    public function department()
-    {
-        return $this->belongsTo(Department::class, 'department_id');
-    }
-
-    public function position()
-    {
-        return $this->belongsTo(Position::class, 'position_id');
-    }
-
     public function branch()
     {
         return $this->belongsTo(Branch::class);
     }
+
+    public function department()
+    {
+        return $this->belongsTo(\App\Models\DynamicListItem::class, 'department_id');
+    }
+
+    public function position()
+    {
+        return $this->belongsTo(\App\Models\DynamicListItem::class, 'position_id');
+    }
+
+
 }

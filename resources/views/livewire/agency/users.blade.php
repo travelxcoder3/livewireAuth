@@ -73,6 +73,26 @@
                     errorName="{{ $showEditModal ? 'edit_role' : 'role' }}"
                 />
 
+                <!-- الهدف المبيعي -->
+                <x-input-field 
+                    type="number"
+                    wireModel="sales_target"
+                    name="sales_target"
+                    label="الهدف المبيعي"
+                    placeholder="أدخل الهدف المبيعي"
+                    errorName="sales_target"
+                />
+
+                <!-- الهدف الأساسي -->
+                <x-input-field 
+                    type="number"
+                    wireModel="main_target"
+                    name="main_target"
+                    label="الهدف الأساسي"
+                    placeholder="أدخل الهدف الأساسي"
+                    errorName="main_target"
+                />
+
                 <!-- الحالة -->
                 <div class="flex items-center mt-4">
                     <input type="checkbox" wire:model.defer="{{ $showEditModal ? 'edit_is_active' : 'is_active' }}"
@@ -82,15 +102,19 @@
 
                 <!-- الأزرار -->
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" wire:click="closeModal"
-                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+                    <x-primary-button 
+                        type="button" 
+                        wire:click="closeModal"
+                        color="gray-200"
+                        textColor="gray-800"
+                        :gradient="false"
+                        class="hover:bg-gray-300">
                         إلغاء
-                    </button>
-                    <button type="submit"
-                            class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                    </x-primary-button>
+                    
+                    <x-primary-button type="submit">
                         {{ $showEditModal ? 'تحديث' : 'إضافة' }}
-                    </button>
+                    </x-primary-button>
                 </div>
             </form>
         </div>
@@ -108,19 +132,4 @@
             {{ session('success') }}
         </div>
     @endif
-
-    <!-- CSS مخصص -->
-    <style>
-        .peer:placeholder-shown + label {
-            top: 0.75rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-        .peer:not(:placeholder-shown) + label,
-        .peer:focus + label {
-            top: -0.5rem;
-            font-size: 0.75rem;
-            color: rgb(var(--primary-600));
-        }
-    </style>
 </div>

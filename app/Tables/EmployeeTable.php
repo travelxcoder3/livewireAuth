@@ -2,6 +2,8 @@
 
 namespace App\Tables;
 
+use App\Support\Column;
+
 class EmployeeTable
 {
     public static function columns()
@@ -13,9 +15,11 @@ class EmployeeTable
             ['key' => 'email', 'label' => 'البريد الإلكتروني'],
             ['key' => 'phone', 'label' => 'الهاتف'],
             ['key' => 'branch', 'label' => 'الفرع'],
-            ['key' => 'department.name', 'label' => 'القسم'],
-            ['key' => 'position.name', 'label' => 'الوظيفة'],
+            ['key' => 'department.label','label' => 'القسم',],
+            ['key' => 'position.label','label' => 'الوظيفة',],
+
             ['key' => 'created_at', 'label' => 'تاريخ الإنشاء', 'format' => 'date'],
+
             [
                 'key' => 'actions',
                 'label' => 'إجراءات',
@@ -26,7 +30,7 @@ class EmployeeTable
                         'icon' => 'fa fa-edit',
                         'method' => 'editEmployee',
                         'can' => auth()->user()->can('employees.edit'),
-                        'showIf' => function($row) {
+                        'showIf' => function ($row) {
                             return $row->agency_id == auth()->user()->agency_id;
                         },
                     ]
@@ -34,4 +38,4 @@ class EmployeeTable
             ]
         ];
     }
-} 
+}

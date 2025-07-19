@@ -6,15 +6,154 @@ use Livewire\Component;
 use App\Models\User;
 use App\Models\Agency;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Sale;
+use Illuminate\Support\Facades\DB;
+use App\Models\ServiceType;
+use ArielMejiaDev\LarapexCharts\LarapexChart;
 
 class Dashboard extends Component
 {
+    public $salesByMonth = [];
+    public $serviceTypes = [];
+    public $selectedServiceType = null;
+    public $statsViewType = 'monthly'; // 'monthly' or 'service'
+    public $chartType = 'table'; // table, bar, pie, line
+    public $totalSalesCount = 0;
+
     public function mount()
     {
         if (!Auth::check() || !Auth::user()->agency_id) {
             session()->flash('error', 'ليس لديك صلاحيات للوصول للوحة التحكم.');
             return redirect('/');
         }
+
+        // جلب جميع الخدمات للوكالة الحالية
+        $this->serviceTypes = ServiceType::where('agency_id', Auth::user()->agency_id)->get();
+        $this->selectedServiceType = $this->serviceTypes->first()?->id;
+        $this->updateStatsData();
+    }
+
+    public function updatedSelectedServiceType()
+    {
+        if ($this->statsViewType === 'monthly') {
+            $this->updateStatsData();
+        }
+    }
+
+    public function updateStatsViewType($type)
+    {
+        $this->statsViewType = $type;
+        $this->updateStatsData();
+    }
+
+    public function updateStatsData()
+    {
+        if ($this->statsViewType === 'monthly') {
+            $query = Sale::select(
+                DB::raw('YEAR(sale_date) as year'),
+                DB::raw('MONTH(sale_date) as month'),
+                DB::raw('SUM(amount_paid) as total_sales'),
+                DB::raw('COUNT(*) as operations_count')
+            )
+            ->where('agency_id', Auth::user()->agency_id);
+            if ($this->selectedServiceType) {
+                $query->where('service_type_id', $this->selectedServiceType);
+            }
+            $sales = $query
+                ->groupBy('year', 'month')
+                ->orderBy('year', 'desc')
+                ->orderBy('month', 'desc')
+                ->get();
+            $this->salesByMonth = $sales->toArray();
+
+            // حساب عدد العمليات الفعلية
+            $countQuery = Sale::where('agency_id', Auth::user()->agency_id);
+            if ($this->selectedServiceType) {
+                $countQuery->where('service_type_id', $this->selectedServiceType);
+            }
+            $this->totalSalesCount = $countQuery->count();
+
+            // تجهيز بيانات الرسم البياني باستخدام LarapexChart
+            $labels = $sales->map(fn($row) => $row->year . '/' . $row->month)->toArray();
+            $data = $sales->map(fn($row) => $row->total_sales)->toArray();
+            $this->monthlyChart = (new LarapexChart)
+                ->setType('bar')
+                ->setTitle('إحصائيات المبيعات حسب الشهر')
+                ->setXAxis($labels)
+                ->setDataset([
+                    [
+                        'name' => 'إجمالي المبيعات',
+                        'data' => $data
+                    ]
+                ]);
+        } else if ($this->statsViewType === 'service') {
+            $this->salesByMonth = Sale::select(
+                'service_type_id',
+                DB::raw('SUM(amount_paid) as total_sales'),
+                DB::raw('COUNT(*) as operations_count')
+            )
+            ->where('agency_id', Auth::user()->agency_id)
+            ->groupBy('service_type_id')
+            ->with('serviceType')
+            ->get()
+            ->map(function($row) {
+                return [
+                    'service_type' => $row->serviceType ? $row->serviceType->name : '-',
+                    'total_sales' => $row->total_sales,
+                    'operations_count' => $row->operations_count
+                ];
+            })->toArray();
+        } else if ($this->statsViewType === 'employee') {
+            $this->salesByMonth = Sale::select(
+                'user_id',
+                DB::raw('SUM(amount_paid) as total_sales'),
+                DB::raw('COUNT(*) as operations_count')
+            )
+            ->where('agency_id', Auth::user()->agency_id)
+            ->groupBy('user_id')
+            ->with('user')
+            ->get()
+            ->map(function($row) {
+                return [
+                    'employee' => $row->user ? $row->user->name : '-',
+                    'total_sales' => $row->total_sales,
+                    'operations_count' => $row->operations_count
+                ];
+            })->toArray();
+        } else if ($this->statsViewType === 'branch') {
+            // جلب جميع الفروع (agencies التي parent_id = id الوكالة الحالية)
+            $mainAgencyId = Auth::user()->agency_id;
+            $branchIds = \App\Models\Agency::where('parent_id', $mainAgencyId)->pluck('id')->toArray();
+            // أضف الوكالة الرئيسية دائماً
+            $branchIds[] = $mainAgencyId;
+            $this->salesByMonth = Sale::select(
+                'agency_id',
+                DB::raw('SUM(amount_paid) as total_sales'),
+                DB::raw('COUNT(*) as operations_count')
+            )
+            ->whereIn('agency_id', $branchIds)
+            ->groupBy('agency_id')
+            ->with('agency')
+            ->get()
+            ->map(function($row) {
+                return [
+                    'branch' => $row->agency ? $row->agency->name : '-',
+                    'total_sales' => $row->total_sales,
+                    'operations_count' => $row->operations_count
+                ];
+            })->toArray();
+        }
+    }
+
+    public function updatedChartType()
+    {
+        $this->dispatch('refreshChart');
+    }
+
+    public function setChartType($type)
+    {
+        $this->chartType = $type;
+        $this->dispatch('refreshChart');
     }
 
     // تحديد نوع لوحة التحكم حسب دور المستخدم
@@ -225,36 +364,24 @@ class Dashboard extends Component
 
     public function render()
     {
-        $dashboardType = $this->dashboardType;
-        $title = 'لوحة التحكم - ' . Auth::user()->agency->name;
-        
-        // إضافة نوع لوحة التحكم للعنوان
-        switch ($dashboardType) {
-            case 'comprehensive':
-                $title .= ' (شاملة)';
-                break;
-            case 'roles-focused':
-                $title .= ' (إدارة الأدوار)';
-                break;
-            case 'users-focused':
-                $title .= ' (إدارة المستخدمين)';
-                break;
-            case 'permissions-focused':
-                $title .= ' (إدارة الصلاحيات)';
-                break;
-            case 'simple':
-                $title .= ' (مبسطة)';
-                break;
-            case 'sales-focused':
-                $title .= ' (مبيعات)';
-                break;
-            case 'hr-focused':
-                $title .= ' (الموارد البشرية)';
-                break;
+        $monthlyChart = null;
+        if ($this->statsViewType === 'monthly') {
+            $sales = collect($this->salesByMonth);
+            $labels = $sales->map(fn($row) => $row['year'] . '/' . $row['month'])->toArray();
+            $data = $sales->map(fn($row) => $row['total_sales'])->toArray();
+            $monthlyChart = (new \ArielMejiaDev\LarapexCharts\LarapexChart)
+                ->setType('bar')
+                ->setTitle('إحصائيات المبيعات حسب الشهر')
+                ->setXAxis($labels)
+                ->setDataset([
+                    [
+                        'name' => 'إجمالي المبيعات',
+                        'data' => $data
+                    ]
+                ]);
         }
-
-        return view('livewire.agency.dashboard')
-            ->layout('layouts.agency')
-            ->title($title);
+        return view('livewire.agency.dashboard', [
+            'monthlyChart' => $monthlyChart,
+        ])->layout('layouts.agency');
     }
 } 

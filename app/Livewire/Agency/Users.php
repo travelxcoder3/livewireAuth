@@ -30,13 +30,19 @@ class Users extends Component
     public $edit_role = '';
     public $edit_is_active = true;
 
+    public $sales_target = '';
+    public $main_target = '';
+
     protected $rules = [
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users,email',
-        'password' => 'required|string|min:6',
-        'role' => 'required|exists:roles,name',
-        'is_active' => 'boolean',
-    ];
+    'name' => 'required|string|max:255',
+    'email' => 'required|email|unique:users,email',
+    'password' => 'required|string|min:6',
+    'role' => 'required|exists:roles,name',
+    'is_active' => 'boolean',
+    'sales_target' => 'nullable|numeric|min:0',
+    'main_target' => 'nullable|numeric|min:0',
+];
+
 
     public function mount()
     {
@@ -76,6 +82,9 @@ class Users extends Component
             'password' => Hash::make($this->password),
             'agency_id' => Auth::user()->agency_id,
             'is_active' => $this->is_active,
+            'sales_target'  => $this->sales_target,
+            'main_target'   => $this->main_target,
+
         ]);
         
         $user->assignRole($this->role);
@@ -111,6 +120,8 @@ class Users extends Component
         $this->edit_email = $user->email;
         $this->edit_role = $user->roles->first()->name ?? '';
         $this->edit_is_active = $user->is_active;
+        $this->sales_target = $user->sales_target;
+        $this->main_target  = $user->main_target;
         $this->showEditModal = true;
     }
 
@@ -126,12 +137,17 @@ class Users extends Component
             'edit_password' => 'nullable|string|min:6',
             'edit_role' => 'required|exists:roles,name',
             'edit_is_active' => 'boolean',
+            'sales_target' => 'nullable|numeric|min:0',
+            'main_target' => 'nullable|numeric|min:0',
         ]);
-        $user->update([
+       $user->update([
             'name' => $this->edit_name,
             'email' => $this->edit_email,
             'is_active' => $this->edit_is_active,
+            'sales_target' => $this->sales_target,
+            'main_target' => $this->main_target,
         ]);
+
         if ($this->edit_password) {
             $user->update(['password' => Hash::make($this->edit_password)]);
         }
@@ -178,7 +194,13 @@ class Users extends Component
 
     public function closeModal()
     {
-        $this->reset(['name', 'email', 'password', 'role', 'is_active', 'edit_name', 'edit_email', 'edit_password', 'edit_role', 'edit_is_active', 'showAddModal', 'showEditModal', 'editingUser']);
+       $this->reset([
+    'name', 'email', 'password', 'role', 'is_active',
+    'edit_name', 'edit_email', 'edit_password', 'edit_role', 'edit_is_active',
+    'sales_target', 'main_target',
+    'showAddModal', 'showEditModal', 'editingUser'
+]);
+
     }
 
     public function render()

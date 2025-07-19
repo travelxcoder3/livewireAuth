@@ -35,6 +35,21 @@ class UserTable
                 'class' => 'px-2 py-1',
                 'headerClass' => 'px-2 py-1',
             ],
+             [
+                'key' => 'sales_target',
+                'label' => 'الهدف المبيعي',
+                'format' => function ($value) {
+                    return number_format($value, 2); 
+                }
+            ],
+
+            [
+                'key' => 'main_target',
+                'label' => 'الهدف الأساسي',
+                'format' => function ($value) {
+                    return number_format($value, 2); 
+                }
+            ],
             [
                 'label' => 'الحالة',
                 'field' => 'status_display',

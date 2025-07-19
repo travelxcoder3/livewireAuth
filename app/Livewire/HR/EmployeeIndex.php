@@ -3,11 +3,10 @@
 namespace App\Livewire\HR;
 
 use App\Models\User;
-use App\Models\Department;
-use App\Models\Position;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Models\DynamicListItem;
 
 
 
@@ -33,6 +32,9 @@ class EmployeeIndex extends Component
 
     public $departments = [];
     public $positions = [];
+
+  
+
     protected $updatesQueryString = ['search', 'department_id', 'position_id'];
 
     protected $queryString = ['search'];
@@ -44,8 +46,15 @@ class EmployeeIndex extends Component
 
     public function mount()
     {
-        $this->departments = Department::pluck('name', 'id')->toArray();
-        $this->positions = Position::pluck('name', 'id')->toArray();
+       $this->departments = DynamicListItem::whereHas('list', function ($query) {
+            $query->where('name','قائمة الأقسام');
+        })->pluck('label', 'id')->toArray();
+
+        $this->positions = DynamicListItem::whereHas('list', function ($query) {
+            $query->where('name', 'قائمة المسمى الوظيفي');
+        })->pluck('label', 'id')->toArray();
+
+
     }
 
     public function updatingSearch()
@@ -99,11 +108,14 @@ class EmployeeIndex extends Component
         $validated = $this->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $this->editingEmployee,
-            'department_id' => 'required|exists:departments,id',
-            'position_id' => 'required|exists:positions,id',
+            'department_id' => 'required|exists:dynamic_list_items,id',
+            'position_id' => 'required|exists:dynamic_list_items,id',
             'phone' => 'nullable|string|max:20',
             'user_name' => 'nullable|string|max:255',
             'password' => 'nullable|string|min:6|confirmed',
+
+       
+
         ]);
 
         $employee = \App\Models\User::findOrFail($this->editingEmployee);
@@ -116,6 +128,8 @@ class EmployeeIndex extends Component
         if ($this->password) {
             $employee->password = bcrypt($this->password);
         }
+       
+
         $employee->save();
 
         session()->flash('success', 'تم تحديث بيانات الموظف بنجاح.');
@@ -128,8 +142,8 @@ class EmployeeIndex extends Component
         $validated = $this->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'department_id' => 'required|exists:departments,id',
-            'position_id' => 'required|exists:positions,id',
+            'department_id' => 'required|exists:dynamic_list_items,id',
+            'position_id' => 'required|exists:dynamic_list_items,id',
             'phone' => 'nullable|string|max:20',
             'user_name' => 'nullable|string|max:255',
             'password' => 'required|string|min:6|confirmed',
@@ -145,6 +159,7 @@ class EmployeeIndex extends Component
         $user->password = bcrypt($this->password);
         $user->is_active = false;
         $user->agency_id = Auth::user()->agency_id;
+
         $user->save();
 
         session()->flash('success', 'تم إضافة الموظف بنجاح.');

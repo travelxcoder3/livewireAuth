@@ -1,3 +1,4 @@
+
 <div class="space-y-6">
     <!-- رسالة النجاح -->
     @if (session()->has('success'))
@@ -38,31 +39,21 @@
                 </label>
             </div>
 
-            <div class="relative mt-1">
-                <select wire:model.lazy="department_id"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer">
-                    <option value="">كل الأقسام</option>
-                    @foreach($departments as $id => $name)
-                        <option wire:key="dep-{{ $id }}" value="{{ $id }}">{{ $name }}</option>
-                    @endforeach
-                </select>
-                <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
-                    القسم
-                </label>
-            </div>
+          <x-select-field
+            label="القسم"
+            :options="$departments"
+            wireModel="department_id"
+        />
 
-            <div class="relative mt-1">
-                <select wire:model.lazy="position_id"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer">
-                    <option value="">كل الوظائف</option>
-                    @foreach($positions as $id => $name)
-                        <option wire:key="pos-{{ $id }}" value="{{ $id }}">{{ $name }}</option>
-                    @endforeach
-                </select>
-                <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
-                    الوظيفة
-                </label>
-            </div>
+
+          <x-select-field
+            label="الوظيفة"
+            :options="$positions"
+            wireModel="position_id"
+        />
+
+
+
 
             <div class="flex items-center text-xs" style="color: rgb(var(--primary-700));" wire:key="count-{{ $employees->total() }}">
                 عدد الموظفين: {{ $employees->total() }}
@@ -126,48 +117,46 @@
                 </div>
 
                 <!-- الصف الثالث -->
-                <div class="grid md:grid-cols-2 gap-6">
+               <div class="grid md:grid-cols-2 gap-6">
                     <!-- القسم -->
-                    <div class="{{ $containerClass }}">
-                        <select wire:model="department_id" class="{{ $fieldClass }}">
-                            <option value="">اختر القسم</option>
-                            @foreach($departments as $id => $name)
-                                <option value="{{ $id }}">{{ $name }}</option>
-                            @endforeach
-                        </select>
-                        <label class="{{ $labelClass }}">القسم</label>
-                        @error('department_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-select-field
+                        label="القسم"
+                        :options="$departments"
+                        wireModel="department_id"
+                        errorName="department_id"
+                        containerClass="{{ $containerClass }}"
+                    />
 
                     <!-- الوظيفة -->
-                    <div class="{{ $containerClass }}">
-                        <select wire:model="position_id" class="{{ $fieldClass }}">
-                            <option value="">اختر الوظيفة</option>
-                            @foreach($positions as $id => $name)
-                                <option value="{{ $id }}">{{ $name }}</option>
-                            @endforeach
-                        </select>
-                        <label class="{{ $labelClass }}">الوظيفة</label>
-                        @error('position_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-select-field
+                        label="الوظيفة"
+                        :options="$positions"
+                        wireModel="position_id"
+                        errorName="position_id"
+                        containerClass="{{ $containerClass }}"
+                    />
                 </div>
 
+
                 <!-- الصف الرابع -->
-                <div class="grid md:grid-cols-2 gap-6">
+               <div class="grid md:grid-cols-2 gap-6">
                     <!-- رقم الهاتف -->
                     <div class="{{ $containerClass }}">
                         <input wire:model="phone" type="text" class="{{ $fieldClass }}" placeholder="رقم الهاتف" />
                         <label class="{{ $labelClass }}">رقم الهاتف</label>
                         @error('phone') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
+
+                    <!-- اسم المستخدم -->
+                    <div class="{{ $containerClass }}">
+                        <input wire:model="user_name" type="text" class="{{ $fieldClass }}" placeholder="اسم المستخدم" />
+                        <label class="{{ $labelClass }}">اسم المستخدم</label>
+                        @error('user_name') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+                    </div>
                 </div>
 
-                <!-- اسم المستخدم -->
-                <div class="{{ $containerClass }}">
-                    <input wire:model="user_name" type="text" class="{{ $fieldClass }}" placeholder="اسم المستخدم" />
-                    <label class="{{ $labelClass }}">اسم المستخدم</label>
-                    @error('user_name') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                </div>
+
+
 
                 <!-- الأزرار -->
                 <div class="flex justify-end gap-3 pt-4">
