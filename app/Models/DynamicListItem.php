@@ -12,74 +12,69 @@ class DynamicListItem extends Model
     use HasFactory;
 
     /**
-     * الحقول القابلة للتعبئة الجماعية
-     *
-     * @var array<string>
+     * الحقول القابلة للتعبئة
      */
     protected $fillable = [
-        'dynamic_list_id', // معرف القائمة الرئيسية
-        'label',           // نص البند
+        'dynamic_list_id',
+        'created_by_agency',
+        'label',
+        'order',
     ];
 
     /**
-     * العلاقات التي يجب تحميلها تلقائياً
-     *
-     * @var array<string>
+     * العلاقات التي تُحمّل تلقائيًا
      */
-    protected $with = ['subItems'];
 
     /**
-     * النماذج الرئيسية التي يجب تحديثها عند الحفظ
-     *
-     * @var array<string>
+     * تحديث القائمة عند التعديل
      */
     protected $touches = ['list'];
 
     /**
-     * العلاقة مع القائمة الرئيسية
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * البند يتبع قائمة ديناميكية
      */
     public function list(): BelongsTo
     {
-        return $this->belongsTo(DynamicList::class, 'dynamic_list_id')
-            ->withDefault(); // تجنب الأخطاء عند عدم وجود قائمة رئيسية
+        return $this->belongsTo(DynamicList::class, 'dynamic_list_id')->withDefault();
     }
 
-    
+    /**
+     * البند تم إنشاؤه بواسطة وكالة محددة
+     */
+    public function agency(): BelongsTo
+    {
+        return $this->belongsTo(Agency::class, 'created_by_agency');
+    }
+
     /**
      * العلاقة مع البنود الفرعية
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function subItems(): HasMany
     {
-        return $this->hasMany(DynamicListItemSub::class)
-            ->orderBy('created_at'); // الترتيب حسب وقت الإنشاء
+        return $this->hasMany(DynamicListItemSub::class)->orderBy('order');
     }
 
     /**
-     * الحصول على عدد البنود الفرعية النشطة
-     * (يتم حسابها بدون استخدام حقل is_active)
-     *
-     * @return int
+     * فلتر لعرض البنود التي تخص وكالة معينة فقط
+     */
+    public function scopeForAgency($query, $agencyId)
+    {
+        return $query->where('created_by_agency', $agencyId);
+    }
+
+    /**
+     * عدد البنود الفرعية المرتبطة
      */
     public function getActiveSubItemsCountAttribute(): int
     {
-        return $this->subItems()->count(); // جميع البنود تعتبر نشطة
+        return $this->subItems()->count();
     }
-    // app/Models/DynamicListItem.php
 
-public function dynamicList()
-{
-    return $this->belongsTo(\App\Models\DynamicList::class, 'dynamic_list_id');
-}
-
-// app/Models/DynamicListItem.php
-public function sales()
-{
-    return $this->hasMany(\App\Models\Sale::class, 'service_item_id');
-}
-
-
+    /**
+     * العلاقة مع جدول المبيعات (إن وُجدت)
+     */
+    public function sales(): HasMany
+    {
+        return $this->hasMany(\App\Models\Sale::class, 'service_item_id');
+    }
 }

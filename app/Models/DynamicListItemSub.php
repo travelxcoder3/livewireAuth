@@ -11,43 +11,52 @@ class DynamicListItemSub extends Model
     use HasFactory;
 
     /**
-     * الحقول القابلة للتعبئة الجماعية
-     *
-     * @var array<string>
+     * الحقول القابلة للتعبئة
      */
     protected $fillable = [
-        'dynamic_list_item_id', // معرف البند الرئيسي
-        'label',               // نص البند الفرعي
-        'agency_id',
-        'created_by',
+        'dynamic_list_item_id',
+        'created_by_agency',
+        'label',
+        'order',
     ];
 
     /**
      * العلاقة مع البند الرئيسي
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function item(): BelongsTo
     {
-        return $this->belongsTo(DynamicListItem::class, 'dynamic_list_item_id')
-            ->withDefault(); // تجنب الأخطاء عند عدم وجود بند رئيسي
+        return $this->belongsTo(DynamicListItem::class, 'dynamic_list_item_id')->withDefault();
     }
 
     /**
-     * الحصول على المسار الكامل للبند الفرعي (البند الرئيسي + البند الفرعي)
-     *
-     * @return string
+     * البند الفرعي مملوك لوكالة محددة
+     */
+    public function agency(): BelongsTo
+    {
+        return $this->belongsTo(Agency::class, 'created_by_agency');
+    }
+
+    /**
+     * علاقة العنصر الأب (Self-Relation)
+     */
+    public function parentItem()
+    {
+        return $this->belongsTo(DynamicListItemSub::class, 'parent_id');
+    }
+
+    /**
+     * فلتر لإرجاع البنود الفرعية التي أنشأتها وكالة معينة
+     */
+    public function scopeForAgency($query, $agencyId)
+    {
+        return $query->where('created_by_agency', $agencyId);
+    }
+
+    /**
+     * عرض المسار الكامل للبند الفرعي (البند الرئيسي > البند الفرعي)
      */
     public function getFullPathAttribute(): string
     {
         return $this->item->label . ' > ' . $this->label;
     }
-
-    public function parentItem()
-{
-    return $this->belongsTo(\App\Models\DynamicListItem::class, 'dynamic_list_item_id');
-}
-
-
-
 }

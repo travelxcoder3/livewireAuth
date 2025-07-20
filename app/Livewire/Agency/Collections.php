@@ -15,7 +15,6 @@ class Collections extends Component
     public $search = '';
     public $startDate;
     public $endDate;
-
     public $customerType = '';
     public $debtType = '';
     public $responseType = '';
@@ -26,6 +25,17 @@ class Collections extends Component
     {
         $query = Sale::with(['customer', 'account', 'serviceType', 'provider', 'collections'])
             ->where('agency_id', Auth::user()->agency_id);
+
+        // ✅ استعلام فقط المبيعات التي لم تُسدد بالكامل
+        $query->whereRaw('
+            (usd_sell - COALESCE(amount_paid, 0) - (
+                SELECT COALESCE(SUM(amount), 0)
+                FROM collections
+                WHERE collections.sale_id = sales.id
+            )) > 0
+        ');
+
+
 
         if ($this->search) {
             $query->where('beneficiary_name', 'like', "%{$this->search}%");

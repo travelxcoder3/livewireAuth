@@ -1,273 +1,306 @@
 @php
-use App\Services\ThemeService;
-$themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
-$colors = ThemeService::getCurrentThemeColors($themeName);
+    use App\Services\ThemeService;
+    $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
+    $colors = ThemeService::getCurrentThemeColors($themeName);
+    $agencyId = Auth::user()->agency_id;
 @endphp
 
-<div>
-    <div class="space-y-6 p-4 bg-gray-50" wire:key="lists-container-{{ $lists->count() }}">
-        @if (auth()->user()->hasRole('super-admin'))
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-xl font-bold text-center mb-4 text-black">إضافة قائمة جديدة</h2>
-                <form wire:submit.prevent="saveList" class="flex gap-4 items-end">
-                    <div class="flex-1">
-                        <x-input-field 
-                            wireModel="newListName"
-                            label="اسم القائمة"
-                            placeholder="اسم القائمة"
-                            errorName="newListName"
-                            fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm placeholder-transparent text-gray-600 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] transition duration-200"
-                            labelClass="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]"
-                        />
-                    </div>
-                    
-                    <x-primary-button type="submit" class="whitespace-nowrap">
-                        حفظ
-                    </x-primary-button>
-                </form>
-            </div>
-        @endif
-        
+<div class="p-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-black">قوائم الوكالة</h2>
+        <button wire:click="$set('showRequestModal', true)"
+            class="text-white font-bold px-4 py-2 rounded-md text-sm transition duration-300 hover:shadow-lg"
+            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+            + طلب قائمة جديدة
+        </button>
+    </div>
+
+    <!-- القوائم -->
+    <div class="space-y-6 bg-gray-50" wire:key="lists-container-{{ $lists->count() }}">
         @foreach ($lists as $list)
             <div class="bg-white rounded-xl shadow-md p-6">
+                <!-- عنوان القائمة -->
                 <div class="flex justify-between items-center border-b pb-4 mb-4">
                     <h3 class="text-lg font-bold text-black">{{ $list->name }}</h3>
-                    
-                    @if (auth()->user()->hasRole('agency-admin'))
-                        <button wire:click="toggleExpand({{ $list->id }})"
-                            class="text-gray-500 hover:text-primary-600 transition"
-                            aria-label="{{ in_array($list->id, $expandedLists) ? 'طي القائمة' : 'توسيع القائمة' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transform transition-transform duration-200"
-                                :class="{ 'rotate-180': @js(in_array($list->id, $expandedLists)) }" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                    @endif
+                    <button wire:click="toggleExpand({{ $list->id }})"
+                        class="text-gray-500 hover:text-primary-600 transition"
+                        aria-label="{{ in_array($list->id, $expandedLists) ? 'طي القائمة' : 'توسيع القائمة' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            class="w-5 h-5 transform transition-transform duration-200"
+                            :class="{ 'rotate-180': @js(in_array($list->id, $expandedLists)) }" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
                 </div>
-                
-                @if (auth()->user()->hasRole('agency-admin') && in_array($list->id, $expandedLists))
-                    @foreach ($list->items as $item)
-                        <div class="bg-gray-50 border rounded-lg p-4 mb-4" wire:key="item-{{ $item->id }}">
-                            <div class="flex justify-between items-center mb-3">
-                                @if ($editingItemId === $item->id)
-                                    <form wire:submit.prevent="updateItem" class="flex items-center gap-2 w-full">
-                                        <div class="flex-1">
-                                            <x-input-field 
-                                                wireModel="editingItemLabel"
-                                                placeholder="تعديل البند"
-                                                fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white"
-                                                labelClass="hidden"
-                                            />
-                                        </div>
-                                        
-                                        <x-primary-button type="submit" padding="px-3 py-1.5" fontSize="text-xs">
-                                            حفظ
-                                        </x-primary-button>
-                                        
-                                        <x-primary-button 
-                                            type="button" 
-                                            wire:click="$set('editingItemId', null)"
-                                            color="white"
-                                            textColor="gray-600"
-                                            padding="px-3 py-1.5"
-                                            fontSize="text-xs"
-                                            gradient="false"
-                                            :border="true"
-                                        >
-                                            إلغاء
-                                        </x-primary-button>
-                                    </form>
-                                @else
-                                    <span class="text-gray-800 font-medium">{{ $item->label }}</span>
-                                    <div class="flex items-center gap-2">
-                                        <x-primary-button 
-                                            wire:click="startEditItem({{ $item->id }})"
-                                            color="white"
-                                            textColor="primary-700"
-                                            padding="px-3 py-1"
-                                            fontSize="text-xs"
-                                            rounded="rounded-xl"
-                                            gradient="false"
-                                            :border="true"
-                                        >
-                                            تعديل
-                                        </x-primary-button>
-                                        
-                                        <x-primary-button 
-                                            wire:click="deleteItem({{ $item->id }})"
-                                            onclick="return confirm('هل أنت متأكد من حذف البند الرئيسي؟')"
-                                            color="white"
-                                            textColor="red-600"
-                                            padding="px-3 py-1"
-                                            fontSize="text-xs"
-                                            rounded="rounded-xl"
-                                            gradient="false"
-                                            :border="true"
-                                        >
-                                            حذف
-                                        </x-primary-button>
-                                    </div>
-                                @endif
-                            </div>
-                            
-                            <ul class="space-y-3">
-                                @foreach ($item->subItems as $sub)
-                                    <li class="flex justify-between items-center px-2">
-                                        @if ($editingSubItemId === $sub->id)
-                                            <form wire:submit.prevent="updateSubItem" class="flex items-center gap-2 w-full">
-                                                <div class="flex-1">
-                                                    <x-input-field 
-                                                        wireModel="editingSubItemLabel"
-                                                        placeholder="تعديل البند الفرعي"
-                                                        fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white"
-                                                        labelClass="hidden"
-                                                    />
-                                                </div>
-                                                
-                                                <x-primary-button type="submit" padding="px-3 py-1.5" fontSize="text-xs">
-                                                    حفظ
-                                                </x-primary-button>
-                                                
-                                                <x-primary-button 
-                                                    type="button" 
-                                                    wire:click="$set('editingSubItemId', null)"
-                                                    color="white"
-                                                    textColor="gray-600"
-                                                    padding="px-3 py-1.5"
-                                                    fontSize="text-xs"
-                                                    gradient="false"
-                                                    :border="true"
-                                                >
-                                                    إلغاء
-                                                </x-primary-button>
-                                            </form>
-                                        @else
-                                            <span class="text-sm text-gray-600">{{ $sub->label }}</span>
-                                            <div class="flex items-center gap-2">
-                                                <x-primary-button 
-                                                    wire:click="startEditSubItem({{ $sub->id }})"
-                                                    padding="px-3 py-1.5"
-                                                    fontSize="text-xs"
-                                                >
-                                                    تعديل
-                                                </x-primary-button>
-                                                
-                                                <x-primary-button 
-                                                    wire:click="deleteSubItem({{ $sub->id }})"
-                                                    onclick="return confirm('هل أنت متأكد من الحذف؟')"
-                                                    color="white"
-                                                    textColor="red-600"
-                                                    padding="px-3 py-1.5"
-                                                    fontSize="text-xs"
-                                                    gradient="false"
-                                                    :border="true"
-                                                >
-                                                    حذف
-                                                </x-primary-button>
-                                            </div>
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                            
-                            <div class="flex items-center gap-2 mt-4">
-                                <div class="flex-1">
-                                    <x-input-field 
-                                        wireModel="subItemLabel.{{ $item->id }}"
-                                        placeholder="اسم البند الفرعي"
-                                        fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white peer"
-                                        labelClass="hidden"
-                                    />
-                                </div>
-                                
-                                <x-primary-button 
-                                    wire:click="addSubItem({{ $item->id }})" 
-                                    wire:loading.attr="disabled"
-                                    padding="px-4 py-2"
-                                    fontSize="text-xs"
-                                    class="whitespace-nowrap"
-                                >
-                                    <span wire:loading.remove wire:target="addSubItem({{ $item->id }})">+ إضافة</span>
-                                    <span wire:loading wire:target="addSubItem({{ $item->id }})">
-                                        <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
-                                            fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                                stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                            </path>
-                                        </svg>
-                                    </span>
-                                </x-primary-button>
-                            </div>
-                            
-                            @error("subItemLabel.$item->id")
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    @endforeach
-                    
-                    <div class="flex items-center gap-2 mt-4">
-                        <div class="flex-1">
-                            <x-input-field 
-                                wireModel="itemLabel.{{ $list->id }}"
-                                placeholder="اسم البند الرئيسي"
-                                fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white"
-                                labelClass="hidden"
-                            />
-                        </div>
-                        
-                        <x-primary-button 
-                            wire:click="addItem({{ $list->id }})"
-                            padding="px-4 py-2"
-                            fontSize="text-xs"
-                            class="whitespace-nowrap"
-                        >
-                            <span wire:loading.remove wire:target="addItem({{ $list->id }})">+ إضافة بند رئيسي</span>
+                @if (in_array($list->id, $expandedLists))
+                    <!-- إدخال بند رئيسي -->
+                    <div class="flex items-center gap-2 mb-6">
+                        <input type="text" wire:model.defer="itemLabel.{{ $list->id }}"
+                            placeholder="اسم البند الرئيسي"
+                            class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white peer"
+                            style="border-color: rgb(var(--primary-500)); box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);">
+                        <button wire:click="addItem({{ $list->id }})" wire:loading.attr="disabled"
+                            class="text-white font-bold px-4 py-2 rounded-md text-xs transition duration-300 hover:shadow-lg whitespace-nowrap"
+                            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                            <span wire:loading.remove wire:target="addItem({{ $list->id }})">+ إضافة بند
+                                رئيسي</span>
                             <span wire:loading wire:target="addItem({{ $list->id }})">
                                 <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
                                     fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        stroke-width="4"></circle>
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                     </path>
                                 </svg>
                             </span>
-                        </x-primary-button>
+                        </button>
                     </div>
-                    
                     @error("itemLabel.$list->id")
-                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                        <span class="text-red-500 text-xs mb-2 block">{{ $message }}</span>
                     @enderror
+
+                    <!-- عرض البنود -->
+                    @foreach ($list->items as $item)
+                        <div class="bg-gray-50 rounded px-4 py-2 mb-2 border border-gray-200">
+                            <div class="flex justify-between items-center">
+                                @if ($editingItemId === $item->id)
+                                    <div class="flex items-center gap-2 w-full">
+                                        <input type="text" wire:model.defer="editingItemLabel"
+                                            class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm">
+                                        <button wire:click="updateItem"
+                                            class="px-2 py-1 text-xs rounded border border-green-500 text-green-600 bg-white hover:bg-green-50 transition">
+                                            حفظ
+                                        </button>
+                                        <button wire:click="cancelEditItem"
+                                            class="px-2 py-1 text-xs rounded border border-gray-400 text-gray-700 bg-white hover:bg-gray-100 transition mr-2">
+                                            إلغاء
+                                        </button>
+                                    </div>
+                                @else
+                                    <span class="text-sm text-gray-800 font-medium">{{ $item->label }}</span>
+                                @endif
+
+                                @if (!$list->is_system || $item->created_by_agency)
+                                    <div class="flex gap-2">
+                                        <button wire:click="startEditItem({{ $item->id }})"
+                                            class="px-2 py-1 text-xs rounded border border-blue-500 text-blue-600 bg-white hover:bg-blue-50 transition">
+                                            تعديل
+                                        </button>
+
+                                        <button wire:click="deleteItem({{ $item->id }})"
+                                            class="px-2 py-1 text-xs rounded border border-red-500 text-red-600 bg-white hover:bg-red-50 transition">
+                                            حذف
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <!-- البنود الفرعية -->
+                            @foreach ($item->subItems as $sub)
+                                <div class="ml-6 mt-1 flex justify-between text-xs text-gray-700">
+                                    @if ($editingSubItemId === $sub->id)
+                                        <div class="flex items-center gap-1 w-full">
+                                            <input type="text" wire:model.defer="editingSubItemLabel"
+                                                class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+                                            <button wire:click="updateSubItem"
+                                                class="px-2 py-1 text-xs rounded border border-green-500 text-green-600 bg-white hover:bg-green-50 transition">
+                                                حفظ
+                                            </button>
+                                            <button wire:click="cancelEditSubItem"
+                                                class="px-2 py-1 text-xs rounded border border-gray-400 text-gray-700 bg-white hover:bg-gray-100 transition mr-2">
+                                                إلغاء
+                                            </button>
+                                        </div>
+                                    @else
+                                        <span>↳ {{ $sub->label }}</span>
+                                    @endif
+                                    @if (!$list->is_system || $sub->created_by_agency)
+                                        <div class="flex gap-1">
+                                            <button wire:click="startEditSubItem({{ $sub->id }})"
+                                                class="px-2 py-1 text-xs rounded border border-blue-500 text-blue-600 bg-white hover:bg-blue-50 transition">
+                                                تعديل
+                                            </button>
+                                            <button wire:click="deleteSubItem({{ $sub->id }})"
+                                                class="px-2 py-1 text-xs rounded border border-red-500 text-red-600 bg-white hover:bg-red-50 transition">
+                                                حذف
+                                            </button>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+
+                            <!-- إدخال بند فرعي -->
+                            @if ($item->created_by_agency === $agencyId)
+                                <div class="flex items-center gap-2 mt-2 ml-6">
+                                    <input type="text" wire:model.defer="subItemLabel.{{ $item->id }}"
+                                        placeholder="اسم البند الفرعي"
+                                        class="flex-1 rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none bg-white"
+                                        style="border-color: rgb(var(--primary-500)); box-shadow: 0 0 0 1px rgba(var(--primary-500), 0.2);">
+                                    <button wire:click="addSubItem({{ $item->id }})" wire:loading.attr="disabled"
+                                        class="text-white font-bold px-3 py-1 rounded-md text-xs transition duration-300 hover:shadow"
+                                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                                        إضافة بند فرعي
+                                    </button>
+                                </div>
+                                @error("subItemLabel.$item->id")
+                                    <span class="text-red-500 text-xs ml-6">{{ $message }}</span>
+                                @enderror
+                            @endif
+                        </div>
+                    @endforeach
                 @endif
             </div>
         @endforeach
+
     </div>
 
+
+    <!-- Request Modal (المعدل) -->
+    @if ($showRequestModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
+            style="background-color: rgba(0,0,0,0.4);">
+            <div
+                class="bg-white w-full max-w-2xl rounded-lg shadow-xl overflow-hidden transform scale-100 sm:scale-95 transition-all duration-300">
+                <div class="p-6">
+                    <!-- التبويبات -->
+                    <div class="flex border-b mb-4">
+                        <button wire:click="$set('requestTab', 'create')"
+                            class="px-4 py-2 text-sm font-bold transition duration-200
+        {{ $requestTab === 'create' ? 'text-primary-600 border-b-2 border-primary-500' : 'text-gray-500 hover:text-primary-500' }}">
+                            طلب
+                        </button>
+                        <button wire:click="$set('requestTab', 'track')"
+                            class="px-4 py-2 text-sm font-bold transition duration-200
+        {{ $requestTab === 'track' ? 'text-primary-600 border-b-2 border-primary-500' : 'text-gray-500 hover:text-primary-500' }}">
+                            تعقب الطلبات
+                        </button>
+                    </div>
+
+
+                    <!-- محتوى تبويب "طلب" -->
+                    @if ($requestTab === 'create')
+                        <form wire:submit.prevent="requestList">
+                            <h3 class="text-lg font-semibold mb-4">طلب إنشاء قائمة جديدة</h3>
+
+                            <input type="text" wire:model.defer="requestedListName" placeholder="اسم القائمة"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none mb-4"
+                                style="border-color: rgb(var(--primary-500)); box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);">
+
+                            @error('requestedListName')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+
+                            <textarea wire:model.lazy="requestReason" rows="3"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none mb-4"
+                                placeholder="سبب الطلب (اختياري)"
+                                style="border-color: rgb(var(--primary-500)); box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);"></textarea>
+
+                            @error('requestReason')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+
+                            <div class="flex justify-end gap-2">
+                                <button type="button" wire:click="$set('showRequestModal', false)"
+                                    class="text-gray-600 hover:text-black text-sm font-medium">إلغاء</button>
+
+                                <button type="submit" wire:loading.attr="disabled"
+                                    class="text-white font-bold px-4 py-2 rounded-md text-sm transition duration-300"
+                                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                                    <span wire:loading.remove wire:target="requestList">إرسال الطلب</span>
+                                    <span wire:loading wire:target="requestList">
+                                        <svg class="animate-spin h-4 w-4 text-white"
+                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                            </path>
+                                        </svg>
+                                    </span>
+                                </button>
+                            </div>
+                        </form>
+                    @endif
+
+
+
+                    <!-- محتوى تبويب "تعقب" -->
+                    @if ($requestTab === 'track')
+                        <h3 class="text-lg font-semibold mb-4">قوائم تم طلبها مسبقًا</h3>
+                        <ul class="space-y-2 max-h-60 overflow-y-auto">
+                            @php
+                                $agencyId = Auth::user()->agency_id;
+                                $requestedLists = \App\Models\DynamicList::where('is_requested', true)
+                                    ->where('requested_by_agency', $agencyId)
+                                    ->orderByDesc('created_at')
+                                    ->get();
+                            @endphp
+                            @forelse($requestedLists as $list)
+                                <li class="border rounded-md p-2 text-sm">
+                                    <div class="font-bold">{{ $list->name }}</div>
+                                    <div class="text-xs mt-1 text-gray-600">
+                                        الحالة:
+                                        @if (is_null($list->is_approved))
+                                            <span class="text-yellow-500">قيد المراجعة</span>
+                                        @elseif ($list->is_approved)
+                                            <span class="text-green-600">مقبولة</span>
+                                        @else
+                                            <span class="text-red-600">مرفوضة</span>
+                                        @endif
+                                    </div>
+                                </li>
+                            @empty
+                                <li class="text-center text-gray-500 text-sm">لا توجد طلبات حتى الآن.</li>
+                            @endforelse
+                        </ul>
+
+                        <div class="mt-4 text-end">
+                            <button wire:click="$set('showRequestModal', false)"
+                                class="text-gray-600 hover:text-black text-sm font-medium">إغلاق</button>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
     <!-- Theme Styles -->
     <style>
-        input:focus, select:focus, textarea:focus {
+        input:focus,
+        select:focus,
+        textarea:focus {
             border-color: rgb(var(--primary-500)) !important;
             box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2) !important;
         }
-        
-        .peer:placeholder-shown + label {
+
+        button[type="submit"],
+        button[style*="gradient"] {
+            background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%) !important;
+            color: #fff;
+        }
+
+        button[type="submit"]:hover,
+        button[style*="gradient"]:hover {
+            box-shadow: 0 4px 12px rgba(var(--primary-500), 0.2);
+        }
+
+        .peer:placeholder-shown+label {
             display: none;
         }
 
-        .peer:not(:placeholder-shown) + label,
-        .peer:focus + label {
+        .peer:not(:placeholder-shown)+label,
+        .peer:focus+label {
             display: block;
             color: rgb({{ $colors['primary-500'] }}) !important;
         }
-        
+
         button[style*="gradient"]:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba({{ $colors['primary-500'] }}, 0.2);
         }
-        
+
         button[style*="gradient"]:active {
             transform: translateY(0);
         }

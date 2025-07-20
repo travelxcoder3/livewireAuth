@@ -9,53 +9,43 @@ return new class extends Migration
     /**
      * Run the migrations to create the dynamic_list_item_subs table.
      *
-     * This table stores sub-items that belong to main dynamic list items.
-     * Used for hierarchical list structures where items have nested options.
+     * This table stores sub-items (البنود الفرعية) التي تنتمي إلى بند رئيسي واحد.
+     * وتكون مملوكة بالكامل لوكالة محددة.
      */
     public function up(): void
     {
         Schema::create('dynamic_list_item_subs', function (Blueprint $table) {
-            // Primary Key
             $table->id()
-                ->comment('Unique identifier for the sub-item');
+                ->comment('معرّف البند الفرعي');
 
-            // Foreign Key Relationship
             $table->foreignId('dynamic_list_item_id')
                 ->constrained('dynamic_list_items')
                 ->onDelete('cascade')
-                ->comment('Reference to the parent list item');
+                ->comment('يرتبط بالبند الرئيسي');
 
-            // Content Field
+            $table->foreignId('created_by_agency')
+                ->constrained('agencies')
+                ->onDelete('cascade')
+                ->comment('الوكالة التي أنشأت هذا البند الفرعي');
+
             $table->string('label')
-                ->comment('Display text for the sub-item');
+                ->comment('نص البند الفرعي الظاهر');
 
-            // Ordering Field
             $table->unsignedSmallInteger('order')
                 ->default(0)
-                ->comment('Sorting position within parent item');
+                ->comment('ترتيب البند الفرعي داخل البند الرئيسي');
 
-            // System Flag
-            $table->boolean('is_system')
-                ->default(false)
-                ->comment('Whether this is a system sub-item (true) or custom (false)');
-
-            // Timestamps
             $table->timestamps();
 
-            // Indexes
             $table->index('dynamic_list_item_id');
+            $table->index('created_by_agency');
             $table->index('order');
-            $table->index('is_system');
-
-            // Composite index for common query patterns
             $table->index(['dynamic_list_item_id', 'order']);
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * Safely drops the dynamic_list_item_subs table and all its constraints.
      */
     public function down(): void
     {

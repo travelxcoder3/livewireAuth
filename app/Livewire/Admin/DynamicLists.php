@@ -11,6 +11,8 @@ use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use App\Services\NotificationService;
+
 
 #[Layout('layouts.admin')]
 class DynamicLists extends Component
@@ -33,6 +35,8 @@ class DynamicLists extends Component
     public array $subItemLabel = [];
     public ?int $editingSubItemId = null;
     public string $editingSubItemLabel = '';
+    public bool $showRequestsModal = false;
+
 
     /**
      * Initialize component
@@ -47,13 +51,24 @@ class DynamicLists extends Component
      */
     public function loadLists(): void
     {
-        $this->lists = DynamicList::with(['items.subItems'])
-            ->when(!Auth::user()->hasRole('super-admin'), function ($query) {
-                $query->where('agency_id', Auth::user()->agency_id);
+        $user = Auth::user();
+        $agencyId = $user->agency_id;
+
+        $query = DynamicList::query()
+            ->with([
+                'items' => fn($q) => $q->where('created_by_agency', $agencyId)->with([
+                    'subItems' => fn($sq) => $sq->where('created_by_agency', $agencyId),
+                ]),
+            ])
+            ->where(function ($q) use ($agencyId) {
+                $q->where('is_system', true)
+                    ->orWhere('agency_id', $agencyId);
             })
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        $this->lists = $query->get();
     }
+
 
     // ==================== UI State Management ====================
 
@@ -106,15 +121,16 @@ class DynamicLists extends Component
      */
     public function canEditItem(DynamicListItem $item): bool
     {
-        return !$item->list->is_system || Auth::user()->hasRole('super-admin');
+        return $item->created_by_agency === Auth::user()->agency_id;
     }
+
 
     /**
      * Check if sub-item can be edited
      */
     public function canEditSub(DynamicListItemSub $sub): bool
     {
-        return !$sub->item->list->is_system || Auth::user()->hasRole('super-admin');
+        return $sub->created_by_agency === Auth::user()->agency_id;
     }
 
     // ==================== List Management ====================
@@ -130,12 +146,10 @@ class DynamicLists extends Component
 
         $user = Auth::user();
         $isSuperAdmin = $user->hasRole('super-admin');
-
         DynamicList::create([
             'name' => $this->newListName,
             'agency_id' => $isSuperAdmin ? null : $user->agency_id,
             'is_system' => $isSuperAdmin,
-            'original_id' => $this->generateOriginalId($isSuperAdmin ? null : $user->agency_id)
         ]);
 
         $this->reset('newListName');
@@ -194,7 +208,7 @@ class DynamicLists extends Component
             throw new AuthorizationException(__('You are not authorized to delete this list.'));
         }
 
-        $list->items->each(function($item) {
+        $list->items->each(function ($item) {
             $item->subItems()->delete();
             $item->delete();
         });
@@ -211,9 +225,6 @@ class DynamicLists extends Component
      */
     public function addItem(int $listId): void
     {
-        if (Auth::user()->hasRole('super-admin')) {
-            throw new AuthorizationException('السوبر أدمن لا يمكنه إضافة البنود الفرعية');
-        }
         $this->validate([
             "itemLabel.$listId" => 'required|string|max:255',
         ], [], [
@@ -224,12 +235,14 @@ class DynamicLists extends Component
             'dynamic_list_id' => $listId,
             'label' => $this->itemLabel[$listId],
             'order' => DynamicListItem::where('dynamic_list_id', $listId)->max('order') + 1,
+            'created_by_agency' => Auth::user()->agency_id,
         ]);
 
         unset($this->itemLabel[$listId]);
         $this->dispatch('item-created');
         $this->loadLists();
     }
+
 
     /**
      * Start editing item
@@ -251,9 +264,6 @@ class DynamicLists extends Component
      */
     public function updateItem(): void
     {
-        if (Auth::user()->hasRole('super-admin')) {
-            throw new AuthorizationException('السوبر أدمن لا يمكنه تعديل البنود الفرعية');
-        }
         $this->validate([
             'editingItemLabel' => 'required|string|max:255',
         ], [], [
@@ -286,9 +296,6 @@ class DynamicLists extends Component
      */
     public function deleteItem(int $itemId): void
     {
-        if (Auth::user()->hasRole('super-admin')) {
-            throw new AuthorizationException('السوبر أدمن لا يمكنه حذف البنود الفرعية');
-        }
         $item = DynamicListItem::findOrFail($itemId);
 
         if (!$this->canEditItem($item)) {
@@ -308,9 +315,6 @@ class DynamicLists extends Component
      */
     public function addSubItem(int $itemId): void
     {
-        if (Auth::user()->hasRole('super-admin')) {
-            throw new AuthorizationException('السوبر أدمن لا يمكنه إضافة البنود الفرعية');
-        }
         $this->validate([
             "subItemLabel.$itemId" => 'required|string|min:2|max:100',
         ]);
@@ -319,12 +323,14 @@ class DynamicLists extends Component
             'dynamic_list_item_id' => $itemId,
             'label' => $this->subItemLabel[$itemId],
             'order' => DynamicListItemSub::where('dynamic_list_item_id', $itemId)->count() + 1,
+            'created_by_agency' => Auth::user()->agency_id,
         ]);
 
         unset($this->subItemLabel[$itemId]);
         $this->dispatch('subitem-created');
         $this->loadLists();
     }
+
 
     /**
      * Start editing sub-item
@@ -346,9 +352,6 @@ class DynamicLists extends Component
      */
     public function updateSubItem(): void
     {
-        if (Auth::user()->hasRole('super-admin')) {
-            throw new AuthorizationException('السوبر أدمن لا يمكنه تعديل البنود الفرعية');
-        }
         $this->validate([
             'editingSubItemLabel' => 'required|string|min:2|max:100',
         ]);
@@ -379,9 +382,6 @@ class DynamicLists extends Component
      */
     public function deleteSubItem(int $subItemId): void
     {
-        if (Auth::user()->hasRole('super-admin')) {
-            throw new AuthorizationException('السوبر أدمن لا يمكنه حذف البنود الفرعية');
-        }
         $subItem = DynamicListItemSub::findOrFail($subItemId);
 
         if (!$this->canEditSub($subItem)) {
@@ -392,18 +392,34 @@ class DynamicLists extends Component
         $this->dispatch('subitem-deleted');
         $this->loadLists();
     }
-
-    // ==================== Helper Methods ====================
-
-    /**
-     * Generate original ID for new lists
-     */
-    protected function generateOriginalId(?int $agencyId): int
+    public function approve($id)
     {
-        return DynamicList::when($agencyId,
-            fn($q) => $q->where('agency_id', $agencyId),
-            fn($q) => $q->whereNull('agency_id')
-        )->max('original_id') + 1;
+        $list = DynamicList::findOrFail($id);
+        $list->update(['is_approved' => true]);
+
+        NotificationService::notifyAgencyAboutListDecision(
+            agencyId: $list->agency_id,
+            status: 'approved',
+            listName: $list->name
+        );
+
+        session()->flash('success', 'تمت الموافقة على الطلب.');
+    }
+
+
+    public function reject($id)
+    {
+        $list = DynamicList::findOrFail($id);
+        $list->update(['is_approved' => false]);
+
+        NotificationService::notifyAgencyAboutListDecision(
+            agencyId: $list->agency_id,
+            status: 'rejected',
+            listName: $list->name,
+            reason: $list->request_reason // أو null
+        );
+
+        session()->flash('success', 'تم رفض الطلب.');
     }
 
     /**

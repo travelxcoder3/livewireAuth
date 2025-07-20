@@ -10,6 +10,7 @@ use App\Models\Sale;
 use Illuminate\Support\Facades\DB;
 use App\Models\ServiceType;
 use ArielMejiaDev\LarapexCharts\LarapexChart;
+use App\Charts\SalesChart;
 
 class Dashboard extends Component
 {
@@ -19,6 +20,10 @@ class Dashboard extends Component
     public $statsViewType = 'monthly'; // 'monthly' or 'service'
     public $chartType = 'table'; // table, bar, pie, line
     public $totalSalesCount = 0;
+    // المتغيرات الجديدة
+    public $salesByService = [];
+    public $salesByEmployee = [];
+    public $salesByBranch = [];
 
     public function mount()
     {
@@ -31,6 +36,63 @@ class Dashboard extends Component
         $this->serviceTypes = ServiceType::where('agency_id', Auth::user()->agency_id)->get();
         $this->selectedServiceType = $this->serviceTypes->first()?->id;
         $this->updateStatsData();
+
+        // تجهيز بيانات المبيعات حسب الخدمة
+        $this->salesByService = Sale::select(
+            'service_type_id',
+            DB::raw('SUM(amount_paid) as total_sales'),
+            DB::raw('COUNT(*) as operations_count')
+        )
+        ->where('agency_id', Auth::user()->agency_id)
+        ->groupBy('service_type_id')
+        ->with('serviceType')
+        ->get()
+        ->map(function($row) {
+            return [
+                'service_type' => $row->serviceType ? $row->serviceType->name : '-',
+                'total_sales' => $row->total_sales,
+                'operations_count' => $row->operations_count
+            ];
+        })->toArray();
+
+        // تجهيز بيانات المبيعات حسب الموظف
+        $this->salesByEmployee = Sale::select(
+            'user_id',
+            DB::raw('SUM(amount_paid) as total_sales'),
+            DB::raw('COUNT(*) as operations_count')
+        )
+        ->where('agency_id', Auth::user()->agency_id)
+        ->groupBy('user_id')
+        ->with('user')
+        ->get()
+        ->map(function($row) {
+            return [
+                'employee' => $row->user ? $row->user->name : '-',
+                'total_sales' => $row->total_sales,
+                'operations_count' => $row->operations_count
+            ];
+        })->toArray();
+
+        // تجهيز بيانات المبيعات حسب الفرع
+        $mainAgencyId = Auth::user()->agency_id;
+        $branchIds = Agency::where('parent_id', $mainAgencyId)->pluck('id')->toArray();
+        $branchIds[] = $mainAgencyId;
+        $this->salesByBranch = Sale::select(
+            'agency_id',
+            DB::raw('SUM(amount_paid) as total_sales'),
+            DB::raw('COUNT(*) as operations_count')
+        )
+        ->whereIn('agency_id', $branchIds)
+        ->groupBy('agency_id')
+        ->with('agency')
+        ->get()
+        ->map(function($row) {
+            return [
+                'branch' => $row->agency ? $row->agency->name : '-',
+                'total_sales' => $row->total_sales,
+                'operations_count' => $row->operations_count
+            ];
+        })->toArray();
     }
 
     public function updatedSelectedServiceType()
@@ -49,6 +111,19 @@ class Dashboard extends Component
     public function updateStatsData()
     {
         if ($this->statsViewType === 'monthly') {
+            // توليد آخر 5 أشهر (سنة/شهر)
+            $months = collect();
+            $now = now()->startOfMonth();
+            for ($i = 4; $i >= 0; $i--) {
+                $date = $now->copy()->subMonths($i);
+                $months->push([
+                    'year' => $date->year,
+                    'month' => $date->month,
+                    'total_sales' => 0,
+                    'operations_count' => 0,
+                ]);
+            }
+
             $query = Sale::select(
                 DB::raw('YEAR(sale_date) as year'),
                 DB::raw('MONTH(sale_date) as month'),
@@ -64,7 +139,25 @@ class Dashboard extends Component
                 ->orderBy('year', 'desc')
                 ->orderBy('month', 'desc')
                 ->get();
-            $this->salesByMonth = $sales->toArray();
+
+            // دمج النتائج مع الأشهر (أي شهر ليس فيه مبيعات يبقى صفر)
+            $salesMap = $sales->keyBy(function($row) {
+                return $row->year . '-' . $row->month;
+            });
+            $final = $months->map(function($item) use ($salesMap) {
+                $key = $item['year'] . '-' . $item['month'];
+                if ($salesMap->has($key)) {
+                    $row = $salesMap[$key];
+                    return [
+                        'year' => $row->year,
+                        'month' => $row->month,
+                        'total_sales' => $row->total_sales,
+                        'operations_count' => $row->operations_count,
+                    ];
+                }
+                return $item;
+            });
+            $this->salesByMonth = $final->values()->toArray();
 
             // حساب عدد العمليات الفعلية
             $countQuery = Sale::where('agency_id', Auth::user()->agency_id);
@@ -74,8 +167,8 @@ class Dashboard extends Component
             $this->totalSalesCount = $countQuery->count();
 
             // تجهيز بيانات الرسم البياني باستخدام LarapexChart
-            $labels = $sales->map(fn($row) => $row->year . '/' . $row->month)->toArray();
-            $data = $sales->map(fn($row) => $row->total_sales)->toArray();
+            $labels = $final->map(fn($row) => $row['year'] . '/' . $row['month'])->toArray();
+            $data = $final->map(fn($row) => $row['total_sales'])->toArray();
             $this->monthlyChart = (new LarapexChart)
                 ->setType('bar')
                 ->setTitle('إحصائيات المبيعات حسب الشهر')
@@ -364,24 +457,18 @@ class Dashboard extends Component
 
     public function render()
     {
-        $monthlyChart = null;
-        if ($this->statsViewType === 'monthly') {
-            $sales = collect($this->salesByMonth);
-            $labels = $sales->map(fn($row) => $row['year'] . '/' . $row['month'])->toArray();
-            $data = $sales->map(fn($row) => $row['total_sales'])->toArray();
-            $monthlyChart = (new \ArielMejiaDev\LarapexCharts\LarapexChart)
-                ->setType('bar')
-                ->setTitle('إحصائيات المبيعات حسب الشهر')
-                ->setXAxis($labels)
-                ->setDataset([
-                    [
-                        'name' => 'إجمالي المبيعات',
-                        'data' => $data
-                    ]
-                ]);
-        }
-        return view('livewire.agency.dashboard', [
-            'monthlyChart' => $monthlyChart,
+        // تجهيز بيانات المبيعات الشهرية (نفس ما يُستخدم للجدول)
+        $sales = collect($this->salesByMonth);
+        $labels = $sales->map(function($row) {
+            return ($row['year'] ?? '-') . '/' . str_pad($row['month'] ?? '', 2, '0', STR_PAD_LEFT);
+        })->toArray();
+        $data = $sales->map(function($row) {
+            return $row['operations_count'] ?? 0;
+        })->toArray();
+
+        return view('livewire.agency.dashboard.comprehensive', [
+            'chartLabels' => $labels,
+            'chartData' => $data,
         ])->layout('layouts.agency');
     }
 } 

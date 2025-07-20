@@ -4,69 +4,67 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations to create dynamic_lists table.
      *
-     * This table stores the main dynamic lists that can be:
-     * - System lists (created by admin)
-     * - Agency-specific lists (created by agencies)
-     * - Copies of system lists customized by agencies
+     * This table stores:
+     * - System lists (is_system = true) created by seeder and shown to all agencies
+     * - Custom lists (is_system = false) created by super admin or requested by an agency
      */
     public function up(): void
     {
         Schema::create('dynamic_lists', function (Blueprint $table) {
-            // Primary key
             $table->id();
 
-            // Foreign key to agencies table (nullable for system lists)
             $table->foreignId('agency_id')
                 ->nullable()
                 ->constrained()
                 ->onDelete('cascade')
-                ->comment('Null for system lists, agency_id for agency-specific lists');
+                ->comment('Null = متاحة لجميع الوكالات (قائمة تنظيمية)، أو رقم وكالة واحدة مخصصة');
 
-            // Reference to original list (for cloned/copied lists)
+            $table->foreignId('requested_by_agency')
+                ->nullable()
+                ->constrained('agencies')
+                ->onDelete('set null')
+                ->comment('الوكالة التي طلبت إنشاء القائمة');
             $table->unsignedBigInteger('original_id')
                 ->nullable()
-                ->comment('Original system list ID for agency copies');
+                ->comment('ID of the original system list if this is a copy for an agency');
 
-            // Flag for system lists
+            $table->index('original_id');
+
             $table->boolean('is_system')
                 ->default(false)
-                ->comment('Whether this is a system list (true) or agency list (false)');
+                ->comment('True = قائمة تنظيمية منشأة عبر Seeder');
 
-            // List name
+            $table->boolean('is_requested')
+                ->default(false)
+                ->comment('True = تم طلب إنشاء هذه القائمة من قبل وكالة');
+
+            $table->boolean('is_approved')
+                ->nullable()
+                ->comment('Null = لم يتم مراجعتها، True = تمت الموافقة، False = تم الرفض');
+
             $table->string('name')
-                ->comment('Display name of the list');
+                ->comment('اسم القائمة الظاهر');
 
-            // Timestamps
+            $table->text('request_reason')->nullable();
+
             $table->timestamps();
 
-            // Indexes
             $table->index('agency_id');
-            $table->index('original_id');
             $table->index('is_system');
+            $table->index('is_requested');
+            $table->index('is_approved');
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * Drops the dynamic_lists table after properly removing foreign key constraints.
      */
     public function down(): void
     {
-        Schema::table('dynamic_lists', function (Blueprint $table) {
-            // First drop the foreign key constraint
-            $table->dropForeign(['agency_id']);
-
-            // Then drop the column
-            $table->dropColumn('agency_id');
-        });
-
-        // Finally drop the entire table
         Schema::dropIfExists('dynamic_lists');
     }
 };

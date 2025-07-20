@@ -126,42 +126,41 @@
         @endforeach
     </div>
 
-    <!-- أزرار التبديل بين طرق العرض -->
-    <div class="flex justify-center gap-4 my-4">
-        <button wire:click="updateStatsViewType('monthly')"
-                class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
-                @if($statsViewType === 'monthly') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
-            شهرياً
-        </button>
-        <button wire:click="updateStatsViewType('service')"
-                class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
-                @if($statsViewType === 'service') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
-            حسب الخدمة
-        </button>
-        <button wire:click="updateStatsViewType('employee')"
-                class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
-                @if($statsViewType === 'employee') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
-            الموظف
-        </button>
-        <button wire:click="updateStatsViewType('branch')"
-                class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
-                @if($statsViewType === 'branch') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
-            الفرع
-        </button>
-    </div>
-
-    @if($statsViewType === 'monthly')
-        <div class="flex flex-col items-center min-h-[300px] my-8">
-            <div class="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xl border border-gray-100">
-                <div class="flex items-center justify-center mb-6 gap-2">
-                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-primary-500 to-primary-400 text-white shadow">
-                        <i class="fas fa-chart-bar text-2xl"></i>
-                    </span>
-                    <div>
-                        <h2 class="text-2xl font-extrabold text-gray-800 tracking-tight">إحصائيات المبيعات حسب الشهر</h2>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
+    <!-- كارت واحد يحتوي على أزرار التبديل وجداول الإحصائيات -->
+    <div class="flex flex-col items-center min-h-[300px] my-8">
+        <div class="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xl border border-gray-100">
+            <div class="flex items-center justify-center mb-6 gap-2">
+                <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-primary-500 to-primary-400 text-white shadow">
+                    <i class="fas fa-chart-bar text-2xl"></i>
+                </span>
+                <h2 class="text-2xl font-extrabold text-gray-800 tracking-tight">إحصائيات المبيعات</h2>
+            </div>
+            <!-- أزرار التبديل -->
+            <div class="flex justify-center gap-4 my-4">
+                <button wire:click="updateStatsViewType('monthly')"
+                        class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
+                        @if($statsViewType === 'monthly') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
+                    شهرياً
+                </button>
+                <button wire:click="updateStatsViewType('service')"
+                        class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
+                        @if($statsViewType === 'service') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
+                    حسب الخدمة
+                </button>
+                <button wire:click="updateStatsViewType('employee')"
+                        class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
+                        @if($statsViewType === 'employee') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
+                    الموظف
+                </button>
+                <button wire:click="updateStatsViewType('branch')"
+                        class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
+                        @if($statsViewType === 'branch') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
+                    الفرع
+                </button>
+            </div>
+            <!-- الجداول -->
+            <div class="overflow-x-auto" style="min-height: 350px; max-height: 400px; overflow-y: auto;">
+                @if($statsViewType === 'monthly')
                     <table class="min-w-full text-center border-separate border-spacing-y-2">
                         <thead>
                             <tr class="bg-gradient-to-r from-primary-100 to-primary-50 text-primary-700">
@@ -172,15 +171,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php
-                                $totalOperations = 0;
-                                $totalSales = 0;
-                            @endphp
+                            @php $totalOperations = 0; $totalSales = 0; @endphp
                             @forelse($salesByMonth as $row)
-                                @php
-                                    $totalOperations += $row['operations_count'] ?? 0;
-                                    $totalSales += $row['total_sales'] ?? 0;
-                                @endphp
+                                @php $totalOperations += $row['operations_count'] ?? 0; $totalSales += $row['total_sales'] ?? 0; @endphp
                                 <tr class="bg-white hover:bg-primary-50 transition rounded-xl shadow-sm border border-gray-100">
                                     <td class="px-4 py-2 font-semibold text-gray-700">{{ $row['year'] }}</td>
                                     <td class="px-4 py-2 text-gray-600">{{ $row['month'] }}</td>
@@ -201,19 +194,7 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            </div>
-        </div>
-    @elseif($statsViewType === 'service')
-        <div class="flex flex-col items-center min-h-[300px] my-8">
-            <div class="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xl border border-gray-100">
-                <div class="flex items-center justify-center mb-6 gap-2">
-                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-primary-500 to-primary-400 text-white shadow">
-                        <i class="fas fa-chart-pie text-2xl"></i>
-                    </span>
-                    <h2 class="text-2xl font-extrabold text-gray-800 tracking-tight">إحصائيات المبيعات حسب الخدمة</h2>
-                </div>
-                <div class="overflow-x-auto">
+                @elseif($statsViewType === 'service')
                     <table class="min-w-full text-center border-separate border-spacing-y-2">
                         <thead>
                             <tr class="bg-gradient-to-r from-primary-100 to-primary-50 text-primary-700">
@@ -224,7 +205,7 @@
                         </thead>
                         <tbody>
                             @php $totalSales = 0; $totalOperations = 0; @endphp
-                            @forelse($salesByMonth as $row)
+                            @forelse($salesByService as $row)
                                 @php $totalSales += $row['total_sales'] ?? 0; $totalOperations += $row['operations_count'] ?? 0; @endphp
                                 <tr class="bg-white hover:bg-primary-50 transition rounded-xl shadow-sm border border-gray-100">
                                     <td class="px-4 py-2 text-gray-700">{{ $row['service_type'] }}</td>
@@ -245,19 +226,7 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            </div>
-        </div>
-    @elseif($statsViewType === 'employee')
-        <div class="flex flex-col items-center min-h-[300px] my-8">
-            <div class="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xl border border-gray-100">
-                <div class="flex items-center justify-center mb-6 gap-2">
-                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-primary-500 to-primary-400 text-white shadow">
-                        <i class="fas fa-user text-2xl"></i>
-                    </span>
-                    <h2 class="text-2xl font-extrabold text-gray-800 tracking-tight">إحصائيات المبيعات حسب الموظف</h2>
-                </div>
-                <div class="overflow-x-auto">
+                @elseif($statsViewType === 'employee')
                     <table class="min-w-full text-center border-separate border-spacing-y-2">
                         <thead>
                             <tr class="bg-gradient-to-r from-primary-100 to-primary-50 text-primary-700">
@@ -268,7 +237,7 @@
                         </thead>
                         <tbody>
                             @php $totalSales = 0; $totalOperations = 0; @endphp
-                            @forelse($salesByMonth as $row)
+                            @forelse($salesByEmployee as $row)
                                 @php $totalSales += $row['total_sales'] ?? 0; $totalOperations += $row['operations_count'] ?? 0; @endphp
                                 <tr class="bg-white hover:bg-primary-50 transition rounded-xl shadow-sm border border-gray-100">
                                     <td class="px-4 py-2 text-gray-700">{{ $row['employee'] }}</td>
@@ -289,19 +258,7 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            </div>
-        </div>
-    @elseif($statsViewType === 'branch')
-        <div class="flex flex-col items-center min-h-[300px] my-8">
-            <div class="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xl border border-gray-100">
-                <div class="flex items-center justify-center mb-6 gap-2">
-                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-primary-500 to-primary-400 text-white shadow">
-                        <i class="fas fa-code-branch text-2xl"></i>
-                    </span>
-                    <h2 class="text-2xl font-extrabold text-gray-800 tracking-tight">إحصائيات المبيعات حسب الفرع</h2>
-                </div>
-                <div class="overflow-x-auto">
+                @elseif($statsViewType === 'branch')
                     <table class="min-w-full text-center border-separate border-spacing-y-2">
                         <thead>
                             <tr class="bg-gradient-to-r from-primary-100 to-primary-50 text-primary-700">
@@ -312,7 +269,7 @@
                         </thead>
                         <tbody>
                             @php $totalSales = 0; $totalOperations = 0; @endphp
-                            @forelse($salesByMonth as $row)
+                            @forelse($salesByBranch as $row)
                                 @php $totalSales += $row['total_sales'] ?? 0; $totalOperations += $row['operations_count'] ?? 0; @endphp
                                 <tr class="bg-white hover:bg-primary-50 transition rounded-xl shadow-sm border border-gray-100">
                                     <td class="px-4 py-2 text-gray-700">{{ $row['branch'] }}</td>
@@ -333,10 +290,10 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
+                @endif
             </div>
         </div>
-    @endif
+    </div>
 
     <!-- Recent Data Sections -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -449,3 +406,8 @@
         </div>
     </div>
 </div>
+@push('scripts')
+    @if(isset($this->monthlyChart))
+        {!! $this->monthlyChart->script() !!}
+    @endif
+@endpush
