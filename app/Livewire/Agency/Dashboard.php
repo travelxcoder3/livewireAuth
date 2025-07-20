@@ -24,6 +24,9 @@ class Dashboard extends Component
     public $salesByService = [];
     public $salesByEmployee = [];
     public $salesByBranch = [];
+    public $totalUsers = 0;
+    public $activeUsers = 0;
+    public $onlineUsers = 0;
 
     public function mount()
     {
@@ -31,6 +34,14 @@ class Dashboard extends Component
             session()->flash('error', 'ليس لديك صلاحيات للوصول للوحة التحكم.');
             return redirect('/');
         }
+
+        $agencyId = Auth::user()->agency_id;
+        $this->totalUsers = \App\Models\User::where('agency_id', $agencyId)->count();
+        $this->activeUsers = \App\Models\User::where('agency_id', $agencyId)->where('is_active', 1)->count();
+        $this->onlineUsers = \App\Models\User::where('agency_id', $agencyId)
+            ->whereNotNull('last_activity_at')
+            ->where('last_activity_at', '>=', now()->subMinutes(5))
+            ->count();
 
         // جلب جميع الخدمات للوكالة الحالية
         $this->serviceTypes = ServiceType::where('agency_id', Auth::user()->agency_id)->get();

@@ -30,8 +30,9 @@ class Sale extends Model
         'amount_paid',
         'depositor_name',
         'sale_profit',
-        'customer_via'
-
+        'customer_via',
+        'service_date',
+        'expected_payment_date'
     ];
 
         protected $casts = [

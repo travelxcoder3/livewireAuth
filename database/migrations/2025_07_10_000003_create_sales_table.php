@@ -46,7 +46,8 @@ return new class extends Migration {
             $table->decimal('amount_paid', 12, 2)->nullable();
             $table->string('depositor_name')->nullable(); 
             $table->decimal('sale_profit', 12, 2)->nullable();
-            
+            $table->date('service_date')->nullable();
+            $table->date('expected_payment_date')->nullable();
             $table->timestamps();
 
         });

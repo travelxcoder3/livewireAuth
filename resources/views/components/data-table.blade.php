@@ -14,7 +14,23 @@
                 @forelse ($rows as $row)
                     <tr class="hover:bg-gray-50">
                         @foreach($columns as $col)
-                            <td class="px-2 py-1 @if(isset($col['color'])) {{ 'text-' . $col['color'] }} @endif">
+                          @php
+                            $value = data_get($row, $col['key']);
+
+                            $colorClass = '';
+                            if (isset($col['color'])) {
+                                if (is_callable($col['color'])) {
+                                    $color = call_user_func($col['color'], $value);
+                                    $colorClass = 'text-' . $color;
+                                } else {
+                                    $colorClass = 'text-' . $col['color'];
+                                }
+                            }
+                        @endphp
+
+                        <td class="px-2 py-1 {{ $colorClass }}">
+
+
                                 @php
                                     $value = data_get($row, $col['key']);
                                 @endphp

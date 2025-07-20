@@ -14,6 +14,7 @@
 @endphp
 
 <div
+
     x-data="{
         open: false,
         selected: @entangle($wireModel),
@@ -24,19 +25,33 @@
         },
         options: {{ json_encode($options) }},
 
-        get filteredOptions() {
-            if (!this.searchQuery) return Object.entries(this.options);
-            return Object.entries(this.options).filter(
-                ([key, value]) => value.toLowerCase().includes(this.searchQuery.toLowerCase())
-            );
+        // دالة البحث الضبابي
+        fuzzySearch(query, items) {
+            if (!query) return items;
+            
+            const queryLower = query.toLowerCase();
+            return items.filter(([key, value]) => {
+                const valueLower = value.toLowerCase();
+                let queryIndex = 0;
+                let valueIndex = 0;
+                
+                while (valueIndex < valueLower.length && queryIndex < queryLower.length) {
+                    if (valueLower[valueIndex] === queryLower[queryIndex]) {
+                        queryIndex++;
+                    }
+                    valueIndex++;
+                }
+                
+                return queryIndex === queryLower.length;
+            });
         },
 
-        isOptionVisible(key, value) {
-            if (!this.searchQuery) return true;
-            return value.toLowerCase().includes(this.searchQuery.toLowerCase());
+        get filteredOptions() {
+            return this.fuzzySearch(this.searchQuery, Object.entries(this.options));
         }
     }"
-    x-init="init()"
+    x-effect="if (open) init()"
+
     class="{{ $containerClass }} w-full"
 >
     <!-- حقل الاختيار مع التسمية العائمة -->
@@ -80,16 +95,20 @@
         @endif
 
         <!-- عرض جميع الخيارات مع إخفاء/إظهار حسب البحث -->
-<template x-for="[key, value] in filteredOptions" :key="key">
-    <div
-        @click="selected = key; $wire.set('{{ $wireModel }}', key); open = false"
-        class="px-3 py-2 hover:bg-[rgb(var(--primary-100))] text-sm text-gray-700 cursor-pointer transition"
-        :class="{ 'bg-[rgb(var(--primary-500))] text-white': selected === key }"
-    >
-        <span x-text="value"></span>
-    </div>
-</template>
+        <template x-for="[key, value] in filteredOptions" :key="key">
+            <div
+                @click="selected = key; $wire.set('{{ $wireModel }}', key); open = false"
+                class="px-3 py-2 hover:bg-[rgb(var(--primary-100))] text-sm text-gray-700 cursor-pointer transition"
+                :class="{ 'bg-[rgb(var(--primary-500))] text-white': selected === key }"
+            >
+                <span x-text="value"></span>
+            </div>
+        </template>
 
+        <!-- رسالة عندما لا توجد نتائج -->
+        <div x-show="filteredOptions.length === 0" class="px-3 py-2 text-sm text-gray-500">
+            لا توجد نتائج مطابقة
+        </div>
     </div>
 
     <!-- حقل مخفي للقيمة المحددة -->

@@ -7,16 +7,18 @@ class SalesTable
     public static function columns()
     {
         return [
-            ['key' => 'sale_date', 'label' => 'التاريخ'],
+            ['key' => 'sale_date', 'label' => 'التاريخ', 'format' => 'date'],
             ['key' => 'beneficiary_name', 'label' => 'المستفيد'],
             ['key' => 'customer.name', 'label' => 'العميل'],
             ['key' => 'service.label', 'label' => 'الخدمة'],
             ['key' => 'provider.name', 'label' => 'المزود'],
+            ['key' => 'service_date', 'label' => 'تاريخ الخدمة', 'format' => 'date'],
             ['key' => 'customer_via', 'label' => 'العميل عبر'],
             ['key' => 'usd_buy', 'label' => 'Buy', 'format' => 'money', 'color' => 'primary-500'],
             ['key' => 'usd_sell', 'label' => 'Sell', 'format' => 'money', 'color' => 'primary-600'],
             ['key' => 'sale_profit', 'label' => 'الربح', 'format' => 'money', 'color' => 'primary-700'],
-            ['key' => 'amount_paid', 'label' => 'المبلغ', 'format' => 'money'],
+            ['key' => 'amount_paid', 'label' => 'المبلغ المدفوع', 'format' => 'money'],
+            ['key' => 'expected_payment_date', 'label' => 'تاريخ السداد المتوقع', 'format' => 'date'],
             ['key' => 'reference', 'label' => 'المرجع'],
             ['key' => 'pnr', 'label' => 'PNR'],
             ['key' => 'route', 'label' => 'Route'],

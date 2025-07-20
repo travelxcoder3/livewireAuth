@@ -141,7 +141,7 @@ $columns = SalesTable::columns();
         @can('sales.create')
         <!-- نموذج الإضافة -->
         <div class="bg-white rounded-xl shadow-md p-4">
-            <form wire:submit.prevent="save" class="space-y-4 text-sm" id="mainForm">
+        <form wire:submit.prevent="save" class="space-y-4 text-sm" id="mainForm">
                 <!-- السطر الأول -->
                 <div class="grid grid-cols-12 gap-3">
                 
@@ -276,16 +276,31 @@ $columns = SalesTable::columns();
                         errorName="customer_via"
                     />
 
-                    <!-- المزود -->
-                    <x-select-field
-                        wireModel="provider_id"
-                        label="المزود"
-                        :options="$providers->pluck('name', 'id')->toArray()"
-                        placeholder=" المزود"
-                        containerClass="relative mt-1"
-                        errorName="provider_id"
-                    />
+                    <!-- المزود + تاريخ الخدمة -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- المزود -->
+                        <x-select-field
+                            wireModel="provider_id"
+                            label="المزود"
+                            :options="$providers->pluck('name', 'id')->toArray()"
+                            placeholder=" المزود"
+                            containerClass="relative mt-1"
+                            errorName="provider_id"
+                        />
 
+                        <!-- تاريخ الخدمة -->
+                        <x-input-field
+                            name="service_date"
+                            label="تاريخ الخدمة"
+                            wireModel="service_date"
+                            placeholder="تاريخ الخدمة"
+                            type="date"
+                            containerClass="relative mt-1"
+                            errorName="service_date"
+                        />
+                    </div>
+
+                    @if($showCustomerField)
                     <!-- العميل -->
                     <x-select-field
                         wireModel="customer_id"
@@ -295,6 +310,7 @@ $columns = SalesTable::columns();
                         containerClass="relative mt-1"
                         errorName="customer_id"
                     />
+                    @endif
 
                     <!-- العمولة -->
                     @if($showCommission)
@@ -310,7 +326,6 @@ $columns = SalesTable::columns();
                     @endif
                 </div>
 
-                <!-- الصف الرابع -->
                <!-- الصف الرابع -->
 <div class="grid grid-cols-24 gap-3 items-end">
     <!-- USD Buy -->
@@ -340,22 +355,36 @@ $columns = SalesTable::columns();
     />
 
     <!-- المبلغ المدفوع -->
-    <div class="col-span-3"> 
-    @if($payment_method !== 'all')
-    <x-input-field
-        name="amount_paid"
-        label="المبلغ المدفوع"
-        wireModel="amount_paid"
-        placeholder="المبلغ المدفوع"
-        type="number"
-        step="0.01"
-        wireChange="calculateDue"
-        containerClass="relative mt-1 col-span-3"
-        fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
-    />
-    @endif
-    </div>
+    @php
+        $showAmountPaid = $payment_method !== 'all';
+    @endphp
 
+    @if($showAmountPaid)
+        <x-input-field
+            name="amount_paid"
+            label="المبلغ المدفوع"
+            wireModel="amount_paid"
+            placeholder="المبلغ المدفوع"
+            type="number"
+            step="0.01"
+            wireChange="calculateDue"
+            containerClass="relative mt-1 {{ $showExpectedDate ? 'col-span-3' : 'col-span-6' }}"
+            fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
+        />
+    @endif
+
+    <!-- تاريخ السداد المتوقع -->
+    @if($showExpectedDate)
+        <x-input-field
+            name="expected_payment_date"
+            label="تاريخ السداد المتوقع"
+            wireModel="expected_payment_date"
+            placeholder="تاريخ السداد المتوقع"
+            type="date"
+            containerClass="relative mt-1 {{ $showAmountPaid ? 'col-span-3' : 'col-span-6' }}"
+            errorName="expected_payment_date"
+        />
+    @endif
     <!-- الربح -->
     <div class="col-span-3 flex items-end text-xs font-semibold text-[rgb(var(--primary-600))]">
         <div>
@@ -372,25 +401,192 @@ $columns = SalesTable::columns();
         </div>
     </div>
 
-    <!-- الأزرار -->
-    <div class="col-span-9 flex justify-end gap-3">
-        <button type="button" wire:click="resetFields" 
-                class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
-            تنظيف الحقول
-        </button>
+<!-- الأزرار -->
+<div class="col-span-6 flex items-end gap-3" style="margin-inline-start: auto;">
+    <button type="button" wire:click="resetFields" 
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center gap-2">
+        تنظيف الحقول
+    </button>
 
-        <button type="submit"
-                class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-            تاكيد 
-        </button>
-    </div>
+    <button type="button" onclick="openFilterModal()"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+        </svg>
+    </button>
+
+        <!-- زر التحديث -->
+    <button type="button" wire:click="resetFilters"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center"
+            title="إعادة تحميل الجدول كاملاً">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+        </svg>
+    </button>
+
+    <button type="submit"
+            class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
+            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+        تاكيد 
+    </button>
+</div>
 </div>
 
             </form>
         </div>
         @endcan
 
+        
+        <!-- جدول المبيعات -->
+        <x-data-table :rows="$sales" :columns="$columns" />
+<!-- نافذة الفلترة -->
+<div id="filterModal" x-data="{ show: false }" x-show="show" @toggle-filter-modal.window="show = $event.detail"
+     x-cloak class="fixed inset-0 z-50 bg-black/10 flex items-start justify-center pt-24 backdrop-blur-sm overflow-visible">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
+        <button onclick="closeFilterModal()"
+                class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">
+            &times;
+        </button>
+
+        <h3 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">
+            فلترة النتائج
+        </h3>
+        
+        <form id="filterForm" class="space-y-4">
+            <!-- تاريخ البيع -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- في نافذة الفلترة -->
+                <x-input-field
+                    name="start_date"
+                    label="من تاريخ"
+                    wireModel="filterInputs.start_date"
+                    placeholder="من تاريخ"
+                    type="date"
+                    containerClass="relative mt-1"
+                />
+
+                <x-input-field
+                    name="end_date"
+                    label="إلى تاريخ"
+                    wireModel="filterInputs.end_date"
+                    placeholder="إلى تاريخ"
+                    type="date"
+                    containerClass="relative mt-1"
+                />
+
+                <x-select-field
+                    wireModel="filterInputs.service_type_id"
+                    label="نوع الخدمة"
+                    :options="$services->pluck('label', 'id')->toArray()"
+                    placeholder="اختر الخدمة"
+                    containerClass="relative mt-1"
+                />
+
+                <x-select-field
+                    wireModel="filterInputs.status"
+                    label="الحالة"
+                    :options="[
+                        '' => 'الكل',
+                        'issued' => 'تم الإصدار',
+                        'refunded' => 'تم الاسترداد',
+                        'canceled' => 'تم الإلغاء',
+                        'pending' => 'قيد الانتظار',
+                        'reissued' => 'إعادة الإصدار',
+                        'void' => 'لاغية',
+                        'paid' => 'مدفوعة',
+                        'unpaid' => 'غير مدفوعة'
+                    ]"
+                    placeholder="الحالة"
+                    containerClass="relative mt-1"
+                />
+
+                <x-select-field
+                    wireModel="filterInputs.customer_id"
+                    label="العميل"
+                    :options="$customers->pluck('name', 'id')->toArray()"
+                    placeholder="اختر العميل"
+                    containerClass="relative mt-1"
+                />
+
+                <x-select-field
+                    wireModel="filterInputs.provider_id"
+                    label="المزود"
+                    :options="$providers->pluck('name', 'id')->toArray()"
+                    placeholder="اختر المزود"
+                    containerClass="relative mt-1"
+                />
+
+                <x-input-field
+                    name="service_date"
+                    label="تاريخ الخدمة"
+                    wireModel="filterInputs.service_date"
+                    placeholder="تاريخ الخدمة"
+                    type="date"
+                    containerClass="relative mt-1"
+                />
+
+                <x-select-field
+                    wireModel="filterInputs.customer_via"
+                    label="العميل عبر"
+                    :options="[
+                        '' => 'الكل',
+                        'whatsapp' => 'واتساب',
+                        'viber' => 'فايبر',
+                        'instagram' => 'إنستغرام',
+                        'other' => 'أخرى'
+                    ]"
+                    placeholder="العميل عبر"
+                    containerClass="relative mt-1"
+                />
+
+                <x-input-field
+                    name="route"
+                    label="Route"
+                    wireModel="filterInputs.route"
+                    placeholder="Route"
+                    containerClass="relative mt-1"
+                />
+
+                <x-select-field
+                    wireModel="filterInputs.payment_method"
+                    label="طريقة الدفع"
+                    :options="[
+                        '' => 'الكل',
+                        'kash' => 'كاش',
+                        'part' => 'جزئي',
+                        'all' => 'كامل جزئي'
+                    ]"
+                    placeholder="طريقة الدفع"
+                    containerClass="relative mt-1"
+                />
+
+                <x-select-field
+                    wireModel="filterInputs.payment_type"
+                    label="وسيلة الدفع"
+                    :options="[
+                        '' => 'الكل',
+                        'creamy' => 'كريمي',
+                        'kash' => 'كاش',
+                        'visa' => 'فيزا'
+                    ]"
+                    placeholder="وسيلة الدفع"
+                    containerClass="relative mt-1"
+                />
+<div class="mt-6 flex justify-center gap-3">
+<button type="button" onclick="closeFilterModal()"
+    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+    إلغاء
+</button>
+
+            <button type="button" wire:click="applyFilters"
+                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
+                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                تطبيق الفلترة
+            </button>
+            </div>
+        </form>
+    </div>
+</div>
         <!-- نافذة اختيار نوع التقرير -->
         <div id="reportModal" class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center hidden backdrop-blur-sm">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
@@ -494,16 +690,22 @@ $columns = SalesTable::columns();
             </div>
         </div>
 
-        <!-- جدول المبيعات -->
-        <x-data-table :rows="$sales" :columns="$columns" />
-
-     
     </div>
 </div>
 
 <script>
     let currentReportType = '';
+function openFilterModal() {
+    window.dispatchEvent(new CustomEvent('toggle-filter-modal', { detail: true }));
+}
+function closeFilterModal() {
+    window.dispatchEvent(new CustomEvent('toggle-filter-modal', { detail: false }));
+}
 
+function applyFilters() {
+    Livewire.emit('applyFilters');
+    closeFilterModal();
+}
     function openReportModal(type) {
         currentReportType = type;
         const modal = document.getElementById('reportModal');
@@ -583,4 +785,15 @@ $columns = SalesTable::columns();
         closeFieldsModal();
         closeReportModal();
     }
+        document.addEventListener('livewire:load', () => {
+        Livewire.on('filters-applied', () => {
+            window.dispatchEvent(new CustomEvent('toggle-filter-modal', { detail: false }));
+        });
+    });
+// أضف هذا الكود في قسم الـ script
+document.addEventListener('livewire:init', () => {
+    Livewire.on('filters-applied', () => {
+        closeFilterModal();
+    });
+});
 </script>

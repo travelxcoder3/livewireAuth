@@ -22,7 +22,7 @@ class Index extends Component
     public $beneficiary_name, $sale_date, $provider_id,
         $customer_via, $usd_buy, $usd_sell, $commission, $route, $pnr, $reference,
         $status, $amount_paid, $depositor_name, $account_id, $customer_id, $sale_profit = 0,
-        $payment_method, $payment_type, $receipt_number, $phone_number, $service_type_id;
+        $payment_method, $payment_type, $receipt_number, $phone_number, $service_type_id, $service_date, $expected_payment_date;
 
 
     public $showCommission = false;
@@ -34,7 +34,41 @@ class Index extends Component
     public $totalProfit = 0;           // إجمالي الربح
     public $amount_due = 0; // المبلغ المتبقي
     public $services = []; // أضف هذا الخاصية
+    public $showExpectedDate = false;
+    public $showCustomerField = true;
 
+    public $filters = [
+    'start_date' => '',
+    'end_date' => '',
+    'service_type_id' => '',
+    'status' => '',
+    'customer_id' => '',
+    'provider_id' => '',
+    'service_date' => '',
+    'customer_via' => '',
+    'route' => '',
+    'payment_method' => '',
+    'payment_type' => ''
+
+];
+
+// بيانات النموذج المؤقت داخل نافذة الفلترة
+public $filterInputs = [
+    'start_date' => '',
+    'end_date' => '',
+    'service_type_id' => '',
+    'status' => '',
+    'customer_id' => '',
+    'provider_id' => '',
+    'service_date' => '',
+    'customer_via' => '',
+    'route' => '',
+    'payment_method' => '',
+    'payment_type' => ''
+];
+
+public $filterServices = [];
+public $filterCustomers = [];
     // في دالة mount أو مكان مناسب
     public function fetchServices()
     {
@@ -67,6 +101,32 @@ class Index extends Component
         $this->payment_type = $sale->payment_type;
         $this->receipt_number = $sale->receipt_number;
         $this->phone_number = $sale->phone_number;
+        $this->service_date = $sale->service_date;
+        $this->expected_payment_date = $sale->expected_payment_date;
+
+        // معالجة الحقول الشرطية يدويًا
+        $this->showExpectedDate = in_array($sale->payment_method, ['part', 'all']);
+
+        $customer = \App\Models\Customer::find($sale->customer_id);
+        $this->showCommission = $customer && $customer->has_commission;
+
+        //  إعادة حساب القيم المحسوبة
+        $this->calculateProfit();
+        $this->calculateDue();
+// معالجة الحقول الشرطية يدويًا
+$this->showExpectedDate = in_array($sale->payment_method, ['part', 'all']);
+$this->showCustomerField = $sale->payment_method !== 'kash';
+
+// 🟡 تصفير الحقول غير المرئية حسب نوع الدفع
+if ($sale->payment_method === 'all') {
+    $this->amount_paid = null;
+}
+if ($sale->payment_method === 'kash') {
+    $this->customer_id = null;
+    $this->commission = null;
+    $this->showCommission = false;
+}
+
     }
 
 
@@ -92,13 +152,16 @@ class Index extends Component
             'payment_method',
             'payment_type',
             'receipt_number',
-            'phone_number'
+            'phone_number',
+            'service_date',
+            'expected_payment_date',
         ]);
 
         // تنظيف الحقول المحسوبة يدويًا
         $this->sale_profit = 0;
         $this->amount_due = 0;
         $this->showCommission = false;
+        $this->showExpectedDate = false;
     }
 
 
@@ -109,21 +172,12 @@ class Index extends Component
         $this->successMessage = null;
 
     }
-    public function updatedServiceTypeId()
-    {
-        $this->provider_id = null;
-    }
 
     public function getFilteredProviders()
     {
         return Provider::query()
             ->where('agency_id', Auth::user()->agency_id)
-            ->where('status', 'approved') // فقط المزودين المعتمدين
-            ->when(
-                $this->service_type_id,
-                fn($q) =>
-                $q->where('service_item_id', $this->service_type_id)
-            )
+            ->where('status', 'approved')
             ->get();
     }
 
@@ -156,6 +210,44 @@ class Index extends Component
                                   ->where('user_id', $user->id);
             }
         }
+    // تطبيق الفلترة
+    $salesQuery->when($this->filters['start_date'], function($query) {
+        $query->where('sale_date', '>=', $this->filters['start_date']);
+    })
+    ->when($this->filters['end_date'], function($query) {
+        $query->where('sale_date', '<=', $this->filters['end_date']);
+    })
+    ->when($this->filters['service_type_id'], function($query) {
+        $query->where('service_type_id', $this->filters['service_type_id']);
+    })
+    ->when($this->filters['status'], function($query) {
+        $query->where('status', $this->filters['status']);
+    })
+    ->when($this->filters['customer_id'], function($query) {
+        $query->where('customer_id', $this->filters['customer_id']);
+    })
+    ->when($this->filters['provider_id'], function($query) {
+        $query->where('provider_id', $this->filters['provider_id']);
+    })
+    ->when($this->filters['service_date'], function($query) {
+        $query->where('service_date', $this->filters['service_date']);
+    })
+    ->when($this->filters['customer_via'], function($query) {
+        $query->where('customer_via', $this->filters['customer_via']);
+    })
+    ->when($this->filters['route'], function($query) {
+        $query->where('route', 'like', '%'.$this->filters['route'].'%');
+    })
+    ->when($this->filters['payment_method'], function($query) {
+        $query->where('payment_method', $this->filters['payment_method']);
+    })
+    ->when($this->filters['payment_type'], function($query) {
+        $query->where('payment_type', $this->filters['payment_type']);
+    });
+    $sales = $salesQuery
+        ->with(['user', 'provider', 'service', 'customer', 'account'])
+        ->latest()
+        ->paginate(10);
 
         $sales = $salesQuery
             ->with(['user', 'provider', 'service', 'customer', 'account'])
@@ -186,7 +278,9 @@ class Index extends Component
             'providers' => $providers,
             'intermediaries' => $intermediaries,
             'customers' => $customers,
-            'accounts' => $accounts
+            'accounts' => $accounts,
+            'filterServices' => $this->filterServices,
+            'filterCustomers' => $this->filterCustomers
         ])->layout('layouts.agency');
     }
 
@@ -235,6 +329,16 @@ class Index extends Component
         $this->currency = auth()->user()->agency->currency ?? 'USD';
         $this->sale_date = now()->format('Y-m-d');
         $this->fetchServices();
+        $this->showExpectedDate = false;
+
+        // تحميل البيانات للفلترة
+        $this->filterServices = \App\Models\DynamicListItem::whereHas('list', function($query) {
+            $query->where('name', 'قائمة الخدمات');
+        })->pluck('label', 'id')->toArray();
+        
+        $this->filterCustomers = Customer::where('agency_id', auth()->user()->agency_id)
+            ->pluck('name', 'id')
+            ->toArray();
     }
 
     protected function rules()
@@ -260,6 +364,8 @@ class Index extends Component
             'status' => 'required|in:issued,refunded,canceled,pending,reissued,void,paid,unpaid',
             'payment_method' => 'required|in:kash,part,all',
             'payment_type' => 'required|in:creamy,kash,visa',
+            'service_date' => 'nullable|date',
+            'expected_payment_date' => 'nullable|date',
         ];
 
         // قواعد إضافية حسب طريقة الدفع
@@ -287,23 +393,29 @@ class Index extends Component
     }
 
     protected $messages = [
-        'usd_sell.gte' => 'يجب أن يكون سعر البيع أكبر أو يساوي سعر الشراء',
-        'customer_id.prohibited' => 'لا يمكن تحديد حساب عند الدفع كاش.',
-        'amount_paid.max' => 'يجب أن يكون المبلغ المدفوع مساويًا أو أقل من قيمة البيع.',
-        'customer_id.required' => 'يجب تحديد حساب عند الدفع الجزئي أو على الحساب.',
-        'amount_paid.lt' => 'المبلغ الجزئي يجب أن يكون أقل من قيمة البيع.',
-        'amount_paid.required' => 'يجب إدخال المبلغ المدفوع عند الدفع الجزئي.',
-        'amount_paid.prohibited' => 'لا يجب إدخال مبلغ مدفوع عند الدفع على الحساب.',
+        'usd_sell.gte' => 'البيع ≥ الشراء.',
+        'customer_id.prohibited' => 'احذف الحساب عند الدفع كاش.',
+        'amount_paid.max' => 'المبلغ كبير.',
+        'customer_id.required' => 'حدد الحساب.',
+        'amount_paid.lt' => 'المبلغ قليل.',
+        'amount_paid.required' => 'أدخل المبلغ.',
+        'amount_paid.prohibited' => 'احذف المبلغ.',
     ];
+
 
     public function updatedCustomerId($value)
     {
         $customer = Customer::find($value);
         $this->showCommission = $customer && $customer->has_commission;
+        // إذا لم يكن للعميل عمولة، نفرغ حقل العمولة
+        if (!$this->showCommission) {
+            $this->commission = null;
+        }
     }
 
     public function save()
     {
+        
         $this->validate();
 
         // التأكد من وجود مستفيد بنفس الرقم داخل نفس الوكالة
@@ -350,10 +462,86 @@ class Index extends Component
             'customer_via' => $this->customer_via,
             'user_id' => Auth::id(),
             'agency_id' => Auth::user()->agency_id,
+            'service_date' => $this->service_date,
+            'expected_payment_date' => $this->expected_payment_date,
         ]);
 
         $this->resetForm();
         $this->successMessage = 'تمت إضافة العملية بنجاح';
     }
 
+    public function updatedPaymentMethod($value)
+    {
+        $this->showExpectedDate = in_array($value, ['part', 'all']);
+        
+        // إعادة تعيين تاريخ السداد إذا تم اختيار كاش
+        if ($value === 'kash') {
+            $this->expected_payment_date = null;
+        }
+
+        // تنظيف القيم المرتبطة عند إخفاء الحقول
+        if ($value === 'all') {
+            $this->amount_paid = null;
+        } elseif ($value === 'kash') {
+        $this->customer_id = null;
+        $this->commission = null;       //  تصفير العمولة
+        $this->showCommission = false;  //  إخفاء العمولة
+        $this->showCustomerField = false;//  إخفاء الحساب
+    }else {
+        $this->showCustomerField = true;  //  إظهاره عند تغيير النوع
+    }
+    }
+
+public function applyFilters()
+{
+    $this->filters = [
+        'start_date' => $this->filterInputs['start_date'],
+        'end_date' => $this->filterInputs['end_date'],
+        'service_type_id' => $this->filterInputs['service_type_id'],
+        'status' => $this->filterInputs['status'],
+        'customer_id' => $this->filterInputs['customer_id'],
+        'provider_id' => $this->filterInputs['provider_id'],
+        'service_date' => $this->filterInputs['service_date'],
+        'customer_via' => $this->filterInputs['customer_via'],
+        'route' => $this->filterInputs['route'],
+        'payment_method' => $this->filterInputs['payment_method'],
+        'payment_type' => $this->filterInputs['payment_type']
+    ];
+    $this->resetPage(); // إعادة تعيين الصفحة عند تطبيق الفلترة
+    $this->dispatch('filters-applied');
+
+}
+
+public function resetFilters()
+{
+    $this->filters = [
+        'start_date' => '',
+        'end_date' => '',
+        'service_type_id' => '',
+        'status' => '',
+        'customer_id' => '',
+        'provider_id' => '',
+        'service_date' => '',
+        'customer_via' => '',
+        'route' => '',
+        'payment_method' => '',
+        'payment_type' => ''
+    ];
+    
+    $this->filterInputs = [
+        'start_date' => '',
+        'end_date' => '',
+        'service_type_id' => '',
+        'status' => '',
+        'customer_id' => '',
+        'provider_id' => '',
+        'service_date' => '',
+        'customer_via' => '',
+        'route' => '',
+        'payment_method' => '',
+        'payment_type' => ''
+    ];
+    
+    $this->resetPage();
+}
 }
