@@ -16,7 +16,6 @@
 
 <!-- ========== تنسيقات عامة وتفاعلية ========== -->
 <style>
-    /* تركيز الحقول */
     input:focus,
     select:focus,
     textarea:focus {
@@ -25,7 +24,6 @@
         outline: none;
     }
 
-    /* زر الإرسال */
     button[type="submit"]:hover {
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(var(--primary-500), 0.2);
@@ -35,7 +33,6 @@
         transform: translateY(0);
     }
 
-    /* تصميم القائمة الجانبية */
     .nav-gradient {
         background: linear-gradient(90deg, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);
     }
@@ -104,15 +101,14 @@
         display: block;
     }
 
-    /* ========== الحقول بخصائص floating label ========== */
-    .peer:placeholder-shown+label {
+    .peer:placeholder-shown + label {
         top: 0.75rem;
         font-size: 0.875rem;
         color: #6b7280;
     }
 
-    .peer:not(:placeholder-shown)+label,
-    .peer:focus+label {
+    .peer:not(:placeholder-shown) + label,
+    .peer:focus + label {
         top: -0.5rem;
         font-size: 0.75rem;
         color: rgb(var(--primary-600));
@@ -126,7 +122,6 @@
         color: #111827;
     }
 
-    /* ========== تأثيرات واجهة الموظفين ========== */
     button[wire\:click="createEmployee"]:hover {
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(var(--primary-500), 0.2);
@@ -155,6 +150,22 @@
             overflow-x: auto;
             white-space: nowrap;
         }
+    }
+
+    /* ========== زر الأيقونة الدائري ========== */
+    .icon-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 9999px;
+        background-color: rgba(255, 255, 255, 0.05);
+        transition: background-color 0.2s ease;
+    }
+
+    .icon-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
     }
 </style>
 

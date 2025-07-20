@@ -42,6 +42,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Livewire\Agency\Accounts;
 use App\Livewire\Agency\AgencyPolicies;
 
+use App\Livewire\Agency\Commissions;
 
 
 // ============================
@@ -162,3 +163,5 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
 //     ->middleware(['auth', 'agency']);
 Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
 ->middleware(['auth']);
+
+Route::get('/commissions', Commissions::class)->name('agency.commissions');

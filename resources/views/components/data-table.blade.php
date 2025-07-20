@@ -103,6 +103,9 @@
                                             default => $value
                                         };
                                     }
+                                    elseif ($col['key'] === 'has_commission') {
+                                            $translatedValue = $value ? 'نعم' : 'لا';
+                                        };
                                 @endphp
                                 {{ $translatedValue !== null && $translatedValue !== '' ? $translatedValue : '-' }}
                                 @endif

@@ -11,7 +11,13 @@ class CustomerTable
             ['key' => 'email', 'label' => 'البريد'],
             ['key' => 'phone', 'label' => 'الهاتف'],
             ['key' => 'address', 'label' => 'العنوان'],
+            [
+                'key' => 'has_commission',
+                'label' => 'يستحق عمولة',
+                'format' => fn($value) => $value == 1 ? 'نعم' : 'لا',
+            ],
             ['key' => 'created_at', 'label' => 'تاريخ الإضافة', 'format' => 'date'],
+           
             [
                 'key' => 'actions',
                 'label' => 'إجراءات',

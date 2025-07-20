@@ -1,4 +1,11 @@
-@php
+<div class="flex items-center gap-3 {{ $class ?? '' }}">
+    <a href="{{ route('agency.dashboard') }}" class="flex items-center gap-2">
+        <img src="{{ asset('images/logo-travelx.png') }}" alt="TRAVEL-X Logo"
+         class="h-15 w-auto object-contain ">
+    </a>
+</div>
+
+<!-- @php
     use Illuminate\Support\Str;
     $name = Auth::user()->agency->name ?? 'Travel X';
     $logo = Auth::user()->agency->logo ?? null;
@@ -23,4 +30,4 @@
     <span class="text-white text-lg font-bold tracking-tight">
         {{ $name }}
     </span>
-</div> 
+</div>  -->
