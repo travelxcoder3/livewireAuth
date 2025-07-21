@@ -47,7 +47,7 @@ class EmployeeIndex extends Component
     public function mount()
     {
        $this->departments = DynamicListItem::whereHas('list', function ($query) {
-            $query->where('name','قائمة الأقسام');
+            $query->where('name','قائمة الاقسام');
         })->pluck('label', 'id')->toArray();
 
         $this->positions = DynamicListItem::whereHas('list', function ($query) {

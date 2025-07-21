@@ -90,7 +90,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super-admin'])
 // 🏢 مسارات أدمن الوكالة
 // ============================
 
-Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePassword'])->group(function () {
+Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePassword','active.user'])->group(function () {
     Route::get('/dashboard', AgencyDashboard::class)->name('dashboard');
     Route::get('/users', Users::class)->name('users');
     Route::get('/roles', Roles::class)->name('roles');

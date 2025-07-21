@@ -11,17 +11,21 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        // ميدل وير تحديث آخر نشاط المستخدم
-        $middleware->append(\App\Http\Middleware\UpdateLastActivity::class);
-        // تسجيل Middleware الخاص بـ Spatie role
-        $middleware->alias([
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'ensureCurrency' => \App\Http\Middleware\EnsureAgencyCurrencyIsSet::class,
-            'mustChangePassword' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
-            'check.agency.subscription' => \App\Http\Middleware\CheckAgencySubscription::class,
-        ]);
-    })
+  ->withMiddleware(function (Middleware $middleware): void {
+    // Global middleware
+    $middleware->append(\App\Http\Middleware\UpdateLastActivity::class);
+
+    // Middleware aliases
+    $middleware->alias([
+        'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+        'ensureCurrency' => \App\Http\Middleware\EnsureAgencyCurrencyIsSet::class,
+        'mustChangePassword' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
+        'check.agency.subscription' => \App\Http\Middleware\CheckAgencySubscription::class,
+        'active.user' => \App\Http\Middleware\UpdateLastActivity::class,
+    ]);
+})
+
+
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

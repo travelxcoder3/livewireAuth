@@ -12,6 +12,8 @@ use Illuminate\Validation\Rule;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Carbon;
 use Livewire\WithFileUploads;
+use App\Models\AgencyTarget;
+
 class AddAgency extends Component
 {
      use WithFileUploads;
@@ -30,7 +32,7 @@ class AddAgency extends Component
     public $status = 'active';
     public $parent_id;
     public $mainAgencies = [];
-
+    public $monthly_sales_target;
     // ✅ حقول الاشتراك
     public $subscription_start_date;
     public $subscription_end_date;
@@ -67,6 +69,8 @@ class AddAgency extends Component
             'admin_email' => ['required','email','unique:users,email'],
             'admin_password' => 'required|string|min:6',
             'parent_id' => 'nullable|exists:agencies,id',
+            'monthly_sales_target' => 'required|numeric|min:0',
+
         ];
     }
 
@@ -140,10 +144,25 @@ class AddAgency extends Component
             ]);
             $admin->assignRole($agencyAdminRole);
 
+            // تسجيل الهدف البيعي للشهر الحالي
+            AgencyTarget::create([
+                'agency_id' => $agency->id,
+                'month' => now()->startOfMonth()->toDateString(),
+                'target_amount' => $this->monthly_sales_target,
+            ]);
+
             DB::commit();
             $this->mainAgencies = \App\Models\Agency::whereNull('parent_id')->get();
-            $this->reset(['agency_name','agency_email','agency_phone', 'landline','agency_address','license_number','commercial_record','tax_number','license_expiry_date','description','currency', 'subscription_start_date','subscription_end_date','admin_name','admin_email','admin_password']);
+            $this->reset([
+                'agency_name','agency_email','agency_phone', 'landline',
+                'agency_address','license_number','commercial_record','tax_number',
+                'license_expiry_date','description','currency',
+                'subscription_start_date','subscription_end_date',
+                'admin_name','admin_email','admin_password',
+                'monthly_sales_target'
+            ]);
             $this->successMessage = 'تمت إضافة الوكالة بنجاح مع تعيين أدمن خاص بها.';
+            
         } catch (\Exception $e) {
             DB::rollBack();
             $this->addError('general', 'حدث خطأ أثناء إضافة الوكالة: ' . $e->getMessage());

@@ -32,6 +32,7 @@ class User extends Authenticatable
         'position_id',
         'must_change_password',
         'sales_target',
+        'last_activity_at',
         'main_target'
     ];
 

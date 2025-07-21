@@ -9,8 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Sale;
 use Illuminate\Support\Facades\DB;
 use App\Models\ServiceType;
-use ArielMejiaDev\LarapexCharts\LarapexChart;
-use App\Charts\SalesChart;
+use App\Models\AgencyTarget;
 
 class Dashboard extends Component
 {
@@ -18,7 +17,6 @@ class Dashboard extends Component
     public $serviceTypes = [];
     public $selectedServiceType = null;
     public $statsViewType = 'monthly'; // 'monthly' or 'service'
-    public $chartType = 'table'; // table, bar, pie, line
     public $totalSalesCount = 0;
     // المتغيرات الجديدة
     public $salesByService = [];
@@ -27,6 +25,10 @@ class Dashboard extends Component
     public $totalUsers = 0;
     public $activeUsers = 0;
     public $onlineUsers = 0;
+    public $monthlyTarget = 0;
+    public $monthlyAchieved = 0;
+    public $monthlyProfit = 0;
+    public $monthlyCost = 0;
 
     public function mount()
     {
@@ -65,7 +67,17 @@ class Dashboard extends Component
                 'operations_count' => $row->operations_count
             ];
         })->toArray();
+        $month = now()->startOfMonth()->toDateString();
 
+// 1. جلب الهدف البيعي من جدول agency_targets
+$this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
+    ->where('month', $month)
+    ->value('target_amount') ?? 0;
+
+// 2. حساب المبيعات المحققة فعليًا لهذا الشهر
+$this->monthlyAchieved = Sale::where('agency_id', $agencyId)
+    ->whereBetween('sale_date', [now()->startOfMonth(), now()->endOfMonth()])
+    ->sum('amount_paid');
         // تجهيز بيانات المبيعات حسب الموظف
         $this->salesByEmployee = Sale::select(
             'user_id',
@@ -104,6 +116,30 @@ class Dashboard extends Component
                 'operations_count' => $row->operations_count
             ];
         })->toArray();
+        $start = now()->startOfMonth();
+        $end = now()->endOfMonth();
+        
+                // 1. الهدف
+                $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
+                    ->where('month', $start->toDateString())
+                    ->value('target_amount') ?? 0;
+        
+                // 2. المبيعات المحققة
+                $this->monthlyAchieved = Sale::where('agency_id', $agencyId)
+                    ->whereBetween('sale_date', [$start, $end])
+                    ->sum('amount_paid');
+        
+                // 3. التكاليف (شراء)
+                $this->monthlyCost = Sale::where('agency_id', $agencyId)
+                    ->whereBetween('sale_date', [$start, $end])
+                    ->sum('usd_buy');
+        
+                // 4. الأرباح = المبيعات - التكاليف
+                $this->monthlyProfit = $this->monthlyAchieved - $this->monthlyCost;
+                $this->onlineUsers = User::where('agency_id', $agencyId)
+            ->whereNotNull('last_activity_at')
+            ->where('last_activity_at', '>=', now()->subMinutes(5))
+            ->count();
     }
 
     public function updatedSelectedServiceType()
@@ -176,20 +212,6 @@ class Dashboard extends Component
                 $countQuery->where('service_type_id', $this->selectedServiceType);
             }
             $this->totalSalesCount = $countQuery->count();
-
-            // تجهيز بيانات الرسم البياني باستخدام LarapexChart
-            $labels = $final->map(fn($row) => $row['year'] . '/' . $row['month'])->toArray();
-            $data = $final->map(fn($row) => $row['total_sales'])->toArray();
-            $this->monthlyChart = (new LarapexChart)
-                ->setType('bar')
-                ->setTitle('إحصائيات المبيعات حسب الشهر')
-                ->setXAxis($labels)
-                ->setDataset([
-                    [
-                        'name' => 'إجمالي المبيعات',
-                        'data' => $data
-                    ]
-                ]);
         } else if ($this->statsViewType === 'service') {
             $this->salesByMonth = Sale::select(
                 'service_type_id',
@@ -247,17 +269,6 @@ class Dashboard extends Component
                 ];
             })->toArray();
         }
-    }
-
-    public function updatedChartType()
-    {
-        $this->dispatch('refreshChart');
-    }
-
-    public function setChartType($type)
-    {
-        $this->chartType = $type;
-        $this->dispatch('refreshChart');
     }
 
     // تحديد نوع لوحة التحكم حسب دور المستخدم
@@ -469,17 +480,7 @@ class Dashboard extends Component
     public function render()
     {
         // تجهيز بيانات المبيعات الشهرية (نفس ما يُستخدم للجدول)
-        $sales = collect($this->salesByMonth);
-        $labels = $sales->map(function($row) {
-            return ($row['year'] ?? '-') . '/' . str_pad($row['month'] ?? '', 2, '0', STR_PAD_LEFT);
-        })->toArray();
-        $data = $sales->map(function($row) {
-            return $row['operations_count'] ?? 0;
-        })->toArray();
-
-        return view('livewire.agency.dashboard.comprehensive', [
-            'chartLabels' => $labels,
-            'chartData' => $data,
-        ])->layout('layouts.agency');
+        return view('livewire.agency.dashboard.comprehensive')
+            ->layout('layouts.agency');
     }
 } 

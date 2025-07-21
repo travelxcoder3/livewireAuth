@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Middleware;
 
 use Closure;
@@ -10,11 +9,16 @@ class UpdateLastActivity
 {
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check()) {
-            $user = Auth::user();
-            $user->last_activity_at = now();
-            $user->save();
-        }
+     
+
+       if (Auth::check()) {
+    Auth::user()->update([
+        'last_activity_at' => now(),
+    ]);
+
+}
+
+
         return $next($request);
     }
-} 
+}

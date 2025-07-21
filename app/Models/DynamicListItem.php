@@ -77,4 +77,9 @@ class DynamicListItem extends Model
     {
         return $this->hasMany(\App\Models\Sale::class, 'service_item_id');
     }
+
+     public function dynamicList()
+    {
+        return $this->belongsTo(DynamicList::class, 'dynamic_list_id');
+    }
 }

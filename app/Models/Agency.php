@@ -111,4 +111,11 @@ class Agency extends Model
         $agencyIds[] = $this->id;
         return \App\Models\User::whereIn('agency_id', $agencyIds)->get();
     }
+
+    // داخل موديل Agency
+    public function targets()
+    {
+        return $this->hasMany(\App\Models\AgencyTarget::class);
+    }
+
 }

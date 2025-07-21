@@ -39,10 +39,7 @@ class DynamicListItemSub extends Model
     /**
      * علاقة العنصر الأب (Self-Relation)
      */
-    public function parentItem()
-    {
-        return $this->belongsTo(DynamicListItemSub::class, 'parent_id');
-    }
+   
 
     /**
      * فلتر لإرجاع البنود الفرعية التي أنشأتها وكالة معينة
@@ -59,4 +56,10 @@ class DynamicListItemSub extends Model
     {
         return $this->item->label . ' > ' . $this->label;
     }
+
+    public function parentItem()
+    {
+        return $this->belongsTo(DynamicListItem::class, 'dynamic_list_item_id');
+    }
+
 }

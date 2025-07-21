@@ -208,7 +208,15 @@
     </span>
 @enderror
 
+
                         </div>
+                        <div class="{{ $containerClass }}">
+    <input type="number" wire:model.defer="monthly_sales_target" class="{{ $fieldClass }}" placeholder="الهدف الشهري بالريال" min="0" />
+    <label class="{{ $labelClass }}">الهدف البيعي الشهري</label>
+    @error('monthly_sales_target')
+        <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">{{ $message }}</span>
+    @enderror
+</div>
                     </div>
                 <!-- ... الحقول الأخرى ... -->
                 <div class="{{ $containerClass }}">
