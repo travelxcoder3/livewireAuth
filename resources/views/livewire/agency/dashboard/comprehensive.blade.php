@@ -60,7 +60,7 @@
                     </div>
                     <div class="text-right">
                         @php
-                            $expiry = $this->agencyInfo->license_expiry_date;
+                            $expiry = $this->agencyInfo->subscription_end_date;
                             $now = now();
                             $diff = $now->diff($expiry);
                             $years = $diff->y;

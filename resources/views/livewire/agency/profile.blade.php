@@ -95,6 +95,22 @@
                     </div>
                 </div>
 
+                <!-- صف بداية ونهاية الاشتراك بالنظام -->
+                <div class="grid md:grid-cols-3 gap-3">
+                    <div class="{{ $containerClass }}">
+                        <div class="{{ $readonlyFieldClass }}">
+                            {{ optional($agency->subscription_start_date)->format('Y-m-d') ?? 'غير محدد' }}
+                        </div>
+                        <label class="{{ $labelClass }}">بداية الاشتراك بالنظام</label>
+                    </div>
+                    <div class="{{ $containerClass }}">
+                        <div class="{{ $readonlyFieldClass }}">
+                            {{ optional($agency->subscription_end_date)->format('Y-m-d') ?? 'غير محدد' }}
+                        </div>
+                        <label class="{{ $labelClass }}">نهاية الاشتراك بالنظام</label>
+                    </div>
+                </div>
+
                 <!-- الحقول القابلة للتعديل -->
                 <div class="grid md:grid-cols-3 gap-3">
                     <div class="{{ $containerClass }}">

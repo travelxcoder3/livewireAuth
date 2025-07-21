@@ -34,6 +34,8 @@ class Agency extends Model
 
     protected $casts = [
         'license_expiry_date' => 'date',
+        'subscription_start_date' => 'date',
+        'subscription_end_date' => 'date',
     ];
 
     public function admin()
