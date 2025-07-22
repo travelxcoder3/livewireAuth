@@ -31,8 +31,34 @@
         /* احذف جميع الأكواد هنا لأنها موجودة في common.blade.php */
     </style>
 </head>
-<body class="bg-dashboard min-h-screen font-app">
-    @include('layouts.partials.nav')
+<body class="bg-dashboard min-h-screen font-app" x-data="{ mobileSidebarOpen: false }">
+    <!-- الشريط العلوي -->
+    <nav class="w-full flex items-center justify-between px-6 shadow-sm rounded-t-2xl nav-gradient"
+        style="padding-top: 8px; padding-bottom: 8px; min-height:48px;">
+
+        <!-- زر القائمة الجانبية للجوال -->
+        <button class="lg:hidden flex items-center justify-center mr-2 text-white focus:outline-none" @click="mobileSidebarOpen = true">
+            <i class="fas fa-bars text-2xl"></i>
+        </button>
+
+        <!-- الشعار -->
+        <x-navbar.brand.agency-brand />
+
+        <!-- روابط التنقل -->
+        <div class="hidden lg:flex">
+            <x-navbar.nav.agency-nav-links />
+        </div>
+
+        <!-- أدوات التحكم -->
+        <div class="hidden lg:flex">
+            <x-navbar.nav.agency-topbar-controls />
+        </div>
+    </nav>
+
+    <!-- القائمة الجانبية للموبايل -->
+    <div x-show="mobileSidebarOpen" x-transition>
+        <x-navbar.agency-mobile-sidebar @close="mobileSidebarOpen = false" />
+    </div>
 
     <main class="w-full px-4 py-6">
         <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-[rgba(var(--primary-500),0.2)] p-6">

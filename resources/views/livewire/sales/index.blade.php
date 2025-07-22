@@ -50,15 +50,14 @@ $columns = SalesTable::columns();
                 <span>{{ number_format($totalProfit, 2) }} {{ $currency }}</span>
             </div>
             <!-- العمولة -->
-            <!-- عمولتي -->
             <div class="flex flex-col items-center px-2">
-                <span class="text-[rgb(var(--primary-600))]">العموله</span>
-                <span>{{ number_format($userCommission, 2) }} {{ $currency }}</span>
+                <span class="text-[rgb(var(--primary-600))]">العمولة</span>
+                <span>{{ number_format($sales->sum('commission'), 2) }} {{ $currency }}</span>
             </div>
-            <!-- عمولتي المستحقة -->
+            <!-- العمولة المستحقة -->
             <div class="flex flex-col items-center px-2">
-                <span class="text-[rgb(var(--primary-600))]">العموله المستحقة</span>
-                <span>{{ number_format($userCommissionDue, 2) }} {{ $currency }}</span>
+                <span class="text-[rgb(var(--primary-600))]">العمولة المستحقة</span>
+                <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
             </div>
         </div>
     </div>
@@ -205,12 +204,11 @@ $columns = SalesTable::columns();
                     />
 
                     <!-- تاريخ البيع -->
-                    <x-input-field
+                    <x-date-picker
                         name="sale_date"
                         label="تاريخ البيع"
                         wireModel="sale_date"
                         placeholder="تاريخ البيع"
-                        type="date"
                         containerClass="relative mt-1 col-span-3"
                         errorName="sale_date"
                     />
@@ -290,12 +288,11 @@ $columns = SalesTable::columns();
                         />
 
                         <!-- تاريخ الخدمة -->
-                        <x-input-field
+                        <x-date-picker
                             name="service_date"
                             label="تاريخ الخدمة"
                             wireModel="service_date"
                             placeholder="تاريخ الخدمة"
-                            type="date"
                             containerClass="relative mt-1"
                             errorName="service_date"
                         />
@@ -376,15 +373,14 @@ $columns = SalesTable::columns();
 
     <!-- تاريخ السداد المتوقع -->
     @if($showExpectedDate)
-        <x-input-field
-            name="expected_payment_date"
-            label="تاريخ السداد المتوقع"
-            wireModel="expected_payment_date"
-            placeholder="تاريخ السداد المتوقع"
-            type="date"
-            containerClass="relative mt-1 {{ $showAmountPaid ? 'col-span-3' : 'col-span-6' }}"
-            errorName="expected_payment_date"
-        />
+    <x-date-picker
+        name="expected_payment_date"
+        label="تاريخ السداد المتوقع"
+        wireModel="expected_payment_date"
+        placeholder="تاريخ السداد المتوقع"
+        containerClass="relative mt-1 {{ $showAmountPaid ? 'col-span-3' : 'col-span-6' }}"
+        errorName="expected_payment_date"
+    />
     @endif
     <!-- الربح -->
     <div class="col-span-3 flex items-end text-xs font-semibold text-[rgb(var(--primary-600))]">
@@ -457,21 +453,19 @@ $columns = SalesTable::columns();
             <!-- تاريخ البيع -->
             <div class="grid grid-cols-2 gap-4">
                 <!-- في نافذة الفلترة -->
-                <x-input-field
+                <x-date-picker
                     name="start_date"
                     label="من تاريخ"
                     wireModel="filterInputs.start_date"
                     placeholder="من تاريخ"
-                    type="date"
                     containerClass="relative mt-1"
                 />
 
-                <x-input-field
+                <x-date-picker
                     name="end_date"
                     label="إلى تاريخ"
                     wireModel="filterInputs.end_date"
                     placeholder="إلى تاريخ"
-                    type="date"
                     containerClass="relative mt-1"
                 />
 
@@ -517,12 +511,11 @@ $columns = SalesTable::columns();
                     containerClass="relative mt-1"
                 />
 
-                <x-input-field
+                <x-date-picker
                     name="service_date"
                     label="تاريخ الخدمة"
                     wireModel="filterInputs.service_date"
                     placeholder="تاريخ الخدمة"
-                    type="date"
                     containerClass="relative mt-1"
                 />
 
