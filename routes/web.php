@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
+use App\Http\Controllers\AccountsReportController;
+
 // Admin Components
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Agencies;
