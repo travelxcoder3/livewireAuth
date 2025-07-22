@@ -29,6 +29,11 @@
     </div>
 </div>
 
+    @if (session()->has('error'))
+        <div class="mt-4 p-3 text-xs text-center rounded-lg bg-red-100 text-red-700 border border-red-300">
+            {{ session('error') }}
+        </div>
+    @endif
 
             <!-- النموذج -->
             <form wire:submit.prevent="update" class="space-y-4 text-sm"   enctype="multipart/form-data" >
@@ -49,14 +54,15 @@
                         <div class="{{ $readonlyFieldClass }}">{{ $agency->currency ?? 'غير محدد' }}</div>
                         <label class="{{ $labelClass }}">العملة</label>
                     </div>
+                     <div class="{{ $containerClass }}">
+                        <div class="{{ $readonlyFieldClass }}">{{ $agency->license_number ?? 'غير محدد' }}</div>
+                        <label class="{{ $labelClass }}">رقم الرخصة</label>
+                    </div>
                 </div>
 
                 <!-- صف الحقول الثابتة الثانية -->
                 <div class="grid md:grid-cols-3 gap-3">
-                    <div class="{{ $containerClass }}">
-                        <div class="{{ $readonlyFieldClass }}">{{ $agency->license_number ?? 'غير محدد' }}</div>
-                        <label class="{{ $labelClass }}">رقم الرخصة</label>
-                    </div>
+                   
                     <div class="{{ $containerClass }}">
                         <div class="{{ $readonlyFieldClass }}">{{ $agency->commercial_record ?? 'غير محدد' }}</div>
                         <label class="{{ $labelClass }}">السجل التجاري</label>
@@ -65,16 +71,17 @@
                         <div class="{{ $readonlyFieldClass }}">{{ $agency->tax_number ?? 'غير محدد' }}</div>
                         <label class="{{ $labelClass }}">الرقم الضريبي</label>
                     </div>
-                </div>
-
-                <!-- صف الحقول الثابتة الثالثة -->
-                <div class="grid md:grid-cols-3 gap-3">
-                    <div class="{{ $containerClass }}">
+                      <div class="{{ $containerClass }}">
                         <div class="{{ $readonlyFieldClass }}">
                             {{ optional($agency->license_expiry_date)->format('Y-m-d') ?? 'غير محدد' }}
                         </div>
                         <label class="{{ $labelClass }}">انتهاء الرخصة</label>
                     </div>
+                </div>
+
+                <!-- صف الحقول الثابتة الثالثة -->
+                <div class="grid md:grid-cols-3 gap-3">
+                  
                     <div class="{{ $containerClass }}">
                         <div class="{{ $readonlyFieldClass }}">{{ $agency->max_users ?? 'غير محدد' }}</div>
                         <label class="{{ $labelClass }}">عدد المستخدمين</label>
@@ -93,31 +100,16 @@
                         </div>
                         <label class="{{ $labelClass }}">حالة الوكالة</label>
                     </div>
-                </div>
-
-                <!-- صف بداية ونهاية الاشتراك بالنظام -->
-                <div class="grid md:grid-cols-3 gap-3">
-                    <div class="{{ $containerClass }}">
-                        <div class="{{ $readonlyFieldClass }}">
-                            {{ optional($agency->subscription_start_date)->format('Y-m-d') ?? 'غير محدد' }}
-                        </div>
-                        <label class="{{ $labelClass }}">بداية الاشتراك بالنظام</label>
-                    </div>
-                    <div class="{{ $containerClass }}">
-                        <div class="{{ $readonlyFieldClass }}">
-                            {{ optional($agency->subscription_end_date)->format('Y-m-d') ?? 'غير محدد' }}
-                        </div>
-                        <label class="{{ $labelClass }}">نهاية الاشتراك بالنظام</label>
+                      <div class="{{ $containerClass }}">
+                        <input type="text" wire:model="phone" class="{{ $fieldClass }}" placeholder="أدخل رقم الهاتف">
+                        <label class="{{ $labelClass }}">رقم الهاتف</label>
+                        @error('phone') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
                 <!-- الحقول القابلة للتعديل -->
                 <div class="grid md:grid-cols-3 gap-3">
-                    <div class="{{ $containerClass }}">
-                        <input type="text" wire:model="phone" class="{{ $fieldClass }}" placeholder="أدخل رقم الهاتف">
-                        <label class="{{ $labelClass }}">رقم الهاتف</label>
-                        @error('phone') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                  
                     <div class="{{ $containerClass }}">
                         <input type="text" wire:model="landline" class="{{ $fieldClass }}" placeholder="أدخل الهاتف الثابت">
                         <label class="{{ $labelClass }}">الهاتف الثابت</label>
@@ -128,21 +120,32 @@
                         <label class="{{ $labelClass }}">البريد الإلكتروني</label>
                         @error('email') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
-                </div>
-
-                <!-- العنوان والوصف -->
-                <div class="grid md:grid-cols-1 gap-3">
-                    <div class="{{ $containerClass }}">
-                        <textarea wire:model="address" rows="2" class="{{ $fieldClass }}" placeholder="أدخل العنوان"></textarea>
+                       <div class="{{ $containerClass }}">
+                        <input wire:model="address" rows="1" class="{{ $fieldClass }}" placeholder="أدخل العنوان"></textarea>
                         <label class="{{ $labelClass }}">العنوان</label>
                         @error('address') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
-                    <div class="{{ $containerClass }}">
-                        <textarea wire:model="description" rows="2" class="{{ $fieldClass }}" placeholder="أدخل الوصف"></textarea>
-                        <label class="{{ $labelClass }}">الوصف</label>
-                        @error('description') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
                 </div>
+
+
+                <!-- وصف الوكالة في سطر مستقل -->
+             <div class="grid md:grid-cols-2 gap-3 mt-3">
+    <div class="{{ $containerClass }}">
+        <input wire:model="description" class="{{ $fieldClass }}" placeholder="أدخل الوصف"></textarea>
+        <label class="{{ $labelClass }}">الوصف</label>
+        @error('description') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+    </div>
+
+    <x-input-field
+        name="monthlyTarget"
+        label="الهدف الشهري"
+        wireModel="monthlyTarget"
+        placeholder="أدخل الهدف الشهري"
+        type="number"
+        errorName="monthlyTarget"
+    />
+</div>
+
 
                 <!-- زر الحفظ -->
                 @can('agency.profile.edit')

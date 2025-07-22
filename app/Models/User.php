@@ -81,5 +81,9 @@ class User extends Authenticatable
         return $this->belongsTo(\App\Models\DynamicListItem::class, 'position_id');
     }
 
+   public function obligations()
+{
+    return $this->belongsToMany(Obligation::class, 'user_obligation');
+}
 
 }

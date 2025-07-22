@@ -63,14 +63,10 @@
 
                 <!-- أزرار الحفظ والإلغاء -->
                 <div class="flex justify-end gap-3 pt-4">
-                    <x-primary-button 
-                        color="gray" 
-                        textColor="gray-800" 
-                        :gradient="false" 
-                        wire:click="$set('showModal', false)"
-                        class="bg-gray-200 hover:bg-gray-300">
+                    <button type="button" wire:click="$set('showModal', false)"
+                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
                         إلغاء
-                    </x-primary-button>
+                    </button>
                     
                     <x-primary-button wire:click="save">
                         {{ $isEdit ? 'تحديث' : 'إضافة' }}
@@ -96,14 +92,10 @@
                 <p class="text-sm text-gray-600 mb-6 text-center">هل أنت متأكد من رغبتك في حذف هذه السياسة؟ لا يمكن التراجع عن هذا الإجراء.</p>
 
                 <div class="flex justify-center gap-3 pt-4">
-                    <x-primary-button 
-                        color="gray" 
-                        textColor="gray-800" 
-                        :gradient="false" 
-                        wire:click="$set('showDeleteModal', false)"
-                        class="bg-gray-200 hover:bg-gray-300">
-                        إلغاء
-                    </x-primary-button>
+                <button type="button" wire:click="$set('showDeleteModal', false)"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+    إلغاء
+</button>
                     
                     <x-primary-button wire:click="delete">
                         حذف

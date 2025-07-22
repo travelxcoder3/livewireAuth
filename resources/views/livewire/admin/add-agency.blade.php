@@ -19,11 +19,17 @@
 </h2>
 
 
-            @if($successMessage)
-                <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-lg text-center">
-                    {{ $successMessage }}
-                </div>
-            @endif
+@if($successMessage)
+            <div
+                x-data="{ show: true }"
+                x-init="setTimeout(() => show = false, 2000)"
+                x-show="show"
+                x-transition
+                class="mb-4 text-white px-4 py-2 rounded-md shadow text-sm text-center"
+                style="background-color: rgb({{ $colors['primary-500'] }});">
+                {{ $successMessage }}
+            </div>
+        @endif
             @error('general')
                 <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-lg text-center">
                     {{ $message }}
@@ -210,13 +216,6 @@
 
 
                         </div>
-                        <div class="{{ $containerClass }}">
-    <input type="number" wire:model.defer="monthly_sales_target" class="{{ $fieldClass }}" placeholder="الهدف الشهري بالريال" min="0" />
-    <label class="{{ $labelClass }}">الهدف البيعي الشهري</label>
-    @error('monthly_sales_target')
-        <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">{{ $message }}</span>
-    @enderror
-</div>
                     </div>
                 <!-- ... الحقول الأخرى ... -->
                 <div class="{{ $containerClass }}">

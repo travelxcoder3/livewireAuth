@@ -55,12 +55,12 @@
                     </h3>
             <div class="overflow-x-auto">
                         <table class="min-w-full divide-y rounded-xl overflow-hidden divide-gray-200">
-                            <thead style="background:rgba(var(--primary-100),0.5)">
-                        <tr>
-                                    <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">اسم الصلاحية</th>
-                                    <th class="px-4 py-2 text-right text-xs font-medium text-[rgb(var(--primary-600))] uppercase tracking-wider">الإجراء</th>
-                        </tr>
-                    </thead>
+                        <thead class="bg-gray-100 text-gray-600">
+                                <tr>
+                                    <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider">اسم الصلاحية</th>
+                                    <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider">الإجراء</th>
+                                </tr>
+                            </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
                                 @foreach($perms as $permission)
                             <tr>
@@ -109,12 +109,14 @@
 
 
     <!-- دليل الصلاحيات -->
-    <div class="mt-8 bg-blue-50 rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-blue-800 mb-4">دليل الصلاحيات المتاحة</h3>
+    <div class="mt-8 rounded-lg p-6" style="background: rgba(var(--primary-100), 0.15); border: 1px solid rgb(var(--primary-200));">
+        <h3 class="text-lg font-semibold text-black mb-4">دليل الصلاحيات المتاحة</h3>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <h4 class="font-medium text-blue-700 mb-2">الوحدات الأساسية:</h4>
-                <ul class="text-sm text-blue-600 space-y-1">
+                <h4 class="font-medium text-black mb-2">
+الوحدات الأساسية:</h4>
+                <ul class="text-sm text-black space-y-1">
                     <li>• <strong>users</strong> - إدارة المستخدمين</li>
                     <li>• <strong>roles</strong> - إدارة الأدوار</li>
                     <li>• <strong>permissions</strong> - إدارة الصلاحيات</li>
@@ -124,8 +126,9 @@
                 </ul>
             </div>
             <div>
-                <h4 class="font-medium text-blue-700 mb-2">الإجراءات المتاحة:</h4>
-                <ul class="text-sm text-blue-600 space-y-1">
+                <h4 class="font-medium text-black mb-2">
+الإجراءات المتاحة:</h4>
+                <ul class="text-sm text-black space-y-1">
                     <li>• <strong>view</strong> - عرض</li>
                     <li>• <strong>create</strong> - إنشاء</li>
                     <li>• <strong>edit</strong> - تعديل</li>
@@ -135,4 +138,4 @@
             </div>
         </div>
     </div>
-</div> 
+</div>

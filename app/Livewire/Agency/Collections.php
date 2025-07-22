@@ -23,8 +23,10 @@ class Collections extends Component
 
     public function render()
     {
-        $query = Sale::with(['customer', 'account', 'serviceType', 'provider', 'collections'])
-            ->where('agency_id', Auth::user()->agency_id);
+      $query = Sale::with(['customer', 'account', 'serviceType', 'provider', 'collections'])
+             ->where('agency_id', Auth::user()->agency_id);
+
+
 
         // ✅ استعلام فقط المبيعات التي لم تُسدد بالكامل
         $query->whereRaw('
@@ -34,8 +36,6 @@ class Collections extends Component
                 WHERE collections.sale_id = sales.id
             )) > 0
         ');
-
-
 
         if ($this->search) {
             $query->where('beneficiary_name', 'like', "%{$this->search}%");

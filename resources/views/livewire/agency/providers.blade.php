@@ -95,16 +95,14 @@
                         @error('contact_info') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <!-- نوع الخدمة -->
-                    <div class="{{ $containerClass }}">
-                        <select wire:model.defer="service_item_id" class="{{ $fieldClass }}">
-                        <option value="">اسم الخدمة</option>
-                        @foreach ($services as $service)
-                                <option value="{{ $service->id }}">{{ $service->label }}</option>
-                            @endforeach
-                        </select>
-                        <label class="{{ $labelClass }}">نوع الخدمة</label>
-                        @error('service_item_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-select-field
+                        label="نوع الخدمة"
+                        wireModel="service_item_id"
+                        :options="$services->pluck('label', 'id')->toArray()"
+                        placeholder="اسم الخدمة"
+                        containerClass="relative mt-1"
+                        errorName="service_item_id"
+                    />
 
 
                     <div class="flex justify-end gap-3 pt-4">

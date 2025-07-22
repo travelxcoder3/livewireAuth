@@ -70,10 +70,13 @@
                                     <div class="flex items-center gap-2 w-full">
                                         <input type="text" wire:model.defer="editingItemLabel"
                                             class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm">
-                                        <button wire:click="updateItem"
-                                            class="px-2 py-1 text-xs rounded border border-green-500 text-green-600 bg-white hover:bg-green-50 transition">
-                                            حفظ
-                                        </button>
+                                            <button wire:click="updateItem"
+                                                class="px-2 py-1 text-xs rounded border bg-white transition 
+                                                    border-[rgb(var(--primary-500))] 
+                                                    text-[rgb(var(--primary-600))] 
+                                                    hover:bg-[rgba(var(--primary-100), 0.3)]">
+                                                حفظ
+                                            </button>
                                         <button wire:click="cancelEditItem"
                                             class="px-2 py-1 text-xs rounded border border-gray-400 text-gray-700 bg-white hover:bg-gray-100 transition mr-2">
                                             إلغاء
@@ -85,8 +88,12 @@
 
                                 @if (!$list->is_system || $item->created_by_agency)
                                     <div class="flex gap-2">
-                                        <button wire:click="startEditItem({{ $item->id }})"
-                                            class="px-2 py-1 text-xs rounded border border-blue-500 text-blue-600 bg-white hover:bg-blue-50 transition">
+                                    <button wire:click="startEditItem({{ $item->id }})"
+                                            class="px-2 py-1 text-xs rounded border bg-white transition 
+                                                border-[rgb(var(--primary-500))] 
+                                                text-[rgb(var(--primary-600))] 
+                                                hover:bg-[rgba(var(--primary-100), 0.3)]"
+                                            >
                                             تعديل
                                         </button>
 
@@ -105,10 +112,13 @@
                                         <div class="flex items-center gap-1 w-full">
                                             <input type="text" wire:model.defer="editingSubItemLabel"
                                                 class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
-                                            <button wire:click="updateSubItem"
-                                                class="px-2 py-1 text-xs rounded border border-green-500 text-green-600 bg-white hover:bg-green-50 transition">
-                                                حفظ
-                                            </button>
+                                                <button wire:click="updateSubItem"
+                                                    class="px-2 py-1 text-xs rounded border bg-white transition 
+                                                        border-[rgb(var(--primary-500))] 
+                                                        text-[rgb(var(--primary-600))] 
+                                                        hover:bg-[rgba(var(--primary-100), 0.3)]">
+                                                    حفظ
+                                                </button>
                                             <button wire:click="cancelEditSubItem"
                                                 class="px-2 py-1 text-xs rounded border border-gray-400 text-gray-700 bg-white hover:bg-gray-100 transition mr-2">
                                                 إلغاء
@@ -119,8 +129,12 @@
                                     @endif
                                     @if (!$list->is_system || $sub->created_by_agency)
                                         <div class="flex gap-1">
-                                            <button wire:click="startEditSubItem({{ $sub->id }})"
-                                                class="px-2 py-1 text-xs rounded border border-blue-500 text-blue-600 bg-white hover:bg-blue-50 transition">
+                                        <button wire:click="startEditSubItem({{ $sub->id }})"
+                                                class="px-2 py-1 text-xs rounded border bg-white transition 
+                                                    border-[rgb(var(--primary-500))] 
+                                                    text-[rgb(var(--primary-600))] 
+                                                    hover:bg-[rgba(var(--primary-100), 0.3)]"
+                                                >
                                                 تعديل
                                             </button>
                                             <button wire:click="deleteSubItem({{ $sub->id }})"

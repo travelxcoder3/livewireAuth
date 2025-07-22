@@ -38,15 +38,16 @@ class ShowCollectionDetails extends Component
     }
 
     // دالة جديدة لحساب المبالغ
-    protected function calculateAmounts()
-    {
-        $this->totalAmount = $this->sale->usd_sell ?? 0;
-        $this->paidFromSales = $this->sale->amount_received ?? 0;
-        $this->paidFromCollections = $this->sale->collections->sum('amount');
-        $this->paidTotal = $this->paidFromSales + $this->paidFromCollections;
-        $this->amountReceived = $this->paidTotal;
-        $this->remainingAmount = $this->totalAmount - $this->paidTotal;
-    }
+   protected function calculateAmounts()
+{
+    $this->totalAmount = $this->sale->usd_sell ?? 0;
+    $this->paidFromSales = $this->sale->amount_paid ?? 0; // ✅ هنا التعديل
+    $this->paidFromCollections = $this->sale->collections->sum('amount');
+    $this->paidTotal = $this->paidFromSales + $this->paidFromCollections;
+    $this->amountReceived = $this->paidTotal;
+    $this->remainingAmount = $this->totalAmount - $this->paidTotal;
+}
+
 
     public function render()
     {

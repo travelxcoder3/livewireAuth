@@ -21,7 +21,7 @@ class ProviderTable
                         'label' => 'تعديل',
                         'icon' => 'fa fa-edit',
                         'method' => 'showEditModal',
-                        'class' => 'text-blue-600 hover:text-blue-800',
+                        'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
                         'can' => $user->can('providers.edit')
                     ]
                 ]

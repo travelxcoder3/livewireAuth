@@ -70,7 +70,7 @@ class UserTable
                         'label' => 'تعديل',
                         'method' => 'editUser',
                         'permission' => 'users.edit',
-                        'class' => 'text-xs font-medium',
+                        'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
                         'showIf' => function($user) {
                             return $user->agency_id == auth()->user()->agency_id;
                         },

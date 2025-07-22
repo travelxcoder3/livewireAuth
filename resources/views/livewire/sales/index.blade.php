@@ -5,9 +5,14 @@ $columns = SalesTable::columns();
 
 <div>
     <div>
-        <!-- رسائل النجاح والخطأ -->
-        @if($successMessage)
-            <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-lg text-center">
+       <!-- رسائل النجاح والخطأ -->
+       @if($successMessage)
+            <div x-data="{ show: true }"
+                x-init="setTimeout(() => show = false, 2000)"
+                x-show="show"
+                x-transition
+                class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm z-50"
+                style="background-color: rgb(var(--primary-500));">
                 {{ $successMessage }}
             </div>
         @endif
@@ -123,16 +128,11 @@ $columns = SalesTable::columns();
                 <!-- الأزرار -->
                 <div class="lg:col-span-3 flex justify-end gap-2">
                     @can('sales.reports.view')
-                    <button type="button" onclick="openReportModal('pdf')"
-                        class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
+                    <a href="{{ route('agency.sales.report.preview') }}"
+                        class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm flex items-center justify-center"
                         style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        تقرير PDF
-                    </button>
-                    <button type="button" onclick="openReportModal('excel')"
-                        class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        تقرير Excel
-                    </button>
+                        تقارير
+                    </a>
                     @endcan
                 </div>
             </div>
@@ -587,109 +587,31 @@ $columns = SalesTable::columns();
         </form>
     </div>
 </div>
-        <!-- نافذة اختيار نوع التقرير -->
-        <div id="reportModal" class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center hidden backdrop-blur-sm">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
-                <button onclick="closeReportModal()"
-                        class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">
-                    &times;
-                </button>
-
-                <h3 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">
-                    اختر نوع التقرير
-                </h3>
-                
-                <div class="flex flex-col gap-4">
-                    <input type="hidden" id="reportType">
-                    <input type="hidden" name="start_date" value="{{ request('start_date') }}">
-                    <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-                    
-                    <button type="button" onclick="generateFullReport()"
-                        class="text-white font-bold px-6 py-3 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        تقرير كامل
-                    </button>
-                    
-                    <button type="button" onclick="openFieldsModal()"
-                        class="text-white font-bold px-6 py-3 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        تقرير مخصص
-                    </button>
-
-                    <button type="button" onclick="closeReportModal()"
-                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-3 rounded-xl shadow transition 
-                            duration-300 text-sm mt-4">
-                        إلغاء
-                    </button>
-                </div>
-            </div>
+    
+<!-- نافذة المعاينة الكبيرة -->
+<div id="previewModal" class="fixed inset-0 z-50 bg-black/20 flex items-center justify-center hidden backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl mx-4 p-8 relative flex flex-col min-h-[60vh]">
+        <button onclick="closePreviewModal()"
+                class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-2xl font-bold">
+            &times;
+        </button>
+        <h2 class="text-2xl font-bold mb-6 text-center text-[rgb(var(--primary-700))]">معاينة التقرير</h2>
+        <div class="flex-1 overflow-auto mb-6">
+            <!-- عرض نفس جدول المبيعات -->
+            <x-data-table :rows="$sales" :columns="$columns" />
         </div>
-
-        <!-- نافذة اختيار الحقول -->
-        <div id="fieldsModal" class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center hidden backdrop-blur-sm">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
-                <button onclick="closeFieldsModal()"
-                        class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">
-                    &times;
-                </button>
-
-                <h3 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">
-                    اختر حقول التقرير
-                </h3>
-                
-                <form id="customReportForm" method="GET" target="_blank" onsubmit="prepareCustomReport()">
-                    <input type="hidden" name="start_date" value="{{ request('start_date') }}">
-                    <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-                    
-                    <div class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto p-2">
-                        @foreach([
-                            'sale_date' => 'التاريخ',
-                            'beneficiary_name' => 'المستفيد',
-                            'customer' => 'العميل',
-                            'serviceType' => 'الخدمة',
-                            'provider' => 'المزود',
-                            'intermediary' => 'الوسيط',
-                            'usd_buy' => 'USD Buy',
-                            'usd_sell' => 'USD Sell',
-                            'sale_profit' => 'الربح',
-                            'amount_paid' => 'المبلغ',
-                            'account' => 'الحساب',
-                            'reference' => 'المرجع',
-                            'pnr' => 'PNR',
-                            'route' => 'Route',
-                            'status' => 'الحالة',
-                            'user' => 'اسم الموظف',
-                            'commission' => 'العمولة'
-                        ] as $field => $label)
-                        <div class="flex items-center">
-                            <label class="flex items-center space-x-2 space-x-reverse cursor-pointer">
-                                <input type="checkbox"
-                                    name="fields[]"
-                                    value="{{ $field }}"
-                                    checked
-                                    class="h-4 w-4 rounded border-gray-300 focus:ring-[rgb(var(--primary-500))] text-[rgb(var(--primary-500))] accent-[rgb(var(--primary-500))]" />
-                                <span class="text-gray-700 text-sm">{{ $label }}</span>
-                            </label>
-                        </div>
-                        @endforeach
-                    </div>
-                    
-                    <div class="mt-6 flex justify-center gap-3">
-                        <button type="button" onclick="closeFieldsModal()"
-                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-2 rounded-xl shadow transition 
-                                duration-300 text-sm">
-                            رجوع
-                        </button>
-                        <button type="submit"
-                            class="text-white font-bold px-6 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                            تحميل التقرير
-                        </button>
-                    </div>
-                </form>
-            </div>
+        <div class="flex justify-center gap-6 mt-4">
+            <button type="button" onclick="openReportModal('pdf')"
+                class="text-white font-bold px-8 py-3 rounded-xl shadow-md transition duration-300 text-lg"
+                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                تقرير PDF
+            </button>
+            <button type="button" onclick="openReportModal('excel')"
+                class="text-white font-bold px-8 py-3 rounded-xl shadow-md transition duration-300 text-lg"
+                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                تقرير Excel
+            </button>
         </div>
-
     </div>
 </div>
 
@@ -796,4 +718,11 @@ document.addEventListener('livewire:init', () => {
         closeFilterModal();
     });
 });
+
+function openPreviewModal() {
+    document.getElementById('previewModal').classList.remove('hidden');
+}
+function closePreviewModal() {
+    document.getElementById('previewModal').classList.add('hidden');
+}
 </script>

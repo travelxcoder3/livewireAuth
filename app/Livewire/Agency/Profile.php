@@ -7,7 +7,7 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Agency;
-
+use App\Models\AgencyTarget;
 class Profile extends Component
 {
     use WithFileUploads;
@@ -21,6 +21,7 @@ class Profile extends Component
     public $logo; // الصورة الجديدة
     public $tempLogoUrl; // لمعاينة الشعار قبل الحفظ
     public $logoPreview; // لعرض الشعار بعد الحفظ مباشرة
+    public $monthlyTarget;
 
     public function mount()
     {
@@ -37,6 +38,11 @@ class Profile extends Component
         $this->logoPreview = $this->agency->logo
             ? Storage::url($this->agency->logo) . '?v=' . now()->timestamp
             : asset('images/default-agency-logo.png');
+        $target = AgencyTarget::where('agency_id', $this->agency->id)
+            ->where('month', now()->startOfMonth())
+            ->first();
+
+        $this->monthlyTarget = $target?->target_amount;
     }
 
     public function updatedLogo()
@@ -63,45 +69,66 @@ class Profile extends Component
         }
     }
 
- public function update()
-{
-    $this->validate([
-        'phone' => 'required|string|max:20',
-        'landline' => 'nullable|string|max:20',
-        'email' => 'required|email|unique:agencies,email,' . $this->agency->id,
-        'address' => 'nullable|string',
-        'description' => 'nullable|string',
-        //'logo' => 'nullable|image|max:2048',
-    ]);
+    public function update()
+    {
+        $this->validate([
+            'phone' => 'required|string|max:20',
+            'landline' => 'nullable|string|max:20',
+            'email' => 'required|email|unique:agencies,email,' . $this->agency->id,
+            'address' => 'nullable|string',
+            'description' => 'nullable|string',
+            'monthlyTarget' => 'nullable|numeric|min:0',
+        ]);
 
-    $this->agency->phone = $this->phone;
-    $this->agency->landline = $this->landline;
-    $this->agency->email = $this->email;
-    $this->agency->address = $this->address;
-    $this->agency->description = $this->description;
+        $this->agency->phone = $this->phone;
+        $this->agency->landline = $this->landline;
+        $this->agency->email = $this->email;
+        $this->agency->address = $this->address;
+        $this->agency->description = $this->description;
 
-    if ($this->logo) {
-        if ($this->agency->logo && Storage::disk('public')->exists($this->agency->logo)) {
-            Storage::disk('public')->delete($this->agency->logo);
+        if ($this->logo) {
+            if ($this->agency->logo && Storage::disk('public')->exists($this->agency->logo)) {
+                Storage::disk('public')->delete($this->agency->logo);
+            }
+
+            $logoPath = $this->logo->store('agencies/logos', 'public');
+            $this->agency->logo = $logoPath;
         }
 
-        $logoPath = $this->logo->store('agencies/logos', 'public');
-        $this->agency->logo = $logoPath;
+        $this->agency->save();
+
+        // تحقق من وجود هدف سابق
+        $existingTarget = AgencyTarget::where('agency_id', $this->agency->id)
+            ->where('month', now()->startOfMonth())
+            ->first();
+
+        if ($existingTarget && $this->monthlyTarget != $existingTarget->target_amount) {
+            // لا يُسمح بالتعديل
+            session()->flash('error', 'لا يمكن تعديل الهدف الشهري بعد تحديده لهذا الشهر.');
+            return; // إيقاف المعالجة هنا
+        }
+
+        // إنشاء الهدف إذا لم يكن موجودًا
+        if (!$existingTarget && $this->monthlyTarget !== null) {
+            AgencyTarget::create([
+                'agency_id' => $this->agency->id,
+                'month' => now()->startOfMonth(),
+                'target_amount' => $this->monthlyTarget,
+            ]);
+        }
+
+        $this->agency = Agency::find($this->agency->id);
+        $this->logo = null;
+        $this->tempLogoUrl = null;
+
+        $this->logoPreview = $this->agency->logo
+            ? Storage::url($this->agency->logo) . '?v=' . now()->timestamp
+            : asset('images/default-agency-logo.png');
+
+        session()->flash('success', 'تم تعديل البيانات بنجاح');
     }
 
-    $this->agency->save();
 
-    $this->agency = Agency::find($this->agency->id);
-
-    $this->logo = null;
-    $this->tempLogoUrl = null;
-
-    $this->logoPreview = $this->agency->logo
-        ? Storage::url($this->agency->logo) . '?v=' . now()->timestamp
-        : asset('images/default-agency-logo.png');
-
-    session()->flash('success', 'تم تعديل البيانات بنجاح');
-}
 
 
     public function render()

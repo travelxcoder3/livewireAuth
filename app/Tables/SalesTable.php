@@ -39,7 +39,7 @@ class SalesTable
                         'type' => 'duplicate',
                         'label' => 'تكرار',
                         'icon' => 'fa fa-copy',
-                        'class' => 'text-amber-600 hover:text-amber-800',
+                        'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
                         'showIf' => function($row) {
                             return $row->agency_id == auth()->user()->agency_id;
                         },

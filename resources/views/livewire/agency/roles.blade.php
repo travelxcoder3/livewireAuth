@@ -91,10 +91,12 @@
                     <td class="px-3 py-2">
                         <div class="flex gap-2">
                             @can('roles.edit')
-                                <button wire:click="editRole({{ $role->id }})"
-                                    class="text-xs font-medium" style="color: rgb(var(--primary-600));">
-                                    تعديل
-                                </button>
+                            <button wire:click="editRole({{ $role->id }})"
+                                class="text-xs font-medium flex items-center gap-1"
+                                style="color: rgb(var(--primary-600));">
+                                <i class="fa fa-edit"></i>
+                                تعديل
+                            </button>
                             @endcan
 
                             @can('roles.delete')
@@ -132,19 +134,22 @@
                 الصلاحيات الخاصة بـ: {{ $selectedRoleName }}
             </h3>
 
-            <!-- عداد الصلاحيات -->
-            <div class="bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-700))] border border-[rgb(var(--primary-200))] px-3 py-2 rounded-lg text-sm font-bold">
+           <!-- عداد الصلاحيات -->
+           <div style="background: rgba(var(--primary-100), 0.15); border: 1px solid rgb(var(--primary-200));"
+                class="text-[rgb(var(--primary-700))] px-3 py-2 rounded-lg text-sm font-bold">
                 <i class="fas fa-check-circle mr-1"></i>
                 {{ count($selectedRolePermissions) }} صلاحية
             </div>
 
+
             <div class="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
                 @if(count($selectedRolePermissions) > 0)
                     @foreach ($selectedRolePermissions as $permission)
-                        <span
-                            class="bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-700))] px-3 py-1 rounded-full text-xs">
-                            {{ $permission }}
-                        </span>
+                    <span
+                        style="background: rgba(var(--primary-100), 0.15); border: 1px solid rgb(var(--primary-200)); color: rgb(var(--primary-700));"
+                        class="px-3 py-1 rounded-full text-xs font-medium">
+                        {{ $permission }}
+                    </span>
                     @endforeach
                 @else
                     <span class="text-gray-500 text-sm">لا توجد صلاحيات لهذا الدور</span>

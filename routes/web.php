@@ -43,6 +43,8 @@ use App\Livewire\Agency\Accounts;
 use App\Livewire\Agency\AgencyPolicies;
 
 use App\Livewire\Agency\Commissions;
+use App\Livewire\Agency\Obligations\Index;
+
 
 
 // ============================
@@ -101,7 +103,10 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
     Route::get('/profile', Profile::class)->name('profile');
     Route::get('/dynamic-lists', \App\Livewire\Agency\DynamicLists::class)->name('dynamic-lists');
     Route::get('/change-password', ChangePassword::class)->name('change-password');
-
+    Route::get('/obligations', Index::class)
+    ->name('obligations');
+Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
+)->name('obligations-view');
     // ✅ واجهة المبيعات الخاصة بأدمن الوكالة
     Route::get('/sales', SalesIndex::class)->name('sales.index');
     // ✅ تقارير المبيعات PDF و Excel
@@ -118,6 +123,9 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
                     'sales-report.xlsx'
                 );
             })->name('sales.report.excel');
+    Route::get('/sales/report-preview', function() {
+        return view('livewire.sales.report-preview');
+    })->name('sales.report.preview');
 // ============================
     // 🧑‍💼 قسم الحسابات داخل لوحة الوكالة
     // ============================

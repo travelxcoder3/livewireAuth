@@ -132,6 +132,7 @@
                 <x-navbar.buttons.dropdown-link :href="route('agency.approval-sequences')" icon="fas fa-random" label="تسلسل الموافقات" :show="true" />
                 <x-navbar.buttons.dropdown-link href="{{ route('agency.commissions') }}" icon="fas fa-percentage" label="تهيئة العمولات" :show="true" />
                 <x-navbar.buttons.dropdown-link :href="route('agency.policies')" icon="fas fa-file-contract" label="سياسات الوكالة" :show="true" />
+                <x-navbar.buttons.dropdown-link :   href="{{ route('agency.obligations') }}" icon="fas fa-file-contract" label="التزامات و قيود " :show="true" />
             </div>
         </div>
     @endif
@@ -148,4 +149,14 @@
             />
         </div>
     @endif
+
+    <x-navbar.buttons.icon-button
+    icon="fas fa-file-contract"
+    tooltip="التزامات وقيود"
+    label="التزامات وقيود"
+    href="{{ route('agency.obligations-view') }}"
+    :active="request()->routeIs('agency.obligations-view')"
+/>
+
+
 </div>

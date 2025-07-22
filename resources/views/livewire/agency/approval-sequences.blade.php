@@ -108,12 +108,16 @@ $containerClass = 'relative mt-1';
                 @foreach ($approvers as $index => $userId)
                     <div class="flex items-center gap-2 mb-3">
                         <div class="{{ $containerClass }} flex-grow">
-                            <select wire:model="approvers.{{ $index }}" class="{{ $fieldClass }}">
-                                <option value="">-- اختر موظف --</option>
-                                @foreach (\App\Models\User::where('agency_id', auth()->user()->agency_id)->get() as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                @endforeach
-                            </select>
+                        @php
+                                $usersOptions = \App\Models\User::where('agency_id', auth()->user()->agency_id)->pluck('name', 'id')->toArray();
+                            @endphp
+
+                            <x-select-field 
+                                wireModel="approvers.{{ $index }}"
+                                name="approvers_{{ $index }}"
+                                label="اختر موظف"
+                                :options="$usersOptions"
+                            />
                             @error('approvers.' . $index) <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
@@ -138,10 +142,10 @@ $containerClass = 'relative mt-1';
 
             <!-- الأزرار -->
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
-                <button type="button" @click="closeAddModal()"
-                    class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-semibold shadow transition duration-300 text-sm">
-                    إلغاء
-                </button>
+            <button type="button" wire:click="closeForm"
+                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+                        إلغاء
+                    </button>
 
                 <button wire:click="saveSequence" wire:loading.attr="disabled"
                     class="px-6 py-2 text-white rounded-xl font-semibold shadow-md hover:shadow-xl transition duration-300 text-sm"
@@ -183,12 +187,12 @@ $containerClass = 'relative mt-1';
                 @foreach ($editApprovers as $index => $userId)
                     <div class="flex items-center gap-2 mb-3">
                         <div class="{{ $containerClass }} flex-grow">
-                            <select wire:model="editApprovers.{{ $index }}" class="{{ $fieldClass }}">
-                                <option value="">-- اختر موظف --</option>
-                                @foreach (\App\Models\User::where('agency_id', auth()->user()->agency_id)->get() as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                @endforeach
-                            </select>
+                        <x-select-field 
+                                wireModel="editApprovers.{{ $index }}"
+                                name="editApprovers_{{ $index }}"
+                                label="اختر موظف"
+                                :options="$usersOptions"
+                            />
                             @error('editApprovers.' . $index) <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 

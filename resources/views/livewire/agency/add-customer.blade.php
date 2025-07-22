@@ -55,13 +55,12 @@
             </div>
 
             <!-- حقل العمولة -->
-            <div class="flex items-center mt-3 col-span-4">
-                <input type="checkbox" wire:model.defer="has_commission" id="has_commission"
-                    class="rounded border-gray-300 text-[rgb(var(--primary-600))] shadow-sm focus:ring-[rgb(var(--primary-500))]">
-                <label for="has_commission" class="text-sm text-gray-700 mr-2">
-                    هل لهذا العميل عمولة؟
-                </label>
-            </div>
+            <x-checkbox-field
+    name="has_commission"
+    wireModel="has_commission"
+    label="هل لهذا العميل عمولة؟"
+    containerClass="mt-3 col-span-4"
+/>
 
             <!-- الأزرار باستخدام مكون primary-button -->
             <div class="flex flex-col sm:flex-row justify-center gap-3 pt-4">

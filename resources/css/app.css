@@ -209,3 +209,18 @@
 .dropdown-link-hover:hover i, .dropdown-link-hover:focus i {
     color: #fff !important;
 }
+
+@media (max-width: 1023px) {
+    nav.nav-gradient {
+        display: flex;
+    }
+    nav.nav-gradient > .hidden.lg\:flex {
+        display: none !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .admin-mobile-sidebar {
+        display: none !important;
+    }
+}

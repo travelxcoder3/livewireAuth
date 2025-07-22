@@ -37,10 +37,10 @@
                             ];
                         @endphp
                         @foreach($quickLinks as $link)
-                            <a href="{{ route($link['route']) }}"
-                               class="relative flex items-center justify-center w-16 h-16 rounded-xl shadow transition group border border-gray-100 bg-[rgb(var(--primary-500))] group-hover:bg-white"
-                               style="font-size: 2rem;">
-                                <i class="fas fa-{{ $link['icon'] }} text-white group-hover:text-[rgb(var(--primary-500))] transition-colors"></i>
+                        <a href="{{ route($link['route']) }}"
+   class="relative flex items-center justify-center w-16 h-16 rounded-xl shadow transition group border border-gray-100 bg-[rgb(var(--primary-500))] hover:bg-white"
+   style="font-size: 2rem;">
+    <i class="fas fa-{{ $link['icon'] }} text-white group-hover:text-[rgb(var(--primary-500))] transition-colors"></i>
                                 <span class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full px-3 py-1 rounded-lg bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition whitespace-nowrap z-50">
                                     {{ $link['title'] }}
                                 </span>
