@@ -89,15 +89,27 @@
     @endif
 
     {{-- التقارير --}}
-    <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">
-        <x-navbar.buttons.icon-button
-            icon="fas fa-chart-line"
-            tooltip="التقارير"
-            label="التقارير"
-            href="#"
-            :active="false"
-        />
-    </div>
+    @php
+        $showReportsDropdown =
+            Auth::user()->hasRole('agency-admin') ||
+            Auth::user()->can('sales.view') ||
+            Auth::user()->can('accounts.view');
+    @endphp
+
+    @if ($showReportsDropdown)
+        <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
+            <x-navbar.buttons.icon-button icon="fas fa-chart-line" tooltip="التقارير" label="التقارير" href="#"
+                class="!px-2 !py-1" :active="request()->routeIs('agency.reports.sales') || request()->routeIs('agency.reports.accounts')" dropdown="true" />
+
+            <div
+                class="dropdown-reports absolute right-0 top-full min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
+                <x-navbar.buttons.dropdown-link :href="route('agency.reports.sales')" icon="fas fa-chart-bar" label="تقرير المبيعات"
+                    :show="true" />
+                <x-navbar.buttons.dropdown-link :href="route('agency.reports.accounts')" icon="fas fa-file-invoice-dollar"
+                    label="تقرير الحسابات" :show="true" />
+            </div>
+        </div>
+    @endif
 
     {{-- طلبات الموافقة --}}
     <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">

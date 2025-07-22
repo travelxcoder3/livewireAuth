@@ -44,6 +44,8 @@ use App\Livewire\Agency\AgencyPolicies;
 
 use App\Livewire\Agency\Commissions;
 use App\Livewire\Agency\Obligations\Index;
+use App\Http\Controllers\SalesReportController;
+
 
 
 
@@ -166,6 +168,13 @@ Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
         ->middleware('role:agency-admin');
     // === رابط الموافقات للوكالة (جديد) ===
     Route::get('/approvals', \App\Livewire\Agency\ApprovalRequests::class)->name('approvals.index');
+    Route::prefix('reports')->group(function () {
+        Route::get('/accounts', \App\Livewire\Agency\Reports\AccountsReport::class)->name('reports.accounts');
+        Route::get('/accounts/pdf', [AccountsReportController::class, 'downloadPdf'])->name('reports.accounts.pdf');
+
+        Route::get('/sales', \App\Livewire\Agency\Reports\SalesReport::class )->name('reports.sales');
+        Route::get('/sales/pdf', [SalesReportController::class, 'downloadPdf'])->name('reports.sales.pdf');
+    });
 });
 // Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
 //     ->middleware(['auth', 'agency']);
