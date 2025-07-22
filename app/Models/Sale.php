@@ -88,5 +88,10 @@ class Sale extends Model
         return $this->hasMany(SaleItem::class); // أو الاسم الصحيح
     }
 
+    public function invoices()
+    {
+        return $this->belongsToMany(Invoice::class, 'invoice_sale');
+    }
+
 
 }

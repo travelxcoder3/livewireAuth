@@ -1,9 +1,10 @@
 @php
-use Carbon\Carbon;
+    use Carbon\Carbon;
 @endphp
 
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <title>تقرير المبيعات</title>
@@ -14,7 +15,8 @@ use Carbon\Carbon;
             font-size: 12px;
         }
 
-        .header, .footer {
+        .header,
+        .footer {
             text-align: center;
             margin-bottom: 20px;
         }
@@ -31,7 +33,8 @@ use Carbon\Carbon;
             margin-bottom: 25px;
         }
 
-        table th, table td {
+        table th,
+        table td {
             border: 1px solid #aaa;
             padding: 6px;
             text-align: center;
@@ -48,22 +51,22 @@ use Carbon\Carbon;
         }
     </style>
 </head>
+
 <body>
 
     <div class="header">
         <h2>تقرير المبيعات</h2>
         <p>{{ $agency->name }} - {{ Carbon::now()->translatedFormat('Y-m-d') }}</p>
         <p>
-            @if($startDate)
+            @if ($startDate)
                 من تاريخ: {{ Carbon::parse($startDate)->format('Y-m-d') }}
             @endif
-            @if($endDate)
+            @if ($endDate)
                 إلى تاريخ: {{ Carbon::parse($endDate)->format('Y-m-d') }}
             @endif
         </p>
     </div>
-
-    <table>
+    <table border="1" cellpadding="5" cellspacing="0" width="100%">
         <thead>
             <tr>
                 <th>التاريخ</th>
@@ -71,7 +74,7 @@ use Carbon\Carbon;
                 <th>نوع الخدمة</th>
                 <th>المزود</th>
                 <th>حساب العميل</th>
-                <th>المبلغ (USD)</th>
+                <th>(USD) المبلغ</th>
                 <th>المرجع</th>
                 <th>PNR</th>
                 <th>العميل عبر</th>
@@ -79,26 +82,26 @@ use Carbon\Carbon;
             </tr>
         </thead>
         <tbody>
-            @forelse($sales as $sale)
+            @foreach ($sales as $sale)
                 <tr>
-                    <td>{{ $sale->created_at?->format('Y-m-d') }}</td>
-                    <td>{{ $sale->user->name ?? '-' }}</td>
-                    <td>{{ $sale->serviceType->label ?? '-' }}</td>
-                    <td>{{ $sale->provider->name ?? '-' }}</td>
-                    <td>{{ $sale->customer->name ?? '-' }}</td>
-                    <td>{{ number_format($sale->usd_sell, 2) }}</td>
+                    <td>{{ $sale->created_at->format('Y-m-d') }}</td>
+                    <td>{{ optional($sale->user)->name ?? '-' }}</td>
+
+                    {{-- عرض اسم الخدمة عبر العلاقة service --}}
+                    <td>{{ optional($sale->service)->label ?? '-' }}</td>
+
+                    <td>{{ optional($sale->provider)->name ?? '-' }}</td>
+                    <td>{{ optional($sale->customer)->name ?? '-' }}</td>
+                    <td style="text-align: right;">{{ number_format($sale->usd_sell, 2) }}</td>
                     <td>{{ $sale->reference }}</td>
                     <td>{{ $sale->pnr }}</td>
-                    <td>{{ $sale->customer_via ?? '-' }}</td>
-                    <td>{{ $sale->payment_method ?? '-' }}</td>
+                    <td>{{ ucfirst(str_replace('_', ' ', $sale->customer_via)) }}</td>
+                    <td>{{ ucfirst(str_replace('_', ' ', $sale->payment_method)) }}</td>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="10">لا توجد بيانات</td>
-                </tr>
-            @endforelse
+            @endforeach
         </tbody>
     </table>
+
 
     <div class="total">
         الإجمالي: {{ number_format($totalSales, 2) }} USD
@@ -109,4 +112,5 @@ use Carbon\Carbon;
     </div>
 
 </body>
+
 </html>

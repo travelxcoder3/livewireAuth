@@ -15,7 +15,7 @@
     <div class="fixed inset-0 bg-black bg-opacity-40" @click="mobileSidebarOpen = false"></div>
     
     <!-- القائمة الجانبية -->
-    <aside class="relative w-72 max-w-full bg-white shadow-xl h-full flex flex-col rtl:border-l rtl:border-gray-200 ltr:border-r ltr:border-gray-200">
+    <aside class="relative w-72 max-w-full bg-white shadow-xl h-full flex flex-col rtl:border-l rtl:border-gray-200 ltr:border-r ltr:border-gray-200 overflow-y-auto max-h-screen">
         <!-- رأس القائمة -->
         <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
             <div class="flex items-center gap-2">
@@ -120,14 +120,30 @@
             @endif
 
             <!-- التقارير -->
-            <a href="#" @click="mobileSidebarOpen = false"
-               class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
-                <i class="fas fa-chart-line"></i>
-                <span>التقارير</span>
-            </a>
+            <div x-data="{open: false}" class="relative">
+                <button @click="open = !open" class="flex items-center justify-between w-full px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-chart-line"></i>
+                        <span>التقارير</span>
+                    </div>
+                    <i class="fas" :class="{'fa-chevron-down': !open, 'fa-chevron-up': open}"></i>
+                </button>
+                <div x-show="open" class="pl-4">
+                    <a href="{{ route('agency.reports.sales') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>تقارير المبيعات</span>
+                    </a>
+                    <a href="{{ route('agency.reports.accounts') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-file-alt"></i>
+                        <span>تقارير الحسابات</span>
+                    </a>
+                </div>
+            </div>
 
             <!-- طلبات الموافقة -->
-            <a href="#" @click="mobileSidebarOpen = false"
+            <a href="{{ route('agency.approval-requests') }}" @click="mobileSidebarOpen = false"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                 <i class="fas fa-clipboard-check"></i>
                 <span>طلبات الموافقة</span>
@@ -177,11 +193,18 @@
                     <a href="{{ route('agency.obligations') }}" @click="mobileSidebarOpen = false"
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                         <i class="fas fa-file-contract"></i>
-                        <span>التزامات و قيود</span>
+                        <span>التزامات وقيود</span>
                     </a>
                 </div>
             </div>
             @endif
+
+            <!-- التزامات وقيود (عرض فقط) -->
+            <a href="{{ route('agency.obligations-view') }}" @click="mobileSidebarOpen = false"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                <i class="fas fa-file-contract"></i>
+                <span>التزامات وقيود</span>
+            </a>
 
             <div class="border-t my-2"></div>
 

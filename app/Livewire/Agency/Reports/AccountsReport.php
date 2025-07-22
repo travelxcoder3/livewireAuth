@@ -224,7 +224,7 @@ class AccountsReport extends Component
         $this->totalSales = $salesQuery->clone()->sum('usd_sell');
         $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
 
-        return view('livewire.agency.reports.accounts-report', [
+        return view('livewire.agency.reportsView.accounts-report', [
             'sales' => $sales,
             'totalSales' => $this->totalSales,
             'columns' => $this->columns,

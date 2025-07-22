@@ -184,3 +184,8 @@ Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
 ->middleware(['auth']);
 
 Route::get('/commissions', Commissions::class)->name('agency.commissions');
+
+// في routes/web.php
+Route::get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice) {
+    return (new App\Livewire\Agency\Accounts())->downloadBulkInvoicePdf($invoice->id);
+})->name('invoices.download');

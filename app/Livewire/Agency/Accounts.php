@@ -9,6 +9,9 @@ use App\Models\Sale;
 use App\Models\ServiceType;
 use App\Models\Provider;
 use App\Models\DynamicListItem;
+
+use Spatie\Browsershot\Browsershot;
+use Illuminate\Support\Facades\Storage;
 class Accounts extends Component
 {
     use WithPagination;
@@ -34,6 +37,32 @@ class Accounts extends Component
     public $referenceFilter = '';
 
 // وهكذا ...
+public $showInvoiceModal = false;
+public $selectedSale;
+protected $listeners = ['openInvoiceModal'];
+public function openInvoiceModal($saleId)
+{
+    $this->selectedSale = \App\Models\Sale::with(['customer', 'provider', 'account'])->findOrFail($saleId);
+    $this->showInvoiceModal = true;
+}
+
+
+
+public function downloadInvoicePdf($saleId)
+{
+    $sale = \App\Models\Sale::with(['service', 'provider', 'account', 'customer'])->findOrFail($saleId);
+
+    $html = view('invoices.sale-invoice', ['sale' => $sale])->render();
+
+    $pdfPath = 'pdfs/invoice-' . $sale->id . '.pdf';
+    Browsershot::html($html)
+        ->format('A4')
+        ->margins(10, 10, 10, 10)
+        ->waitUntilNetworkIdle()
+        ->save(storage_path('app/public/' . $pdfPath));
+
+    return response()->download(storage_path('app/public/' . $pdfPath));
+}
 
 
     protected $rules = [
@@ -171,6 +200,33 @@ class Accounts extends Component
         ]);
     }
 
+    // --- متغيرات الفاتورة المجمعة ---
+    public $selectedSales = [];
+    public $invoiceEntityName, $invoiceDate;
+    public $showBulkInvoiceModal = false;
+
+    // اختيار/إلغاء اختيار عملية بيع
+    public function toggleSaleSelection($saleId)
+    {
+        if (($key = array_search($saleId, $this->selectedSales)) !== false) {
+            unset($this->selectedSales[$key]);
+        } else {
+            $this->selectedSales[] = $saleId;
+        }
+    }
+
+    // فتح نافذة الفاتورة المجمعة
+    public function openBulkInvoiceModal()
+    {
+        if (empty($this->selectedSales)) {
+            session()->flash('message', 'يرجى اختيار عمليات بيع أولاً');
+            return;
+        }
+        $this->invoiceEntityName = '';
+        $this->invoiceDate = now()->toDateString();
+        $this->showBulkInvoiceModal = true;
+    }
+
  public function render()
 {
     $user = Auth::user();
@@ -215,5 +271,54 @@ class Accounts extends Component
     return view('livewire.agency.accounts', compact('customers', 'sales', 'totalSales'))
         ->layout('layouts.agency');
 }
+// في ملف App\Livewire\Agency\Accounts.php
+public function downloadBulkInvoicePdf($invoiceId)
+{
+    $invoice = \App\Models\Invoice::with(['sales', 'agency'])->findOrFail($invoiceId);
+    
+    $html = view('invoices.bulk-invoice', ['invoice' => $invoice])->render();
 
+    $pdfPath = 'pdfs/bulk-invoice-' . $invoice->id . '.pdf';
+    Browsershot::html($html)
+        ->format('A4')
+        ->margins(10, 10, 10, 10)
+        ->waitUntilNetworkIdle()
+        ->save(storage_path('app/public/' . $pdfPath));
+
+    return response()->download(storage_path('app/public/' . $pdfPath));
+}
+
+// تحديث دالة createBulkInvoice لإرجاع معرف الفاتورة
+public function createBulkInvoice()
+{
+    $this->validate([
+        'invoiceEntityName' => 'required|string|max:255',
+        'invoiceDate' => 'required|date',
+    ]);
+    
+    if (empty($this->selectedSales)) {
+        session()->flash('message', 'يرجى اختيار عمليات بيع');
+        return;
+    }
+    
+    $user = auth()->user();
+    $agency = $user->agency;
+    $invoiceNumber = 'INV-' . now()->format('YmdHis') . '-' . rand(100,999);
+    
+    $invoice = \App\Models\Invoice::create([
+        'invoice_number' => $invoiceNumber,
+        'entity_name' => $this->invoiceEntityName,
+        'date' => $this->invoiceDate,
+        'user_id' => $user->id,
+        'agency_id' => $agency->id,
+    ]);
+    
+    $invoice->sales()->attach($this->selectedSales);
+    
+    $this->showBulkInvoiceModal = false;
+    $this->selectedSales = [];
+    
+    // تحميل الفاتورة مباشرة بعد الإنشاء
+    return $this->downloadBulkInvoicePdf($invoice->id);
+}
 }

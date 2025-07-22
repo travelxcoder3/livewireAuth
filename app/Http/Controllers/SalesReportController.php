@@ -22,30 +22,74 @@ class SalesReportController extends Controller
      */
     public function downloadPdf(Request $request)
     {
-        $data = $this->prepareReportData($request);
+        $agency = auth()->user()->agency;
+        $agencyIds = $agency->parent_id
+            ? [$agency->id]
+            : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
+        // بناء الاستعلام مع جميع الفلاتر
+        $query = Sale::with(['user', 'service', 'provider', 'account', 'customer'])
+            ->whereIn('agency_id', $agencyIds)
+            ->when($request->search, function ($q) use ($request) {
+                $term = '%' . $request->search . '%';
+                $q->where(function ($q2) use ($term) {
+                    $q2->where('beneficiary_name', 'like', $term)
+                        ->orWhere('reference', 'like', $term)
+                        ->orWhere('pnr', 'like', $term);
+                });
+            })
+            ->when($request->serviceTypeFilter, function ($q) use ($request) {
+                $q->where('service_type_id', $request->serviceTypeFilter);
+            })
+            ->when($request->providerFilter, function ($q) use ($request) {
+                $q->where('provider_id', $request->providerFilter);
+            })
+            ->when($request->accountFilter, function ($q) use ($request) {
+                $q->where('customer_id', $request->accountFilter);
+            })
+            ->when($request->pnrFilter, function ($q) use ($request) {
+                $q->where('pnr', 'like', '%' . $request->pnrFilter . '%');
+            })
+            ->when($request->referenceFilter, function ($q) use ($request) {
+                $q->where('reference', 'like', '%' . $request->referenceFilter . '%');
+            })
+            ->when($request->startDate, function ($q) use ($request) {
+                $q->whereDate('created_at', '>=', $request->startDate);
+            })
+            ->when($request->endDate, function ($q) use ($request) {
+                $q->whereDate('created_at', '<=', $request->endDate);
+            })
+            ->orderBy(
+                $request->sortField ?? 'created_at',
+                $request->sortDirection ?? 'desc'
+            );
+
+        // جلب النتائج وحساب الإجمالي
+        $sales = $query->get();
+        $totalSales = $sales->sum('usd_sell');
+
+        // توليد HTML لعرض PDF
         $html = view('reports.sales-full-pdf', [
-            'sales' => $data['sales'],
-            'totalSales' => $data['totalSales'],
-            'agency' => $data['agency'],
-            'startDate' => $data['startDate'],
-            'endDate' => $data['endDate'],
+            'sales' => $sales,
+            'totalSales' => $totalSales,
+            'agency' => $agency,
+            'startDate' => $request->startDate,
+            'endDate' => $request->endDate,
         ])->render();
 
+        // إنشاء وإرجاع ملف PDF
         return response(
             Browsershot::html($html)
                 ->format('A4')
-                ->margins(10, 10, 10, 10)
-                ->emulateMedia('screen')
                 ->noSandbox()
+                ->emulateMedia('screen')
                 ->waitUntilNetworkIdle()
                 ->pdf()
         )->withHeaders([
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="sales-full-report.pdf"',
-        ]);
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="sales-report.pdf"',
+                ]);
     }
-
     /**
      * تحميل تقرير المبيعات بصيغة Excel.
      *

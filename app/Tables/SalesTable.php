@@ -13,7 +13,7 @@ class SalesTable
             ['key' => 'service.label', 'label' => 'الخدمة'],
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'service_date', 'label' => 'تاريخ الخدمة', 'format' => 'date'],
-            ['key' => 'customer_via', 'label' => 'العميل عبر'],
+             ['key' => 'customer_via', 'label' => 'العميل عبر', 'format' => 'customer_via'],
             ['key' => 'usd_buy', 'label' => 'Buy', 'format' => 'money', 'color' => 'primary-500'],
             ['key' => 'usd_sell', 'label' => 'Sell', 'format' => 'money', 'color' => 'primary-600'],
             ['key' => 'sale_profit', 'label' => 'الربح', 'format' => 'money', 'color' => 'primary-700'],
@@ -25,8 +25,10 @@ class SalesTable
             ['key' => 'status', 'label' => 'الحالة', 'format' => 'status'],
             ['key' => 'user.name', 'label' => 'الموظف'],
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
-            ['key' => 'payment_method', 'label' => 'طريقة الدفع'],
-            ['key' => 'payment_type', 'label' => 'وسيلة الدفع'],
+           ['key' => 'payment_method', 'label' => 'طريقة الدفع', 'format' => 'payment_method'],
+            ['key' => 'payment_type', 'label' => 'وسيلة الدفع', 'format' => 'payment_type'],
+           
+
             ['key' => 'receipt_number', 'label' => 'رقم السند'],
             ['key' => 'phone_number', 'label' => 'رقم الهاتف'],
             ['key' => 'depositor_name', 'label' => 'اسم المودع'],

@@ -38,12 +38,24 @@ class Dashboard extends Component
         }
 
         $agencyId = Auth::user()->agency_id;
-        $this->totalUsers = \App\Models\User::where('agency_id', $agencyId)->count();
-        $this->activeUsers = \App\Models\User::where('agency_id', $agencyId)->where('is_active', 1)->count();
-        $this->onlineUsers = \App\Models\User::where('agency_id', $agencyId)
-            ->whereNotNull('last_activity_at')
-            ->where('last_activity_at', '>=', now()->subMinutes(5))
-            ->count();
+        $userId = Auth::user()->id;
+        $isAdmin = Auth::user()->hasRole('agency-admin');
+        
+        // إحصائيات المستخدمين حسب الدور
+        if ($isAdmin) {
+            // إحصائيات جميع موظفي الوكالة للأدمن
+            $this->totalUsers = \App\Models\User::where('agency_id', $agencyId)->count();
+            $this->activeUsers = \App\Models\User::where('agency_id', $agencyId)->where('is_active', 1)->count();
+            $this->onlineUsers = \App\Models\User::where('agency_id', $agencyId)
+                ->whereNotNull('last_activity_at')
+                ->where('last_activity_at', '>=', now()->subMinutes(5))
+                ->count();
+        } else {
+            // إحصائيات المستخدم الحالي فقط للموظفين العاديين
+            $this->totalUsers = 1;
+            $this->activeUsers = Auth::user()->is_active ? 1 : 0;
+            $this->onlineUsers = (Auth::user()->last_activity_at && Auth::user()->last_activity_at >= now()->subMinutes(5)) ? 1 : 0;
+        }
 
         // جلب جميع الخدمات للوكالة الحالية
         $this->serviceTypes = ServiceType::where('agency_id', Auth::user()->agency_id)->get();
@@ -51,12 +63,19 @@ class Dashboard extends Component
         $this->updateStatsData();
 
         // تجهيز بيانات المبيعات حسب الخدمة
-        $this->salesByService = Sale::select(
+        $salesByServiceQuery = Sale::select(
             'service_type_id',
             DB::raw('SUM(amount_paid) as total_sales'),
             DB::raw('COUNT(*) as operations_count')
         )
-        ->where('agency_id', Auth::user()->agency_id)
+        ->where('agency_id', Auth::user()->agency_id);
+        
+        // إضافة فلتر المستخدم فقط إذا لم يكن أدمن
+        if (!$isAdmin) {
+            $salesByServiceQuery->where('user_id', $userId);
+        }
+        
+        $this->salesByService = $salesByServiceQuery
         ->groupBy('service_type_id')
         ->with('serviceType')
         ->get()
@@ -75,24 +94,42 @@ $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
     ->value('target_amount') ?? 0;
 
 // 2. حساب المبيعات المحققة فعليًا لهذا الشهر
-$this->monthlyAchieved = Sale::where('agency_id', $agencyId)
+$monthlyAchievedQuery = Sale::where('agency_id', $agencyId);
+if (!$isAdmin) {
+    $monthlyAchievedQuery->where('user_id', $userId);
+}
+$this->monthlyAchieved = $monthlyAchievedQuery
     ->whereBetween('sale_date', [now()->startOfMonth(), now()->endOfMonth()])
     ->sum('amount_paid');
         // تجهيز بيانات المبيعات حسب الموظف
-        $this->salesByEmployee = Sale::select(
+        $salesByEmployeeQuery = Sale::select(
             'user_id',
-            DB::raw('SUM(amount_paid) as total_sales'),
+            DB::raw('SUM(COALESCE(usd_sell, amount_paid, 0)) as total_sales'),
             DB::raw('COUNT(*) as operations_count')
         )
         ->where('agency_id', Auth::user()->agency_id)
+        ->whereNotNull('user_id'); // تأكد من وجود user_id
+        
+        // إضافة فلتر المستخدم فقط إذا لم يكن أدمن
+        if (!$isAdmin) {
+            $salesByEmployeeQuery->where('user_id', $userId);
+        }
+        
+        $salesData = $salesByEmployeeQuery
         ->groupBy('user_id')
-        ->with('user')
-        ->get()
-        ->map(function($row) {
+        ->get();
+        
+        // جلب بيانات المستخدمين بشكل منفصل
+        $userIds = $salesData->pluck('user_id')->toArray();
+        $users = User::whereIn('id', $userIds)->get()->keyBy('id');
+        
+        $this->salesByEmployee = $salesData->map(function($row) use ($users) {
+            $user = $users->get($row->user_id);
             return [
-                'employee' => $row->user ? $row->user->name : '-',
+                'employee' => $user ? $user->name : 'مستخدم غير معروف (ID: ' . $row->user_id . ')',
                 'total_sales' => $row->total_sales,
-                'operations_count' => $row->operations_count
+                'operations_count' => $row->operations_count,
+                'user_id' => $row->user_id
             ];
         })->toArray();
 
@@ -125,12 +162,20 @@ $this->monthlyAchieved = Sale::where('agency_id', $agencyId)
                     ->value('target_amount') ?? 0;
         
                 // 2. المبيعات المحققة
-                $this->monthlyAchieved = Sale::where('agency_id', $agencyId)
+                $monthlyAchievedQuery2 = Sale::where('agency_id', $agencyId);
+                if (!$isAdmin) {
+                    $monthlyAchievedQuery2->where('user_id', $userId);
+                }
+                $this->monthlyAchieved = $monthlyAchievedQuery2
                     ->whereBetween('sale_date', [$start, $end])
                     ->sum('amount_paid');
         
                 // 3. التكاليف (شراء)
-                $this->monthlyCost = Sale::where('agency_id', $agencyId)
+                $monthlyCostQuery = Sale::where('agency_id', $agencyId);
+                if (!$isAdmin) {
+                    $monthlyCostQuery->where('user_id', $userId);
+                }
+                $this->monthlyCost = $monthlyCostQuery
                     ->whereBetween('sale_date', [$start, $end])
                     ->sum('usd_buy');
         
@@ -178,6 +223,11 @@ $this->monthlyAchieved = Sale::where('agency_id', $agencyId)
                 DB::raw('COUNT(*) as operations_count')
             )
             ->where('agency_id', Auth::user()->agency_id);
+            
+            // إضافة فلتر المستخدم فقط إذا لم يكن أدمن
+            if (!Auth::user()->hasRole('agency-admin')) {
+                $query->where('user_id', Auth::user()->id);
+            }
             if ($this->selectedServiceType) {
                 $query->where('service_type_id', $this->selectedServiceType);
             }
@@ -206,8 +256,9 @@ $this->monthlyAchieved = Sale::where('agency_id', $agencyId)
             });
             $this->salesByMonth = $final->values()->toArray();
 
-            // حساب عدد العمليات الفعلية
-            $countQuery = Sale::where('agency_id', Auth::user()->agency_id);
+            // حساب عدد العمليات الفعلية للمستخدم الحالي فقط
+            $countQuery = Sale::where('agency_id', Auth::user()->agency_id)
+                ->where('user_id', Auth::user()->id); // فلتر المستخدم الحالي فقط
             if ($this->selectedServiceType) {
                 $countQuery->where('service_type_id', $this->selectedServiceType);
             }
@@ -219,6 +270,7 @@ $this->monthlyAchieved = Sale::where('agency_id', $agencyId)
                 DB::raw('COUNT(*) as operations_count')
             )
             ->where('agency_id', Auth::user()->agency_id)
+            ->where('user_id', Auth::user()->id) // فلتر المستخدم الحالي فقط
             ->groupBy('service_type_id')
             ->with('serviceType')
             ->get()
@@ -230,20 +282,34 @@ $this->monthlyAchieved = Sale::where('agency_id', $agencyId)
                 ];
             })->toArray();
         } else if ($this->statsViewType === 'employee') {
-            $this->salesByMonth = Sale::select(
+            $employeeQuery = Sale::select(
                 'user_id',
-                DB::raw('SUM(amount_paid) as total_sales'),
+                DB::raw('SUM(COALESCE(usd_sell, amount_paid, 0)) as total_sales'),
                 DB::raw('COUNT(*) as operations_count')
             )
             ->where('agency_id', Auth::user()->agency_id)
+            ->whereNotNull('user_id');
+            
+            // إضافة فلتر المستخدم فقط إذا لم يكن أدمن
+            if (!Auth::user()->hasRole('agency-admin')) {
+                $employeeQuery->where('user_id', Auth::user()->id);
+            }
+            
+            $salesData = $employeeQuery
             ->groupBy('user_id')
-            ->with('user')
-            ->get()
-            ->map(function($row) {
+            ->get();
+            
+            // جلب بيانات المستخدمين بشكل منفصل
+            $userIds = $salesData->pluck('user_id')->toArray();
+            $users = User::whereIn('id', $userIds)->get()->keyBy('id');
+            
+            $this->salesByMonth = $salesData->map(function($row) use ($users) {
+                $user = $users->get($row->user_id);
                 return [
-                    'employee' => $row->user ? $row->user->name : '-',
+                    'employee' => $user ? $user->name : 'مستخدم غير معروف (ID: ' . $row->user_id . ')',
                     'total_sales' => $row->total_sales,
-                    'operations_count' => $row->operations_count
+                    'operations_count' => $row->operations_count,
+                    'user_id' => $row->user_id
                 ];
             })->toArray();
         } else if ($this->statsViewType === 'branch') {

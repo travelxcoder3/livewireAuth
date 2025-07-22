@@ -17,7 +17,7 @@ class ReportController extends Controller
     $user = Auth::user();
     $agency = $user->agency;
 
-    $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account']);
+    $query = Sale::with(['customer', 'serviceType', 'provider', 'account']);
 
     // فلترة بالتاريخ
     if ($request->filled('start_date')) {
@@ -34,14 +34,20 @@ class ReportController extends Controller
     $fields = $request->input('fields', []);
 
     // إذا لم يتم تحديد أي حقول، استخدم القيم الافتراضية
+   // الحقول الافتراضية - أضف الحقول الجديدة هنا
     if (empty($fields)) {
         $fields = [
             'sale_date', 'beneficiary_name', 'customer', 'serviceType',
-            'provider', 'intermediary', 'usd_buy', 'usd_sell',
+            'provider', 'customer_via', 'usd_buy', 'usd_sell',
             'sale_profit', 'amount_received', 'account',
-            'reference', 'pnr', 'route'
+            'reference', 'pnr', 'route',
+            'status', 'payment_method', 'payment_type', 'receipt_number',
+            'phone_number', 'commission', 'amount_paid', 'depositor_name',
+            'service_date', 'expected_payment_date'
         ];
     }
+
+
 
     $html = view('reports.sales-pdf', [
         'sales' => $sales,

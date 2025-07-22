@@ -51,6 +51,24 @@
                                                 default     => $value,
                                             };
                                             break;
+                                            case 'payment_method':
+                                                    $translatedValue = match ($value) {
+                                                        'kash' => 'كاش',
+                                                        'part' => 'جزئي',
+                                                        'all' => 'كامل',
+                                                        default => $value,
+                                                    };
+                                                    break;
+
+                                                case 'payment_type':
+                                                    $translatedValue = match ($value) {
+                                                        'creamy' => 'تحصيل',
+                                                        'kash' => 'كاش',
+                                                        'visa' => 'فيزا',
+                                                        default => $value,
+                                                    };
+                                                    break;
+
                                     }
                                 }
 

@@ -120,4 +120,9 @@ class Agency extends Model
         return $this->hasMany(\App\Models\AgencyTarget::class);
     }
 
+    public function invoices()
+    {
+        return $this->hasMany(\App\Models\Invoice::class);
+    }
+
 }

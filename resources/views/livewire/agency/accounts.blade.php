@@ -1,12 +1,17 @@
+
 @php
 use App\Services\ThemeService;
+use App\Tables\AccountTable;
+
 $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
 $colors = ThemeService::getCurrentThemeColors($themeName);
 
+$columns = AccountTable::columns(); // ⬅️ هذا السطر الجديد
 $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
 $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]';
 $containerClass = 'relative mt-1';
 @endphp
+
 
 
 <div class="space-y-6">
@@ -25,6 +30,14 @@ $containerClass = 'relative mt-1';
         class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center"
     >
 </div>
+   @if($sales->count())
+    <button wire:click="openBulkInvoiceModal"
+        class="text-white font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm ml-2"
+        style="background: linear-gradient(to right, rgb(var(--primary-500)), rgb(var(--primary-600)));">
+        إصدار فاتورة مجمعة
+    </button>
+
+   @endif
 
 </div>
 
@@ -140,14 +153,6 @@ $containerClass = 'relative mt-1';
     </button>
     @endcan
 
-    <!-- زر إصدار فاتورة -->
-    @can('accounts.invoice')
-    <button onclick="openInvoiceModal()"
-        class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
-        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-        إصدار فاتورة
-    </button>
-    @endcan
 
 </div>
 
@@ -162,11 +167,67 @@ $containerClass = 'relative mt-1';
     <!-- جدول العمليات -->
      <div class="h-6"></div>
 
-    @php
-    use App\Tables\AccountTable;
-    $columns = AccountTable::columns();
-@endphp
-<x-data-table :rows="$sales" :columns="$columns" />
+    <div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-200 rounded-xl overflow-hidden text-xs">
+        <thead class="bg-gray-100">
+    <tr>
+        <th class="p-2 border-b text-center">
+            <input type="checkbox" wire:model="selectAll" wire:click="$set('selectedSales', $sales->pluck('id')->toArray())">
+        </th>
+        <th class="p-2 border-b">#</th>
+
+        @foreach($columns as $col)
+            <th class="p-2 border-b">{{ $col['label'] }}</th>
+        @endforeach
+    </tr>
+</thead>
+
+      <tbody>
+    @foreach($sales as $sale)
+        <tr>
+            <td class="p-2 border-b text-center">
+                <input type="checkbox" wire:click="toggleSaleSelection({{ $sale->id }})" @if(in_array($sale->id, $selectedSales)) checked @endif>
+            </td>
+            <td class="p-2 border-b">{{ $sale->id }}</td>
+
+            @foreach($columns as $col)
+                @php
+                    $value = data_get($sale, $col['key']);
+                    $format = $col['format'] ?? null;
+                    $color = $col['color'] ?? null;
+                @endphp
+
+                <td class="p-2 border-b {{ $color ? 'text-' . $color : '' }}">
+                    @switch($format)
+                        @case('date')
+                            {{ \Carbon\Carbon::parse($value)->format('Y-m-d') }}
+                            @break
+                        @case('money')
+                            {{ number_format($value, 2) }}
+                            @break
+                        @case('status')
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                {{ strtoupper($value) }}
+                            </span>
+                            @break
+                        @case('custom')
+                            <button wire:click="openInvoiceModal({{ $sale->id }})"
+                                    class="font-semibold"
+                                    style="color: rgb(var(--primary-600));">
+                                فاتورة فردية
+                            </button>
+                            @break
+                        @default
+                            {{ $value ?? '-' }}
+                    @endswitch
+                </td>
+            @endforeach
+        </tr>
+    @endforeach
+</tbody>
+
+    </table>
+    </div>
 
     <!-- Pagination -->
         @if($sales->hasPages())
@@ -292,6 +353,143 @@ $containerClass = 'relative mt-1';
         </form>
     </div>
 </div>
+
+@if($showInvoiceModal && $selectedSale)
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 print:bg-white print:static print:overflow-visible">
+    <div class="bg-white w-full max-w-2xl rounded-xl shadow-xl p-6 relative overflow-y-auto max-h-[90vh] print:shadow-none print:max-w-full print:p-0 print:overflow-visible">
+        <!-- زر الإغلاق -->
+        <button wire:click="$set('showInvoiceModal', false)"
+                class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold print:hidden">
+            &times;
+        </button>
+
+        <!-- عنوان -->
+        <h2 class="text-2xl font-bold text-center mb-4" style="color: rgb(var(--primary-700));">فاتورة العملية</h2>
+
+        <!-- رأس الفاتورة -->
+        <div class="flex justify-between text-sm border-b pb-3 mb-3">
+            <div class="text-right">
+                <div class="font-bold text-base">ATHKA HOLIDAYS</div>
+                <div>صنعاء، شارع الجزائر تقاطع الستين</div>
+                <div>+967-1-206166</div>
+            </div>
+            <div class="text-left text-sm">
+                <p><strong>Order No:</strong> {{ $selectedSale->id }} / {{ now()->format('y') }}</p>
+                <p><strong>Date:</strong> {{ $selectedSale->sale_date }}</p>
+                <p><strong>Invoice No:</strong> {{ 'INV-' . str_pad($selectedSale->id, 5, '0', STR_PAD_LEFT) }}</p>
+            </div>
+        </div>
+
+        <!-- بيانات العميل -->
+        <div class="mb-4 text-sm">
+            <p><strong>الاسم:</strong> {{ $selectedSale->beneficiary_name }}</p>
+            <p><strong>الهاتف:</strong> {{ $selectedSale->phone_number }}</p>
+            <p><strong>PNR:</strong> {{ $selectedSale->pnr ?? '-' }}</p>
+            <p><strong>المرجع:</strong> {{ $selectedSale->reference ?? '-' }}</p>
+        </div>
+
+        <!-- تفاصيل العملية -->
+        <table class="w-full text-sm border border-collapse border-gray-300 mb-4">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="border px-2 py-1">Doc No</th>
+                    <th class="border px-2 py-1">Passenger Name</th>
+                    <th class="border px-2 py-1">Sector</th>
+                    <th class="border px-2 py-1">Class</th>
+                    <th class="border px-2 py-1">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="border px-2 py-1">{{ $selectedSale->reference }}</td>
+                    <td class="border px-2 py-1">{{ $selectedSale->beneficiary_name }}</td>
+                    <td class="border px-2 py-1">{{ $selectedSale->route ?? '-' }}</td>
+                    <td class="border px-2 py-1">{{ $selectedSale->service_class ?? 'S' }}</td>
+                    <td class="border px-2 py-1 font-bold">{{ number_format($selectedSale->usd_sell, 2) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- الإجمالي -->
+        <div class="text-sm text-right mb-3">
+            <p><strong>Currency:</strong> US Dollar</p>
+            <p><strong>TAX:</strong> 0.00</p>
+            <p><strong>Net:</strong> {{ number_format($selectedSale->usd_sell, 2) }}</p>
+            <p><strong>Gross:</strong> {{ number_format($selectedSale->usd_sell, 2) }}</p>
+            <p class="mt-2">Only {{ ucwords(\App\Helpers\NumberToWords::convert($selectedSale->usd_sell)) }} US Dollars</p>
+        </div>
+
+        <!-- التواقيع -->
+        <div class="flex justify-between text-sm mt-6">
+            <div class="text-center w-1/2">
+                <p>Prepared by</p>
+                <div class="border-t mt-8 border-gray-400 w-3/4 mx-auto"></div>
+            </div>
+            <div class="text-center w-1/2">
+                <p>Approved by</p>
+                <div class="border-t mt-8 border-gray-400 w-3/4 mx-auto"></div>
+            </div>
+        </div>
+
+        <!-- زر الطباعة -->
+        <div class="mt-6 text-center print:hidden">
+            <button wire:click="downloadInvoicePdf({{ $selectedSale->id }})"
+                class="text-white px-3 py-1 rounded-lg text-sm shadow transition duration-200"
+                style="background: linear-gradient(to right, rgb(var(--primary-500)), rgb(var(--primary-600)));">
+                تحميل PDF
+            </button>
+        </div>
+    </div>
+</div>
+@endif
+
+@if($showBulkInvoiceModal)
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+        <button wire:click="$set('showBulkInvoiceModal', false)" class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+        <h2 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">إصدار فاتورة مجمعة</h2>
+        <form wire:submit.prevent="createBulkInvoice" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold mb-1">اسم الجهة</label>
+                <input type="text" wire:model.defer="invoiceEntityName" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" required>
+                @error('invoiceEntityName') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">تاريخ الفاتورة</label>
+                <input type="date" wire:model.defer="invoiceDate" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" required>
+                @error('invoiceDate') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="button" wire:click="$set('showBulkInvoiceModal', false)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">إلغاء</button>
+                <button type="submit"
+                    class="text-white font-bold px-4 py-2 rounded-xl shadow text-sm"
+                    style="background: linear-gradient(to right, rgb(var(--primary-500)), rgb(var(--primary-600)));">
+                    تأكيد وإنشاء الفاتورة
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
+
+<style>
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .print-area, .print-area * {
+        visibility: visible;
+    }
+    .print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
+</style>
+
 
 <script>
     let currentReportType = '';

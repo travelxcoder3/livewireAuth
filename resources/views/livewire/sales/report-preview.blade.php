@@ -151,10 +151,11 @@
 <!-- زر الرجوع في أعلى الصفحة خارج الكارد -->
 <div class="fixed top-8 left-8 z-50">
     <a href="{{ route('agency.sales.index') }}"
-       class="bg-gradient-to-tr from-[rgb(var(--primary-100))] to-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] font-bold px-6 py-2 rounded-xl shadow hover:from-[rgb(var(--primary-500))] hover:to-[rgb(var(--primary-600))] transition duration-200 text-base border border-[rgb(var(--primary-100))]">
+       class="text-[rgb(var(--primary-600))] font-bold px-4 py-2 rounded-lg border border-[rgb(var(--primary-500))] bg-white hover:bg-[rgb(var(--primary-100))] transition duration-150 text-base shadow-sm">
         ← رجوع
     </a>
 </div>
+
 
 <div class="min-h-screen bg-gray-50 flex flex-col items-center justify-start py-10">
     <div class="w-full bg-white rounded-2xl shadow-2xl p-6 sm:p-10 mx-auto">
@@ -215,25 +216,35 @@
                 <input type="hidden" name="start_date" value="{{ request('start_date') }}">
                 <input type="hidden" name="end_date" value="{{ request('end_date') }}">
                 <div class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto p-2">
-                    @foreach([
-                        'sale_date' => 'التاريخ',
-                        'beneficiary_name' => 'المستفيد',
-                        'customer' => 'العميل',
-                        'serviceType' => 'الخدمة',
-                        'provider' => 'المزود',
-                        'intermediary' => 'الوسيط',
-                        'usd_buy' => 'USD Buy',
-                        'usd_sell' => 'USD Sell',
-                        'sale_profit' => 'الربح',
-                        'amount_paid' => 'المبلغ',
-                        'account' => 'الحساب',
-                        'reference' => 'المرجع',
-                        'pnr' => 'PNR',
-                        'route' => 'Route',
-                        'status' => 'الحالة',
-                        'user' => 'اسم الموظف',
-                        'commission' => 'العمولة'
-                    ] as $field => $label)
+                  @foreach([
+                            'sale_date' => 'التاريخ',
+                            'beneficiary_name' => 'المستفيد',
+                            'customer' => 'العميل',
+                            'serviceType' => 'الخدمة',
+                            'provider' => 'المزود',
+                            'intermediary' => 'الوسيط',
+                            'customer_via' => 'العميل عبر',
+                            'usd_buy' => 'USD Buy',
+                            'usd_sell' => 'USD Sell',
+                            'sale_profit' => 'الربح',
+                            'amount_received' => 'المبلغ المستلم',
+                            'amount_paid' => 'المبلغ المدفوع',
+                            'account' => 'الحساب',
+                            'reference' => 'المرجع',
+                            'pnr' => 'PNR',
+                            'route' => 'Route',
+                            'status' => 'الحالة',
+                            'user' => 'اسم الموظف',
+                            'payment_method' => 'طريقة الدفع',
+                            'payment_type' => 'وسيلة الدفع',
+                            'receipt_number' => 'رقم الإيصال',
+                            'phone_number' => 'رقم الهاتف',
+                            'commission' => 'العمولة',
+                            'depositor_name' => 'اسم المودع',
+                            'service_date' => 'تاريخ الخدمة',
+                            'expected_payment_date' => 'تاريخ الدفع المتوقع',
+                        ] as $field => $label)
+
                     <div class="flex items-center">
                         <label class="flex items-center space-x-2 space-x-reverse cursor-pointer">
                             <input type="checkbox"
@@ -247,10 +258,12 @@
                     @endforeach
                 </div>
                 <div class="mt-6 flex justify-center gap-3">
-                    <button type="button" onclick="closeFieldsModal()"
-                        class="bg-gradient-to-tr from-[rgb(var(--primary-100))] to-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] font-bold px-6 py-2 rounded-xl shadow hover:from-[rgb(var(--primary-500))] hover:to-[rgb(var(--primary-600))] transition duration-200 text-sm border border-[rgb(var(--primary-100))]">
-                        رجوع
-                    </button>
+                 <button type="button" onclick="closeFieldsModal()"
+                    class="text-[rgb(var(--primary-600))] bg-white border border-gray-300 font-bold px-6 py-2 rounded-lg hover:bg-gray-100 transition duration-150 text-sm shadow-sm">
+                    رجوع
+                </button>
+
+
                     <button type="submit"
                         class="bg-gradient-to-tr from-[rgb(var(--primary-500))] to-[rgb(var(--primary-600))] text-white font-bold px-6 py-2 rounded-xl shadow-md hover:from-[rgb(var(--primary-600))] hover:to-[rgb(var(--primary-500))] transition duration-200 text-sm">
                         تحميل التقرير

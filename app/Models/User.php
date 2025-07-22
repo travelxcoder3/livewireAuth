@@ -86,4 +86,9 @@ class User extends Authenticatable
     return $this->belongsToMany(Obligation::class, 'user_obligation');
 }
 
+    public function invoices()
+    {
+        return $this->hasMany(\App\Models\Invoice::class);
+    }
+
 }

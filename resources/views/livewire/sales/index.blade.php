@@ -35,27 +35,27 @@ $columns = SalesTable::columns();
             </div>
         @endif
 
-   <div class="mb-6 grid grid-cols-12 gap-4 items-center">
+   <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 lg:gap-4 items-center">
     <!-- العنوان في اليسار -->
-    <div class="col-span-3 flex items-center justify-start">
+    <div class="col-span-12 md:col-span-4 lg:col-span-3 flex items-center justify-start">
         <h1 class="text-2xl font-bold text-[rgb(var(--primary-700))]">إدارة المبيعات</h1>
     </div>
 
     <!-- الكروت داخل كارد رئيسي في الوسط -->
-    <div class="col-span-6">
-        <div class="bg-white border shadow rounded-xl px-4 py-2 flex justify-center gap-x-4 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
+    <div class="col-span-12 md:col-span-8 lg:col-span-6">
+        <div class="bg-white border shadow rounded-xl px-2 py-2 flex flex-wrap justify-center gap-x-2 gap-y-2 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
             <!-- الربح -->
-            <div class="flex flex-col items-center px-2">
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
                 <span class="text-[rgb(var(--primary-600))]">الربح</span>
                 <span>{{ number_format($totalProfit, 2) }} {{ $currency }}</span>
             </div>
             <!-- العمولة -->
-            <div class="flex flex-col items-center px-2">
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
                 <span class="text-[rgb(var(--primary-600))]">العمولة</span>
                 <span>{{ number_format($sales->sum('commission'), 2) }} {{ $currency }}</span>
             </div>
             <!-- العمولة المستحقة -->
-            <div class="flex flex-col items-center px-2">
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
                 <span class="text-[rgb(var(--primary-600))]">العمولة المستحقة</span>
                 <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
             </div>
@@ -63,17 +63,17 @@ $columns = SalesTable::columns();
     </div>
 
     <!-- كارد الإحصائيات المالية في اليمين -->
-    <div class="col-span-3">
-        <div class="bg-white border shadow rounded-xl px-4 py-2 flex justify-center gap-x-4 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
-            <div class="flex flex-col items-center px-2">
+    <div class="col-span-12 md:col-span-4 lg:col-span-3">
+        <div class="bg-white border shadow rounded-xl px-2 py-2 flex flex-wrap justify-center gap-x-2 gap-y-2 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
                 <span class="text-[rgb(var(--primary-600))]">الإجمالي</span>
                 <span>{{ number_format($totalAmount, 2) }} {{ $currency }}</span>
             </div>
-            <div class="flex flex-col items-center px-2">
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
                 <span class="text-[rgb(var(--primary-600))]">المحصلة</span>
                 <span>{{ number_format($totalReceived, 2) }} {{ $currency }}</span>
             </div>
-            <div class="flex flex-col items-center px-2">
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
                 <span class="text-[rgb(var(--primary-600))]">الآجلة</span>
                 <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
             </div>
@@ -84,16 +84,16 @@ $columns = SalesTable::columns();
 
         <div class="space-y-6">
             <!-- الصف العلوي -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 items-end">
                 <!-- نوع الخدمة + الحالة -->
-                <div class="lg:col-span-4 grid grid-cols-2 gap-4 items-end">
+                <div class="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-4 items-end">
                     <!-- نوع الخدمة -->
                         <x-select-field
                             wireModel="service_type_id"
                             label="نوع الخدمة"
                             :options="$services->pluck('label', 'id')->toArray()"
                             placeholder="اسم الخدمة"
-                            fieldClass="peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm ..."
+                            fieldClass="peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm w-full sm:w-auto ..."
                             labelClass="..."
                         />
 
@@ -126,10 +126,10 @@ $columns = SalesTable::columns();
                 <div class="lg:col-span-5"></div>
 
                 <!-- الأزرار -->
-                <div class="lg:col-span-3 flex justify-end gap-2">
+                <div class="lg:col-span-3 flex flex-col sm:flex-row justify-end gap-2 w-full">
                     @can('sales.reports.view')
                     <a href="{{ route('agency.sales.report.preview') }}"
-                        class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm flex items-center justify-center"
+                        class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm flex items-center justify-center w-full sm:w-auto"
                         style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
                         تقارير
                     </a>
@@ -143,7 +143,7 @@ $columns = SalesTable::columns();
         <div class="bg-white rounded-xl shadow-md p-4">
         <form wire:submit.prevent="save" class="space-y-4 text-sm" id="mainForm">
                 <!-- السطر الأول -->
-                <div class="grid grid-cols-12 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 lg:gap-3">
                 
                     <!-- اسم المستفيد -->
                     <x-input-field
@@ -191,7 +191,7 @@ $columns = SalesTable::columns();
                     />
                 </div>
 
-                <div class="grid grid-cols-24 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-24 gap-2 lg:gap-3">
                     <!-- الرقم -->
                     <x-input-field
                         name="phone_number"
@@ -259,7 +259,7 @@ $columns = SalesTable::columns();
                 </div>
 
                 <!-- الصف الثالث -->
-                <div class="grid md:grid-cols-4 gap-3">
+                <div class="grid md:grid-cols-4 gap-2 lg:gap-3">
                     <!-- العميل عبر -->
                     <x-select-field
                         wireModel="customer_via"
@@ -325,7 +325,7 @@ $columns = SalesTable::columns();
                 </div>
 
                <!-- الصف الرابع -->
-<div class="grid grid-cols-24 gap-3 items-end">
+<div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-24 gap-2 lg:gap-3 items-end">
     <!-- USD Buy -->
     <x-input-field
         name="usd_buy"
@@ -399,14 +399,14 @@ $columns = SalesTable::columns();
     </div>
 
 <!-- الأزرار -->
-<div class="col-span-6 flex items-end gap-3" style="margin-inline-start: auto;">
+<div class="col-span-12 md:col-span-6 lg:col-span-6 flex items-end gap-2 lg:gap-3 w-full" style="margin-inline-start: auto;">
     <button type="button" wire:click="resetFields" 
-            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center gap-2">
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center gap-2 w-full sm:w-auto">
         تنظيف الحقول
     </button>
 
     <button type="button" onclick="openFilterModal()"
-            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center">
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center w-full sm:w-auto">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
         </svg>
@@ -414,7 +414,7 @@ $columns = SalesTable::columns();
 
         <!-- زر التحديث -->
     <button type="button" wire:click="resetFilters"
-            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center w-full sm:w-auto"
             title="إعادة تحميل الجدول كاملاً">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
@@ -422,7 +422,7 @@ $columns = SalesTable::columns();
     </button>
 
     <button type="submit"
-            class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
+            class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm w-full sm:w-auto"
             style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
         تاكيد 
     </button>
@@ -435,7 +435,9 @@ $columns = SalesTable::columns();
 
         
         <!-- جدول المبيعات -->
-        <x-data-table :rows="$sales" :columns="$columns" />
+        <div class="overflow-x-auto">
+            <x-data-table :rows="$sales" :columns="$columns" />
+        </div>
 <!-- نافذة الفلترة -->
 <div id="filterModal" x-data="{ show: false }" x-show="show" @toggle-filter-modal.window="show = $event.detail"
      x-cloak class="fixed inset-0 z-50 bg-black/10 flex items-start justify-center pt-24 backdrop-blur-sm overflow-visible">
@@ -568,12 +570,12 @@ $columns = SalesTable::columns();
                 />
 <div class="mt-6 flex justify-center gap-3">
 <button type="button" onclick="closeFilterModal()"
-    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm w-full sm:w-auto">
     إلغاء
 </button>
 
             <button type="button" wire:click="applyFilters"
-                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
+                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm w-full sm:w-auto"
                 style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
                 تطبيق الفلترة
             </button>

@@ -9,18 +9,62 @@ use Spatie\Browsershot\Browsershot;
 
 class AccountsReportController extends Controller
 {
-    public function downloadPdf()
+    /**
+     * تحميل تقرير الحسابات بصيغة PDF مع تطبيق الفلاتر الحالية.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function downloadPdf(Request $request)
     {
-        $data = $this->prepareReportData();
+        $agency = auth()->user()->agency;
+        $agencyIds = $agency->parent_id
+            ? [$agency->id]
+            : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
+        // بنية الاستعلام مع تطبيق جميع الفلاتر من الـ URL
+        $query = Sale::with(['account', 'customer', 'service', 'provider'])
+            ->whereIn('agency_id', $agencyIds)
+            // فلترة حسب نوع الخدمة
+            ->when($request->serviceTypeFilter, function ($q) use ($request) {
+                $q->where('service_type_id', $request->serviceTypeFilter);
+            })
+            // فلترة حسب المزود
+            ->when($request->providerFilter, function ($q) use ($request) {
+                $q->where('provider_id', $request->providerFilter);
+            })
+            // فلترة حسب الحساب (عميل الحسابات)
+            ->when($request->accountFilter, function ($q) use ($request) {
+                $q->where('customer_id', $request->accountFilter);
+            })
+            // فلترة حسب تاريخ البداية
+            ->when($request->startDate, function ($q) use ($request) {
+                $q->whereDate('created_at', '>=', $request->startDate);
+            })
+            // فلترة حسب تاريخ النهاية
+            ->when($request->endDate, function ($q) use ($request) {
+                $q->whereDate('created_at', '<=', $request->endDate);
+            })
+            // تستطيع إضافة فلترات أخرى بنفس المنهج إن احتجت
+            ->orderBy(
+                $request->sortField ?? 'created_at',
+                $request->sortDirection ?? 'desc'
+            );
+
+        // اجلب النتائج و احسب المجموع
+        $sales = $query->get();
+        $totalSales = $sales->sum('usd_sell');
+
+        // خذ الـ HTML من Blade مخصص للطباعة
         $html = view('reports.accounts-full-pdf', [
-            'sales' => $data['sales'],
-            'totalSales' => $data['totalSales'],
-            'agency' => $data['agency'],
-            'startDate' => $data['startDate'],
-            'endDate' => $data['endDate'],
+            'sales' => $sales,
+            'totalSales' => $totalSales,
+            'agency' => $agency,
+            'startDate' => $request->startDate,
+            'endDate' => $request->endDate,
         ])->render();
 
+        // أنشئ PDF وردّه
         return response(
             Browsershot::html($html)
                 ->format('A4')
@@ -28,10 +72,11 @@ class AccountsReportController extends Controller
                 ->emulateMedia('screen')
                 ->waitUntilNetworkIdle()
                 ->pdf()
-        )->withHeaders([
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="accounts-full-report.pdf"',
-        ]);
+        )
+            ->withHeaders([
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="accounts-full-report.pdf"',
+            ]);
     }
 
     protected function prepareReportData()

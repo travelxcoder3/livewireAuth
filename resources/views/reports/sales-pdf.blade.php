@@ -184,15 +184,26 @@
                     @if($field == 'customer')<th width="10%">العميل</th>@endif
                     @if($field == 'serviceType')<th width="8%">الخدمة</th>@endif
                     @if($field == 'provider')<th width="8%">المزود</th>@endif
-                    @if($field == 'intermediary')<th width="8%">الوسيط</th>@endif
+                    @if($field == 'customer_via')<th width="8%">عبر من </th>@endif
                     @if($field == 'usd_buy')<th width="6%" class="text-center">USD Buy</th>@endif
                     @if($field == 'usd_sell')<th width="6%" class="text-center">USD Sell</th>@endif
                     @if($field == 'sale_profit')<th width="8%" class="text-center">الربح</th>@endif
                     @if($field == 'amount_received')<th width="8%" class="text-center">المبلغ</th>@endif
-                    @if($field == 'account')<th width="8%">الحساب</th>@endif
+                    @if($field == 'customer_id')<th width="8%">الحساب</th>@endif
                     @if($field == 'reference')<th width="6%">المرجع</th>@endif
                     @if($field == 'pnr')<th width="6%">PNR</th>@endif
                     @if($field == 'route')<th width="6%">Route</th>@endif
+                    @if($field == 'status')<th width="7%">الحالة</th>@endif
+                    @if($field == 'payment_method')<th width="7%">طريقة الدفع</th>@endif
+                    @if($field == 'payment_type')<th width="7%">وسيلة الدفع</th>@endif
+                    @if($field == 'receipt_number')<th width="7%">رقم الإيصال</th>@endif
+                    @if($field == 'phone_number')<th width="7%">رقم الهاتف</th>@endif
+                    @if($field == 'commission')<th width="7%">العمولة</th>@endif
+                    @if($field == 'amount_paid')<th width="7%">المدفوع</th>@endif
+                    @if($field == 'depositor_name')<th width="7%">اسم المودع</th>@endif
+                    @if($field == 'service_date')<th width="7%">تاريخ الخدمة</th>@endif
+                    @if($field == 'expected_payment_date')<th width="7%">تاريخ الدفع المتوقع</th>@endif
+
                 @endforeach
             </tr>
         </thead>
@@ -204,22 +215,97 @@
                         @if($field == 'sale_date')<td>{{ $sale->sale_date }}</td>@endif
                         @if($field == 'beneficiary_name')<td>{{ $sale->beneficiary_name }}</td>@endif
                         @if($field == 'customer')<td>{{ $sale->customer->name ?? '-' }}</td>@endif
-                        @if($field == 'serviceType')<td>{{ $sale->serviceType->name ?? '-' }}</td>@endif
+                       @if($field == 'serviceType')
+    <td>{{ $sale->serviceType->display_name ?? $sale->serviceType->name ?? '-' }}</td>
+@endif
+
                         @if($field == 'provider')<td>{{ $sale->provider->name ?? '-' }}</td>@endif
-                        @if($field == 'intermediary')<td>{{ $sale->intermediary->name ?? '-' }}</td>@endif
+                        @if($field == 'customer_via')
+    <td>
+        @php
+            $viaOptions = [
+                'whatsapp' => 'واتساب',
+                'viber' => 'فايبر',
+                'instagram' => 'انستغرام',
+                'other' => 'أخرى',
+            ];
+            $value = strtolower(trim($sale->customer_via ?? ''));
+        @endphp
+        {{ $viaOptions[$value] ?? $value ?: '-' }}
+    </td>
+@endif
+
+
+
+
                         @if($field == 'usd_buy')<td class="text-center text-green">{{ number_format($sale->usd_buy, 2) }}</td>@endif
                         @if($field == 'usd_sell')<td class="text-center text-red">{{ number_format($sale->usd_sell, 2) }}</td>@endif
                         @if($field == 'sale_profit')<td class="text-center text-blue">{{ number_format($sale->sale_profit, 2) }}</td>@endif
                         @if($field == 'amount_received')<td class="text-center">{{ number_format($sale->amount_received, 2) }}</td>@endif
-                        @if($field == 'account')<td>{{ $sale->account->name ?? '-' }}</td>@endif
+                        @if($field == 'customer_id')<td>{{ $sale->customer->name ?? '-' }}</td>@endif
                         @if($field == 'reference')<td>{{ $sale->reference }}</td>@endif
                         @if($field == 'pnr')<td>{{ $sale->pnr }}</td>@endif
                         @if($field == 'route')<td>{{ $sale->route }}</td>@endif
+                       @if($field == 'status')
+    <td>
+        @php
+            $statuses = [
+                'issued'   => 'صادر',
+                'refunded' => 'مسترجع',
+                'canceled' => 'ملغي',
+                'pending'  => 'قيد الانتظار',
+                'reissued' => 'إعادة إصدار',
+                'void'     => 'تم الإلغاء',
+                'paid'     => 'مدفوع',
+                'unpaid'   => 'غير مدفوع',
+            ];
+        @endphp
+        {{ $statuses[$sale->status] ?? '-' }}
+    </td>
+@endif
+
+                  @if($field == 'payment_method')
+    <td>
+        @php
+            $methods = [
+                'kash' => 'كاش',
+                'part' => 'جزئي',
+                'all'  => 'كامل',
+            ];
+        @endphp
+        {{ $methods[$sale->payment_method] ?? '-' }}
+    </td>
+@endif
+
+
+                     @if($field == 'payment_type')
+    <td>
+        @php
+            $types = [
+                'creamy' => 'تحصيل',
+                'kash'   => 'كاش',
+                'visa'   => 'فيزا',
+            ];
+        @endphp
+        {{ $types[$sale->payment_type] ?? '-' }}
+    </td>
+@endif
+
+
+                        @if($field == 'receipt_number')<td>{{ $sale->receipt_number }}</td>@endif
+                        @if($field == 'phone_number')<td>{{ $sale->phone_number }}</td>@endif
+                        @if($field == 'commission')<td class="text-center">{{ number_format($sale->commission, 2) }}</td>@endif
+                        @if($field == 'amount_paid')<td class="text-center">{{ number_format($sale->amount_paid, 2) }}</td>@endif
+                        @if($field == 'depositor_name')<td>{{ $sale->depositor_name }}</td>@endif
+                        @if($field == 'service_date')<td>{{ $sale->service_date }}</td>@endif
+                        @if($field == 'expected_payment_date')<td>{{ $sale->expected_payment_date }}</td>@endif
+
                     @endforeach
                 </tr>
             @endforeach
         </tbody>
     </table>
+    
     
     <div class="footer">
         <div>تم إنشاء هذا التقرير تلقائياً بواسطة نظام إدارة المبيعات</div>

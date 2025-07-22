@@ -162,13 +162,16 @@
         </div>
     @endif
 
-    <x-navbar.buttons.icon-button
-    icon="fas fa-file-contract"
-    tooltip="التزامات وقيود"
-    label="التزامات وقيود"
-    href="{{ route('agency.obligations-view') }}"
-    :active="request()->routeIs('agency.obligations-view')"
-/>
+    <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
+        <a href="{{ route('agency.obligations-view') }}" class="flex items-center px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 transition group">
+            <span class="nav-icon icon-button">
+                <i class="fas fa-file-contract text-white text-base"></i>
+            </span>
+            <span class="nav-text text-xs text-white whitespace-nowrap ml-2 transition-all duration-300 ease-in-out opacity-0 max-w-0 group-hover:opacity-100 group-hover:max-w-xs">
+                التزامات وقيود
+            </span>
+        </a>
+    </div>
 
 
 </div>

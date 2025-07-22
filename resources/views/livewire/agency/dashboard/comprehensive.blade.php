@@ -23,30 +23,30 @@
 
             <!-- شبكة الأيقونات السريعة في المنتصف -->
             <div class="md:order-2 order-1 flex justify-center w-full md:w-auto my-4 md:my-0">
-                    <div class="grid grid-cols-8 gap-4">
-                        @php
-                            $quickLinks = [
-                                ['route' => 'agency.users', 'icon' => 'users', 'title' => 'المستخدمين', 'desc' => 'إدارة مستخدمي الوكالة'],
-                                ['route' => 'agency.roles', 'icon' => 'user-tag', 'title' => 'الأدوار', 'desc' => 'إدارة أدوار المستخدمين'],
-                                ['route' => 'agency.service_types', 'icon' => 'concierge-bell', 'title' => 'الخدمات', 'desc' => 'إدارة أنواع الخدمات'],
-                                ['route' => 'agency.providers', 'icon' => 'briefcase', 'title' => 'المزودين', 'desc' => 'إدارة مزودي الخدمات'],
-                                ['route' => 'agency.customers.add', 'icon' => 'user-plus', 'title' => 'إضافة عميل', 'desc' => 'إضافة عميل جديد'],
-                                ['route' => 'agency.hr.employees.index', 'icon' => 'user-tie', 'title' => 'الموظفين', 'desc' => 'إدارة موظفي الوكالة'],
-                                ['route' => 'agency.sales.index', 'icon' => 'chart-line', 'title' => 'المبيعات', 'desc' => 'تقارير وإحصائيات المبيعات'],
-                                ['route' => 'agency.profile', 'icon' => 'user-circle', 'title' => 'الملف الشخصي', 'desc' => 'إدارة ملفك الشخصي'],
-                            ];
-                        @endphp
-                        @foreach($quickLinks as $link)
-                        <a href="{{ route($link['route']) }}"
-   class="relative flex items-center justify-center w-16 h-16 rounded-xl shadow transition group border border-gray-100 bg-[rgb(var(--primary-500))] hover:bg-white"
-   style="font-size: 2rem;">
-    <i class="fas fa-{{ $link['icon'] }} text-white group-hover:text-[rgb(var(--primary-500))] transition-colors"></i>
-                                <span class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full px-3 py-1 rounded-lg bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition whitespace-nowrap z-50">
-                                    {{ $link['title'] }}
-                                </span>
-                            </a>
-                        @endforeach
-                    </div>
+                <div class="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-4 w-full max-w-xs sm:max-w-none mx-auto">
+                    @php
+                        $quickLinks = [
+                            ['route' => 'agency.users', 'icon' => 'users', 'title' => 'المستخدمين', 'desc' => 'إدارة مستخدمي الوكالة'],
+                            ['route' => 'agency.roles', 'icon' => 'user-tag', 'title' => 'الأدوار', 'desc' => 'إدارة أدوار المستخدمين'],
+                            ['route' => 'agency.service_types', 'icon' => 'concierge-bell', 'title' => 'الخدمات', 'desc' => 'إدارة أنواع الخدمات'],
+                            ['route' => 'agency.providers', 'icon' => 'briefcase', 'title' => 'المزودين', 'desc' => 'إدارة مزودي الخدمات'],
+                            ['route' => 'agency.customers.add', 'icon' => 'user-plus', 'title' => 'إضافة عميل', 'desc' => 'إضافة عميل جديد'],
+                            ['route' => 'agency.hr.employees.index', 'icon' => 'user-tie', 'title' => 'الموظفين', 'desc' => 'إدارة موظفي الوكالة'],
+                            ['route' => 'agency.sales.index', 'icon' => 'chart-line', 'title' => 'المبيعات', 'desc' => 'تقارير وإحصائيات المبيعات'],
+                            ['route' => 'agency.profile', 'icon' => 'user-circle', 'title' => 'الملف الشخصي', 'desc' => 'إدارة ملفك الشخصي'],
+                        ];
+                    @endphp
+                    @foreach($quickLinks as $link)
+                    <a href="{{ route($link['route']) }}"
+   class="relative flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-xl shadow transition group border border-gray-100 bg-[rgb(var(--primary-500))] hover:bg-white"
+   style="font-size: 1.5rem;">
+<i class="fas fa-{{ $link['icon'] }} text-white group-hover:text-[rgb(var(--primary-500))] transition-colors"></i>
+                        <span class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full px-3 py-1 rounded-lg bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition whitespace-nowrap z-50">
+                            {{ $link['title'] }}
+                        </span>
+                    </a>
+                    @endforeach
+                </div>
             </div>
 
             <!-- معلومات الترخيص في اليمين -->
@@ -98,24 +98,24 @@
                 <h2 class="text-3xl font-extrabold text-primary-700 tracking-tight drop-shadow-lg">إحصائيات المبيعات</h2>
             </div>
             <!-- أزرار التبديل -->
-    <div class="flex justify-center gap-4 my-4">
+    <div class="flex justify-center gap-2 sm:gap-4 my-4 flex-wrap">
         <button wire:click="updateStatsViewType('monthly')"
-                class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
+                class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
                 @if($statsViewType === 'monthly') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
             شهرياً
         </button>
         <button wire:click="updateStatsViewType('service')"
-                class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
+                class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
                 @if($statsViewType === 'service') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
             حسب الخدمة
         </button>
         <button wire:click="updateStatsViewType('employee')"
-                class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
+                class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
                 @if($statsViewType === 'employee') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
             الموظف
         </button>
         <button wire:click="updateStatsViewType('branch')"
-                class="px-4 py-2 rounded-lg border focus:outline-none transition font-bold"
+                class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
                 @if($statsViewType === 'branch') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
             الفرع
         </button>
@@ -256,9 +256,9 @@
                     @endif
                 </div>
                 <!-- كروت المبيعات المحققة والأرباح والتكاليف -->
-                <div class="w-full md:w-72 flex flex-col gap-6">
+                <div class="w-full md:w-72 flex flex-col gap-4 md:gap-6">
                     <!-- المبيعات المحققة / الهدف -->
-                    <div class="bg-primary-50 rounded-xl p-5 shadow-sm border border-primary-200 text-center">
+                    <div class="bg-primary-50 rounded-xl p-3 md:p-5 shadow-sm border border-primary-200 text-center w-full">
                         <div class="flex items-center justify-center gap-2 mb-1">
                             <i class="fas fa-bullseye text-primary-600"></i>
                             <span class="font-bold text-primary-700">المبيعات المحققة / الهدف</span>
@@ -268,7 +268,7 @@
                         </div>
                     </div>
                     <!-- الأرباح -->
-                    <div class="bg-green-50 rounded-xl p-5 shadow-sm text-center">
+                    <div class="bg-green-50 rounded-xl p-3 md:p-5 shadow-sm text-center w-full">
                         <div class="flex items-center justify-center gap-2 mb-1">
                             <i class="fas fa-coins text-green-600"></i>
                             <span class="font-bold text-green-700">أرباح هذا الشهر</span>
@@ -278,7 +278,7 @@
                         </div>
                     </div>
                     <!-- التكاليف -->
-                    <div class="bg-red-50 rounded-xl p-5 shadow-sm text-center">
+                    <div class="bg-red-50 rounded-xl p-3 md:p-5 shadow-sm text-center w-full">
                         <div class="flex items-center justify-center gap-2 mb-1">
                             <i class="fas fa-money-bill-wave text-red-600"></i>
                             <span class="font-bold text-red-700">إجمالي التكاليف</span>

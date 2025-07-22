@@ -185,7 +185,7 @@ class SalesReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $salesQuery = Sale::with(['service', 'provider', 'account', 'customer'])
+        $salesQuery = Sale::with(['user','service','provider','account','customer'])
             ->whereIn('agency_id', $agencyIds)
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
@@ -206,7 +206,7 @@ class SalesReport extends Component
         $this->totalSales = $salesQuery->clone()->sum('usd_sell');
         $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
 
-        return view('livewire.agency.reports.sales-report', [
+        return view('livewire.agency.reportsView.sales-report', [
             'sales' => $sales,
             'totalSales' => $this->totalSales,
             'serviceTypes' => $this->serviceTypes,
