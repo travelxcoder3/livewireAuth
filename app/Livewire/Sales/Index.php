@@ -26,6 +26,8 @@ class Index extends Component
 
 
     public $showCommission = false;
+    public $userCommission     = 0;
+public $userCommissionDue  = 0;
     public $editingSale = null;
     public $currency;
     public $totalAmount = 0;           // إجمالي البيع
@@ -269,8 +271,28 @@ if ($sale->payment_method === 'kash') {
         $this->totalReceived = $salesQuery->sum('amount_paid');
         // الآجل = إجمالي البيع - المحصل
         $this->totalPending = $this->totalAmount - $this->totalReceived;
+
+
         // الربح الإجمالي
         $this->totalProfit = $salesQuery->sum('sale_profit');
+
+        $userSales = (clone $salesQuery)
+            ->where('user_id', Auth::id())
+            ->get();
+
+        $totalProfit = $userSales->sum('sale_profit');
+
+        // العمليات التي تم سدادها بالكامل
+        $collectedProfit = $userSales->filter(function ($sale) {
+            $collected = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+            return $collected >= ($sale->usd_sell ?? 0);
+        })->sum('sale_profit');
+
+        $target = Auth::user()->main_target ?? 0;
+        $rate = 0.17;
+
+        $this->userCommission = max(($totalProfit - $target) * $rate, 0);
+        $this->userCommissionDue = max(($collectedProfit - $target) * $rate, 0);
 
         return view('livewire.sales.index', [
             'sales' => $sales,

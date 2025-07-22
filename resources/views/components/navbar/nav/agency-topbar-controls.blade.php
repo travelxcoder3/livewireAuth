@@ -122,7 +122,7 @@
                 @csrf
                 <button type="submit"
                     class="flex items-center w-full px-4 py-2.5 text-sm text-red-600
-                    text-red-400 hover:bg-gray-50 hover:bg-gray-700 transition-colors">
+                    hover:bg-white/20 transition duration-150 rounded-b-xl">
                     <i class="fas fa-sign-out-alt ml-2 w-5 text-center"></i>
                     <span>تسجيل الخروج</span>
                 </button>

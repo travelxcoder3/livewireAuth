@@ -50,14 +50,15 @@ $columns = SalesTable::columns();
                 <span>{{ number_format($totalProfit, 2) }} {{ $currency }}</span>
             </div>
             <!-- العمولة -->
+            <!-- عمولتي -->
             <div class="flex flex-col items-center px-2">
-                <span class="text-[rgb(var(--primary-600))]">العمولة</span>
-                <span>{{ number_format($sales->sum('commission'), 2) }} {{ $currency }}</span>
+                <span class="text-[rgb(var(--primary-600))]">العموله</span>
+                <span>{{ number_format($userCommission, 2) }} {{ $currency }}</span>
             </div>
-            <!-- العمولة المستحقة -->
+            <!-- عمولتي المستحقة -->
             <div class="flex flex-col items-center px-2">
-                <span class="text-[rgb(var(--primary-600))]">العمولة المستحقة</span>
-                <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
+                <span class="text-[rgb(var(--primary-600))]">العموله المستحقة</span>
+                <span>{{ number_format($userCommissionDue, 2) }} {{ $currency }}</span>
             </div>
         </div>
     </div>

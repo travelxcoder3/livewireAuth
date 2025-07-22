@@ -216,8 +216,7 @@
 
 
                         </div>
-                    </div>
-                <!-- ... الحقول الأخرى ... -->
+                                        <!-- ... الحقول الأخرى ... -->
                 <div class="{{ $containerClass }}">
                     <input type="number" wire:model.defer="max_users" class="{{ $fieldClass }}" placeholder="الحد الأقصى للمستخدمين" min="1" max="100" />
                     <label class="{{ $labelClass }}">الحد الأقصى للمستخدمين</label>
@@ -227,6 +226,8 @@
 @enderror
 
                             </div>
+                    </div>
+
                 <!-- ... باقي الحقول ... -->
             <div class="border-t border-gray-200 pt-6 mt-6">
                 <h3 class="text-lg font-bold mb-4 text-center text-black">

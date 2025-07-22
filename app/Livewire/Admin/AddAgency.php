@@ -69,7 +69,6 @@ class AddAgency extends Component
             'admin_email' => ['required','email','unique:users,email'],
             'admin_password' => 'required|string|min:6',
             'parent_id' => 'nullable|exists:agencies,id',
-            'monthly_sales_target' => 'required|numeric|min:0',
 
         ];
     }
@@ -142,14 +141,7 @@ class AddAgency extends Component
                 'is_active' => true,
                 'email_verified_at' => now(),
             ]);
-            $admin->assignRole($agencyAdminRole);
-
-            // تسجيل الهدف البيعي للشهر الحالي
-            AgencyTarget::create([
-                'agency_id' => $agency->id,
-                'month' => now()->startOfMonth()->toDateString(),
-                'target_amount' => $this->monthly_sales_target,
-            ]);
+            $admin->assignRole($agencyAdminRole);            
 
             DB::commit();
             $this->mainAgencies = \App\Models\Agency::whereNull('parent_id')->get();
@@ -159,7 +151,6 @@ class AddAgency extends Component
                 'license_expiry_date','description','currency',
                 'subscription_start_date','subscription_end_date',
                 'admin_name','admin_email','admin_password',
-                'monthly_sales_target'
             ]);
             $this->successMessage = 'تمت إضافة الوكالة بنجاح مع تعيين أدمن خاص بها.';
             
