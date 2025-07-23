@@ -1,4 +1,122 @@
 <div class="space-y-6">
+    <!-- معلومات الشركة - قسم كامل العرض في الأعلى -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <!-- Header معلومات الشركة -->
+        <div class="px-6 py-4" style="background: linear-gradient(135deg, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-building text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">معلومات الشركة</h1>
+                        <p class="text-white/80 text-sm">بيانات وإحصائيات الوكالة</p>
+                    </div>
+                </div>
+                <div class="text-white/60 text-sm">
+                    <i class="fas fa-clock mr-1"></i>
+                    آخر تحديث: {{ now()->format('Y-m-d H:i') }}
+                </div>
+            </div>
+        </div>
+
+        <!-- محتوى معلومات الشركة -->
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- معلومات أساسية -->
+                <div class="lg:col-span-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- اسم الشركة -->
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-building text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-blue-600 font-medium">اسم الوكالة</p>
+                                    <p class="text-lg font-bold text-blue-800">{{ Auth::user()->agency->name }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- نوع الوكالة -->
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-tag text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-green-600 font-medium">نوع الوكالة</p>
+                                    <p class="text-lg font-bold text-green-800">
+                                        {{ Auth::user()->agency->parent_id ? 'فرع' : 'وكالة رئيسية' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الوكالة الرئيسية (إذا كان فرع) -->
+                        @if(Auth::user()->agency->parent_id)
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-sitemap text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-purple-600 font-medium">الوكالة الرئيسية</p>
+                                    <p class="text-lg font-bold text-purple-800">{{ Auth::user()->agency->parent->name }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- تاريخ الإنشاء -->
+                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-calendar-plus text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-orange-600 font-medium">تاريخ الإنشاء</p>
+                                    <p class="text-lg font-bold text-orange-800">{{ Auth::user()->agency->created_at->format('Y-m-d') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- إحصائيات سريعة -->
+                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-bar text-gray-600"></i>
+                        إحصائيات سريعة
+                    </h3>
+                    <div class="space-y-3">
+                        <!-- إجمالي المبيعات -->
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                            <span class="text-sm text-gray-600">إجمالي المبيعات</span>
+                            <span class="font-bold text-gray-800">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->count() }}</span>
+                        </div>
+                        <!-- مبيعات اليوم -->
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                            <span class="text-sm text-gray-600">مبيعات اليوم</span>
+                            <span class="font-bold text-green-600">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->whereDate('sale_date', today())->count() }}</span>
+                        </div>
+                        <!-- المبيعات الشهرية -->
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                            <span class="text-sm text-gray-600">المبيعات الشهرية</span>
+                            <span class="font-bold text-blue-600">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->whereMonth('sale_date', now()->month)->whereYear('sale_date', now()->year)->count() }}</span>
+                        </div>
+                        <!-- عدد المستخدمين -->
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-sm text-gray-600">عدد المستخدمين</span>
+                            <span class="font-bold text-purple-600">{{ \App\Models\User::where('agency_id', Auth::user()->agency_id)->count() }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Sales Dashboard Header -->
     <div class="rounded-xl p-6 mb-6" style="background: linear-gradient(135deg, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -63,7 +181,6 @@
                 <div class="h-full" style="width: 100%; background-color: rgb(var(--green-500));"></div>
             </div>
         </div>
-
 
         <!-- Monthly Sales Card -->
         <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">

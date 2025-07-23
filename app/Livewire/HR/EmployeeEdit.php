@@ -30,13 +30,13 @@ class EmployeeEdit extends Component
         $this->departments = Department::pluck('name', 'id')->toArray();
         $this->positions = Position::pluck('name', 'id')->toArray();
 
-        $this->name          = $this->employee->name;
-        $this->user_name     = $this->employee->user_name;
-        $this->email         = $this->employee->email;
-        $this->phone         = $this->employee->phone;
-        $this->branch        = $this->employee->branch;
+        $this->name = $this->employee->name;
+        $this->user_name = $this->employee->user_name;
+        $this->email = $this->employee->email;
+        $this->phone = $this->employee->phone;
+        $this->branch = $this->employee->branch;
         $this->department_id = $this->employee->department_id;
-        $this->position_id   = $this->employee->position_id;
+        $this->position_id = $this->employee->position_id;
     }
 
     public function update()
@@ -63,6 +63,8 @@ class EmployeeEdit extends Component
         ]);
 
         session()->flash('success', 'تم تحديث بيانات الموظف بنجاح');
+        // إطلاق الحدث لتحديث EmployeeIndex
+        $this->dispatch('refreshEmployeeList'); 
         return redirect()->route('agency.hr.employees.index');
     }
 

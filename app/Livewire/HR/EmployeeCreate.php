@@ -56,6 +56,7 @@ class EmployeeCreate extends Component
         ]);
 
         session()->flash('success', 'تمت إضافة الموظف بنجاح');
+        $this->dispatch('refreshEmployeeList');
         return redirect()->route('agency.hr.employees.index');
     }
 

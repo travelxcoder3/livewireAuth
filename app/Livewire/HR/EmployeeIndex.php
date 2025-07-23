@@ -16,6 +16,7 @@ use Livewire\Attributes\Layout;
 class EmployeeIndex extends Component
 {
     use WithPagination;
+    protected $listeners = ['refreshEmployeeList' => 'refreshEmployees'];
 
     public $search = '';
     public $department_id = '';
@@ -33,7 +34,7 @@ class EmployeeIndex extends Component
     public $departments = [];
     public $positions = [];
 
-  
+
 
     protected $updatesQueryString = ['search', 'department_id', 'position_id'];
 
@@ -46,8 +47,8 @@ class EmployeeIndex extends Component
 
     public function mount()
     {
-       $this->departments = DynamicListItem::whereHas('list', function ($query) {
-            $query->where('name','قائمة الاقسام');
+        $this->departments = DynamicListItem::whereHas('list', function ($query) {
+            $query->where('name', 'قائمة الاقسام');
         })->pluck('label', 'id')->toArray();
 
         $this->positions = DynamicListItem::whereHas('list', function ($query) {
@@ -82,6 +83,18 @@ class EmployeeIndex extends Component
     {
         $this->showForm = false;
         $this->editingEmployee = null;
+
+        $this->reset([
+            'name',
+            'email',
+            'password',
+            'password_confirmation',
+            'phone',
+            'user_name',
+            'search',
+            'department_id',
+            'position_id'
+        ]);
     }
 
     public function editEmployee($id)
@@ -114,7 +127,7 @@ class EmployeeIndex extends Component
             'user_name' => 'nullable|string|max:255',
             'password' => 'nullable|string|min:6|confirmed',
 
-       
+
 
         ]);
 
@@ -128,13 +141,14 @@ class EmployeeIndex extends Component
         if ($this->password) {
             $employee->password = bcrypt($this->password);
         }
-       
+
 
         $employee->save();
 
         session()->flash('success', 'تم تحديث بيانات الموظف بنجاح.');
         $this->closeForm();
-        $this->dispatch('$refresh');
+        $this->reset(['search', 'department_id', 'position_id']); // إعادة تعيين الفلاتر
+        $this->resetPage(); // إعادة تعيين التقسيم
     }
 
     public function addEmployee()
@@ -163,45 +177,58 @@ class EmployeeIndex extends Component
         $user->save();
 
         session()->flash('success', 'تم إضافة الموظف بنجاح.');
-        
+
         // إعادة تعيين البحث والفلاتر
         $this->reset(['search', 'department_id', 'position_id']);
         $this->resetPage(); // لإعادة تعيين الصفحة إذا كنت تستخدم التقسيم
-        
+
         $this->closeForm();
     }
 
     public function refreshEmployees()
     {
-        // إعادة تحميل البيانات
+        $this->resetPage();
         $this->render();
+    }
+    public function resetFilters()
+    {
+        $this->search = '';
+        $this->department_id = '';
+        $this->position_id = '';
+        $this->resetPage(); // لإعادة تعيين الصفحة في حالة استخدام pagination
     }
 
     public function render()
     {
         $agency = Auth::user()->agency;
-        // إذا كان المستخدم في وكالة رئيسية
         if ($agency && $agency->parent_id === null) {
             $agencyIds = $agency->branches()->pluck('id')->toArray();
             $agencyIds[] = $agency->id;
         } else {
-            // إذا كان في فرع، اعرض فقط موظفي الفرع
             $agencyIds = [$agency->id];
         }
 
-        $employees = User::with(['department', 'position'])
-            ->whereIn('agency_id', $agencyIds)
-            ->when($this->search, function ($query) {
-                $searchTerm = '%' . $this->search . '%';
-                $query->where(function ($q) use ($searchTerm) {
-                    $q->where('name', 'LIKE', $searchTerm)
-                        ->orWhere('email', 'LIKE', $searchTerm);
-                });
-            })
-            ->when($this->department_id, fn($q) => $q->where('department_id', $this->department_id))
-            ->when($this->position_id, fn($q) => $q->where('position_id', $this->position_id))
-            ->latest()
-            ->paginate(10);
+        $query = User::with(['department', 'position'])
+            ->whereIn('agency_id', $agencyIds);
+
+        // تطبيق الفلاتر فقط إذا كانت لها قيمة
+        if (!empty($this->search)) {
+            $searchTerm = '%' . $this->search . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'LIKE', $searchTerm)
+                    ->orWhere('email', 'LIKE', $searchTerm);
+            });
+        }
+
+        if (!empty($this->department_id)) {
+            $query->where('department_id', $this->department_id);
+        }
+
+        if (!empty($this->position_id)) {
+            $query->where('position_id', $this->position_id);
+        }
+
+        $employees = $query->latest()->paginate(10);
 
         return view('livewire.hr.employee-index', compact('employees'));
     }
