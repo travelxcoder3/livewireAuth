@@ -60,7 +60,7 @@ class AccountsReport extends Component
 
     public function exportToPdf()
     {
-        dd('triggered'); 
+        dd('triggered');
         $data = $this->prepareReportData();
 
         $html = view('reports.accounts-full-pdf', [
@@ -130,7 +130,7 @@ class AccountsReport extends Component
             })
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-            ->when($this->accountFilter, fn($q) => $q->where('account_id', $this->accountFilter))
+            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
             ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
             ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
@@ -215,7 +215,7 @@ class AccountsReport extends Component
             })
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-            ->when($this->accountFilter, fn($q) => $q->where('account_id', $this->accountFilter))
+            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
             ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
             ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))

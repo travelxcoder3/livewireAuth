@@ -6,6 +6,7 @@
 
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
+    $agencyCurrency = Auth::user()?->agency?->currency ?? 'USD';
 @endphp
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -142,11 +143,11 @@
     </table>
 
     <div class="summary">
-        <div><strong>Currency:</strong> US Dollar</div>
+        <div><strong>Currency:</strong> {{ $agencyCurrency }}</div>
         <div><strong>TAX:</strong> 0.00</div>
         <div><strong>Net:</strong> {{ number_format($sale->usd_sell, 2) }}</div>
         <div><strong>Gross:</strong> {{ number_format($sale->usd_sell, 2) }}</div>
-        <div><strong>Only:</strong> {{ ucwords(NumberToWords::convert($sale->usd_sell)) }} US Dollars</div>
+        <div><strong>Only:</strong> {{ ucwords(NumberToWords::convert($sale->usd_sell)) }} {{ $agencyCurrency }}</div>
     </div>
 
     <div class="signatures">

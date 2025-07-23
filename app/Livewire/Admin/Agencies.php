@@ -35,21 +35,27 @@ class Agencies extends Component
     public $successMessage;
     public $perPage = 10; // عدد الصفوف لكل صفحة
     public $showAll = false; // عرض كل البيانات
+    public $search = '';
 
-    public function render()
-    {
-        $query = Agency::with('admin')
-                      ->orderBy('created_at', 'desc');
+public function render()
+{
+    $query = Agency::with('admin')
+        ->orderBy('created_at', 'desc');
 
-        if ($this->showAll) {
-            $agencies = $query->get();
-        } else {
-            $agencies = $query->paginate($this->perPage);
-        }
-
-        return view('livewire.admin.agencies', compact('agencies'))
-            ->layout('layouts.admin');
+    if ($this->search) {
+        $query->where('name', 'like', '%' . $this->search . '%');
     }
+
+    $agencies = $query->paginate($this->perPage);
+
+    return view('livewire.admin.agencies', compact('agencies'))
+        ->layout('layouts.admin');
+}
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
     public function toggleShowAll()
     {
         $this->showAll = !$this->showAll;

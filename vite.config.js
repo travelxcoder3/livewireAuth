@@ -10,4 +10,12 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    server: {
+        host: true, // يسمح بالوصول من أي host
+        port: 5173, // المنفذ الافتراضي لـ Vite
+        hmr: {
+            host: 'localhost', // أو يمكنك استخدام IP المحدد
+        },
+        cors: true, // تفعيل CORS
+    },
 });

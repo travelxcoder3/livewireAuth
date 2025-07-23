@@ -4,6 +4,7 @@
 
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
+    $agencyCurrency = Auth::user()?->agency?->currency ?? 'USD';
 @endphp
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -162,15 +163,15 @@
     <div class="summary">
         <div class="summary-item">
             <span class="summary-title">إجمالي المبيعات:</span>
-            <span class="summary-value text-green">{{ number_format($sales->sum('amount_received'), 2) }} USD</span>
+            <span class="summary-value text-green">{{ number_format($sales->sum('amount_received'), 2) }} {{ $agencyCurrency }}</span>
         </div>
         <div class="summary-item">
             <span class="summary-title">إجمالي الأرباح:</span>
-            <span class="summary-value text-blue">{{ number_format($sales->sum('sale_profit'), 2) }} USD</span>
+            <span class="summary-value text-blue">{{ number_format($sales->sum('sale_profit'), 2) }} {{ $agencyCurrency }}</span>
         </div>
         <div class="summary-item">
             <span class="summary-title">متوسط الربح:</span>
-            <span class="summary-value">{{ number_format($sales->avg('sale_profit'), 2) }} USD</span>
+            <span class="summary-value">{{ number_format($sales->avg('sale_profit'), 2) }} {{ $agencyCurrency }}</span>
         </div>
     </div>
     
@@ -185,8 +186,8 @@
                     @if($field == 'serviceType')<th width="8%">الخدمة</th>@endif
                     @if($field == 'provider')<th width="8%">المزود</th>@endif
                     @if($field == 'customer_via')<th width="8%">عبر من </th>@endif
-                    @if($field == 'usd_buy')<th width="6%" class="text-center">USD Buy</th>@endif
-                    @if($field == 'usd_sell')<th width="6%" class="text-center">USD Sell</th>@endif
+                    @if($field == 'usd_buy')<th width="6%" class="text-center">{{ $agencyCurrency }} Buy</th>@endif
+                    @if($field == 'usd_sell')<th width="6%" class="text-center">{{ $agencyCurrency }} Sell</th>@endif
                     @if($field == 'sale_profit')<th width="8%" class="text-center">الربح</th>@endif
                     @if($field == 'amount_received')<th width="8%" class="text-center">المبلغ</th>@endif
                     @if($field == 'customer_id')<th width="8%">الحساب</th>@endif

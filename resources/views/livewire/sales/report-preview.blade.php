@@ -17,6 +17,7 @@
     $totalAmount = $sales->sum('usd_buy');
     $totalProfit = $sales->sum('sale_profit');
     $avgProfit = $sales->count() ? $sales->avg('sale_profit') : 0;
+    $agencyCurrency = Auth::user()?->agency?->currency ?? 'USD';
 @endphp
 
 <x-app-layout>
@@ -192,9 +193,9 @@
                 <div>متوسط الربح:</div>
             </div>
             <div class="flex flex-col items-start gap-4 font-bold text-lg min-w-[120px]">
-                <div class="text-[rgb(var(--primary-500))]">USD {{ number_format($totalAmount,2) }}</div>
-                <div class="text-[rgb(var(--primary-500))]">USD {{ number_format($totalProfit,2) }}</div>
-                <div class="text-gray-800">USD {{ number_format($avgProfit,2) }}</div>
+            <div class="text-[rgb(var(--primary-500))]">{{ $agencyCurrency }} {{ number_format($totalAmount,2) }}</div>
+                <div class="text-[rgb(var(--primary-500))]">{{ $agencyCurrency }} {{ number_format($totalProfit,2) }}</div>
+                <div class="text-gray-800">{{ $agencyCurrency }} {{ number_format($avgProfit,2) }}</div>
             </div>
         </div>
         <div class="report-table w-full">

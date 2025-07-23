@@ -174,8 +174,8 @@
 
     <!-- Request Modal (المعدل) -->
     @if ($showRequestModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
-            style="background-color: rgba(0,0,0,0.4);">
+    <div class="fixed inset-0 z-50 flex items-start justify-center pt-24 backdrop-blur-sm"
+                style="background-color: rgba(0,0,0,0.4);">
             <div
                 class="bg-white w-full max-w-2xl rounded-lg shadow-xl overflow-hidden transform scale-100 sm:scale-95 transition-all duration-300">
                 <div class="p-6">

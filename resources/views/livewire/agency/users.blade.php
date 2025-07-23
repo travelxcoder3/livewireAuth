@@ -92,12 +92,16 @@
                     errorName="main_target"
                 />
 
-                <!-- الحالة -->
-                <div class="flex items-center mt-4">
-                    <input type="checkbox" wire:model.defer="{{ $showEditModal ? 'edit_is_active' : 'is_active' }}"
-                           class="h-4 w-4 text-green-600 border-gray-300 rounded">
-                    <label class="mr-2 text-xs text-gray-700">نشط</label>
-                </div>
+                    <!-- الحالة -->
+        <x-checkbox-field
+            name="is_active"
+            label="نشط"
+            wireModel="{{ $showEditModal ? 'edit_is_active' : 'is_active' }}"
+            :checked="false"
+            containerClass="mt-4"
+            fieldClass=""
+            labelClass="text-xs text-gray-700"
+        />
 
                 <!-- الأزرار -->
                 <div class="flex justify-end gap-3 pt-4">

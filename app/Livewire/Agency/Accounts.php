@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace App\Livewire\Agency;
 
 use Livewire\Component;
@@ -26,7 +26,7 @@ class Accounts extends Component
     public $providers = [];
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
-    
+
     // خصائص الفلاتر
     public $serviceTypeFilter = '';
     public $providerFilter = '';
@@ -36,33 +36,33 @@ class Accounts extends Component
     public $pnrFilter = '';
     public $referenceFilter = '';
 
-// وهكذا ...
-public $showInvoiceModal = false;
-public $selectedSale;
-protected $listeners = ['openInvoiceModal'];
-public function openInvoiceModal($saleId)
-{
-    $this->selectedSale = \App\Models\Sale::with(['customer', 'provider', 'account'])->findOrFail($saleId);
-    $this->showInvoiceModal = true;
-}
+    // وهكذا ...
+    public $showInvoiceModal = false;
+    public $selectedSale;
+    protected $listeners = ['openInvoiceModal'];
+    public function openInvoiceModal($saleId)
+    {
+        $this->selectedSale = \App\Models\Sale::with(['customer', 'provider', 'account'])->findOrFail($saleId);
+        $this->showInvoiceModal = true;
+    }
 
 
 
-public function downloadInvoicePdf($saleId)
-{
-    $sale = \App\Models\Sale::with(['service', 'provider', 'account', 'customer'])->findOrFail($saleId);
+    public function downloadInvoicePdf($saleId)
+    {
+        $sale = \App\Models\Sale::with(['service', 'provider', 'account', 'customer'])->findOrFail($saleId);
 
-    $html = view('invoices.sale-invoice', ['sale' => $sale])->render();
+        $html = view('invoices.sale-invoice', ['sale' => $sale])->render();
 
-    $pdfPath = 'pdfs/invoice-' . $sale->id . '.pdf';
-    Browsershot::html($html)
-        ->format('A4')
-        ->margins(10, 10, 10, 10)
-        ->waitUntilNetworkIdle()
-        ->save(storage_path('app/public/' . $pdfPath));
+        $pdfPath = 'pdfs/invoice-' . $sale->id . '.pdf';
+        Browsershot::html($html)
+            ->format('A4')
+            ->margins(10, 10, 10, 10)
+            ->waitUntilNetworkIdle()
+            ->save(storage_path('app/public/' . $pdfPath));
 
-    return response()->download(storage_path('app/public/' . $pdfPath));
-}
+        return response()->download(storage_path('app/public/' . $pdfPath));
+    }
 
 
     protected $rules = [
@@ -89,14 +89,14 @@ public function downloadInvoicePdf($saleId)
     public function mount()
     {
         $this->currency = auth()->user()->agency->currency ?? 'USD';
-  
+
 
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
             $q->where('name', 'قائمة الخدمات')
-            ->where(function ($query) {
-                $query->whereNull('agency_id') // القوائم النظامية
+                ->where(function ($query) {
+                    $query->whereNull('agency_id') // القوائم النظامية
                         ->orWhere('agency_id', auth()->user()->agency_id); // أو قوائم الوكالة
-            });
+                });
         })->orderBy('order')->get();
 
         $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
@@ -109,7 +109,7 @@ public function downloadInvoicePdf($saleId)
         } else {
             $this->sortDirection = 'asc';
         }
-        
+
         $this->sortField = $field;
     }
 
@@ -227,98 +227,98 @@ public function downloadInvoicePdf($saleId)
         $this->showBulkInvoiceModal = true;
     }
 
- public function render()
-{
-    $user = Auth::user();
-    $agency = $user->agency;
+    public function render()
+    {
+        $user = Auth::user();
+        $agency = $user->agency;
 
-    // جلب الحسابات الخاصة بوكالة المستخدم الحالي فقط (كما هو)
-    $customers = Customer::where('agency_id', Auth::user()->agency_id)
-        ->latest()
-        ->get();
+        // جلب الحسابات الخاصة بوكالة المستخدم الحالي فقط (كما هو)
+        $customers = Customer::where('agency_id', Auth::user()->agency_id)
+            ->latest()
+            ->get();
 
-    // تحديد الوكالات المطلوبة في العمليات
-    if ($agency->parent_id) {
-        // فرع: يعرض فقط عملياته
-        $agencyIds = [$agency->id];
-    } else {
-        // وكالة رئيسية: يعرض عمليات الوكالة وكل الفروع التابعة لها
-        $branchIds = $agency->branches()->pluck('id')->toArray();
-        $agencyIds = array_merge([$agency->id], $branchIds);
+        // تحديد الوكالات المطلوبة في العمليات
+        if ($agency->parent_id) {
+            // فرع: يعرض فقط عملياته
+            $agencyIds = [$agency->id];
+        } else {
+            // وكالة رئيسية: يعرض عمليات الوكالة وكل الفروع التابعة لها
+            $branchIds = $agency->branches()->pluck('id')->toArray();
+            $agencyIds = array_merge([$agency->id], $branchIds);
+        }
+
+        $filteredSalesQuery = Sale::with(['service', 'provider', 'account', 'customer'])
+            ->whereIn('agency_id', $agencyIds)
+            ->when($this->search, function ($query) {
+                $searchTerm = '%' . $this->search . '%';
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('beneficiary_name', 'like', $searchTerm)
+                        ->orWhere('reference', 'like', $searchTerm)
+                        ->orWhere('pnr', 'like', $searchTerm);
+                });
+            })
+            ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
+            ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
+            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
+            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
+            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
+            ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate));
+
+        $totalSales = $filteredSalesQuery->clone()->sum('usd_sell'); // لحساب الإجمالي الصحيح
+        $sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+
+        return view('livewire.agency.accounts', compact('customers', 'sales', 'totalSales'))
+            ->layout('layouts.agency');
+    }
+    // في ملف App\Livewire\Agency\Accounts.php
+    public function downloadBulkInvoicePdf($invoiceId)
+    {
+        $invoice = \App\Models\Invoice::with(['sales', 'agency'])->findOrFail($invoiceId);
+
+        $html = view('invoices.bulk-invoice', ['invoice' => $invoice])->render();
+
+        $pdfPath = 'pdfs/bulk-invoice-' . $invoice->id . '.pdf';
+        Browsershot::html($html)
+            ->format('A4')
+            ->margins(10, 10, 10, 10)
+            ->waitUntilNetworkIdle()
+            ->save(storage_path('app/public/' . $pdfPath));
+
+        return response()->download(storage_path('app/public/' . $pdfPath));
     }
 
-    $filteredSalesQuery = Sale::with(['service', 'provider', 'account', 'customer'])
-        ->whereIn('agency_id', $agencyIds)
-        ->when($this->search, function ($query) {
-            $searchTerm = '%' . $this->search . '%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('beneficiary_name', 'like', $searchTerm)
-                  ->orWhere('reference', 'like', $searchTerm)
-                  ->orWhere('pnr', 'like', $searchTerm);
-            });
-        })
-        ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
-        ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-        ->when($this->accountFilter, fn($q) => $q->where('account_id', $this->accountFilter))
-        ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%'.$this->pnrFilter.'%'))
-        ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%'.$this->referenceFilter.'%'))
-        ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
-        ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate));
+    // تحديث دالة createBulkInvoice لإرجاع معرف الفاتورة
+    public function createBulkInvoice()
+    {
+        $this->validate([
+            'invoiceEntityName' => 'required|string|max:255',
+            'invoiceDate' => 'required|date',
+        ]);
 
-    $totalSales = $filteredSalesQuery->clone()->sum('usd_sell'); // لحساب الإجمالي الصحيح
-    $sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+        if (empty($this->selectedSales)) {
+            session()->flash('message', 'يرجى اختيار عمليات بيع');
+            return;
+        }
 
-    return view('livewire.agency.accounts', compact('customers', 'sales', 'totalSales'))
-        ->layout('layouts.agency');
-}
-// في ملف App\Livewire\Agency\Accounts.php
-public function downloadBulkInvoicePdf($invoiceId)
-{
-    $invoice = \App\Models\Invoice::with(['sales', 'agency'])->findOrFail($invoiceId);
-    
-    $html = view('invoices.bulk-invoice', ['invoice' => $invoice])->render();
+        $user = auth()->user();
+        $agency = $user->agency;
+        $invoiceNumber = 'INV-' . now()->format('YmdHis') . '-' . rand(100, 999);
 
-    $pdfPath = 'pdfs/bulk-invoice-' . $invoice->id . '.pdf';
-    Browsershot::html($html)
-        ->format('A4')
-        ->margins(10, 10, 10, 10)
-        ->waitUntilNetworkIdle()
-        ->save(storage_path('app/public/' . $pdfPath));
+        $invoice = \App\Models\Invoice::create([
+            'invoice_number' => $invoiceNumber,
+            'entity_name' => $this->invoiceEntityName,
+            'date' => $this->invoiceDate,
+            'user_id' => $user->id,
+            'agency_id' => $agency->id,
+        ]);
 
-    return response()->download(storage_path('app/public/' . $pdfPath));
-}
+        $invoice->sales()->attach($this->selectedSales);
 
-// تحديث دالة createBulkInvoice لإرجاع معرف الفاتورة
-public function createBulkInvoice()
-{
-    $this->validate([
-        'invoiceEntityName' => 'required|string|max:255',
-        'invoiceDate' => 'required|date',
-    ]);
-    
-    if (empty($this->selectedSales)) {
-        session()->flash('message', 'يرجى اختيار عمليات بيع');
-        return;
+        $this->showBulkInvoiceModal = false;
+        $this->selectedSales = [];
+
+        // تحميل الفاتورة مباشرة بعد الإنشاء
+        return $this->downloadBulkInvoicePdf($invoice->id);
     }
-    
-    $user = auth()->user();
-    $agency = $user->agency;
-    $invoiceNumber = 'INV-' . now()->format('YmdHis') . '-' . rand(100,999);
-    
-    $invoice = \App\Models\Invoice::create([
-        'invoice_number' => $invoiceNumber,
-        'entity_name' => $this->invoiceEntityName,
-        'date' => $this->invoiceDate,
-        'user_id' => $user->id,
-        'agency_id' => $agency->id,
-    ]);
-    
-    $invoice->sales()->attach($this->selectedSales);
-    
-    $this->showBulkInvoiceModal = false;
-    $this->selectedSales = [];
-    
-    // تحميل الفاتورة مباشرة بعد الإنشاء
-    return $this->downloadBulkInvoicePdf($invoice->id);
-}
 }

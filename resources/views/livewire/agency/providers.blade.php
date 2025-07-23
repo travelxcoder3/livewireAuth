@@ -74,19 +74,25 @@
                         $containerClass = 'relative mt-1';
                     @endphp
 
-                    <!-- اسم المزود -->
-                    <div class="{{ $containerClass }}">
-                        <input type="text" wire:model.defer="name" class="{{ $fieldClass }}" placeholder="اسم المزود" />
-                        <label class="{{ $labelClass }}">اسم المزود</label>
-                        @error('name') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        name="name"
+                        label="اسم المزود"
+                        placeholder="اسم المزود"
+                        wireModel="name"
+                        errorName="name"
+                        containerClass="{{ $containerClass }}"
+                        fieldClass="{{ $fieldClass }}"
+                    />
+
 
                     <!-- نوع المزود -->
-                    <div class="{{ $containerClass }}">
-                        <input type="text" wire:model.defer="type" class="{{ $fieldClass }}" placeholder="نوع المزود (اختياري)" />
-                        <label class="{{ $labelClass }}">نوع المزود</label>
-                        @error('type') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                   <x-input-field
+                        name="type"
+                        label="نوع المزود"
+                        placeholder="نوع المزود (اختياري)"
+                        wireModel="type"
+                        
+                    />
 
                     <!-- معلومات التواصل -->
                     <div class="{{ $containerClass }}">

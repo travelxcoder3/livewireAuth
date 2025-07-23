@@ -13,9 +13,9 @@
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <!-- حقل البحث -->
                 <div class="relative w-full md:w-1/3">
-                    <input type="text" wire:model.debounce.500ms="search" 
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none bg-white text-sm" 
-                           placeholder="ابحث عن وكالة...">
+                    <input type="text" wire:model.live.debounce.500ms="search" 
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-sm" 
+                        placeholder="ابحث عن وكالة...">
                     <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
@@ -133,7 +133,8 @@
                                             غير نشطة 
                                         </span>
                                     @elseif($agency->status == 'active')
-                                        <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium">
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                            style="background-color: rgba(var(--primary-100), 0.3); color: rgb(var(--primary-700));">
                                             نشطة
                                         </span>
                                     @elseif($agency->status == 'inactive')
@@ -176,7 +177,10 @@
                                     @if($agency->subscription_end_date && $agency->subscription_end_date < now())
                                         <span class="px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">منتهي</span>
                                     @else
-                                        <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium">مستمر</span>
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                        style="background-color: rgba(var(--primary-100), 0.3); color: rgb(var(--primary-700));">
+                                        مستمر
+                                    </span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 text-center">{{ $agency->max_users }}</td>
