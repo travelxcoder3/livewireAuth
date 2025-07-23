@@ -9,14 +9,13 @@
     @endif
 
     <!-- العنوان وزر الإضافة -->
-    <div class="flex flex-col space-y-4"> <!-- تغيير من flex-row إلى flex-col وإضافة مسافة رأسية -->
+    <div class="flex flex-col space-y-4">
         <div class="flex justify-between items-center">
             <h2 class="text-2xl font-bold"
                 style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
                 قائمة الموظفين
             </h2>
 
-            <!-- وضع الأزرار بجانب بعضهما باستخدام flex مع المسافة بينها -->
             <div class="flex space-x-4">
                 @can('employees.create')
                     <!-- زر إضافة موظف -->
@@ -28,8 +27,6 @@
                 @endcan
             </div>
         </div>
-
-
     </div>
 
     <!-- البحث والفلاتر -->
@@ -45,13 +42,9 @@
                 </label>
             </div>
 
-            <x-select-field label="القسم" :options="$departments" wireModel="department_id" />
+            <x-select-field label="القسم" :options="$departments" wireModel="department_filter" />
 
-
-            <x-select-field label="الوظيفة" :options="$positions" wireModel="position_id" />
-
-
-
+            <x-select-field label="الوظيفة" :options="$positions" wireModel="position_filter" />
 
             <div class="flex items-center text-xs" style="color: rgb(var(--primary-700));"
                 wire:key="count-{{ $employees->total() }}">
@@ -60,7 +53,7 @@
         </div>
 
         <!-- زر إعادة تهيئة الفلاتر -->
-        <div class="flex justify-end"> <!-- محاذاة الزر إلى اليمين -->
+        <div class="flex justify-end">
             <button wire:click="resetFilters"
                 class="text-gray-800 font-bold px-4 py-2 rounded-xl border border-gray-800 shadow-md transition duration-300 text-sm"
                 style="background: linear-gradient(to right, rgb(var(--primary-200)) 0%, rgb(var(--primary-300)) 100%);">
@@ -141,14 +134,13 @@
                     <!-- الصف الثالث -->
                     <div class="grid md:grid-cols-2 gap-6">
                         <!-- القسم -->
-                        <x-select-field label="القسم" :options="$departments" wireModel="department_id"
-                            errorName="department_id" containerClass="{{ $containerClass }}" />
+                        <x-select-field label="القسم" :options="$departments" wireModel="form_department_id"
+                            errorName="form_department_id" containerClass="{{ $containerClass }}" />
 
                         <!-- الوظيفة -->
-                        <x-select-field label="الوظيفة" :options="$positions" wireModel="position_id"
-                            errorName="position_id" containerClass="{{ $containerClass }}" />
+                        <x-select-field label="الوظيفة" :options="$positions" wireModel="form_position_id"
+                            errorName="form_position_id" containerClass="{{ $containerClass }}" />
                     </div>
-
 
                     <!-- الصف الرابع -->
                     <div class="grid md:grid-cols-2 gap-6">
@@ -218,7 +210,6 @@
             color: #111827;
         }
 
-        /* تأثير hover لزر الإضافة */
         button[wire\:click="createEmployee"]:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(var(--primary-500), 0.2);
@@ -228,7 +219,6 @@
             transform: translateY(0);
         }
 
-        /* تأثير زر الحفظ في النافذة المنبثقة */
         form button[type="submit"]:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(var(--primary-500), 0.2);

@@ -179,12 +179,16 @@ $this->monthlyAchieved = $monthlyAchievedQuery
                     ->whereBetween('sale_date', [$start, $end])
                     ->sum('usd_buy');
         
-                // 4. الأرباح = المبيعات - التكاليف
-                $this->monthlyProfit = $this->monthlyAchieved - $this->monthlyCost;
-                $this->onlineUsers = User::where('agency_id', $agencyId)
-            ->whereNotNull('last_activity_at')
-            ->where('last_activity_at', '>=', now()->subMinutes(5))
-            ->count();
+            // 4. الأرباح = مجموع (سعر البيع - سعر الشراء) لكل عملية
+                $this->monthlyProfit = Sale::where('agency_id', $agencyId)
+                ->when(!$isAdmin, function ($query) use ($userId) {
+                    $query->where('user_id', $userId);
+                })
+                ->whereBetween('sale_date', [$start, $end])
+                ->sum(\DB::raw('usd_sell - usd_buy'));
+
+// أو يمكنك حسابها كالتالي إذا كنت تريد استخدام القيم المجمعة سابقاً:
+// $this->monthlyProfit = $this->monthlyAchieved - $this->monthlyCost; // لكن هذا يعتمد على أن amount_paid = usd_sell
     }
 
     public function updatedSelectedServiceType()
