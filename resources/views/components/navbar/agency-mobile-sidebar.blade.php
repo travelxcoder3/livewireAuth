@@ -237,6 +237,18 @@
                 </div>
             </div>
 
+            <!-- سياسة الشركة للمستخدمين العاديين -->
+            @php
+                $showPoliciesLinkUser = Auth::check() && Auth::user()->agency_id !== null && !Auth::user()->hasRole('agency-admin');
+            @endphp
+            @if($showPoliciesLinkUser)
+            <a href="{{ route('agency.policies.view') }}" @click="mobileSidebarOpen = false"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                <i class="fas fa-file-contract"></i>
+                <span>سياسات الوكالة</span>
+            </a>
+            @endif
+
             <!-- إعدادات اللغة -->
             <div class="mb-2">
                 <div class="flex items-center gap-3 px-3 py-2">

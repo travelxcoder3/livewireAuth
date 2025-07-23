@@ -528,6 +528,7 @@ $sales->each(function ($sale) {
         // تنظيف القيم المرتبطة عند إخفاء الحقول
         if ($value === 'all') {
             $this->amount_paid = null;
+            $this->showCustomerField = true;
         } elseif ($value === 'kash') {
         $this->customer_id = null;
         $this->commission = null;       //  تصفير العمولة

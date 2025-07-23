@@ -264,19 +264,25 @@ $this->monthlyAchieved = $monthlyAchievedQuery
             }
             $this->totalSalesCount = $countQuery->count();
         } else if ($this->statsViewType === 'service') {
-            $this->salesByMonth = Sale::select(
+            $query = Sale::select(
                 'service_type_id',
                 DB::raw('SUM(amount_paid) as total_sales'),
                 DB::raw('COUNT(*) as operations_count')
             )
-            ->where('agency_id', Auth::user()->agency_id)
-            ->where('user_id', Auth::user()->id) // فلتر المستخدم الحالي فقط
+            ->where('agency_id', Auth::user()->agency_id);
+            
+            // إضافة فلتر المستخدم فقط إذا لم يكن أدمن
+            if (!Auth::user()->hasRole('agency-admin')) {
+                $query->where('user_id', Auth::user()->id);
+            }
+            
+            $this->salesByService = $query
             ->groupBy('service_type_id')
-            ->with('serviceType')
+            ->with('service')
             ->get()
             ->map(function($row) {
                 return [
-                    'service_type' => $row->serviceType ? $row->serviceType->name : '-',
+                    'service_type' => $row->service ? $row->service->label : 'غير محدد',
                     'total_sales' => $row->total_sales,
                     'operations_count' => $row->operations_count
                 ];

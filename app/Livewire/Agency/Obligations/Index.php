@@ -34,6 +34,26 @@ class Index extends Component
         'selectedUsers.*' => 'exists:users,id',
     ];
 
+    // أضف هذه المتغيرات مع المتغيرات الأخرى
+// المتغيرات
+public $showDeleteModal = false;
+public $obligationToDelete = null;
+
+// الدوال
+public function confirmDelete($id)
+{
+    $this->obligationToDelete = $id;
+    $this->showDeleteModal = true;
+}
+
+public function delete()
+{
+    Obligation::findOrFail($this->obligationToDelete)->delete();
+    $this->showDeleteModal = false;
+    session()->flash('message', 'تم حذف الالتزام بنجاح');
+    $this->resetPage();
+}
+
     public function mount()
     {
         $this->agencyId  = Auth::user()->agency_id;
@@ -105,12 +125,6 @@ class Index extends Component
           $this->resetPage(); 
     }
 
-    public function delete(Obligation $obligation)
-    {
-        $obligation->delete();
-        session()->flash('message', 'تم حذف الالتزام.');
-          $this->resetPage(); 
-    }
 
     private function resetForm()
     {

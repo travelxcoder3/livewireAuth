@@ -34,12 +34,12 @@ class ObligationTable
                         'type'   => 'delete',
                         'label'  => 'حذف',
                         'icon'   => 'fas fa-trash',
-                        'method' => 'delete',
-                        'confirm'=> true,
+                        'method' => 'confirmDelete',
                         'class'  => 'text-red-600 hover:text-red-800',
                     ],
                 ],
             ],
+            
         ];
     }
 }
