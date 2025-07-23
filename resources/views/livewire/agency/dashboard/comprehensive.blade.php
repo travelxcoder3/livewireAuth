@@ -94,6 +94,85 @@
         </div>
     </div>
     @endif
+
+    <!-- Personal Sales Target Card for All Users -->
+    @php
+        $userTarget = Auth::user()->sales_target ?? 0;
+        $userMonthlySales = \App\Models\Sale::where('user_id', Auth::id())
+            ->whereMonth('sale_date', now()->month)
+            ->whereYear('sale_date', now()->year)
+            ->sum('usd_sell');
+        $targetPercentage = $userTarget > 0 ? min(($userMonthlySales / $userTarget) * 100, 100) : 0;
+    @endphp
+    
+    @if($userTarget > 0)
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-100">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-bullseye text-orange-500"></i>
+                الهدف الشخصي للشهر الحالي
+            </h3>
+            <div class="text-sm text-gray-500">
+                {{ now()->format('F Y') }}
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- الهدف المحدد -->
+            <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4 text-center">
+                <div class="text-orange-600 text-2xl font-bold">
+                    ${{ number_format($userTarget, 0) }}
+                </div>
+                <div class="text-orange-700 text-sm font-medium mt-1">
+                    الهدف المحدد
+                </div>
+            </div>
+            
+            <!-- المبلغ المحقق -->
+            <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 text-center">
+                <div class="text-green-600 text-2xl font-bold">
+                    ${{ number_format($userMonthlySales, 0) }}
+                </div>
+                <div class="text-green-700 text-sm font-medium mt-1">
+                    المحقق حتى الآن
+                </div>
+            </div>
+            
+            <!-- النسبة المئوية -->
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 text-center">
+                <div class="text-blue-600 text-2xl font-bold">
+                    {{ number_format($targetPercentage, 1) }}%
+                </div>
+                <div class="text-blue-700 text-sm font-medium mt-1">
+                    نسبة الإنجاز
+                </div>
+            </div>
+        </div>
+        
+        <!-- شريط التقدم -->
+        <div class="mt-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <span>التقدم نحو الهدف</span>
+                <span>{{ number_format($targetPercentage, 1) }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-500 ease-out" 
+                     style="width: {{ $targetPercentage }}%"></div>
+            </div>
+            @if($targetPercentage >= 100)
+                <div class="text-green-600 text-sm font-medium mt-2 flex items-center gap-1">
+                    <i class="fas fa-check-circle"></i>
+                    تهانينا! لقد حققت هدفك الشهري
+                </div>
+            @else
+                <div class="text-gray-600 text-sm mt-2">
+                    المتبقي: ${{ number_format($userTarget - $userMonthlySales, 0) }}
+                </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
     <!-- كارت واحد يحتوي على أزرار التبديل وجداول الإحصائيات -->
     <div class="flex flex-col items-center min-h-[300px] my-8">
         <div class="bg-gradient-to-tr from-primary-50 to-white rounded-3xl shadow-2xl p-6 w-full max-w-full border border-gray-100 backdrop-blur-md">

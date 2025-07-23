@@ -1,12 +1,12 @@
 <?php
 
 namespace App\Tables;
-
 class AccountTable
 {
     public static function columns()
     {
-        return [
+        // الأعمدة الأصلية
+        $columns = [
             ['key' => 'created_at', 'label' => 'تاريخ الاجراء ', 'format' => 'date', 'sortable' => true],
             ['key' => 'sale_date', 'label' => 'تاريخ البيع', 'format' => 'date', 'sortable' => true],
             ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
@@ -21,9 +21,6 @@ class AccountTable
             ['key' => 'customer.name', 'label' => 'العميل'],
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
             ['key' => 'actions', 'label' => 'الإجراءات', 'format' => 'custom'],
-
-            
-
         ];
 
         // إذا كان هذا هو تقرير الحسابات فقط، نزيل عمود "الإجراءات"
@@ -37,4 +34,4 @@ class AccountTable
         // إرجاع الأعمدة بعد التصفية (إذا تمت)
         return $columns;
     }
-} 
+}

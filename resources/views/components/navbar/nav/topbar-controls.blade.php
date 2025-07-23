@@ -15,7 +15,6 @@
                 use App\Services\ThemeService;
                 $themes = ThemeService::getThemeColors();
             @endphp
-
             <div class="grid grid-cols-3 gap-2">
                 @foreach ($themes as $name => $theme)
                     @if (Auth::user()->hasRole('super-admin'))

@@ -49,16 +49,17 @@ $columns = SalesTable::columns();
                 <span class="text-[rgb(var(--primary-600))]">الربح</span>
                 <span>{{ number_format($totalProfit, 2) }} {{ $currency }}</span>
             </div>
-            <!-- العمولة -->
-            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
-                <span class="text-[rgb(var(--primary-600))]">العمولة</span>
-                <span>{{ number_format($sales->sum('commission'), 2) }} {{ $currency }}</span>
-            </div>
-            <!-- العمولة المستحقة -->
-            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
-                <span class="text-[rgb(var(--primary-600))]">العمولة المستحقة</span>
-                <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
-            </div>
+            <!-- العمولة المتوقعة (بناءً على جميع المبيعات) -->
+<div class="flex flex-col items-center px-1 w-full sm:w-auto">
+    <span class="text-[rgb(var(--primary-600))]">العمولة المتوقعة</span>
+    <span>{{ number_format($userCommission, 2) }} {{ $currency }}</span>
+</div>
+
+<!-- العمولة المستحقة (بناءً على المبيعات المحصلة) -->
+<div class="flex flex-col items-center px-1 w-full sm:w-auto">
+    <span class="text-[rgb(var(--primary-600))]">العمولة المستحقة</span>
+    <span>{{ number_format($userCommissionDue, 2) }} {{ $currency }}</span>
+</div>
         </div>
     </div>
 

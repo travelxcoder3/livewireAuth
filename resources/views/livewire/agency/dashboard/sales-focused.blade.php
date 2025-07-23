@@ -23,7 +23,7 @@
     </div>
 
     <!-- Sales Statistics Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <!-- Total Sales Card -->
         <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-start justify-between">
@@ -105,6 +105,37 @@
             </div>
             <div class="mt-3 h-1 rounded-full overflow-hidden bg-gray-100">
                 <div class="h-full" style="width: 100%; background-color: rgb(var(--purple-500));"></div>
+            </div>
+        </div>
+
+        <!-- Personal Sales Target Card -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-start justify-between">
+                <div class="p-3 rounded-lg mr-3"
+                    style="background-color: rgba(var(--orange-100), 0.5); color: rgb(var(--orange-600));">
+                    <i class="fas fa-bullseye text-lg"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">الهدف الشخصي</p>
+                    @php
+                        $userTarget = Auth::user()->sales_target ?? 0;
+                        $userMonthlySales = \App\Models\Sale::where('user_id', Auth::id())
+                            ->whereMonth('sale_date', now()->month)
+                            ->whereYear('sale_date', now()->year)
+                            ->sum('usd_sell');
+                        $targetPercentage = $userTarget > 0 ? min(($userMonthlySales / $userTarget) * 100, 100) : 0;
+                    @endphp
+                    <p class="text-2xl font-bold mt-1" style="color: rgb(var(--orange-600));">
+                        ${{ number_format($userTarget, 0) }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        محقق: ${{ number_format($userMonthlySales, 0) }} ({{ number_format($targetPercentage, 1) }}%)
+                    </p>
+                </div>
+            </div>
+            <div class="mt-3 h-1 rounded-full overflow-hidden bg-gray-100">
+                <div class="h-full transition-all duration-300" 
+                     style="width: {{ $targetPercentage }}%; background-color: rgb(var(--orange-500));"></div>
             </div>
         </div>
     </div>
