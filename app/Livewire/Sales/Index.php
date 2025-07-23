@@ -246,15 +246,21 @@ if ($sale->payment_method === 'kash') {
     ->when($this->filters['payment_type'], function($query) {
         $query->where('payment_type', $this->filters['payment_type']);
     });
-    $sales = $salesQuery
-        ->with(['user', 'provider', 'service', 'customer', 'account'])
-        ->latest()
-        ->paginate(10);
-
         $sales = $salesQuery
-            ->with(['user', 'provider', 'service', 'customer', 'account'])
+            ->with(['user', 'provider', 'service', 'customer', 'account', 'collections'])
+            ->withSum('collections', 'amount')
             ->latest()
             ->paginate(10);
+
+        $sales->each(function ($sale) {
+            $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum ?? 0);
+        });
+        $sales->each(function ($sale) {
+    $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum_amount ?? 0);
+    $sale->remaining_payment = ($sale->usd_sell ?? 0) - $sale->total_paid;
+});
+
+
 
         $services = \App\Models\DynamicListItem::whereHas('list', function ($query) {
             $query->where('name', 'قائمة الخدمات');
@@ -304,6 +310,15 @@ if ($sale->payment_method === 'kash') {
             'filterServices' => $this->filterServices,
             'filterCustomers' => $this->filterCustomers
         ])->layout('layouts.agency');
+        $salesQuery = $salesQuery->with(['user', 'provider', 'service', 'customer', 'account', 'collections'])
+    ->withSum('collections', 'amount')
+    ->latest()
+    ->paginate(10);
+
+// إضافة خاصية محسوبة للوصول إليها في الجدول
+$sales->each(function ($sale) {
+    $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum_amount ?? 0);
+});
     }
 
 
@@ -362,7 +377,16 @@ if ($sale->payment_method === 'kash') {
             ->pluck('name', 'id')
             ->toArray();
     }
-
+    protected function getListeners()
+    {
+        return [
+            'payment-collected' => 'refreshSales',
+        ];
+    }
+    public function refreshSales()
+    {
+        $this->render(); // إعادة تحميل البيانات عند استلام حدث تحصيل جديد
+    }
     protected function rules()
     {
         $rules = [

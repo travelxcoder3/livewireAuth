@@ -13,11 +13,27 @@ class SalesTable
             ['key' => 'service.label', 'label' => 'الخدمة'],
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'service_date', 'label' => 'تاريخ الخدمة', 'format' => 'date'],
-             ['key' => 'customer_via', 'label' => 'العميل عبر', 'format' => 'customer_via'],
+            ['key' => 'customer_via', 'label' => 'العميل عبر', 'format' => 'customer_via'],
             ['key' => 'usd_buy', 'label' => 'Buy', 'format' => 'money', 'color' => 'primary-500'],
             ['key' => 'usd_sell', 'label' => 'Sell', 'format' => 'money', 'color' => 'primary-600'],
             ['key' => 'sale_profit', 'label' => 'الربح', 'format' => 'money', 'color' => 'primary-700'],
-            ['key' => 'amount_paid', 'label' => 'المبلغ المدفوع', 'format' => 'money'],
+            ['key' => 'amount_paid', 'label' => 'المبلغ المدفوع أثناء البيع', 'format' => 'money'],
+            [
+                'key' => 'collections_sum_amount', 
+                'label' => 'إجمالي المبلغ المحصل',  
+                'format' => 'money',
+                'color' => function($value) {
+                    return $value > 0 ? 'green-600' : 'gray-500';
+                }
+            ],
+            [
+                'key' => 'remaining_payment',
+                'label' => 'المتبقي من المبلغ المحصل',
+                'format' => 'money',
+                'color' => function($value) {
+                    return ($value ?? 0) > 0 ? 'red-600' : 'green-700';
+                }
+            ],
             ['key' => 'expected_payment_date', 'label' => 'تاريخ السداد المتوقع', 'format' => 'date'],
             ['key' => 'reference', 'label' => 'المرجع'],
             ['key' => 'pnr', 'label' => 'PNR'],

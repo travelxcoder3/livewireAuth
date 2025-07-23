@@ -111,6 +111,8 @@
         </div>
     @endif
 
+
+    @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('approvals.view'))
     {{-- طلبات الموافقة --}}
     <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">
         <x-navbar.buttons.icon-button
@@ -121,6 +123,7 @@
             :active="false"
         />
     </div>
+    @endif
 
     {{-- إعدادات الشركة --}}
     @php

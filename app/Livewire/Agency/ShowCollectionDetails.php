@@ -110,6 +110,7 @@ class ShowCollectionDetails extends Component
         $this->calculateAmounts();
         
         $this->showEditModal = false;
+        $this->dispatch('payment-collected');
         $this->dispatch('amountsUpdated'); // إرسال حدث لتحديث الواجهة
         session()->flash('message', 'تم تسجيل التحصيل بنجاح.');
     }
