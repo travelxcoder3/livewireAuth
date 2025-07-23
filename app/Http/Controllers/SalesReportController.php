@@ -29,8 +29,17 @@ class SalesReportController extends Controller
 
         // بناء الاستعلام مع جميع الفلاتر
         $query = Sale::with(['user', 'service', 'provider', 'account', 'customer'])
-            ->whereIn('agency_id', $agencyIds)
-            ->when($request->search, function ($q) use ($request) {
+            ->whereIn('agency_id', $agencyIds);
+
+        // إضافة تصفية المستخدم - عرض مبيعات المستخدم الحالي فقط إلا إذا كان أدمن
+        $currentUser = auth()->user();
+        $isAgencyAdmin = $currentUser->hasRole('agency-admin');
+        
+        if (!$isAgencyAdmin) {
+            $query->where('user_id', $currentUser->id);
+        }
+
+        $query->when($request->search, function ($q) use ($request) {
                 $term = '%' . $request->search . '%';
                 $q->where(function ($q2) use ($term) {
                     $q2->where('beneficiary_name', 'like', $term)
@@ -122,9 +131,18 @@ class SalesReportController extends Controller
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $sales = Sale::with(['service', 'provider', 'customer', 'user'])
-            ->whereIn('agency_id', $agencyIds)
-            ->when($request->search, function ($query) use ($request) {
+        $query = Sale::with(['service', 'provider', 'customer', 'user'])
+            ->whereIn('agency_id', $agencyIds);
+
+        // إضافة تصفية المستخدم - عرض مبيعات المستخدم الحالي فقط إلا إذا كان أدمن
+        $currentUser = Auth::user();
+        $isAgencyAdmin = $currentUser->hasRole('agency-admin');
+        
+        if (!$isAgencyAdmin) {
+            $query->where('user_id', $currentUser->id);
+        }
+
+        $sales = $query->when($request->search, function ($query) use ($request) {
                 $term = '%' . $request->search . '%';
                 $query->where(function ($q) use ($term) {
                     $q->where('beneficiary_name', 'like', $term)

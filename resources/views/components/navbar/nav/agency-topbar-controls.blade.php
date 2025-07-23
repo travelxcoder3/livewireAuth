@@ -6,6 +6,10 @@
         ->whereIn('agency_id', $agencyIds)
         ->count();
     $notifications = Auth::user()->unreadNotifications()->latest()->take(10)->get();
+    
+    // إضافة متغيرات الثيم
+    use App\Services\ThemeService;
+    $themes = ThemeService::getThemeColors();
 @endphp
 
 <div class="flex items-center gap-1 sm:gap-3 rtl:flex-row-reverse flex-row" x-data="{ openDropdown: '' }">
@@ -67,18 +71,14 @@
         </div>
     </div>
 
-    {{-- زر الثيم --}}
+    {{-- زر الثيم - يظهر فقط لأدمن الوكالة --}}
+    @if(Auth::user()->hasRole('agency-admin'))
     <div class="relative" @mouseenter="openDropdown = 'theme'" @mouseleave="openDropdown = ''">
         <x-navbar.buttons.icon-button icon="fas fa-palette" label="تغيير الثيم" tooltip="تغيير الثيم" :has-notification="false" />
 
         <div x-show="openDropdown === 'theme'" x-transition
             class="absolute left-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50 p-2"
             style="display: none;">
-
-            @php
-                use App\Services\ThemeService;
-                $themes = ThemeService::getThemeColors();
-            @endphp
 
             <div class="grid grid-cols-3 gap-2">
                 @foreach ($themes as $name => $theme)
@@ -128,5 +128,6 @@
             </script>
         </div>
     </div>
+    @endif
 
 </div>

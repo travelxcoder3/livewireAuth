@@ -11,7 +11,13 @@
     $columns = array_filter(SalesTable::columns(), function($col) {
         return ($col['key'] ?? null) !== 'actions';
     });
-    $sales = Sale::latest()->get();
+    $currentUserId = Auth::id();
+    $isAgencyAdmin = Auth::user()->hasRole('agency-admin');
+    if ($isAgencyAdmin) {
+        $sales = Sale::where('agency_id', Auth::user()->agency_id)->latest()->get();
+    } else {
+        $sales = Sale::where('user_id', $currentUserId)->latest()->get();
+    }
     $agencyName = Auth::user()?->agency?->name ?? 'AnasWare';
     $now = now();
     $totalAmount = $sales->sum('usd_buy');

@@ -19,6 +19,13 @@ class ReportController extends Controller
 
     $query = Sale::with(['customer', 'serviceType', 'provider', 'account']);
 
+    // إضافة تصفية المستخدم - عرض مبيعات المستخدم الحالي فقط إلا إذا كان أدمن
+    $isAgencyAdmin = $user->hasRole('agency-admin');
+    
+    if (!$isAgencyAdmin) {
+        $query->where('user_id', $user->id);
+    }
+
     // فلترة بالتاريخ
     if ($request->filled('start_date')) {
         $query->whereDate('sale_date', '>=', $request->start_date);
@@ -68,4 +75,3 @@ class ReportController extends Controller
     return response()->download($pdfPath)->deleteFileAfterSend();
 }
 }
-

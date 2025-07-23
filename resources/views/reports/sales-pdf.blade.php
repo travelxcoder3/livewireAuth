@@ -5,6 +5,7 @@
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
     $agencyCurrency = Auth::user()?->agency?->currency ?? 'USD';
+    
 @endphp
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">

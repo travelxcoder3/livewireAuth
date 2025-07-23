@@ -25,6 +25,11 @@ class ThemeController extends Controller
         
         $user = Auth::user();
         
+        // التحقق من صلاحية أدمن الوكالة
+        if (!$user->hasRole('agency-admin') && !$user->hasRole('super-admin')) {
+            return response()->json(['error' => 'غير مصرح لك بتغيير الثيم'], 403);
+        }
+        
         if (!$user->agency) {
             return response()->json(['error' => 'User has no agency'], 400);
         }

@@ -23,8 +23,16 @@ class SalesExport implements FromCollection, WithHeadings
 
     public function collection()
     {
+        $user = Auth::user();
         $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account', 'user'])
-            ->where('agency_id', Auth::user()->agency_id);
+            ->where('agency_id', $user->agency_id);
+
+        // إضافة تصفية المستخدم - عرض مبيعات المستخدم الحالي فقط إلا إذا كان أدمن
+        $isAgencyAdmin = $user->hasRole('agency-admin');
+        
+        if (!$isAgencyAdmin) {
+            $query->where('user_id', $user->id);
+        }
 
         if ($this->startDate && $this->endDate) {
             $query->whereBetween('sale_date', [$this->startDate, $this->endDate]);
