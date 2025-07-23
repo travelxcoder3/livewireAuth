@@ -12,28 +12,22 @@
 
 <div class="space-y-6">
     <!-- عنوان الصفحة وأدوات التقرير -->
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4">
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
             تقرير الحسابات
         </h2>
 
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
+        <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
                 <label class="text-sm font-semibold text-gray-700">الإجمالي:</label>
                 <input type="text" value="{{ number_format($totalSales, 2) }}" readonly
                     class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center">
             </div>
-            @php
-                // نستخدم JS جانب العميل لالتقاط الـ URL الكامل مع الفلاتر
-                // ثم نستبدل الجزء "/accounts" بـ "/accounts/pdf"
-                $placeholder = ''; // يبقى فارغ لأننا سنحسب pdfUrl في Alpine
-            @endphp
-
-            <!-- قائمة منسدلة للتصدير بعد التعديل -->
-            <div wire:ignore.self x-data="{ open: false }" class="relative">
+            <!-- قائمة منسدلة للتصدير -->
+            <div class="relative w-full sm:w-auto" x-data="{ open: false }">
                 <button @click="open = !open"
-                    class="flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
+                    class="flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg w-full sm:w-auto"
                     style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
                     <i class="fas fa-file-export"></i>
                     <span>تصدير التقرير</span>
@@ -43,33 +37,22 @@
 
                 <div x-show="open" @click.away="open = false" x-transition
                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                    <!-- زر Excel -->
                     <button wire:click="exportToExcel"
                         class="block w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-file-excel text-green-500 mr-2"></i>
-                        Excel
+                        <i class="fas fa-file-excel text-green-500 mr-2"></i> Excel
                     </button>
-
-                    <!-- زر PDF يحسب الرابط من window.location في كل نقرة -->
-                    <a href="#"
-                        @click.prevent="
-                const url = window.location.href.replace(
-                    '/agency/reports/accounts',
-                    '/agency/reports/accounts/pdf'
-                );
-                window.open(url, '_blank');
-            "
+                    <a href="{{ route('agency.reports.accounts.pdf') }}" target="_blank"
                         class="block w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-file-pdf text-red-500 mr-2"></i>
-                        PDF
+                        <i class="fas fa-file-pdf text-red-500 mr-2"></i> PDF
                     </a>
+
                 </div>
             </div>
         </div>
     </div>
     <!-- فلاتر التقرير -->
     <div class="bg-white rounded-xl shadow-md p-4">
-        <div class="grid md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
             <x-input-field name="search" label="بحث عام" wireModel="search" placeholder="ابحث في جميع الحقول..."
                 containerClass="relative" fieldClass="{{ $fieldClass }}" />
 
@@ -99,7 +82,9 @@
 
     <!-- جدول البيانات -->
     <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
         <x-data-table :rows="$sales" :columns="$columns" />
+        </div>
     </div>
 
     <!-- Pagination -->

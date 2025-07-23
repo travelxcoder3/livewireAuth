@@ -127,6 +127,9 @@ class PermissionSeeder extends Seeder
         'accounts.invoice',
         'agency.profile.edit',
         'debt.details.view',
+        //صلاحيات عرض صفحه التقارير
+        'reportsAccounts.view',
+        'reportsSales.view',
     ];
 
     /**

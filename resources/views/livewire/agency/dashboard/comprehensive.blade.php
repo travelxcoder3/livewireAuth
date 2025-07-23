@@ -22,31 +22,35 @@
             </div>
 
             <!-- شبكة الأيقونات السريعة في المنتصف -->
+            @php
+        $showCompanyInfo = Auth::user()->hasRole('agency-admin');
+    @endphp
+    @if($showCompanyInfo)
             <div class="md:order-2 order-1 flex justify-center w-full md:w-auto my-4 md:my-0">
                 <div class="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-4 w-full max-w-xs sm:max-w-none mx-auto">
-                    @php
-                        $quickLinks = [
-                            ['route' => 'agency.users', 'icon' => 'users', 'title' => 'المستخدمين', 'desc' => 'إدارة مستخدمي الوكالة'],
-                            ['route' => 'agency.roles', 'icon' => 'user-tag', 'title' => 'الأدوار', 'desc' => 'إدارة أدوار المستخدمين'],
-                            ['route' => 'agency.service_types', 'icon' => 'concierge-bell', 'title' => 'الخدمات', 'desc' => 'إدارة أنواع الخدمات'],
-                            ['route' => 'agency.providers', 'icon' => 'briefcase', 'title' => 'المزودين', 'desc' => 'إدارة مزودي الخدمات'],
-                            ['route' => 'agency.customers.add', 'icon' => 'user-plus', 'title' => 'إضافة عميل', 'desc' => 'إضافة عميل جديد'],
-                            ['route' => 'agency.hr.employees.index', 'icon' => 'user-tie', 'title' => 'الموظفين', 'desc' => 'إدارة موظفي الوكالة'],
-                            ['route' => 'agency.sales.index', 'icon' => 'chart-line', 'title' => 'المبيعات', 'desc' => 'تقارير وإحصائيات المبيعات'],
-                            ['route' => 'agency.profile', 'icon' => 'user-circle', 'title' => 'الملف الشخصي', 'desc' => 'إدارة ملفك الشخصي'],
-                        ];
-                    @endphp
-                    @foreach($quickLinks as $link)
-                    <a href="{{ route($link['route']) }}"
+                        @php
+                            $quickLinks = [
+                                ['route' => 'agency.users', 'icon' => 'users', 'title' => 'المستخدمين', 'desc' => 'إدارة مستخدمي الوكالة'],
+                                ['route' => 'agency.roles', 'icon' => 'user-tag', 'title' => 'الأدوار', 'desc' => 'إدارة أدوار المستخدمين'],
+                                ['route' => 'agency.service_types', 'icon' => 'concierge-bell', 'title' => 'الخدمات', 'desc' => 'إدارة أنواع الخدمات'],
+                                ['route' => 'agency.providers', 'icon' => 'briefcase', 'title' => 'المزودين', 'desc' => 'إدارة مزودي الخدمات'],
+                                ['route' => 'agency.customers.add', 'icon' => 'user-plus', 'title' => 'إضافة عميل', 'desc' => 'إضافة عميل جديد'],
+                                ['route' => 'agency.hr.employees.index', 'icon' => 'user-tie', 'title' => 'الموظفين', 'desc' => 'إدارة موظفي الوكالة'],
+                                ['route' => 'agency.sales.index', 'icon' => 'chart-line', 'title' => 'المبيعات', 'desc' => 'تقارير وإحصائيات المبيعات'],
+                                ['route' => 'agency.profile', 'icon' => 'user-circle', 'title' => 'الملف الشخصي', 'desc' => 'إدارة ملفك الشخصي'],
+                            ];
+                        @endphp
+                        @foreach($quickLinks as $link)
+                        <a href="{{ route($link['route']) }}"
    class="relative flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-xl shadow transition group border border-gray-100 bg-[rgb(var(--primary-500))] hover:bg-white"
    style="font-size: 1.5rem;">
-<i class="fas fa-{{ $link['icon'] }} text-white group-hover:text-[rgb(var(--primary-500))] transition-colors"></i>
-                        <span class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full px-3 py-1 rounded-lg bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition whitespace-nowrap z-50">
-                            {{ $link['title'] }}
-                        </span>
-                    </a>
-                    @endforeach
-                </div>
+    <i class="fas fa-{{ $link['icon'] }} text-white group-hover:text-[rgb(var(--primary-500))] transition-colors"></i>
+                                <span class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full px-3 py-1 rounded-lg bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition whitespace-nowrap z-50">
+                                    {{ $link['title'] }}
+                                </span>
+                            </a>
+                        @endforeach
+                    </div>
             </div>
 
             <!-- معلومات الترخيص في اليمين -->
@@ -89,6 +93,7 @@
             </div>
         </div>
     </div>
+    @endif
     <!-- كارت واحد يحتوي على أزرار التبديل وجداول الإحصائيات -->
     <div class="flex flex-col items-center min-h-[300px] my-8">
         <div class="bg-gradient-to-tr from-primary-50 to-white rounded-3xl shadow-2xl p-6 w-full max-w-full border border-gray-100 backdrop-blur-md">
@@ -293,6 +298,10 @@
 
         </div>
     </div>
+    @php
+        $showUsersState = Auth::user()->hasRole('agency-admin') || Auth::user()->can('employees.view') || Auth::user()->can('users.view');
+    @endphp
+    @if($showUsersState)
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 my-8 w-full max-w-2xl mx-auto">
         <div style="background:rgba(var(--primary-100),0.15); border:1px solid rgb(var(--primary-200));" class="rounded-xl p-4 shadow-sm flex flex-col items-center text-center">
             <i class="fas fa-signal text-[20px] mb-1" style="color:rgb(var(--primary-700));"></i>
@@ -310,6 +319,8 @@
             <div class="text-sm mt-1" style="color:rgb(var(--primary-700));">المستخدمون النشطون</div>
         </div>
     </div>
+    @endif
+
 
     <!-- تم حذف كروت وعدد الأدوار وعدد الصلاحيات من الإحصائيات العلوية -->
 

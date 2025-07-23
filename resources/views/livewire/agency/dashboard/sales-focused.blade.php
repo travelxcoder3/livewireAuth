@@ -3,15 +3,15 @@
     <div class="rounded-xl p-6 mb-6" style="background: linear-gradient(135deg, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
             <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">لوحة تحكم مبيعاتي</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">لوحة تحكم إدارة المبيعات</h1>
                 <p class="text-white/90">
-                    إحصائيات وتقارير مبيعاتك الشخصية - {{ Auth::user()->name }}
+                    إحصائيات وتقارير المبيعات لوكالة {{ Auth::user()->agency->name }}
                 </p>
             </div>
             <div class="mt-4 md:mt-0 bg-white/10 backdrop-blur-sm rounded-lg p-4">
                 <div class="flex items-center justify-between gap-4">
                     <div>
-                        <p class="text-white text-sm">إجمالي مبيعاتك: <span class="font-bold">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->where('user_id', Auth::user()->id)->count() }}</span></p>
+                        <p class="text-white text-sm">إجمالي المبيعات: <span class="font-bold">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->count() }}</span></p>
                         <p class="text-white/80 text-xs mt-1">
                             <i class="fas fa-calendar-alt mr-1"></i>
                             آخر تحديث: {{ now()->format('Y-m-d H:i') }}

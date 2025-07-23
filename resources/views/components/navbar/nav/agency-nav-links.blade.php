@@ -92,8 +92,8 @@
     @php
         $showReportsDropdown =
             Auth::user()->hasRole('agency-admin') ||
-            Auth::user()->can('sales.view') ||
-            Auth::user()->can('accounts.view');
+            Auth::user()->can('reportsSales.view') ||
+            Auth::user()->can('reportsAccounts.view');
     @endphp
 
     @if ($showReportsDropdown)
@@ -117,7 +117,7 @@
             icon="fas fa-clipboard-check"
             tooltip="طلبات الموافقة"
             label="طلبات الموافقة"
-            href="#"
+            href="{{ route('agency.approval-requests') }}"
             :active="false"
         />
     </div>

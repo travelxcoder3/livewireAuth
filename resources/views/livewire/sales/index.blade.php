@@ -436,7 +436,7 @@ $columns = SalesTable::columns();
         
         <!-- جدول المبيعات -->
         <div class="overflow-x-auto">
-            <x-data-table :rows="$sales" :columns="$columns" />
+        <x-data-table :rows="$sales" :columns="$columns" />
         </div>
 <!-- نافذة الفلترة -->
 <div id="filterModal" x-data="{ show: false }" x-show="show" @toggle-filter-modal.window="show = $event.detail"
