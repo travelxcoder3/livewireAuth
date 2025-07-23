@@ -102,13 +102,6 @@
         <x-data-table :rows="$sales" :columns="$columns" />
     </div>
 
-    <!-- Pagination -->
-    @if ($sales->hasPages())
-        <div class="px-4 py-2 bg-white rounded-b-xl shadow-md border-t border-gray-200">
-            {{ $sales->links() }}
-        </div>
-    @endif
-
     <!-- رسائل النظام -->
     @if (session()->has('message'))
         <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 2000)" x-show="show" x-transition

@@ -7,6 +7,7 @@ class AccountTable
     {
         // الأعمدة الأصلية
         $columns = [
+            ['key' => 'user.name', 'label' => 'الموظف'],
             ['key' => 'created_at', 'label' => 'تاريخ الاجراء ', 'format' => 'date', 'sortable' => true],
             ['key' => 'sale_date', 'label' => 'تاريخ البيع', 'format' => 'date', 'sortable' => true],
             ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
