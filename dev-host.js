@@ -16,7 +16,7 @@ export default defineConfig({
         port: 5173, // منفذ Vite الافتراضي
         hmr: {
             host: '192.168.30.9',
-            port: 5173,
+            port: 8000,
         },
         cors: true,
         strictPort: false, // استخدام منفذ بديل إذا كان مشغول
