@@ -26,6 +26,7 @@ class Commissions extends Component
     {
         $this->customerCommissions = Sale::with(['customer', 'collections'])
             ->whereHas('customer', fn($q) => $q->where('has_commission', true))
+            ->whereHas('user', fn($q) => $q->where('agency_id', Auth::user()->agency_id))
             ->whereMonth('sale_date', $this->month)
             ->whereYear('sale_date', $this->year)
             ->get()

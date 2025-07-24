@@ -39,13 +39,27 @@ class EmployeeIndex extends Component
 
     public function mount()
     {
+        $agencyId = auth()->user()->agency_id;
+        
         $this->departments = DynamicListItem::whereHas('list', function ($query) {
             $query->where('name', 'قائمة الاقسام');
-        })->pluck('label', 'id')->toArray();
+        })
+        ->where(function($query) use ($agencyId) {
+            $query->where('created_by_agency', $agencyId)
+                  ->orWhereNull('created_by_agency');
+        })
+        ->pluck('label', 'id')
+        ->toArray();
 
         $this->positions = DynamicListItem::whereHas('list', function ($query) {
             $query->where('name', 'قائمة المسمى الوظيفي');
-        })->pluck('label', 'id')->toArray();
+        })
+        ->where(function($query) use ($agencyId) {
+            $query->where('created_by_agency', $agencyId)
+                  ->orWhereNull('created_by_agency');
+        })
+        ->pluck('label', 'id')
+        ->toArray();
     }
 
     // تطبيق الفلاتر عند التغيير

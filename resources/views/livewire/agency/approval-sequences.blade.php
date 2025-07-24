@@ -142,10 +142,10 @@ $containerClass = 'relative mt-1';
 
             <!-- الأزرار -->
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
-            <button type="button" wire:click="closeForm"
-                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
-                        إلغاء
-                    </button>
+            <button type="button" wire:click="closeAddModal"
+    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+    إلغاء
+</button>
 
                 <button wire:click="saveSequence" wire:loading.attr="disabled"
                     class="px-6 py-2 text-white rounded-xl font-semibold shadow-md hover:shadow-xl transition duration-300 text-sm"

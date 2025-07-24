@@ -20,8 +20,27 @@ class EmployeeCreate extends Component
 
     public function mount()
     {
-        $this->departments = Department::pluck('name', 'id')->toArray();
-        $this->positions = Position::pluck('name', 'id')->toArray();
+        $agencyId = auth()->user()->agency_id;
+        
+        $this->departments = DynamicListItem::whereHas('list', function ($query) {
+            $query->where('name', 'قائمة الاقسام');
+        })
+        ->where(function($query) use ($agencyId) {
+            $query->where('created_by_agency', $agencyId)
+                  ->orWhereNull('created_by_agency');
+        })
+        ->pluck('label', 'id')
+        ->toArray();
+
+        $this->positions = DynamicListItem::whereHas('list', function ($query) {
+            $query->where('name', 'قائمة المسمى الوظيفي');
+        })
+        ->where(function($query) use ($agencyId) {
+            $query->where('created_by_agency', $agencyId)
+                  ->orWhereNull('created_by_agency');
+        })
+        ->pluck('label', 'id')
+        ->toArray();
     }
 
     public function rules()

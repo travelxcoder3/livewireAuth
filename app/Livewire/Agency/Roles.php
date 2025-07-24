@@ -36,11 +36,31 @@ class Roles extends Component
     public $showPermissions = false;
     public $openModules = [];
 
-    protected $rules = [
-        'name' => 'required|string|max:255',
-        'selectedPermissions' => 'required|array|min:1',
-        'selectedPermissions.*' => 'exists:permissions,name',
-    ];
+    protected function rules()
+    {
+        return [
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    $query = Role::where('name', $value)
+                        ->where('guard_name', 'web')
+                        ->where('agency_id', auth()->user()->agency_id);
+                    
+                    if ($this->editingRole) {
+                        $query->where('id', '!=', $this->editingRole->id);
+                    }
+                    
+                    if ($query->exists()) {
+                        $fail('هذا الاسم مستخدم بالفعل في هذه الوكالة');
+                    }
+                }
+            ],
+            'selectedPermissions' => 'required|array|min:1',
+            'selectedPermissions.*' => 'exists:permissions,name',
+        ];
+    }
 
     public function mount()
     {
@@ -153,16 +173,34 @@ class Roles extends Component
             return;
         }
 
-        $role = Role::create([
-            'name' => $this->name,
-            'guard_name' => 'web',
-            'agency_id' => Auth::user()->agency_id,
-        ]);
+        try {
+            // Create the role with the current agency context
+            $role = new Role([
+                'name' => $this->name,
+                'guard_name' => 'web',
+                'agency_id' => auth()->user()->agency_id,
+            ]);
+            
+            // Save the role
+            $role->save();
+            
+            // Sync permissions
+            $role->syncPermissions($this->selectedPermissions);
 
-        $role->syncPermissions($this->selectedPermissions);
-
-        $this->closeForm();
-        session()->flash('message', 'تم إضافة الدور بنجاح مع ' . count($this->selectedPermissions) . ' صلاحية');
+            $this->closeForm();
+            session()->flash('message', 'تم إضافة الدور بنجاح ');
+            
+        } catch (\Exception $e) {
+            // Log the full error for debugging
+            \Log::error('Error creating role: ' . $e->getMessage() . '\n' . $e->getTraceAsString());
+            
+            // Check for duplicate entry error
+            if (str_contains($e->getMessage(), 'Duplicate entry')) {
+                session()->flash('error', 'عذراً، حدث خطأ في إنشاء الدور. يبدو أن هناك تعارض في البيانات.');
+            } else {
+                session()->flash('error', 'حدث خطأ غير متوقع أثناء إنشاء الدور. يرجى المحاولة مرة أخرى.');
+            }
+        }
     }
 
     public function editRole($roleId)
@@ -177,7 +215,11 @@ class Roles extends Component
     public function updateRole()
     {
         $this->validate();
-        if (!$this->editingRole) return;
+        
+        if (!$this->editingRole) {
+            session()->flash('error', 'لم يتم العثور على الدور المحدد');
+            return;
+        }
         
         // التحقق من وجود صلاحيات مختارة
         if (empty($this->selectedPermissions)) {
@@ -185,10 +227,30 @@ class Roles extends Component
             return;
         }
         
-        $this->editingRole->update(['name' => $this->name]);
-        $this->editingRole->syncPermissions($this->selectedPermissions);
-        $this->closeForm();
-        session()->flash('message', 'تم تحديث الدور بنجاح مع ' . count($this->selectedPermissions) . ' صلاحية');
+        try {
+            // Update the role with the current agency context
+            $this->editingRole->update([
+                'name' => $this->name,
+                'agency_id' => auth()->user()->agency_id, // Ensure agency_id is set
+            ]);
+            
+            // Sync permissions
+            $this->editingRole->syncPermissions($this->selectedPermissions);
+            
+            $this->closeForm();
+            session()->flash('message', 'تم تحديث الدور بنجاح ');
+            
+        } catch (\Exception $e) {
+            // Log the full error for debugging
+            \Log::error('Error updating role: ' . $e->getMessage() . '\n' . $e->getTraceAsString());
+            
+            // Check for duplicate entry error
+            if (str_contains($e->getMessage(), 'Duplicate entry')) {
+                session()->flash('error', 'عذراً، لا يمكن تحديث الدور. يبدو أن الاسم مستخدم بالفعل في هذه الوكالة.');
+            } else {
+                session()->flash('error', 'حدث خطأ غير متوقع أثناء تحديث الدور. يرجى المحاولة مرة أخرى.');
+            }
+        }
     }
 
     public function deleteRole($roleId)

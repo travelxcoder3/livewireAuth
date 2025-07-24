@@ -76,7 +76,12 @@ public $filterCustomers = [];
     {
         $this->services = \App\Models\DynamicListItem::whereHas('list', function ($query) {
             $query->where('name', 'قائمة الخدمات');
-        })->get();
+        })
+        ->where(function($query) {
+            $query->where('created_by_agency', auth()->user()->agency_id)
+                  ->orWhereNull('created_by_agency');
+        })
+        ->get();
     }
 
     public function duplicate($id)

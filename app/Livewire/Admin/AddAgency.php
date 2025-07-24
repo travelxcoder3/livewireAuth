@@ -41,6 +41,7 @@ class AddAgency extends Component
     public $admin_name;
     public $admin_email;
     public $admin_password;
+    public $admin_password_confirmation;
 
     public $successMessage;
     public $max_users = 3;
@@ -68,6 +69,7 @@ class AddAgency extends Component
             'admin_name' => 'required|string|max:255',
             'admin_email' => ['required','email','unique:users,email'],
             'admin_password' => 'required|string|min:6',
+            'admin_password_confirmation' => 'required|same:admin_password',
             'parent_id' => 'nullable|exists:agencies,id',
 
         ];
