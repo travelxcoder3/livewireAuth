@@ -281,7 +281,11 @@ if ($sale->payment_method === 'kash') {
         // المبلغ المحصل = amount_paid
         $this->totalReceived = $salesQuery->sum('amount_paid');
         // الآجل = إجمالي البيع - المحصل
-        $this->totalPending = $this->totalAmount - $this->totalReceived;
+       // جمع المدفوع المباشر + مجموع التحصيلات
+$this->totalReceived = $salesQuery->sum('amount_paid') 
++ $salesQuery->withSum('collections', 'amount')->get()->sum('collections_sum_amount');
+
+$this->totalPending = $this->totalAmount - $this->totalReceived;
 
 
         // الربح الإجمالي

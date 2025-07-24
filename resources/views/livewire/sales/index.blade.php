@@ -315,9 +315,9 @@ $columns = SalesTable::columns();
                     @if($showCommission)
                     <x-input-field
                         name="commission"
-                        label="العمولة"
+                        label="العمولة مبلغ"
                         wireModel="commission"
-                        placeholder="العمولة"
+                        placeholder="العمولة مبلغ"
                         type="number"
                         step="0.01"
                         containerClass="relative mt-1"

@@ -23,30 +23,34 @@ class Commissions extends Component
     }
 
     public function loadCustomerCommissions()
-    {
-        $this->customerCommissions = Sale::with(['customer', 'collections'])
-            ->whereHas('customer', fn($q) => $q->where('has_commission', true))
-            ->whereHas('user', fn($q) => $q->where('agency_id', Auth::user()->agency_id))
-            ->whereMonth('sale_date', $this->month)
-            ->whereYear('sale_date', $this->year)
-            ->get()
-            ->map(function ($sale) {
-                $collected = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
-                $isFullyCollected = $collected >= ($sale->usd_sell ?? 0);
+{
+    $agencyId = Auth::user()->agency_id;
 
-                $dueAmount = $isFullyCollected ? ($sale->commission ?? 0) : 0;
+    $this->customerCommissions = Sale::with(['customer', 'collections'])
+        ->whereHas('customer', function ($q) use ($agencyId) {
+            $q->where('has_commission', true)
+              ->where('agency_id', $agencyId);
+        })
+        ->whereMonth('sale_date', $this->month)
+        ->whereYear('sale_date', $this->year)
+        ->get()
+        ->map(function ($sale) {
+            $collected = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+            $isFullyCollected = $collected >= ($sale->usd_sell ?? 0);
 
-                return [
-                    'customer' => $sale->customer?->name ?? 'غير معروف',
-                    'amount' => $sale->usd_sell,
-                    'profit' => $sale->sale_profit,
-                    'status' => $isFullyCollected ? 'تم التحصيل' : 'غير محصل',
-                    'commission' => $sale->commission,
-                    'date' => $sale->sale_date->format('Y-m-d'),
-                ];
-            })
-            ->toArray();
-    }
+            // ✅ يتم عرض العمولة المُدخلة فقط إذا تم التحصيل بالكامل
+            return [
+                'customer' => $sale->customer?->name ?? 'غير معروف',
+                'amount' => $sale->usd_sell,
+                'profit' => $sale->sale_profit,
+                'status' => $isFullyCollected ? 'تم التحصيل' : 'غير محصل',
+                'commission' => $sale->commission,
+
+                'date' => $sale->sale_date->format('Y-m-d'),
+            ];
+        })
+        ->toArray();
+}
 
     public function loadEmployeeCommissions() // تغيير اسم الدالة
     {

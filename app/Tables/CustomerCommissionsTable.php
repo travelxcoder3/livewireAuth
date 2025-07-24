@@ -10,7 +10,7 @@ class CustomerCommissionsTable
             ['key' => 'customer', 'label' => 'العميل', 'sortable' => true],
             ['key' => 'amount', 'label' => 'المبلغ', 'format' => 'money', 'sortable' => true],
             ['key' => 'profit', 'label' => 'الربح', 'format' => 'money', 'sortable' => true],
-            ['key' => 'commission', 'label' => 'العمولة المستحقة', 'format' => 'money', 'color' => 'blue-600', 'sortable' => true],
+            ['key' => 'commission', 'label' => 'المبلغ المستحقة', 'format' => 'money', 'color' => 'blue-600', 'sortable' => true],
             [
                 'key' => 'status', 
                 'label' => 'الحالة', 

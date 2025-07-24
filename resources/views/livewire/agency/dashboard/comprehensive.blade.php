@@ -172,7 +172,7 @@
         </div>
     </div>
     @endif
-
+                           
     <!-- كارت واحد يحتوي على أزرار التبديل وجداول الإحصائيات -->
     <div class="flex flex-col items-center min-h-[300px] my-8">
         <div class="bg-gradient-to-tr from-primary-50 to-white rounded-3xl shadow-2xl p-6 w-full max-w-full border border-gray-100 backdrop-blur-md">
