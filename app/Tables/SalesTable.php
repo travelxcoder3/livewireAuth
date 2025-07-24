@@ -48,7 +48,7 @@ class SalesTable
             ['key' => 'receipt_number', 'label' => 'رقم السند'],
             ['key' => 'phone_number', 'label' => 'رقم الهاتف'],
             ['key' => 'depositor_name', 'label' => 'اسم المودع'],
-            ['key' => 'commission', 'label' => 'العمولة', 'format' => 'money'],
+            ['key' => 'commission', 'label' => 'عموله العميل', 'format' => 'money'],
             [
                 'key' => 'actions',
                 'label' => 'الإجراءات',

@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Livewire\Agency;
+
+use Livewire\Component;
+use Livewire\WithPagination;
+use App\Models\Collection;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Sale;
+
+class AllCollections extends Component
+{
+    use WithPagination;
+
+    public $search = '';
+    public $sales = []; // تغيير الاسم ليكون أكثر شمولاً
+    public $activeSaleId = null;
+
+    public function mount()
+    {
+        $this->loadSales();
+    }
+
+    public function loadSales()
+    {
+        $this->sales = Sale::with('collections')
+            ->where('agency_id', auth()->user()->agency_id)
+            ->latest()
+            ->get();
+    }
+
+    public function getPaymentStatus($sale)
+    {
+        $totalPaid = $sale->collections->sum('amount');
+        
+        if ($totalPaid == 0) {
+            return [
+                'status' => 'لم يبدأ التحصيل',
+                'color' => 'bg-gray-100 text-gray-800'
+            ];
+        } elseif ($totalPaid < $sale->usd_sell) {
+            return [
+                'status' => 'تحصيل جزئي',
+                'color' => 'bg-amber-100 text-amber-800'
+            ];
+        } else {
+            return [
+                'status' => 'تم التحصيل بالكامل',
+                'color' => 'bg-green-100 text-green-800'
+            ];
+        }
+    }
+
+    public function showCollectionDetails($saleId)
+    {
+        $this->activeSaleId = $saleId;
+    }
+
+    public function closeModal()
+    {
+        $this->activeSaleId = null;
+    }
+
+    public function render()
+    {
+        return view('livewire.agency.all-collections')
+            ->layout('layouts.agency');
+    }
+}

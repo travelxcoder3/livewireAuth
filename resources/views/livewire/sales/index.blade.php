@@ -38,7 +38,7 @@ $columns = SalesTable::columns();
    <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 lg:gap-4 items-center">
     <!-- العنوان في اليسار -->
     <div class="col-span-12 md:col-span-4 lg:col-span-3 flex items-center justify-start">
-        <h1 class="text-2xl font-bold text-[rgb(var(--primary-700))]">إدارة المبيعات</h1>
+        <h1 class="text-2xl font-bold text-[rgb(var(--primary-700))]">تسجيل المبيعات</h1>
     </div>
 
     <!-- الكروت داخل كارد رئيسي في الوسط -->
@@ -75,7 +75,7 @@ $columns = SalesTable::columns();
                 <span>{{ number_format($totalReceived, 2) }} {{ $currency }}</span>
             </div>
             <div class="flex flex-col items-center px-1 w-full sm:w-auto">
-                <span class="text-[rgb(var(--primary-600))]">الآجلة</span>
+                <span class="text-[rgb(var(--primary-600))]">الغير المحصلة</span>
                 <span>{{ number_format($totalPending, 2) }} {{ $currency }}</span>
             </div>
         </div>
@@ -181,24 +181,25 @@ $columns = SalesTable::columns();
                         errorName="payment_method"
                     />
 
-                    <!-- اسم المودع -->
-                    <x-input-field
-                        name="depositor_name"
-                        label="اسم المودع"
-                        wireModel="depositor_name"
-                        placeholder="اسم المودع"
-                        containerClass="relative mt-1 col-span-3"
-                        errorName="depositor_name"
-                    />
+                    @if($showDepositorField)
+                        <x-input-field
+                            name="depositor_name"
+                            label="اسم المودع"
+                            wireModel="depositor_name"
+                            placeholder="اسم المودع"
+                            containerClass="relative mt-1 col-span-3"
+                            errorName="depositor_name"
+                        />
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-24 gap-2 lg:gap-3">
                     <!-- الرقم -->
                     <x-input-field
                         name="phone_number"
-                        label="رقم الهاتف"
+                        label="رقم هاتف المستفيد"
                         wireModel="phone_number"
-                        placeholder="رقم الهاتف"
+                        placeholder="رقم هاتف المستفيد"
                         type="text"
                         containerClass="relative mt-1 col-span-3"
                         errorName="phone_number"
@@ -212,6 +213,7 @@ $columns = SalesTable::columns();
                         placeholder="تاريخ البيع"
                         containerClass="relative mt-1 col-span-3"
                         errorName="sale_date"
+                        :max-date="now()->format('Y-m-d')"
                     />
 
                     <!-- PNR -->
@@ -234,29 +236,31 @@ $columns = SalesTable::columns();
                         errorName="reference"
                     />
 
-                    <!-- وسيلة الدفع -->
-                    <x-select-field
-                        wireModel="payment_type"
-                        label="وسيلة الدفع"
-                        :options="[
-                            'creamy' => 'كريمي',
-                            'kash' => 'كاش',
-                            'visa' => 'فيزا'
-                        ]"
-                        placeholder=" وسيلة الدفع"
-                        containerClass="relative mt-1 col-span-6"
-                        errorName="payment_type"
-                    />
+                    @if($showPaymentDetails)
+    <!-- وسيلة الدفع -->
+    <x-select-field
+        wireModel="payment_type"
+        label="وسيلة الدفع"
+        :options="[
+            'creamy' => 'كريمي',
+            'kash' => 'كاش',
+            'visa' => 'فيزا'
+        ]"
+        placeholder="وسيلة الدفع"
+        containerClass="relative mt-1 col-span-6"
+        errorName="payment_type"
+    />
 
-                    <!-- رقم السند -->
-                    <x-input-field
-                        name="receipt_number"
-                        label="رقم السند"
-                        wireModel="receipt_number"
-                        placeholder="رقم السند"
-                        containerClass="relative mt-1 col-span-6"
-                        errorName="receipt_number"
-                    />
+    <!-- رقم السند -->
+    <x-input-field
+        name="receipt_number"
+        label="رقم السند"
+        wireModel="receipt_number"
+        placeholder="رقم السند"
+        containerClass="relative mt-1 col-span-6"
+        errorName="receipt_number"
+    />
+@endif
                 </div>
 
                 <!-- الصف الثالث -->
@@ -315,9 +319,9 @@ $columns = SalesTable::columns();
                     @if($showCommission)
                     <x-input-field
                         name="commission"
-                        label="العمولة مبلغ"
+                        label="مبلغ العموله"
                         wireModel="commission"
-                        placeholder="العمولة مبلغ"
+                        placeholder="مبلغ العموله"
                         type="number"
                         step="0.01"
                         containerClass="relative mt-1"
@@ -520,6 +524,7 @@ $columns = SalesTable::columns();
                     wireModel="filterInputs.service_date"
                     placeholder="تاريخ الخدمة"
                     containerClass="relative mt-1"
+                    :min-date="now()->format('Y-m-d')"
                 />
 
                 <x-select-field

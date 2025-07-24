@@ -147,6 +147,8 @@ Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
     // ============================
             Route::get('/collections', \App\Livewire\Agency\Collections::class)
             ->name('collections');
+            Route::get('/collections/all', \App\Livewire\Agency\AllCollections::class)
+    ->name('collections.all');
         Route::get('/collections/{sale}', \App\Livewire\Agency\ShowCollectionDetails::class)
             ->name('collection.details');
  // ============================

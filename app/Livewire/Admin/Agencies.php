@@ -30,27 +30,35 @@ class Agencies extends Component
     public $landline;
     public $currency;
     public $status;
-    
+
 
     public $successMessage;
     public $perPage = 10; // عدد الصفوف لكل صفحة
     public $showAll = false; // عرض كل البيانات
     public $search = '';
 
-public function render()
-{
-    $query = Agency::with('admin')
-        ->orderBy('created_at', 'desc');
+    // متغيرات مودال تغيير كلمة المرور
+    public $showPasswordModal = false;
+    public $selectedAgencyId = null;
+    public $newPassword = '';
+    public $confirmPassword = '';
 
-    if ($this->search) {
-        $query->where('name', 'like', '%' . $this->search . '%');
+
+    public function render()
+    {
+        $query = Agency::with('admin')
+            ->orderBy('created_at', 'desc');
+
+        if ($this->search) {
+            $query->where('name', 'like', '%' . $this->search . '%');
+        }
+
+        $agencies = $query->paginate($this->perPage);  // استخدام الترقيم
+
+        return view('livewire.admin.agencies', compact('agencies'))
+            ->layout('layouts.admin');
     }
 
-    $agencies = $query->paginate($this->perPage);
-
-    return view('livewire.admin.agencies', compact('agencies'))
-        ->layout('layouts.admin');
-}
     public function updatedSearch()
     {
         $this->resetPage();
@@ -145,5 +153,42 @@ public function render()
         $this->showDeleteModal = false;
         session()->flash('message', 'تم إلغاء عملية الحذف.');
         return redirect()->route('admin.agencies');
+    }
+
+    // دالة لعرض المودال
+    public function showPasswordModal()
+    {
+        $this->showPasswordModal = true;
+    }
+    // دالة لتحديث كلمة المرور
+    public function updatePassword()
+    {
+        $this->validate([
+            'selectedAgencyId' => 'required|exists:agencies,id',
+            'newPassword' => 'required|min:8',
+            'confirmPassword' => 'required|same:newPassword',
+        ]);
+
+        try {
+            // احصل على الوكالة مع مديرها
+            $agency = Agency::with('admin')->findOrFail($this->selectedAgencyId);
+
+            if (!$agency->admin) {
+                throw new \Exception('لا يوجد مدير مرتبط بهذه الوكالة');
+            }
+
+            // تحديث كلمة مرور مدير الوكالة
+            $agency->admin->update([
+                'password' => bcrypt($this->newPassword)
+            ]);
+
+            // إغلاق المودال وإظهار رسالة النجاح
+            $this->reset(['showPasswordModal', 'selectedAgencyId', 'newPassword', 'confirmPassword']);
+            session()->flash('message', 'تم تحديث كلمة مرور مدير الوكالة بنجاح');
+
+        } catch (\Exception $e) {
+            $this->reset(['newPassword', 'confirmPassword']);
+            session()->flash('error', $e->getMessage());
+        }
     }
 }

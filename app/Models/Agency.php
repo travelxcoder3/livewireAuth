@@ -24,12 +24,13 @@ class Agency extends Model
         'status',
         'license_expiry_date',
         'max_users',
-        'landline', 
+        'landline',
         'currency',
         'subscription_start_date',
         'subscription_end_date',
         'theme_color',
-        'parent_id', // تمت الإضافة هنا
+        'parent_id',
+        'password',
     ];
 
     protected $casts = [
@@ -40,7 +41,7 @@ class Agency extends Model
 
     public function admin()
     {
-        return $this->hasOne(User::class, 'agency_id')->whereHas('roles', function($q) {
+        return $this->hasOne(User::class, 'agency_id')->whereHas('roles', function ($q) {
             $q->where('name', 'agency-admin');
         });
     }
@@ -59,7 +60,7 @@ class Agency extends Model
     {
         return $this->license_expiry_date->isPast();
     }
-    
+
     /**
      * إنشاء دور agency-admin للوكالة
      */

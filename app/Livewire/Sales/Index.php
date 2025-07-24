@@ -38,6 +38,8 @@ public $userCommissionDue  = 0;
     public $services = []; // أضف هذا الخاصية
     public $showExpectedDate = false;
     public $showCustomerField = true;
+    public $showPaymentDetails = true;
+    public $showDepositorField = true;
 
     public $filters = [
     'start_date' => '',
@@ -122,7 +124,24 @@ public $filterCustomers = [];
         $this->calculateDue();
 // معالجة الحقول الشرطية يدويًا
 $this->showExpectedDate = in_array($sale->payment_method, ['part', 'all']);
-$this->showCustomerField = $sale->payment_method !== 'kash';
+$this->showPaymentDetails = $sale->payment_method !== 'all';
+$this->showDepositorField = $sale->payment_method !== 'all';
+
+if ($sale->payment_method === 'all') {
+    $this->payment_type = null;
+    $this->receipt_number = null;
+    $this->depositor_name = null;
+}
+
+
+$this->showCustomerField = true;
+
+$customer = \App\Models\Customer::find($sale->customer_id);
+$this->showCommission = $customer && $customer->has_commission;
+
+if (!$this->showCommission) {
+    $this->commission = null;
+}
 
 // 🟡 تصفير الحقول غير المرئية حسب نوع الدفع
 if ($sale->payment_method === 'all') {
@@ -398,9 +417,11 @@ $sales->each(function ($sale) {
     }
     protected function rules()
     {
+        $today = now()->format('Y-m-d');
+        
         $rules = [
             'beneficiary_name' => 'required|string|max:255',
-            'sale_date' => 'required|date',
+            'sale_date' => ['required', 'date', 'before_or_equal:' . $today],
             'service_type_id' => 'required|exists:dynamic_list_items,id',
             'provider_id' => 'nullable|exists:providers,id',
             'customer_via' => 'nullable|in:whatsapp,viber,instagram,other',
@@ -411,14 +432,14 @@ $sales->each(function ($sale) {
             'pnr' => 'nullable|string|max:50',
             'reference' => 'nullable|string|max:50',
             'amount_paid' => 'nullable|numeric|min:0',
-            'depositor_name' => 'required|string|max:255',
+            'depositor_name' => $this->payment_method !== 'all' ? 'required|string|max:255' : 'nullable',
             'customer_id' => 'nullable|exists:customers,id',
             'sale_profit' => 'nullable|numeric',
             'receipt_number' => 'nullable|string|max:50',
             'phone_number' => 'nullable|string|max:20',
             'status' => 'required|in:issued,refunded,canceled,pending,reissued,void,paid,unpaid',
             'payment_method' => 'required|in:kash,part,all',
-            'payment_type' => 'required|in:creamy,kash,visa',
+            'payment_type' => $this->payment_method !== 'all' ? 'required|in:creamy,kash,visa' : 'nullable',
             'service_date' => 'nullable|date',
             'expected_payment_date' => 'nullable|date',
         ];
@@ -426,8 +447,8 @@ $sales->each(function ($sale) {
         // قواعد إضافية حسب طريقة الدفع
         switch ($this->payment_method) {
             case 'kash':
-                $rules['customer_id'] = 'prohibited';
-               $rules['amount_paid'] = ['required', 'numeric', function ($attribute, $value, $fail) {
+                $rules['customer_id'] = 'nullable|exists:customers,id';
+                $rules['amount_paid'] = ['required', 'numeric', function ($attribute, $value, $fail) {
                                                                         if (floatval($value) !== floatval($this->usd_sell)) {
                                                                             $fail('الدفع كاش، يشترط الدفع كامل.');
                                                                         }
@@ -448,13 +469,13 @@ $sales->each(function ($sale) {
     }
 
     protected $messages = [
-        'usd_sell.gte' => 'البيع ≥ الشراء.',
-        'customer_id.prohibited' => 'احذف الحساب عند الدفع كاش.',
-        'amount_paid.max' => 'المبلغ كبير.',
-        'customer_id.required' => 'حدد الحساب.',
-        'amount_paid.lt' => 'المبلغ قليل.',
-        'amount_paid.required' => 'أدخل المبلغ.',
-        'amount_paid.prohibited' => 'احذف المبلغ.',
+            'usd_sell.gte' => 'البيع ≥ الشراء.',
+            'amount_paid.max' => 'المبلغ كبير.',
+            'customer_id.required' => 'حدد الحساب.',
+            'amount_paid.lt' => 'المبلغ قليل.',
+            'amount_paid.required' => 'أدخل المبلغ.',
+            'amount_paid.prohibited' => 'احذف المبلغ.',
+            'sale_date.before_or_equal' => 'تاريخ البيع يجب أن يكون اليوم أو تاريخ سابق.',
     ];
 
 
@@ -526,27 +547,29 @@ $sales->each(function ($sale) {
     }
 
     public function updatedPaymentMethod($value)
-    {
-        $this->showExpectedDate = in_array($value, ['part', 'all']);
-        
-        // إعادة تعيين تاريخ السداد إذا تم اختيار كاش
-        if ($value === 'kash') {
-            $this->expected_payment_date = null;
-        }
+{
+    $this->showDepositorField = $value !== 'all';
+    $this->showExpectedDate = in_array($value, ['part', 'all']);
+    $this->showPaymentDetails = $value !== 'all';
 
-        // تنظيف القيم المرتبطة عند إخفاء الحقول
-        if ($value === 'all') {
-            $this->amount_paid = null;
-            $this->showCustomerField = true;
-        } elseif ($value === 'kash') {
-        $this->customer_id = null;
-        $this->commission = null;       //  تصفير العمولة
-        $this->showCommission = false;  //  إخفاء العمولة
-        $this->showCustomerField = false;//  إخفاء الحساب
-    }else {
-        $this->showCustomerField = true;  //  إظهاره عند تغيير النوع
+    if ($value === 'kash') {
+        $this->expected_payment_date = null;
     }
+
+    if ($value === 'all') {
+        $this->amount_paid = null;
+        $this->payment_type = null; 
+        $this->receipt_number = null; 
+        $this->showCustomerField = true;
+        $this->depositor_name = null; 
+    } elseif ($value === 'kash') {
+        $this->commission = null;
+        $this->showCommission = false;
+        $this->showCustomerField = true;
+    } else {
+        $this->showCustomerField = true;
     }
+}
 
 public function applyFilters()
 {

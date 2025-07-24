@@ -142,10 +142,10 @@ class SalesReport extends Component
     {
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
             $q->where('name', 'قائمة الخدمات')
-                ->where(function ($query) {
-                    $query->whereNull('agency_id')
-                        ->orWhere('agency_id', auth()->user()->agency_id);
-                });
+            ->where(function($query) {
+                $query->where('created_by_agency', auth()->user()->agency_id)
+                      ->orWhereNull('created_by_agency');
+            });
         })->orderBy('order')->get();
 
         $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
