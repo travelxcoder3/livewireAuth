@@ -147,11 +147,7 @@ if (!$this->showCommission) {
 if ($sale->payment_method === 'all') {
     $this->amount_paid = null;
 }
-if ($sale->payment_method === 'kash') {
-    $this->customer_id = null;
-    $this->commission = null;
-    $this->showCommission = false;
-}
+
 
     }
 
