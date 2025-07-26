@@ -91,10 +91,13 @@
     <!-- Modal لعرض التفاصيل -->
     @if($activeSaleId)
         @php $sale = $sales->firstWhere('id', $activeSaleId); @endphp
-        @php
-            $totalPaid = $sale->collections->sum('amount');
+       @php
+            $paidFromSale = $sale->amount_paid ?? 0;
+            $paidFromCollections = $sale->collections->sum('amount');
+            $totalPaid = $paidFromSale + $paidFromCollections;
             $remainingAmount = $sale->usd_sell - $totalPaid;
         @endphp
+
         
         <div class="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/10">
             <div class="bg-white/90 rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[80vh] overflow-y-auto border border-gray-200 backdrop-blur-md">
@@ -106,26 +109,26 @@
 
                 <!-- بطاقة ملخص المدفوعات -->
                 <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                     <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
                         <div class="text-sm text-blue-600 font-medium">إجمالي الفاتورة</div>
                         <div class="text-xl font-bold text-blue-800 mt-1">
                             {{ number_format($sale->usd_sell, 2) }} $
                         </div>
                     </div>
                     
-                    <div class="bg-green-50/50 p-4 rounded-lg border border-green-100">
+                     <div class="bg-green-50/50 p-4 rounded-lg border border-green-100">
                         <div class="text-sm text-green-600 font-medium">إجمالي المدفوع</div>
                         <div class="text-xl font-bold text-green-800 mt-1">
                             {{ number_format($totalPaid, 2) }} $
                         </div>
                     </div>
                     
-                    <div class="bg-amber-50/50 p-4 rounded-lg border border-amber-100">
+                      <div class="bg-amber-50/50 p-4 rounded-lg border border-amber-100">
                         <div class="text-sm text-amber-600 font-medium">المبلغ المتبقي</div>
                         <div class="text-xl font-bold text-amber-800 mt-1">
                             {{ number_format($remainingAmount, 2) }} $
                         </div>
-                    </div>
+    </div>
                 </div>
 
                 <!-- جدول التفاصيل -->

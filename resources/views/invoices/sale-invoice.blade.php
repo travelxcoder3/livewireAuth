@@ -1,4 +1,3 @@
-
 @php
     use App\Services\ThemeService;
     use Illuminate\Support\Facades\Auth;
@@ -7,7 +6,14 @@
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
     $agencyCurrency = Auth::user()?->agency?->currency ?? 'USD';
+
+    use Carbon\Carbon;
+
+    $logoPath = storage_path('app/public/' . $sale->agency->logo);
+    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    $mime = file_exists($logoPath) ? mime_content_type($logoPath) : null;
 @endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -91,12 +97,40 @@
             margin-top: 30px;
             border-top: 1px solid #ccc;
         }
+
+        .logo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 120px; /* العرض */
+    height: 60px; /* الارتفاع */
+    object-fit: contain; /* يحافظ على أبعاد الصورة */
+}
+
+
     </style>
 </head>
 <body>
 
-    <div class="title">فاتورة العملية</div>
 
+
+
+{{-- العنوان أولاً --}}
+<div class="title">فاتورة العملية</div>
+
+{{-- ثم الشعار تحته --}}
+@if($logoData && $mime)
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img
+            src="data:{{ $mime }};base64,{{ $logoData }}"
+            alt="شعار الوكالة"
+            style="width: 140px; height: 70px; object-fit: contain;"
+        >
+    </div>
+@endif
+
+
+    {{-- معلومات الفاتورة --}}
     <div class="top-info">
         <div>
             <strong>Order No:</strong> {{ $sale->id }} / {{ $sale->agency_id }}<br>
@@ -110,6 +144,7 @@
         </div>
     </div>
 
+    {{-- بيانات العميل --}}
     <div class="details">
         <div>
             الاسم: {{ $sale->beneficiary_name }}<br>
@@ -121,27 +156,50 @@
         </div>
     </div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Amount</th>
-                <th>Class</th>
-                <th>Sector</th>
-                <th>Passenger Name</th>
-                <th>Doc No</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ number_format($sale->usd_sell, 2) }}</td>
-                <td>{{ $sale->class ?? '-' }}</td>
-                <td>{{ $sale->sector ?? '-' }}</td>
-                <td>{{ $sale->beneficiary_name }}</td>
-                <td>{{ $sale->doc_no ?? '-' }}</td>
-            </tr>
-        </tbody>
-    </table>
+    {{-- جدول البيانات --}}
+   <table class="table">
+    <thead>
+        <tr>
+            <th>اسم الموظف</th>
+            <th>اسم العميل</th>
+            <th>اسم المستفيد</th>
+            <th>الهاتف</th>
+            <th>الخدمة</th>
+            <th>المزود</th>
+            <th>المسار</th>
+            <th>PNR</th>
+            <th>المرجع</th>
+            <th>سعر البيع</th>
+            <th>سعر الشراء</th>
+            <th>المدفوع</th>
+            <th>المتبقي</th>
+            <th>الحدث</th>
+            <th>الوكالة</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ $sale->user->name ?? '-' }}</td>
+            <td>{{ $sale->customer->name ?? '-' }}</td>
+            <td>{{ $sale->beneficiary_name }}</td>
+            <td>{{ $sale->phone_number }}</td>
+            <td>{{ $sale->service?->label ?? '-' }}</td>
+            <td>{{ $sale->provider?->name ?? '-' }}</td>
+            <td>{{ $sale->route ?? '-' }}</td>
+            <td>{{ $sale->pnr ?? '-' }}</td>
+            <td>{{ $sale->reference ?? '-' }}</td>
+            <td>{{ number_format($sale->usd_sell, 2) }}</td>
+            <td>{{ number_format($sale->usd_buy, 2) }}</td>
+            <td>{{ number_format($sale->paid_total, 2) }}</td>
+            <td>{{ number_format($sale->remaining, 2) }}</td>
+            <td>{{ strtoupper($sale->status) }}</td>
+            <td>{{ $sale->agency->name ?? '-' }}</td>
+        </tr>
+    </tbody>
+</table>
 
+
+    {{-- الملخص --}}
     <div class="summary">
         <div><strong>Currency:</strong> {{ $agencyCurrency }}</div>
         <div><strong>TAX:</strong> 0.00</div>
@@ -150,6 +208,7 @@
         <div><strong>Only:</strong> {{ ucwords(NumberToWords::convert($sale->usd_sell)) }} {{ $agencyCurrency }}</div>
     </div>
 
+    {{-- التوقيع --}}
     <div class="signatures">
         <div>
             Approved by

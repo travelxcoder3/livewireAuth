@@ -97,90 +97,97 @@ class AddAgency extends Component
     }
 
     public function save()
-    {
-        $this->validate();
+{
+    $this->validate();
 
-        // تحويل parent_id إلى integer أو null بناءً على نوع الوكالة
-        if ($this->isMainAgency) {
-            $this->parent_id = null;
-        } else {
-            if ($this->parent_id === "" || $this->parent_id === null) {
-                $this->parent_id = null;
-            } else {
-                $this->parent_id = (int) $this->parent_id;
-            }
+    // تأكيد على التعامل الصحيح مع نوع الوكالة
+    if ($this->isMainAgency) {
+        $this->parent_id = null;
+    } else {
+        if (empty($this->parent_id)) {
+            $this->addError('parent_id', 'يجب اختيار الوكالة الرئيسية.');
+            return;
         }
-
-         $logoPath = null;
-        if ($this->logo) {
-            $logoPath = $this->logo->store('logos', 'public');
-        }
-        DB::beginTransaction();
-        try {
-            $agency = Agency::create([
-                'name' => $this->agency_name,
-                'email' => $this->agency_email,
-                'phone' => $this->agency_phone,
-                'landline' => $this->landline,
-                'address' => $this->agency_address,
-                'license_number' => $this->license_number,
-                'commercial_record' => $this->commercial_record,
-                'tax_number' => $this->tax_number,
-                'license_expiry_date' => $this->license_expiry_date,
-                'description' => $this->description,
-                'currency' => $this->currency,
-                'status' => $this->status,
-                'logo' => $logoPath,
-                'max_users' => $this->max_users,
-                'subscription_start_date' => $this->subscription_start_date,
-                'subscription_end_date' => $this->subscription_end_date,
-                'parent_id' => $this->parent_id,
-            ]);
-
-            // إنشاء الصلاحيات الأساسية للوكالة
-            $permissionSeeder = new PermissionSeeder();
-            $permissionSeeder->createPermissionsForAgency($agency->id);
-            
-            // إنشاء دور agency-admin خاص بالوكالة
-            $agencyAdminRole = Role::firstOrCreate([
-                'name' => 'agency-admin',
-                'guard_name' => 'web',
-                'agency_id' => $agency->id,
-            ]);
-            
-            // ربط دور agency-admin بجميع الصلاحيات
-            $allPermissions = \Spatie\Permission\Models\Permission::where('agency_id', $agency->id)
-                ->orWhereNull('agency_id')
-                ->pluck('name')
-                ->toArray();
-            $agencyAdminRole->syncPermissions($allPermissions);
-            
-            $admin = User::create([
-                'name' => $this->admin_name,
-                'email' => $this->admin_email,
-                'password' => Hash::make($this->admin_password),
-                'agency_id' => $agency->id,
-                'is_active' => true,
-                'email_verified_at' => now(),
-            ]);
-            $admin->assignRole($agencyAdminRole);            
-
-            DB::commit();
-            $this->mainAgencies = \App\Models\Agency::whereNull('parent_id')->get();
-            $this->reset([
-                'agency_name','agency_email','agency_phone', 'landline',
-                'agency_address','license_number','commercial_record','tax_number',
-                'license_expiry_date','description','currency',
-                'subscription_start_date','subscription_end_date',
-                'admin_name','admin_email','admin_password',
-            ]);
-            $this->successMessage = 'تمت إضافة الوكالة بنجاح مع تعيين أدمن خاص بها.';
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->addError('general', 'حدث خطأ أثناء إضافة الوكالة: ' . $e->getMessage());
-        }
+        $this->parent_id = (int) $this->parent_id;
     }
+
+    $logoPath = null;
+    if ($this->logo) {
+        $logoPath = $this->logo->store('logos', 'public');
+    }
+
+    DB::beginTransaction();
+    try {
+        $agency = Agency::create([
+            'name' => $this->agency_name,
+            'email' => $this->agency_email,
+            'phone' => $this->agency_phone,
+            'landline' => $this->landline,
+            'address' => $this->agency_address,
+            'license_number' => $this->license_number,
+            'commercial_record' => $this->commercial_record,
+            'tax_number' => $this->tax_number,
+            'license_expiry_date' => $this->license_expiry_date,
+            'description' => $this->description,
+            'currency' => $this->currency,
+            'status' => $this->status,
+            'logo' => $logoPath,
+            'max_users' => $this->max_users,
+            'subscription_start_date' => $this->subscription_start_date,
+            'subscription_end_date' => $this->subscription_end_date,
+            'parent_id' => $this->parent_id,
+        ]);
+
+        // صلاحيات ودور الأدمن
+        $permissionSeeder = new PermissionSeeder();
+        $permissionSeeder->createPermissionsForAgency($agency->id);
+
+        $agencyAdminRole = Role::firstOrCreate([
+            'name' => 'agency-admin',
+            'guard_name' => 'web',
+            'agency_id' => $agency->id,
+        ]);
+
+        $allPermissions = \Spatie\Permission\Models\Permission::where('agency_id', $agency->id)
+            ->orWhereNull('agency_id')
+            ->pluck('name')
+            ->toArray();
+
+        $agencyAdminRole->syncPermissions($allPermissions);
+
+        $admin = User::create([
+            'name' => $this->admin_name,
+            'email' => $this->admin_email,
+            'password' => Hash::make($this->admin_password),
+            'agency_id' => $agency->id,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole($agencyAdminRole);
+
+        DB::commit();
+
+        $this->mainAgencies = Agency::whereNull('parent_id')->get();
+
+        // ✅ تحديث reset
+        $this->reset([
+    'agency_name', 'agency_email', 'agency_phone', 'landline',
+    'agency_address', 'license_number', 'commercial_record', 'tax_number',
+    'license_expiry_date', 'description', 'currency',
+    'subscription_start_date', 'subscription_end_date',
+    'max_users', 'logo',
+    'admin_name', 'admin_email', 'admin_password', 'admin_password_confirmation',
+    'parent_id', 'isMainAgency',
+]);
+
+
+        $this->successMessage = 'تمت إضافة الوكالة بنجاح مع تعيين أدمن خاص بها.';
+    } catch (\Exception $e) {
+        DB::rollBack();
+        $this->addError('general', 'حدث خطأ أثناء إضافة الوكالة: ' . $e->getMessage());
+    }
+}
+
 
     public function render()
     {

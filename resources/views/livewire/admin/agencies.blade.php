@@ -139,8 +139,9 @@
         <!-- القسم السفلي مع الجدول القابل للتمرير -->
         <div class="flex-1 overflow-hidden px-4 pb-4">
             <div class="bg-white rounded-xl shadow-md h-full flex flex-col">
-                <div class="overflow-y-auto overflow-x-auto flex-1" style="min-width: 1200px;">
-                    <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
+                <div class="flex-1 overflow-hidden">
+<div class="overflow-x-auto overflow-y-auto w-full max-h-[70vh]">
+        <table class="min-w-max divide-y divide-gray-200 text-xs text-right">
                         <thead class="bg-gray-100 text-gray-900 sticky top-0 z-10">
                             <tr>
                                 <th class="px-3 py-2 whitespace-nowrap">الشعار</th>

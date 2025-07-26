@@ -267,6 +267,10 @@ class Accounts extends Component
 
         $totalSales = $filteredSalesQuery->clone()->sum('usd_sell'); // لحساب الإجمالي الصحيح
         $sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+        foreach ($sales as $sale) {
+        $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+        $sale->remaining = $sale->usd_sell - $sale->paid_total;
+}
 
         return view('livewire.agency.accounts', compact('customers', 'sales', 'totalSales'))
             ->layout('layouts.agency');

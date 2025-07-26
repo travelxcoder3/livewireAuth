@@ -8,7 +8,7 @@
 
 
 <div>
-    <div class="flex flex-col h-screen overflow-hidden">
+<div class="flex flex-col min-h-screen overflow-y-auto">
     <!-- القسم العلوي الثابت -->
     <div class="flex-none p-0 bg-gray-50">
         <!-- نموذج إضافة الوكالة -->
@@ -59,30 +59,68 @@
 @enderror
 
                     </div>
-                        <div class="{{ $containerClass }}">
-                            <div class="flex gap-2 mb-2 items-center">
-                                <button type="button" 
-                                    wire:click="$set('isMainAgency', true)" 
-                                    class="agency-type-btn-theme {{ $isMainAgency ? 'active' : '' }}">
-                                    وكالة رئيسية
-                                </button>
-                                <button type="button" 
-                                    wire:click="$set('isMainAgency', false)" 
-                                    class="agency-type-btn-theme {{ !$isMainAgency ? 'active' : '' }}">
-                                    فرع تابع لوكالة رئيسية
-                                </button>
-                                @error('parent_id') <span class="inline-error">{{ $message }}</span> @enderror
-                            </div>
-                            @if(!$isMainAgency)
-                                <select wire:model.defer="parent_id" class="{{ $fieldClass }}">
-                                    <option value="">اختر الوكالة الرئيسية *</option>
-                                    @foreach($mainAgencies as $mainAgency)
-                                        <option value="{{ $mainAgency->id }}">{{ $mainAgency->name }}</option>
-                                    @endforeach
-                                </select>
-                            @endif
-                            <label class="{{ $labelClass }}">الوكالة الرئيسية <span class="text-red-500">*</span></label>
-                        </div>
+                        <div class="{{ $containerClass }}" x-data="{ open: false, search: '', selectedId: @entangle('parent_id'), selectedLabel: '' }" class="relative">
+    <!-- الأزرار (وكالة رئيسية / فرع) -->
+    <div class="flex gap-2 mb-2 items-center">
+        <button type="button"
+            wire:click="$set('isMainAgency', true)"
+            class="agency-type-btn-theme {{ $isMainAgency ? 'active' : '' }}">
+            وكالة رئيسية
+        </button>
+        <button type="button"
+            wire:click="$set('isMainAgency', false)"
+            class="agency-type-btn-theme {{ !$isMainAgency ? 'active' : '' }}">
+            فرع تابع لوكالة رئيسية
+        </button>
+    </div>
+
+    <!-- إذا كانت فرع -->
+    @if(!$isMainAgency)
+        <div class="mt-1">
+            <!-- الزر لفتح القائمة -->
+            <div @click="open = !open"
+                 class="{{ $fieldClass }} cursor-pointer bg-white border border-gray-300 px-4 py-2 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]">
+                <span x-text="selectedLabel || 'اختر الوكالة الرئيسية *'"></span>
+            </div>
+
+            <!-- القائمة المنسدلة -->
+            <div x-show="open" @click.outside="open = false" class="absolute z-50 mt-1 w-full bg-white border rounded shadow-xl max-h-60 overflow-auto">
+                <!-- مربع البحث -->
+                <div class="p-2 border-b">
+                    <input type="text" x-model="search"
+                           placeholder="ابحث عن وكالة..."
+                           class="w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary-500))]">
+                </div>
+
+                <!-- الخيارات -->
+                <ul class="text-sm">
+                    @foreach($mainAgencies as $agency)
+                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            x-show="'{{ $agency->name }}'.toLowerCase().includes(search.toLowerCase())"
+                            @click="
+                                selectedId = '{{ $agency->id }}';
+                                selectedLabel = '{{ $agency->name }}';
+                                open = false;
+                            ">
+                            {{ $agency->name }}
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <!-- ربط القيمة مع Livewire -->
+            <input type="hidden" x-model="selectedId" wire:model.defer="parent_id" />
+        </div>
+    @endif
+
+    <!-- التسمية -->
+    <label class="{{ $labelClass }}">الوكالة الرئيسية <span class="text-red-500">*</span></label>
+
+    @error('parent_id')
+        <span class="inline-error">{{ $message }}</span>
+    @enderror
+</div>
+
                         <div class="{{ $containerClass }}">
                             <input type="email" wire:model.defer="agency_email" class="{{ $fieldClass }}" placeholder="البريد الإلكتروني للوكالة *" />
                             <label class="{{ $labelClass }}">البريد الإلكتروني <span class="text-red-500">*</span></label>
