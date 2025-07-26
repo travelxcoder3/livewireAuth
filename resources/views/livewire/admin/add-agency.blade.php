@@ -45,7 +45,7 @@
                 @php
                         $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none bg-white text-xs peer';
                         $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs';
-                    $containerClass = 'relative mt-3';
+                    $containerClass = 'relative mt-0.5';
                 @endphp
 
                     <!-- الحقول -->
@@ -434,12 +434,12 @@
         
         /* تنسيق ثابت للـ input fields */
         .w-full.rounded-lg.border.border-gray-300.px-3.py-2.focus\:outline-none.bg-white.text-xs.peer {
-            height: 44px !important;
+            height: 36px !important;
             line-height: 1.2;
             text-align: center;
             vertical-align: middle;
-            font-size: 12px !important;
-            padding: 12px 16px !important;
+            font-size: 11px !important;
+            padding: 8px 12px !important;
             border-radius: 8px !important;
             border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
@@ -447,12 +447,12 @@
         
         /* تنسيق ثابت للـ select */
         select.w-full.rounded-lg.border.border-gray-300.px-3.py-2.focus\:outline-none.bg-white.text-xs.peer {
-            height: 44px !important;
+            height: 36px !important;
             line-height: 1.2;
             text-align: center;
             vertical-align: middle;
-            font-size: 12px !important;
-            padding: 12px 16px !important;
+            font-size: 11px !important;
+            padding: 8px 12px !important;
             border-radius: 8px !important;
             border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
@@ -460,9 +460,9 @@
         
         /* تنسيق ثابت للـ buttons */
         .flex.gap-2.mb-2 button {
-            height: 44px !important;
-            font-size: 12px !important;
-            padding: 12px 16px !important;
+            height: 36px !important;
+            font-size: 11px !important;
+            padding: 8px 12px !important;
             border-radius: 8px !important;
             border: 1px solid rgb(var(--primary-500)) !important;
             display: flex;
@@ -487,9 +487,9 @@ select:focus::placeholder {
         
         /* تنسيق ثابت للـ file input */
         input[type="file"] {
-            height: 44px !important;
-            font-size: 12px !important;
-            padding: 12px 16px !important;
+            height: 36px !important;
+            font-size: 11px !important;
+            padding: 8px 12px !important;
             border-radius: 8px !important;
            border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
@@ -497,9 +497,9 @@ select:focus::placeholder {
         
         /* تنسيق ثابت للـ date input */
         input[type="date"] {
-            height: 44px !important;
-            font-size: 12px !important;
-            padding: 12px 16px !important;
+            height: 36px !important;
+            font-size: 11px !important;
+            padding: 8px 12px !important;
             border-radius: 8px !important;
             border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
@@ -508,9 +508,9 @@ select:focus::placeholder {
         
         /* تنسيق ثابت للـ number input */
         input[type="number"] {
-            height: 44px !important;
-            font-size: 12px !important;
-            padding: 12px 16px !important;
+            height: 36px !important;
+            font-size: 11px !important;
+            padding: 8px 12px !important;
             border-radius: 8px !important;
             border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
@@ -519,9 +519,9 @@ select:focus::placeholder {
         
         /* تنسيق ثابت للـ password input */
         input[type="password"] {
-            height: 44px !important;
-            font-size: 12px !important;
-            padding: 12px 16px !important;
+            height: 36px !important;
+            font-size: 11px !important;
+            padding: 8px 12px !important;
             border-radius: 8px !important;
             border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
@@ -530,9 +530,9 @@ select:focus::placeholder {
         
         /* تنسيق ثابت للـ textarea */
         textarea.w-full.rounded-lg.border.border-gray-300.px-3.py-2.focus\:outline-none.bg-white.text-xs.peer {
-            min-height: 44px !important;
-            font-size: 12px !important;
-            padding: 12px 16px !important;
+            min-height: 36px !important;
+            font-size: 11px !important;
+            padding: 8px 12px !important;
             border-radius: 8px !important;
             border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
@@ -551,16 +551,16 @@ select:focus::placeholder {
         /* ضمان ثبات تنسيق الـ grid */
         .grid.md\:grid-cols-3.gap-3 {
             align-items: end;
-            gap: 12px !important;
+gap: 6px !important;
         }
         
         /* تنسيق ثابت للـ container */
-        .relative.mt-3 {
-            min-height: 60px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-        }
+        .relative {
+    min-height: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
         
         /* تنسيق ثابت للـ focus state */
         input:focus,
@@ -648,8 +648,8 @@ select:focus::placeholder {
         
         /* تنسيق خاص لقسم بيانات الأدمن */
         .border-t.border-gray-200.pt-6.mt-6 {
-            margin-top: 1.5rem !important;
-            padding-top: 1.5rem !important;
+            margin-top: 1rem !important;
+padding-top: 1rem !important;
         }
         
         /* تنسيق خاص للحقول في صف واحد */
@@ -675,8 +675,8 @@ select:focus::placeholder {
         
         /* تنسيق خاص لزر الحفظ */
         .w-full.md\:w-\[30\%\] button {
-            height: 44px !important;
-            font-size: 12px !important;
+            height: 36px !important;
+            font-size: 11px !important;
             padding: 12px 24px !important;
             border-radius: 8px !important;
             font-weight: 500 !important;
@@ -757,7 +757,7 @@ select:focus::placeholder {
         
         /* تنسيق خاص لضمان محاذاة الـ password fields */
         .w-full.md\:w-1\/4 .relative {
-            height: 44px !important;
+            height: 36px !important;
             margin-bottom: 0 !important;
         }
         
