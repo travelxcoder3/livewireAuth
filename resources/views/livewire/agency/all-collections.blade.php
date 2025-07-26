@@ -139,7 +139,7 @@
                         <tr class="bg-gray-100/80">
                             <th class="p-2 border text-right">المبلغ</th>
                             <th class="p-2 border text-right">التاريخ</th>
-                            <th class="p-2 border text-right">طريقة الدفع</th>
+                            <th class="p-2 border text-right">حالة الدفع</th>
                             <th class="p-2 border text-right">ملاحظات</th>
                         </tr>
                     </thead>

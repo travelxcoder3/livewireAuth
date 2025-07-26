@@ -40,14 +40,14 @@
 
                                         case 'status':
                                             $translatedValue = match ($value) {
-                                                'paid' => 'مدفوع',
-                                                'unpaid' => 'غير مدفوع',
-                                                'issued' => 'تم الإصدار',
-                                                'reissued' => 'أعيد إصداره',
-                                                'refunded' => 'تم الاسترداد',
-                                                'canceled' => 'ملغي',
-                                                'pending' => 'قيد الانتظار',
-                                                'void' => 'ملغي نهائي',
+                                                'paid'      => 'مدفوع - Paid',
+                                                    'unpaid'    => 'غير مدفوع - Unpaid',
+                                                    'issued'    => 'تم الإصدار - Issued',
+                                                    'reissued'  => 'أعيد إصداره - Reissued',
+                                                    'refunded'  => 'تم الاسترداد - Refunded',
+                                                    'canceled'  => 'ملغي - Canceled',
+                                                    'pending'   => 'قيد الانتظار - Pending',
+                                                    'void'      => 'ملغي نهائي - Void',
                                                 default => $value,
                                             };
                                             break;
@@ -62,12 +62,28 @@
 
                                         case 'payment_type':
                                             $translatedValue = match ($value) {
-                                                'creamy' => 'تحصيل',
-                                                'kash' => 'كاش',
-                                                'visa' => 'فيزا',
-                                                default => $value,
-                                            };
-                                            break;
+                                                'cash'            => 'كاش',
+                                                    'transfer'        => 'حوالة',
+                                                    'account_deposit' => 'إيداع حساب',
+                                                    'fund'            => 'صندوق',
+                                                    'from_account'    => 'من حساب',
+                                                    'wallet'          => 'محفظة',
+                                                    'other'           => 'أخرى',
+                                                    default           => $value,
+                                                };
+                                                break;
+
+                                            case 'customer_via':
+                                                $translatedValue = match ($value) {
+                                                    'facebook' => 'فيسبوك',
+                                                    'call'     => 'اتصال',
+                                                    'instagram'=> 'إنستغرام',
+                                                    'whatsapp' => 'واتساب',
+                                                    'office'   => 'عبر مكتب',
+                                                    'other'    => 'أخرى',
+                                                    default    => $value,
+                                                };
+                                                break;
                                     }
                                 }
 

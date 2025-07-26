@@ -34,7 +34,7 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping
             'المرجع',
             'PNR',
             'العميل عبر',
-            'طريقة الدفع',
+            'حالة الدفع',
         ];
     }
 
@@ -50,7 +50,7 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping
             $sale->reference,
             $sale->pnr,
             $sale->customer_via ?? '', // العميل عبر
-            $sale->payment_method ?? '', // طريقة الدفع
+            $sale->payment_method ?? '', // حالة الدفع
         ];
     }
 }

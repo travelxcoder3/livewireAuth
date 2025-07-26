@@ -167,16 +167,16 @@ $columns = SalesTable::columns();
                         errorName="route"
                     />
                   
-                    <!-- طريقة الدفع -->
+                    <!-- حالة الدفع -->
                     <x-select-field
                         wireModel="payment_method"
-                        label="طريقة الدفع"
+                        label="حالة الدفع"
                         :options="[
                             'kash' => 'كامل',
                             'part' => 'جزئي',
                             'all' => 'لم يدفع'
                         ]"
-                        placeholder=" طريقة الدفع"
+                        placeholder=" حالة الدفع"
                         containerClass="relative mt-1 col-span-3"
                         errorName="payment_method"
                     />
@@ -242,14 +242,19 @@ $columns = SalesTable::columns();
         wireModel="payment_type"
         label="وسيلة الدفع"
         :options="[
-            'creamy' => 'كريمي',
-            'kash' => 'كاش',
-            'visa' => 'فيزا'
+            'cash' => 'كاش',
+            'transfer' => 'حوالة',
+            'account_deposit' => 'إيداع حساب',
+            'fund' => 'صندوق',
+            'from_account' => 'من حساب',
+            'wallet' => 'محفظة',
+            'other' => 'أخرى',
         ]"
         placeholder="وسيلة الدفع"
         containerClass="relative mt-1 col-span-6"
         errorName="payment_type"
     />
+
 
     <!-- رقم السند -->
     <x-input-field
@@ -266,19 +271,22 @@ $columns = SalesTable::columns();
                 <!-- الصف الثالث -->
                 <div class="grid md:grid-cols-4 gap-2 lg:gap-3">
                     <!-- العميل عبر -->
-                    <x-select-field
-                        wireModel="customer_via"
-                        label="العميل عبر"
-                        :options="[
-                            'whatsapp' => 'واتساب',
-                            'viber' => 'فايبر',
-                            'instagram' => 'إنستغرام',
-                            'other' => 'أخرى'
-                        ]"
-                        placeholder="العميل عبر  "
-                        containerClass="relative mt-1"
-                        errorName="customer_via"
-                    />
+            <x-select-field
+                wireModel="customer_via"
+                label="العميل عبر"
+                :options="[
+                    'facebook' => 'فيسبوك',
+                    'call' => 'اتصال',
+                    'instagram' => 'إنستغرام',
+                    'whatsapp' => 'واتساب',
+                    'office' => 'عبر مكتب',
+                    'other' => 'أخرى',
+                ]"
+                placeholder="العميل عبر"
+                containerClass="relative mt-1"
+                errorName="customer_via"
+            />
+
 
                     <!-- المزود + تاريخ الخدمة -->
                     <div class="grid grid-cols-2 gap-3">
@@ -319,9 +327,9 @@ $columns = SalesTable::columns();
                     @if($showCommission)
                     <x-input-field
                         name="commission"
-                        label="مبلغ العموله"
+                        label="مبلغ عمولة العميل"
                         wireModel="commission"
-                        placeholder="مبلغ العموله"
+                        placeholder="مبلغ عمولة العميل"
                         type="number"
                         step="0.01"
                         containerClass="relative mt-1"
@@ -489,14 +497,14 @@ $columns = SalesTable::columns();
                     label="الحالة"
                     :options="[
                         '' => 'الكل',
-                        'issued' => 'تم الإصدار',
-                        'refunded' => 'تم الاسترداد',
-                        'canceled' => 'تم الإلغاء',
-                        'pending' => 'قيد الانتظار',
-                        'reissued' => 'إعادة الإصدار',
-                        'void' => 'لاغية',
-                        'paid' => 'مدفوعة',
-                        'unpaid' => 'غير مدفوعة'
+                        'issued' => 'تم الإصدار - Issued',
+                        'refunded' => 'تم الاسترداد - Refunded',
+                        'canceled' => 'ملغي - Canceled',
+                        'pending' => 'قيد الانتظار - Pending',
+                        'reissued' => 'أعيد إصداره - Reissued',
+                        'void' => 'ملغي نهائي - Void',
+                        'paid' => 'مدفوع - Paid',
+                        'unpaid' => 'غير مدفوع - Unpaid',
                     ]"
                     placeholder="الحالة"
                     containerClass="relative mt-1"
@@ -532,14 +540,17 @@ $columns = SalesTable::columns();
                     label="العميل عبر"
                     :options="[
                         '' => 'الكل',
-                        'whatsapp' => 'واتساب',
-                        'viber' => 'فايبر',
+                        'facebook' => 'فيسبوك',
+                        'call' => 'اتصال',
                         'instagram' => 'إنستغرام',
-                        'other' => 'أخرى'
+                        'whatsapp' => 'واتساب',
+                        'office' => 'عبر مكتب',
+                        'other' => 'أخرى',
                     ]"
                     placeholder="العميل عبر"
                     containerClass="relative mt-1"
                 />
+
 
                 <x-input-field
                     name="route"
@@ -551,14 +562,14 @@ $columns = SalesTable::columns();
 
                 <x-select-field
                     wireModel="filterInputs.payment_method"
-                    label="طريقة الدفع"
+                    label="حالة الدفع"
                     :options="[
                         '' => 'الكل',
-                        'kash' => 'كاش',
+                        'kash' => 'كامل',
                         'part' => 'جزئي',
-                        'all' => 'كامل جزئي'
+                        'all' => 'لم يدفع'
                     ]"
-                    placeholder="طريقة الدفع"
+                    placeholder="حالة الدفع"
                     containerClass="relative mt-1"
                 />
 
@@ -567,13 +578,18 @@ $columns = SalesTable::columns();
                     label="وسيلة الدفع"
                     :options="[
                         '' => 'الكل',
-                        'creamy' => 'كريمي',
-                        'kash' => 'كاش',
-                        'visa' => 'فيزا'
+                        'cash' => 'كاش',
+                        'transfer' => 'حوالة',
+                        'account_deposit' => 'إيداع حساب',
+                        'fund' => 'صندوق',
+                        'from_account' => 'من حساب',
+                        'wallet' => 'محفظة',
+                        'other' => 'أخرى',
                     ]"
                     placeholder="وسيلة الدفع"
                     containerClass="relative mt-1"
                 />
+
 <div class="mt-6 flex justify-center gap-3">
 <button type="button" onclick="closeFilterModal()"
     class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm w-full sm:w-auto">

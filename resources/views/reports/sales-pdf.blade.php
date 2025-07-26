@@ -196,7 +196,7 @@
                     @if($field == 'pnr')<th width="6%">PNR</th>@endif
                     @if($field == 'route')<th width="6%">Route</th>@endif
                     @if($field == 'status')<th width="7%">الحالة</th>@endif
-                    @if($field == 'payment_method')<th width="7%">طريقة الدفع</th>@endif
+                    @if($field == 'payment_method')<th width="7%">حالة الدفع</th>@endif
                     @if($field == 'payment_type')<th width="7%">وسيلة الدفع</th>@endif
                     @if($field == 'receipt_number')<th width="7%">رقم الإيصال</th>@endif
                     @if($field == 'phone_number')<th width="7%">رقم الهاتف</th>@endif

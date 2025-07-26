@@ -242,7 +242,7 @@
                             'route' => 'Route',
                             'status' => 'الحالة',
                             'user' => 'اسم الموظف',
-                            'payment_method' => 'طريقة الدفع',
+                            'payment_method' => 'حالة الدفع',
                             'payment_type' => 'وسيلة الدفع',
                             'receipt_number' => 'رقم الإيصال',
                             'phone_number' => 'رقم الهاتف',

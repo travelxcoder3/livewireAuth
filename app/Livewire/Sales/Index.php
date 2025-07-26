@@ -420,7 +420,7 @@ $sales->each(function ($sale) {
             'sale_date' => ['required', 'date', 'before_or_equal:' . $today],
             'service_type_id' => 'required|exists:dynamic_list_items,id',
             'provider_id' => 'nullable|exists:providers,id',
-            'customer_via' => 'nullable|in:whatsapp,viber,instagram,other',
+            'customer_via' => 'nullable|in:whatsapp,facebook,instagram,call,office,other',
             'usd_buy' => 'required|numeric|min:0',
             'usd_sell' => 'required|numeric|min:0|gte:usd_buy',
             'commission' => 'nullable|numeric',
@@ -435,8 +435,7 @@ $sales->each(function ($sale) {
             'phone_number' => 'nullable|string|max:20',
             'status' => 'required|in:issued,refunded,canceled,pending,reissued,void,paid,unpaid',
             'payment_method' => 'required|in:kash,part,all',
-            'payment_type' => $this->payment_method !== 'all' ? 'required|in:creamy,kash,visa' : 'nullable',
-            'service_date' => 'nullable|date',
+            'payment_type' => $this->payment_method !== 'all' ? 'required|in:cash,transfer,account_deposit,fund,from_account,wallet,other' : 'nullable',            'service_date' => 'nullable|date',
             'expected_payment_date' => 'nullable|date',
         ];
 
