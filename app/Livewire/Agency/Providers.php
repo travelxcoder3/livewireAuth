@@ -38,9 +38,14 @@ class Providers extends Component
     
     public function fetchServices()
     {
-        $this->services = \App\Models\DynamicListItem::whereHas('list', function ($query) {
-            $query->where('name', 'قائمة الخدمات'); // ✅ طابق الاسم الظاهر في الواجهة
-        })->get();
+         $this->services = \App\Models\DynamicListItem::whereHas('list', function ($query) {
+            $query->where('name', 'قائمة الخدمات');
+        })
+        ->where(function($query) {
+            $query->where('created_by_agency', auth()->user()->agency_id)
+                  ->orWhereNull('created_by_agency');
+        })
+        ->get();
     }
     
     

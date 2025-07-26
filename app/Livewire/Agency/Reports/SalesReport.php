@@ -181,39 +181,42 @@ class SalesReport extends Component
     public function render()
     {
         $agency = auth()->user()->agency;
-
         $agencyIds = $agency->parent_id
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $salesQuery = Sale::with(['user', 'service', 'provider', 'account', 'customer'])
+        $query = Sale::with(['user', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
-            ->when($this->search, function ($query) {
-                $term = '%' . $this->search . '%';
-                $query->where(function ($q) use ($term) {
-                    $q->where('beneficiary_name', 'like', $term)
-                        ->orWhere('reference', 'like', $term)
-                        ->orWhere('pnr', 'like', $term);
-                });
-            })
+            ->when($this->search, fn($q) => $q->where('beneficiary_name', 'like', "%{$this->search}%")
+                ->orWhere('reference', 'like', "%{$this->search}%")
+                ->orWhere('pnr', 'like', "%{$this->search}%"))
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
-            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
+            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', "%{$this->pnrFilter}%"))
+            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', "%{$this->referenceFilter}%"))
             ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
             ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate));
 
-        $this->totalSales = $salesQuery->clone()->sum('usd_sell');
-        $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+        $this->totalSales = (clone $query)->sum('usd_sell');
+
+        $sales = $query
+            ->orderBy($this->sortField, $this->sortDirection)
+            ->paginate(10);
+
+        $columns = SalesTable::columns(
+            true // true = اخفاء زر "تكرار" في تقرير المبيعات
+        );
 
         return view('livewire.agency.reportsView.sales-report', [
             'sales' => $sales,
-            'columns' => SalesTable::columns(), // ✅ هذا السطر هو الحل
+            'columns' => $columns,
             'totalSales' => $this->totalSales,
             'serviceTypes' => $this->serviceTypes,
             'providers' => $this->providers,
-            'customers' => $this->customers
+            'customers' => $this->customers,
+            'columns' => SalesTable::columns(true, true),
+
         ]);
     }
 

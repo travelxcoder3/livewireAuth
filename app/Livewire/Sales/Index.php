@@ -14,6 +14,8 @@ use Livewire\WithPagination;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Models\Beneficiary;
+use App\Tables\SalesTable;
+
 
 class Index extends Component
 {
@@ -332,7 +334,8 @@ $this->totalPending = $this->totalAmount - $this->totalReceived;
             'customers' => $customers,
             'accounts' => $accounts,
             'filterServices' => $this->filterServices,
-            'filterCustomers' => $this->filterCustomers
+            'filterCustomers' => $this->filterCustomers,
+            'columns' => SalesTable::columns(false, false),
         ])->layout('layouts.agency');
         $salesQuery = $salesQuery->with(['user', 'provider', 'service', 'customer', 'account', 'collections'])
     ->withSum('collections', 'amount')

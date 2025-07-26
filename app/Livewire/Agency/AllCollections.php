@@ -66,8 +66,9 @@ class AllCollections extends Component
     public function loadSales()
     {
         $query = Sale::with('collections')
-            ->where('agency_id', auth()->user()->agency_id)
-            ->latest();
+        ->where('agency_id', auth()->user()->agency_id)
+        ->where('payment_method', '!=', 'all') // ✅ استثناء المدفوعة بالكامل
+        ->latest();
 
         if (!empty($this->search)) {
             $query->where(function($q) {

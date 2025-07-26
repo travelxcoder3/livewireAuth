@@ -53,9 +53,9 @@
                                             break;
                                         case 'payment_method':
                                             $translatedValue = match ($value) {
-                                                'kash' => 'كاش',
+                                                'kash' => 'كامل',
                                                 'part' => 'جزئي',
-                                                'all' => 'كامل',
+                                                'all' => 'لم يدفع',
                                                 default => $value,
                                             };
                                             break;

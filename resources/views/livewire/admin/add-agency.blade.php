@@ -13,12 +13,15 @@
     <div class="flex-none p-0 bg-gray-50">
         <!-- نموذج إضافة الوكالة -->
         <div class="bg-white rounded-xl shadow-md p-4">
-<div class="flex justify-between items-center mb-4">
-    <h2 class="text-xl font-bold text-black text-center w-full">
+<div class="flex items-center justify-between mb-4 flex-wrap md:flex-nowrap gap-2">
+    <h2 class="text-xl font-bold text-black text-center md:text-right w-full md:w-auto flex-1">
         إضافة وكالة جديدة وتعيين أدمن للوكالة
     </h2>
-    <span class="text-sm font-normal text-gray-600">* <span class="text-red-500">الحقول المطلوبة</span></span>
+    <div class="flex items-center text-sm font-normal text-red-600 whitespace-nowrap">
+        <span>الحقول المطلوبة *</span>
+    </div>
 </div>
+
 
 
 @if($successMessage)
@@ -834,6 +837,7 @@ select:focus::placeholder {
             color: rgb(var(--primary-900));
             border-color: rgb(var(--primary-500));
             box-shadow: 0 2px 8px rgba(var(--primary-500), 0.08);
+            color: #ffffff !important;
         }
         .agency-type-btn-theme:hover {
             background: linear-gradient(90deg, rgb(var(--primary-400)), rgb(var(--primary-600)));

@@ -4,9 +4,16 @@ namespace App\Tables;
 
 class SalesTable
 {
-    public static function columns()
+    /**
+     * ترجع مصفوفة الأعمدة مع إمكانية التحكم في ظهور زر التكرار وزر PDF
+     *
+     * @param  bool  $hideDuplicate  إذا true يخفي زر "تكرار"
+     * @param  bool  $showPdf        إذا true يظهر زر "PDF"
+     * @return array
+     */
+    public static function columns(bool $hideDuplicate = false, bool $showPdf = false): array
     {
-        // 1) أنشئ مصفوفة الأعمدة أولاً
+        // 1) تعريف جميع الأعمدة
         $columns = [
             ['key' => 'sale_date', 'label' => 'التاريخ', 'format' => 'date'],
             ['key' => 'beneficiary_name', 'label' => 'المستفيد'],
@@ -20,20 +27,16 @@ class SalesTable
             ['key' => 'sale_profit', 'label' => 'الربح', 'format' => 'money', 'color' => 'primary-700'],
             ['key' => 'amount_paid', 'label' => 'المبلغ المدفوع أثناء البيع', 'format' => 'money'],
             [
-                'key'   => 'collections_sum_amount',
-                'label' => 'إجمالي المبلغ المحصل',
-                'format'=> 'money',
-                'color' => function ($value) {
-                    return $value > 0 ? 'green-600' : 'gray-500';
-                },
+                'key'    => 'collections_sum_amount',
+                'label'  => 'إجمالي المبلغ المحصل',
+                'format' => 'money',
+                'color'  => fn($value) => $value > 0 ? 'green-600' : 'gray-500',
             ],
             [
-                'key'   => 'remaining_payment',
-                'label' => 'المتبقي من المبلغ المحصل',
-                'format'=> 'money',
-                'color' => function ($value) {
-                    return ($value ?? 0) > 0 ? 'red-600' : 'green-700';
-                },
+                'key'    => 'remaining_payment',
+                'label'  => 'المتبقي من المبلغ المحصل',
+                'format' => 'money',
+                'color'  => fn($value) => ($value ?? 0) > 0 ? 'red-600' : 'green-700',
             ],
             ['key' => 'expected_payment_date', 'label' => 'تاريخ السداد المتوقع', 'format' => 'date'],
             ['key' => 'reference', 'label' => 'المرجع'],
@@ -47,41 +50,36 @@ class SalesTable
             ['key' => 'receipt_number', 'label' => 'رقم السند'],
             ['key' => 'phone_number', 'label' => 'رقم الهاتف'],
             ['key' => 'depositor_name', 'label' => 'اسم المودع'],
-            ['key' => 'commission', 'label' => ' مبلغ عمولة العميل', 'format' => 'money'],
-            [
-                'key'     => 'actions',
-                'label'   => 'الإجراءات',
-                'format'  => 'custom',
-                'buttons' => ['pdf'],
-                'actions' => [
-                    [
-                        'type'   => 'duplicate',
-                        'label'  => 'تكرار',
-                        'icon'   => 'fa fa-copy',
-                        'class'  => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
-                        'showIf' => function ($row) {
-                            return $row->agency_id === auth()->user()->agency_id;
-                        },
-                    ],
-                    // ... إجراءات أخرى إذا لزم الأمر ...
-                ],
-            ],
+            ['key' => 'commission', 'label' => 'مبلغ عمولة العميل', 'format' => 'money'],
         ];
 
-        // 2) إذا كنا في صفحة تقارير المبيعات فقط، نحذف زر "تكرار"
-        if (request()->is('agency/reports/sales')) {
-            foreach ($columns as &$col) {
-                if ($col['key'] === 'actions' && isset($col['actions'])) {
-                    $col['actions'] = array_filter(
-                        $col['actions'],
-                        fn($action) => $action['type'] !== 'duplicate'
-                    );
-                }
-            }
-            unset($col);
+        // 2) عمود الإجراءات
+        $actionsColumn = [
+            'key'     => 'actions',
+            'label'   => 'الإجراءات',
+            'format'  => 'custom',
+        ];
+
+        // 3) إذا مطلوب عرض زر PDF فقط
+        if ($showPdf) {
+            $actionsColumn['buttons'] = ['pdf'];
         }
 
-        // 3) نعيد المصفوفة بعد التصفية
+        // 4) إذا لم يتم طلب إخفاء زر التكرار
+        if (!$hideDuplicate) {
+            $actionsColumn['actions'] = [
+                [
+                    'type'   => 'duplicate',
+                    'label'  => 'تكرار',
+                    'icon'   => 'fa fa-copy',
+                    'class'  => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
+                    'showIf' => fn($row) => $row->agency_id == auth()->user()->agency_id,
+                ],
+            ];
+        }
+
+        $columns[] = $actionsColumn;
+
         return $columns;
     }
 }
