@@ -33,6 +33,7 @@ class AddAgency extends Component
     public $parent_id;
     public $mainAgencies = [];
     public $monthly_sales_target;
+    public $isMainAgency = true; // إضافة متغير لتحديد نوع الوكالة
     // ✅ حقول الاشتراك
     public $subscription_start_date;
     public $subscription_end_date;
@@ -49,7 +50,7 @@ class AddAgency extends Component
     public $logo;
     protected function rules()
     {
-        return [
+        $rules = [
             'agency_name' => 'required|string|max:255',
             'agency_email' => 'required|email|unique:agencies,email',
             'agency_phone' => 'required|string|max:30',
@@ -70,8 +71,23 @@ class AddAgency extends Component
             'admin_email' => ['required','email','unique:users,email'],
             'admin_password' => 'required|string|min:6',
             'admin_password_confirmation' => 'required|same:admin_password',
-            'parent_id' => 'nullable|exists:agencies,id',
+        ];
 
+        // إضافة validation للـ parent_id إذا كانت الوكالة فرعية
+        if (!$this->isMainAgency) {
+            $rules['parent_id'] = 'required|exists:agencies,id';
+        } else {
+            $rules['parent_id'] = 'nullable|exists:agencies,id';
+        }
+
+        return $rules;
+    }
+
+    protected function messages()
+    {
+        return [
+            'parent_id.required' => 'يجب اختيار الوكالة الرئيسية عندما تكون الوكالة فرعية.',
+            'parent_id.exists' => 'الوكالة الرئيسية المختارة غير موجودة.',
         ];
     }
 
@@ -84,11 +100,15 @@ class AddAgency extends Component
     {
         $this->validate();
 
-        // تحويل parent_id إلى integer أو null
-        if ($this->parent_id === "" || $this->parent_id === null) {
+        // تحويل parent_id إلى integer أو null بناءً على نوع الوكالة
+        if ($this->isMainAgency) {
             $this->parent_id = null;
         } else {
-            $this->parent_id = (int) $this->parent_id;
+            if ($this->parent_id === "" || $this->parent_id === null) {
+                $this->parent_id = null;
+            } else {
+                $this->parent_id = (int) $this->parent_id;
+            }
         }
 
          $logoPath = null;

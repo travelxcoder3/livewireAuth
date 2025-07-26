@@ -16,18 +16,25 @@
                 $containerClass = 'relative mt-1';
             @endphp
 
-            <!-- كلمة المرور الجديدة -->
-            <div class="{{ $containerClass }}">
-                <input type="password" wire:model.defer="password" class="{{ $fieldClass }}" placeholder="كلمة المرور الجديدة" />
-                <label class="{{ $labelClass }}">كلمة المرور الجديدة</label>
-                @error('password') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-            </div>
+            <x-input-field 
+                name="password"
+                wireModel="password"
+                label="كلمة المرور الجديدة"
+                placeholder="كلمة المرور الجديدة"
+                type="password"
+                errorName="password"
+                wire:model.defer="password"
+            />
 
             <!-- تأكيد كلمة المرور -->
-            <div class="{{ $containerClass }}">
-                <input type="password" wire:model.defer="password_confirmation" class="{{ $fieldClass }}" placeholder="تأكيد كلمة المرور" />
-                <label class="{{ $labelClass }}">تأكيد كلمة المرور</label>
-            </div>
+            <x-input-field 
+                name="password_confirmation"
+                wireModel="password_confirmation"
+                label="تأكيد كلمة المرور"
+                placeholder="تأكيد كلمة المرور"
+                type="password"
+                wire:model.defer="password_confirmation"
+            />
 
             <!-- زر التحديث -->
             <button type="submit"

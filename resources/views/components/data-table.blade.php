@@ -40,22 +40,22 @@
 
                                         case 'status':
                                             $translatedValue = match ($value) {
-                                                'paid'      => 'مدفوع',
-                                                'unpaid'    => 'غير مدفوع',
-                                                'issued'    => 'تم الإصدار',
-                                                'reissued'  => 'أعيد إصداره',
-                                                'refunded'  => 'تم الاسترداد',
-                                                'canceled'  => 'ملغي',
-                                                'pending'   => 'قيد الانتظار',
-                                                'void'      => 'ملغي نهائي',
+                                                    'paid'      => 'مدفوع - Paid',
+                                                    'unpaid'    => 'غير مدفوع - Unpaid',
+                                                    'issued'    => 'تم الإصدار - Issued',
+                                                    'reissued'  => 'أعيد إصداره - Reissued',
+                                                    'refunded'  => 'تم الاسترداد - Refunded',
+                                                    'canceled'  => 'ملغي - Canceled',
+                                                    'pending'   => 'قيد الانتظار - Pending',
+                                                    'void'      => 'ملغي نهائي - Void',
                                                 default     => $value,
                                             };
                                             break;
                                             case 'payment_method':
                                                     $translatedValue = match ($value) {
-                                                        'kash' => 'كاش',
+                                                        'kash' => 'كامل',
                                                         'part' => 'جزئي',
-                                                        'all' => 'كامل',
+                                                        'all' => 'لم يدفع',
                                                         default => $value,
                                                     };
                                                     break;

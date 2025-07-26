@@ -12,10 +12,6 @@ class SystemDynamicListsSeeder extends Seeder
      */
     private array $systemLists = [
         'قائمة الخدمات',
-        'قائمة الحالات',
-        'قائمة التحصيل',
-        'طرق التسديد',
-        'الصناديق والبنوك',
         'قائمة الاقسام',
         'قائمة المسمى الوظيفي',
     ];

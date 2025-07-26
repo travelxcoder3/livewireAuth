@@ -22,6 +22,33 @@ class Profile extends Component
     public $tempLogoUrl; // لمعاينة الشعار قبل الحفظ
     public $logoPreview; // لعرض الشعار بعد الحفظ مباشرة
     public $monthlyTarget;
+    public $editing = false; // false يعني أن الوضع الافتراضي هو عرض البيانات فقط
+    public $currentTarget;
+
+    public function startEditing()
+    {
+        $this->editing = true;
+        // يمكنك هنا تعبئة بيانات النموذج إذا لزم الأمر
+    }
+
+    public function cancelEditing()
+    {
+        $this->editing = false;
+        $this->resetErrorBag();
+        // يمكنك هنا إعادة تعيين أي تغييرات لم تحفظ
+    }
+
+    // في المكون الخاص بك
+public $showSuccess = false;
+
+protected $listeners = ['showSuccessMessage' => 'showSuccessMessage'];
+
+public function showSuccessMessage()
+{
+    $this->showSuccess = true;
+    $this->dispatchBrowserEvent('message-shown');
+}
+
 
     public function mount()
     {
@@ -43,6 +70,7 @@ class Profile extends Component
             ->first();
 
         $this->monthlyTarget = $target?->target_amount;
+        $this->currentTarget = $target?->target_amount;
     }
 
     public function updatedLogo()
@@ -72,8 +100,8 @@ class Profile extends Component
     public function update()
     {
         $this->validate([
-            'phone' => 'required|string|max:20',
-            'landline' => 'nullable|string|max:20',
+           'phone' => 'required|numeric|max:999999999',
+           'landline' => 'nullable|numeric|max:999999',
             'email' => 'required|email|unique:agencies,email,' . $this->agency->id,
             'address' => 'nullable|string',
             'description' => 'nullable|string',
@@ -126,6 +154,8 @@ class Profile extends Component
             : asset('images/default-agency-logo.png');
 
         session()->flash('success', 'تم تعديل البيانات بنجاح');
+        $this->editing = false;
+
     }
 
 

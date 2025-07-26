@@ -75,7 +75,7 @@
         @endphp
         
         <!-- نفس كود الModal السابق -->
-       <div class="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/10">
+        <div class="fixed inset-0 flex items-start justify-center pt-24 z-50 backdrop-blur-sm bg-white/10">
     <div class="bg-white/90 rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[80vh] overflow-y-auto border border-gray-200 backdrop-blur-md">
         <button wire:click="closeModal" class="absolute top-2 left-3 text-gray-500 hover:text-red-600 text-lg">&times;</button>
 
