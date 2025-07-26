@@ -308,13 +308,11 @@
             height: 100%;
             overflow: hidden;
         }
-
         .peer:placeholder-shown+label {
             top: 0.75rem;
             font-size: 0.875rem;
             color: #6b7280;
         }
-
         .peer:not(:placeholder-shown)+label,
         .peer:focus+label {
             top: -0.5rem;

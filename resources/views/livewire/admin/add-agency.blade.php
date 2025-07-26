@@ -441,7 +441,7 @@
             font-size: 12px !important;
             padding: 12px 16px !important;
             border-radius: 8px !important;
-            border: 1px solid #d1d5db !important;
+            border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
         }
         
@@ -454,7 +454,7 @@
             font-size: 12px !important;
             padding: 12px 16px !important;
             border-radius: 8px !important;
-            border: 1px solid #d1d5db !important;
+            border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
         }
         
@@ -464,7 +464,7 @@
             font-size: 12px !important;
             padding: 12px 16px !important;
             border-radius: 8px !important;
-            border: 1px solid #d1d5db !important;
+            border: 1px solid rgb(var(--primary-500)) !important;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -491,7 +491,7 @@ select:focus::placeholder {
             font-size: 12px !important;
             padding: 12px 16px !important;
             border-radius: 8px !important;
-            border: 1px solid #d1d5db !important;
+           border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
         }
         
@@ -501,7 +501,7 @@ select:focus::placeholder {
             font-size: 12px !important;
             padding: 12px 16px !important;
             border-radius: 8px !important;
-            border: 1px solid #d1d5db !important;
+            border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
             text-align: center;
         }
@@ -512,7 +512,7 @@ select:focus::placeholder {
             font-size: 12px !important;
             padding: 12px 16px !important;
             border-radius: 8px !important;
-            border: 1px solid #d1d5db !important;
+            border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
             text-align: center;
         }
@@ -523,7 +523,7 @@ select:focus::placeholder {
             font-size: 12px !important;
             padding: 12px 16px !important;
             border-radius: 8px !important;
-            border: 1px solid #d1d5db !important;
+            border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
             text-align: center;
         }
@@ -534,7 +534,7 @@ select:focus::placeholder {
             font-size: 12px !important;
             padding: 12px 16px !important;
             border-radius: 8px !important;
-            border: 1px solid #d1d5db !important;
+            border: 1px solid rgb(var(--primary-500)) !important;
             background-color: #ffffff !important;
             text-align: center;
             resize: vertical;
@@ -567,8 +567,8 @@ select:focus::placeholder {
         select:focus,
         textarea:focus {
             outline: none !important;
-            border-color: #3b82f6 !important;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+            border-color: rgb({{ $colors['primary-500'] }}) !important;
+            box-shadow: 0 0 0 3px rgba({{ $colors['primary-500'] }}, 0.2) !important;
         }
         
         /* تنسيق ثابت للـ hover state */
@@ -877,10 +877,19 @@ select:focus::placeholder {
             box-shadow: 0 2px 8px rgba(var(--primary-500), 0.08);
             color: #ffffff !important;
         }
-        .agency-type-btn-theme:hover {
-            background: linear-gradient(90deg, rgb(var(--primary-400)), rgb(var(--primary-600)));
-            color: rgb(var(--primary-900));
-            border-color: rgb(var(--primary-400));
+.agency-type-btn-theme:hover {
+            position: relative;
+            z-index: 1;
+        }
+
+        .agency-type-btn-theme:hover::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-color: rgba(255, 255, 255, 0.12); /* طبقة شفافية */
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: -1;
         }
         /* رسالة الخطأ inline بجانب الحقل */
         .inline-error {
