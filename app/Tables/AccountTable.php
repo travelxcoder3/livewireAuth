@@ -21,16 +21,8 @@ class AccountTable
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'customer.name', 'label' => 'العميل'],
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
-            ['key' => 'actions', 'label' => 'الإجراءات', 'format' => 'custom'],
+            ['key' => 'actions', 'label' => 'الإجراءات', 'format' => 'custom','buttons' => ['pdf']],
         ];
-
-        // إذا كان هذا هو تقرير الحسابات فقط، نزيل عمود "الإجراءات"
-        if (request()->is('agency/reports/accounts')) {
-            // إزالة العمود "الإجراءات"
-            $columns = array_filter($columns, function ($col) {
-                return $col['key'] !== 'actions';
-            });
-        }
 
         // إرجاع الأعمدة بعد التصفية (إذا تمت)
         return $columns;

@@ -12,6 +12,7 @@ use Livewire\Attributes\Layout;
 use App\Exports\SalesReportExport;
 use Spatie\Browsershot\Browsershot;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Tables\SalesTable;
 use Illuminate\Support\Facades\Auth;
 
 #[Layout('layouts.agency')]
@@ -76,9 +77,9 @@ class SalesReport extends Component
                 ->waitUntilNetworkIdle()
                 ->pdf()
         )->withHeaders([
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="sales-full-report.pdf"',
-        ]);
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="sales-full-report.pdf"',
+                ]);
     }
 
     public function exportToExcel()
@@ -142,10 +143,10 @@ class SalesReport extends Component
     {
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
             $q->where('name', 'قائمة الخدمات')
-            ->where(function($query) {
-                $query->where('created_by_agency', auth()->user()->agency_id)
-                      ->orWhereNull('created_by_agency');
-            });
+                ->where(function ($query) {
+                    $query->where('created_by_agency', auth()->user()->agency_id)
+                        ->orWhereNull('created_by_agency');
+                });
         })->orderBy('order')->get();
 
         $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
@@ -185,7 +186,7 @@ class SalesReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $salesQuery = Sale::with(['user','service','provider','account','customer'])
+        $salesQuery = Sale::with(['user', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
@@ -208,10 +209,29 @@ class SalesReport extends Component
 
         return view('livewire.agency.reportsView.sales-report', [
             'sales' => $sales,
+            'columns' => SalesTable::columns(), // ✅ هذا السطر هو الحل
             'totalSales' => $this->totalSales,
             'serviceTypes' => $this->serviceTypes,
             'providers' => $this->providers,
             'customers' => $this->customers
         ]);
+    }
+
+    public function printPdf($saleId)
+    {
+        $sale = Sale::with(['customer', 'provider', 'user', 'service'])->findOrFail($saleId);
+
+        $html = view('reports.sale-single', compact('sale'))->render();
+
+        $pdf = Browsershot::html($html)
+            ->format('A4')
+            ->landscape()
+            ->margins(10, 10, 10, 10)
+            ->pdf();
+
+        return response()->streamDownload(
+            fn() => print ($pdf),
+            'sale-details-' . $sale->id . '.pdf'
+        );
     }
 }

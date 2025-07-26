@@ -428,6 +428,21 @@
             align-items: center;
             justify-content: center;
         }
+        /* إخفاء placeholder عند التركيز */
+input:focus::placeholder,
+textarea:focus::placeholder,
+select:focus::placeholder {
+    opacity: 0 !important;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* لضمان إخفاء اللون أيضًا */
+input:focus::placeholder,
+textarea:focus::placeholder,
+select:focus::placeholder {
+    color: transparent !important;
+}
+
         
         /* تنسيق ثابت للـ file input */
         input[type="file"] {

@@ -21,13 +21,7 @@ class AllCollections extends Component
         $this->loadSales();
     }
 
-    public function loadSales()
-    {
-        $this->sales = Sale::with('collections')
-            ->where('agency_id', auth()->user()->agency_id)
-            ->latest()
-            ->get();
-    }
+  
 
     public function getPaymentStatus($sale)
     {
@@ -66,4 +60,30 @@ class AllCollections extends Component
         return view('livewire.agency.all-collections')
             ->layout('layouts.agency');
     }
+
+   
+
+    public function loadSales()
+    {
+        $query = Sale::with('collections')
+            ->where('agency_id', auth()->user()->agency_id)
+            ->latest();
+
+        if (!empty($this->search)) {
+            $query->where(function($q) {
+                $q->where('beneficiary_name', 'like', '%'.$this->search.'%')
+                  ->orWhere('usd_sell', 'like', '%'.$this->search.'%')
+                  ->orWhere('id', 'like', '%'.$this->search.'%');
+            });
+        }
+
+        $this->sales = $query->get();
+    }
+
+    public function updatedSearch()
+    {
+        $this->loadSales();
+    }
+
+    // ... باقي الدوال الموجودة سابقاً ...
 }

@@ -1,10 +1,14 @@
 @php
     use Carbon\Carbon;
+    // جلب مسار الشعار وقراءته
+    $logoPath = public_path('images/saas-logo.svg');
+    $logoData = file_exists($logoPath)
+        ? base64_encode(file_get_contents($logoPath))
+        : null;
 @endphp
 
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
     <meta charset="UTF-8">
     <title>تقرير المبيعات</title>
@@ -13,60 +17,69 @@
             font-family: 'DejaVu Sans', sans-serif;
             direction: rtl;
             font-size: 12px;
+            margin: 20px;
         }
-
-        .header,
-        .footer {
-            text-align: center;
+        .header {
+            position: relative;
+            height: 140px;    /* ارتفاع كافٍ لعنصرين رأس */
             margin-bottom: 20px;
         }
-
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
+        .logo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 180px;
+            height: auto;
         }
-
+        .title {
+            position: absolute;
+            top: 50px;        /* نزلنا العنوان سطرين */
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+            font-size: 30px;
+            font-weight: bold;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 25px;
         }
-
-        table th,
-        table td {
+        table th, table td {
             border: 1px solid #aaa;
             padding: 6px;
             text-align: center;
         }
-
         table th {
             background-color: #eee;
         }
-
         .total {
-            text-align: left;
+            text-align: right;
             font-weight: bold;
             margin-top: 20px;
         }
+        .total p {
+            margin: 0;
+            line-height: 1.2;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 10px;
+            color: #666;
+        }
     </style>
 </head>
-
 <body>
 
     <div class="header">
-        <h2>تقرير المبيعات</h2>
-        <p>{{ $agency->name }} - {{ Carbon::now()->translatedFormat('Y-m-d') }}</p>
-        <p>
-            @if ($startDate)
-                من تاريخ: {{ Carbon::parse($startDate)->format('Y-m-d') }}
-            @endif
-            @if ($endDate)
-                إلى تاريخ: {{ Carbon::parse($endDate)->format('Y-m-d') }}
-            @endif
-        </p>
+        @if($logoData)
+            <img src="data:image/svg+xml;base64,{{ $logoData }}" alt="شعار الشركة" class="logo">
+        @endif
+        <h2 class="title">تقرير المبيعات</h2>
     </div>
-    <table border="1" cellpadding="5" cellspacing="0" width="100%">
+
+    <table>
         <thead>
             <tr>
                 <th>التاريخ</th>
@@ -82,14 +95,11 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($sales as $sale)
+            @forelse($sales as $sale)
                 <tr>
                     <td>{{ $sale->created_at->format('Y-m-d') }}</td>
                     <td>{{ optional($sale->user)->name ?? '-' }}</td>
-
-                    {{-- عرض اسم الخدمة عبر العلاقة service --}}
                     <td>{{ optional($sale->service)->label ?? '-' }}</td>
-
                     <td>{{ optional($sale->provider)->name ?? '-' }}</td>
                     <td>{{ optional($sale->customer)->name ?? '-' }}</td>
                     <td style="text-align: right;">{{ number_format($sale->usd_sell, 2) }}</td>
@@ -98,19 +108,23 @@
                     <td>{{ ucfirst(str_replace('_', ' ', $sale->customer_via)) }}</td>
                     <td>{{ ucfirst(str_replace('_', ' ', $sale->payment_method)) }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="10">لا توجد بيانات</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 
-
     <div class="total">
-        الإجمالي: {{ number_format($totalSales, 2) }} USD
+        <p>الإجمالي: {{ number_format($totalSales, 2) }} USD</p>
+        <p>المستخدم: {{ auth()->user()->name }}</p>
+        <p>بتاريخ: {{ Carbon::now()->translatedFormat('j-n-Y') }}</p>
     </div>
 
     <div class="footer">
-        تم إنشاء التقرير في: {{ Carbon::now()->translatedFormat('Y-m-d H:i:s') }}
+        تم إنشاء التقرير في {{ Carbon::now()->translatedFormat('Y-m-d H:i:s') }}
     </div>
 
 </body>
-
 </html>

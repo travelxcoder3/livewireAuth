@@ -160,10 +160,10 @@ class AccountsReport extends Component
     {
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
             $q->where('name', 'قائمة الخدمات')
-            ->where(function($query) {
-                $query->where('created_by_agency', auth()->user()->agency_id)
-                      ->orWhereNull('created_by_agency');
-            });
+                ->where(function ($query) {
+                    $query->where('created_by_agency', auth()->user()->agency_id)
+                        ->orWhereNull('created_by_agency');
+                });
         })->orderBy('order')->get();
 
         $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
@@ -251,4 +251,23 @@ class AccountsReport extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
     }
+    public function printPdf($saleId)
+    {
+        $sale = \App\Models\Sale::with(['customer', 'provider', 'user', 'service'])->findOrFail($saleId);
+
+        $html = view('reports.account-single', compact('sale'))->render();
+
+        $pdf = \Spatie\Browsershot\Browsershot::html($html)
+            ->format('A4')
+            ->margins(10, 10, 10, 10)
+            ->pdf();
+
+        return response()->streamDownload(
+            fn() => print ($pdf),
+            'account-details-' . $sale->id . '.pdf'
+        );
+    }
+
+
+
 }

@@ -1,26 +1,27 @@
 @php
     use Carbon\Carbon;
-    // جلب مسار الشعار وقراءته
     $logoPath = public_path('images/saas-logo.svg');
     $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
 @endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
 <head>
     <meta charset="UTF-8">
-    <title>تقرير الحسابات</title>
+    <title>تفاصيل عملية البيع</title>
     <style>
         body {
             font-family: 'DejaVu Sans', sans-serif;
             direction: rtl;
-            font-size: 12px;
+            font-size: 13px;
             margin: 20px;
         }
 
         .header {
             position: relative;
             height: 120px;
+            /* ارتفاع كافٍ ليحمل الشعار والعنوان */
             margin-bottom: 20px;
         }
 
@@ -29,6 +30,7 @@
             top: 0;
             left: 0;
             width: 180px;
+            /* حجم أكبر للشعار */
             height: auto;
         }
 
@@ -38,14 +40,14 @@
             left: 50%;
             transform: translate(-50%, -50%);
             margin: 0;
-            font-size: 30px;
+            font-size: 20px;
             font-weight: bold;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 25px;
+            margin-top: 10px;
         }
 
         table th,
@@ -57,17 +59,6 @@
 
         table th {
             background-color: #eee;
-        }
-
-        .total {
-            text-align: right;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-
-        .total p {
-            margin: 0;
-            line-height: 1.2;
         }
 
         .footer {
@@ -85,50 +76,45 @@
         @if ($logoData)
             <img src="data:image/svg+xml;base64,{{ $logoData }}" alt="شعار الشركة" class="logo">
         @endif
-        <h2 class="title">تقرير الحسابات</h2>
+        <h2 class="title">تفاصيل عملية البيع</h2>
     </div>
 
     <table>
         <thead>
             <tr>
                 <th>التاريخ</th>
-                <th>العميل</th>
-                <th>نوع الخدمة</th>
+                <th>الموظف</th>
+                <th>المستفيد</th>
+                <th>الخدمة</th>
                 <th>المزود</th>
-                <th>المبلغ (USD)</th>
-                <th>المرجع</th>
                 <th>PNR</th>
+                <th>المرجع</th>
+                <th>سعر البيع</th>
+                <th>سعر الشراء</th>
+                <th>العميل</th>
+                <th>الحالة</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($sales as $sale)
-                <tr>
-                    <td>{{ $sale->created_at?->format('Y-m-d') }}</td>
-                    <td>{{ $sale->customer->name ?? '-' }}</td>
-                    <td>{{ $sale->service->label ?? '-' }}</td>
-                    <td>{{ $sale->provider->name ?? '-' }}</td>
-                    <td>{{ number_format($sale->usd_sell, 2) }}</td>
-                    <td>{{ $sale->reference }}</td>
-                    <td>{{ $sale->pnr }}</td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="7">لا توجد بيانات</td>
-                </tr>
-            @endforelse
+            <tr>
+                <td>{{ $sale->sale_date }}</td>
+                <td>{{ $sale->user->name ?? '-' }}</td>
+                <td>{{ $sale->beneficiary_name }}</td>
+                <td>{{ $sale->service->label ?? '-' }}</td>
+                <td>{{ $sale->provider->name ?? '-' }}</td>
+                <td>{{ $sale->pnr }}</td>
+                <td>{{ $sale->reference }}</td>
+                <td>{{ number_format($sale->usd_sell, 2) }} USD</td>
+                <td>{{ number_format($sale->usd_buy, 2) }} USD</td>
+                <td>{{ $sale->customer->name ?? '-' }}</td>
+                <td>{{ $sale->status }}</td>
+            </tr>
         </tbody>
     </table>
-
-    <div class="total">
-        <p>الإجمالي: {{ number_format($totalSales, 2) }} USD</p>
-        <p>المستخدم: {{ auth()->user()->name }}</p>
-        <p>بتاريخ: {{ Carbon::now()->translatedFormat('j-n-Y') }}</p>
-    </div>
-
+    {{-- توقيع/ختم أو توقيت الإنشاء في الأسفل --}}
     <div class="footer">
         تم إنشاء التقرير في {{ Carbon::now()->translatedFormat('Y-m-d H:i:s') }}
     </div>
-
 </body>
 
 </html>
