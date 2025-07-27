@@ -17,8 +17,8 @@ class ReportController extends Controller
     $user = Auth::user();
     $agency = $user->agency;
 
-    $query = Sale::with(['customer', 'serviceType', 'provider', 'account']);
-
+    $query = Sale::with(['customer', 'serviceType', 'provider', 'account'])
+    ->where('agency_id', $agency->id); // ✅ عرض مبيعات الوكالة فقط
     // إضافة تصفية المستخدم - عرض مبيعات المستخدم الحالي فقط إلا إذا كان أدمن
     $isAgencyAdmin = $user->hasRole('agency-admin');
     

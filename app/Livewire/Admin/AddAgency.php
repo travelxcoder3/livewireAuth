@@ -181,10 +181,14 @@ class AddAgency extends Component
 ]);
 
 
-        $this->successMessage = 'تمت إضافة الوكالة بنجاح مع تعيين أدمن خاص بها.';
+       session()->flash('message', 'تمت إضافة الوكالة بنجاح مع تعيين أدمن خاص بها.');
+session()->flash('type', 'success');
+
     } catch (\Exception $e) {
         DB::rollBack();
-        $this->addError('general', 'حدث خطأ أثناء إضافة الوكالة: ' . $e->getMessage());
+        session()->flash('message', 'حدث خطأ أثناء إضافة الوكالة: ' . $e->getMessage());
+session()->flash('type', 'error');
+
     }
 }
 

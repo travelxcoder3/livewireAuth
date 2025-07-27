@@ -4,12 +4,7 @@
         <h2 class="text-2xl font-bold" style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
             إدارة العملاء
         </h2>
-
-        @if(session('success'))
-            <div class="bg-white rounded-md px-4 py-2 text-center shadow text-sm" style="color: rgb(var(--primary-700)); border: 1px solid rgba(var(--primary-200), 0.5);">
-                {{ session('success') }}
-            </div>
-        @endif
+         <x-toast />
     </div>
 
     <!-- نموذج الإضافة / التعديل -->
@@ -89,15 +84,4 @@
     @endphp
     <x-data-table :rows="$customers" :columns="$columns" />
 
-    <!-- Toast Success -->
-    @if(session()->has('success'))
-        <div x-data="{ show: true }"
-             x-init="setTimeout(() => show = false, 2000)"
-             x-show="show"
-             x-transition
-             class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm"
-             style="background-color: rgb(var(--primary-500));">
-            {{ session('success') }}
-        </div>
-    @endif
 </div>

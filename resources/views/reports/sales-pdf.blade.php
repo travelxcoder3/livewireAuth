@@ -218,7 +218,8 @@
                         @if($field == 'beneficiary_name')<td>{{ $sale->beneficiary_name }}</td>@endif
                         @if($field == 'customer')<td>{{ $sale->customer->name ?? '-' }}</td>@endif
                        @if($field == 'serviceType')
-    <td>{{ $sale->serviceType->display_name ?? $sale->serviceType->name ?? '-' }}</td>
+                 <td>{{ $sale->serviceType->label ?? '-' }}</td>
+
 @endif
 
                         @if($field == 'provider')<td>{{ $sale->provider->name ?? '-' }}</td>@endif
@@ -226,10 +227,12 @@
     <td>
         @php
             $viaOptions = [
-                'whatsapp' => 'واتساب',
-                'viber' => 'فايبر',
-                'instagram' => 'انستغرام',
-                'other' => 'أخرى',
+                   'facebook' => 'فيسبوك',
+                                                    'call'     => 'اتصال',
+                                                    'instagram'=> 'إنستغرام',
+                                                    'whatsapp' => 'واتساب',
+                                                    'office'   => 'عبر مكتب',
+                                                    'other'    => 'أخرى',
             ];
             $value = strtolower(trim($sale->customer_via ?? ''));
         @endphp
@@ -252,14 +255,14 @@
     <td>
         @php
             $statuses = [
-                'issued'   => 'صادر',
-                'refunded' => 'مسترجع',
-                'canceled' => 'ملغي',
-                'pending'  => 'قيد الانتظار',
-                'reissued' => 'إعادة إصدار',
-                'void'     => 'تم الإلغاء',
-                'paid'     => 'مدفوع',
-                'unpaid'   => 'غير مدفوع',
+                 'paid'      => 'مدفوع - Paid',
+                                                            'unpaid'    => 'غير مدفوع - Unpaid',
+                                                            'issued'    => 'تم الإصدار - Issued',
+                                                            'reissued'  => 'أعيد إصداره - Reissued',
+                                                            'refunded'  => 'تم الاسترداد - Refunded',
+                                                            'canceled'  => 'ملغي - Canceled',
+                                                            'pending'   => 'قيد الانتظار - Pending',
+                                                            'void'      => 'ملغي نهائي - Void',
             ];
         @endphp
         {{ $statuses[$sale->status] ?? '-' }}
@@ -270,9 +273,9 @@
     <td>
         @php
             $methods = [
-                'kash' => 'كاش',
-                'part' => 'جزئي',
-                'all'  => 'كامل',
+               'kash' => 'كامل',
+                                                'part' => 'جزئي',
+                                                'all' => 'لم يدفع',
             ];
         @endphp
         {{ $methods[$sale->payment_method] ?? '-' }}
@@ -284,9 +287,13 @@
     <td>
         @php
             $types = [
-                'creamy' => 'تحصيل',
-                'kash'   => 'كاش',
-                'visa'   => 'فيزا',
+                'cash'            => 'كاش',
+                                                    'transfer'        => 'حوالة',
+                                                    'account_deposit' => 'إيداع حساب',
+                                                    'fund'            => 'صندوق',
+                                                    'from_account'    => 'من حساب',
+                                                    'wallet'          => 'محفظة',
+                                                    'other'           => 'أخرى',
             ];
         @endphp
         {{ $types[$sale->payment_type] ?? '-' }}

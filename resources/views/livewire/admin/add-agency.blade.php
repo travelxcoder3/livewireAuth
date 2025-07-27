@@ -9,6 +9,8 @@
 
 <div>
 <div class="flex flex-col min-h-screen overflow-y-auto">
+    <x-toast />
+
     <!-- القسم العلوي الثابت -->
     <div class="flex-none p-0 bg-gray-50">
         <!-- نموذج إضافة الوكالة -->
@@ -24,22 +26,6 @@
 
 
 
-@if($successMessage)
-            <div
-                x-data="{ show: true }"
-                x-init="setTimeout(() => show = false, 2000)"
-                x-show="show"
-                x-transition
-                class="mb-4 text-white px-4 py-2 rounded-md shadow text-sm text-center"
-                style="background-color: rgb({{ $colors['primary-500'] }});">
-                {{ $successMessage }}
-            </div>
-        @endif
-            @error('general')
-                <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-lg text-center">
-                    {{ $message }}
-                </div>
-            @enderror
 
             <form wire:submit.prevent="save" class="space-y-4 text-sm" id="mainForm">
                 @php

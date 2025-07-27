@@ -9,11 +9,6 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold text-black">قوائم الوكالة</h2>
-        <button wire:click="$set('showRequestModal', true)"
-            class="text-white font-bold px-4 py-2 rounded-md text-sm transition duration-300 hover:shadow-lg"
-            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-            + طلب قائمة جديدة
-        </button>
     </div>
 
     <!-- القوائم -->
@@ -71,9 +66,9 @@
                                         <input type="text" wire:model.defer="editingItemLabel"
                                             class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm">
                                             <button wire:click="updateItem"
-                                                class="px-2 py-1 text-xs rounded border bg-white transition 
-                                                    border-[rgb(var(--primary-500))] 
-                                                    text-[rgb(var(--primary-600))] 
+                                                class="px-2 py-1 text-xs rounded border bg-white transition
+                                                    border-[rgb(var(--primary-500))]
+                                                    text-[rgb(var(--primary-600))]
                                                     hover:bg-[rgba(var(--primary-100), 0.3)]">
                                                 حفظ
                                             </button>
@@ -89,9 +84,9 @@
                                 @if (!$list->is_system || $item->created_by_agency)
                                     <div class="flex gap-2">
                                     <button wire:click="startEditItem({{ $item->id }})"
-                                            class="px-2 py-1 text-xs rounded border bg-white transition 
-                                                border-[rgb(var(--primary-500))] 
-                                                text-[rgb(var(--primary-600))] 
+                                            class="px-2 py-1 text-xs rounded border bg-white transition
+                                                border-[rgb(var(--primary-500))]
+                                                text-[rgb(var(--primary-600))]
                                                 hover:bg-[rgba(var(--primary-100), 0.3)]"
                                             >
                                             تعديل
@@ -113,9 +108,9 @@
                                             <input type="text" wire:model.defer="editingSubItemLabel"
                                                 class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
                                                 <button wire:click="updateSubItem"
-                                                    class="px-2 py-1 text-xs rounded border bg-white transition 
-                                                        border-[rgb(var(--primary-500))] 
-                                                        text-[rgb(var(--primary-600))] 
+                                                    class="px-2 py-1 text-xs rounded border bg-white transition
+                                                        border-[rgb(var(--primary-500))]
+                                                        text-[rgb(var(--primary-600))]
                                                         hover:bg-[rgba(var(--primary-100), 0.3)]">
                                                     حفظ
                                                 </button>
@@ -130,9 +125,9 @@
                                     @if (!$list->is_system || $sub->created_by_agency)
                                         <div class="flex gap-1">
                                         <button wire:click="startEditSubItem({{ $sub->id }})"
-                                                class="px-2 py-1 text-xs rounded border bg-white transition 
-                                                    border-[rgb(var(--primary-500))] 
-                                                    text-[rgb(var(--primary-600))] 
+                                                class="px-2 py-1 text-xs rounded border bg-white transition
+                                                    border-[rgb(var(--primary-500))]
+                                                    text-[rgb(var(--primary-600))]
                                                     hover:bg-[rgba(var(--primary-100), 0.3)]"
                                                 >
                                                 تعديل
@@ -170,116 +165,6 @@
         @endforeach
 
     </div>
-
-
-    <!-- Request Modal (المعدل) -->
-    @if ($showRequestModal)
-    <div class="fixed inset-0 z-50 flex items-start justify-center pt-24 backdrop-blur-sm"
-                style="background-color: rgba(0,0,0,0.4);">
-            <div
-                class="bg-white w-full max-w-2xl rounded-lg shadow-xl overflow-hidden transform scale-100 sm:scale-95 transition-all duration-300">
-                <div class="p-6">
-                    <!-- التبويبات -->
-                    <div class="flex border-b mb-4">
-                        <button wire:click="$set('requestTab', 'create')"
-                            class="px-4 py-2 text-sm font-bold transition duration-200
-        {{ $requestTab === 'create' ? 'text-primary-600 border-b-2 border-primary-500' : 'text-gray-500 hover:text-primary-500' }}">
-                            طلب
-                        </button>
-                        <button wire:click="$set('requestTab', 'track')"
-                            class="px-4 py-2 text-sm font-bold transition duration-200
-        {{ $requestTab === 'track' ? 'text-primary-600 border-b-2 border-primary-500' : 'text-gray-500 hover:text-primary-500' }}">
-                            تعقب الطلبات
-                        </button>
-                    </div>
-
-
-                    <!-- محتوى تبويب "طلب" -->
-                    @if ($requestTab === 'create')
-                        <form wire:submit.prevent="requestList">
-                            <h3 class="text-lg font-semibold mb-4">طلب إنشاء قائمة جديدة</h3>
-
-                            <input type="text" wire:model.defer="requestedListName" placeholder="اسم القائمة"
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none mb-4"
-                                style="border-color: rgb(var(--primary-500)); box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);">
-
-                            @error('requestedListName')
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
-
-                            <textarea wire:model.lazy="requestReason" rows="3"
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none mb-4"
-                                placeholder="سبب الطلب (اختياري)"
-                                style="border-color: rgb(var(--primary-500)); box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);"></textarea>
-
-                            @error('requestReason')
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
-
-                            <div class="flex justify-end gap-2">
-                                <button type="button" wire:click="$set('showRequestModal', false)"
-                                    class="text-gray-600 hover:text-black text-sm font-medium">إلغاء</button>
-
-                                <button type="submit" wire:loading.attr="disabled"
-                                    class="text-white font-bold px-4 py-2 rounded-md text-sm transition duration-300"
-                                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                                    <span wire:loading.remove wire:target="requestList">إرسال الطلب</span>
-                                    <span wire:loading wire:target="requestList">
-                                        <svg class="animate-spin h-4 w-4 text-white"
-                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10"
-                                                stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                            </path>
-                                        </svg>
-                                    </span>
-                                </button>
-                            </div>
-                        </form>
-                    @endif
-
-
-
-                    <!-- محتوى تبويب "تعقب" -->
-                    @if ($requestTab === 'track')
-                        <h3 class="text-lg font-semibold mb-4">قوائم تم طلبها مسبقًا</h3>
-                        <ul class="space-y-2 max-h-60 overflow-y-auto">
-                            @php
-                                $agencyId = Auth::user()->agency_id;
-                                $requestedLists = \App\Models\DynamicList::where('is_requested', true)
-                                    ->where('requested_by_agency', $agencyId)
-                                    ->orderByDesc('created_at')
-                                    ->get();
-                            @endphp
-                            @forelse($requestedLists as $list)
-                                <li class="border rounded-md p-2 text-sm">
-                                    <div class="font-bold">{{ $list->name }}</div>
-                                    <div class="text-xs mt-1 text-gray-600">
-                                        الحالة:
-                                        @if (is_null($list->is_approved))
-                                            <span class="text-yellow-500">قيد المراجعة</span>
-                                        @elseif ($list->is_approved)
-                                            <span class="text-green-600">مقبولة</span>
-                                        @else
-                                            <span class="text-red-600">مرفوضة</span>
-                                        @endif
-                                    </div>
-                                </li>
-                            @empty
-                                <li class="text-center text-gray-500 text-sm">لا توجد طلبات حتى الآن.</li>
-                            @endforelse
-                        </ul>
-
-                        <div class="mt-4 text-end">
-                            <button wire:click="$set('showRequestModal', false)"
-                                class="text-gray-600 hover:text-black text-sm font-medium">إغلاق</button>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    @endif
     <!-- Theme Styles -->
     <style>
         input:focus,

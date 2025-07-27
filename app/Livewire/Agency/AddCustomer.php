@@ -56,7 +56,9 @@ public function save()
             'address' => $this->address,
             'has_commission' => $this->has_commission,
         ]);
-        session()->flash('success', 'تم تحديث بيانات العميل بنجاح');
+        session()->flash('message', 'تم تحديث بيانات العميل بنجاح');
+        session()->flash('type', 'success');
+
     } else {
         // إضافة جديد
         Customer::create([
@@ -67,7 +69,9 @@ public function save()
             'address' => $this->address,
             'has_commission' => $this->has_commission,
         ]);
-        session()->flash('success', 'تم إضافة العميل بنجاح');
+     session()->flash('message', 'تم إضافة العميل بنجاح');
+     session()->flash('type', 'success');
+
     }
 
     $this->reset(['name', 'email', 'phone', 'address', 'editingId']);

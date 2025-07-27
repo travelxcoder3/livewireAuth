@@ -1,5 +1,7 @@
 <div>
     <div class="flex flex-col h-screen overflow-hidden">
+            <x-toast />
+
         <!-- القسم العلوي الثابت -->
         <div class="flex-none p-4 bg-gray-50">
             <!-- عنوان الصفحة -->
@@ -47,59 +49,67 @@
                         </button>
                         <!-- مودال تغيير كلمة المرور -->
                         @if ($showPasswordModal)
-                            <div
-                                class="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
-                                <div class="bg-white/90 rounded-lg p-6 w-full md:w-1/3 shadow-xl">
-                                    <div class="flex justify-between items-center mb-4">
-                                        <h3 class="text-xl font-bold text-gray-900">تغيير كلمة مرور الوكالة</h3>
-                                    </div>
-                                    <form wire:submit.prevent="updatePassword">
-                                        <div class="mb-4">
-                                            <label class="block text-gray-700 mb-2">اختيار الوكالة</label>
-                                            <select wire:model="selectedAgencyId" required
-                                                class="px-4 py-2 border rounded-lg w-full">
-                                                <option value="">-- اختر وكالة --</option>
-                                                @foreach ($agencies as $agency)
-                                                    <option value="{{ $agency->id }}">{{ $agency->name }}</option>
-                                                @endforeach
-                                            </select>
-                                            @error('selectedAgencyId')
-                                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                                            @enderror
-                                        </div>
-                                        <div class="mb-4">
-                                            <label class="block text-gray-700 mb-2">كلمة المرور الجديدة</label>
-                                            <input type="password" wire:model="newPassword" required
-                                                class="px-4 py-2 border rounded-lg w-full">
-                                            @error('newPassword')
-                                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                                            @enderror
-                                        </div>
-                                        <div class="mb-4">
-                                            <label class="block text-gray-700 mb-2">تأكيد كلمة المرور الجديدة</label>
-                                            <input type="password" wire:model="confirmPassword" required
-                                                class="px-4 py-2 border rounded-lg w-full">
-                                            @error('confirmPassword')
-                                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                                            @enderror
-                                        </div>
-                                        <div class="flex justify-end gap-3 mt-4">
-                                            <!-- زر الإلغاء -->
-                                            <button type="button" wire:click="$set('showPasswordModal', false)"
-                                                class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition duration-200 shadow-sm hover:shadow-md">
-                                                إلغاء
-                                            </button>
+                           <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-start pt-24 z-50">
+    <div class="bg-white/90 rounded-lg p-6 w-full md:w-1/3 shadow-xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900">تغيير كلمة مرور الوكالة</h3>
+        </div>
+        <form wire:submit.prevent="updatePassword">
+            <!-- حقل اختيار الوكالة باستخدام select-field component -->
+            <x-select-field
+                label="اختيار الوكالة"
+                wireModel="selectedAgencyId"
+                :options="$agencies->pluck('name', 'id')->toArray()"
+                placeholder="-- اختر وكالة --"
+                required
+                errorName="selectedAgencyId"
+                class="mb-4"
+            />
 
-                                            <!-- زر التحديث -->
-                                            <button type="submit"
-                                                onclick="return confirm('هل أنت متأكد من تغيير كلمة مرور مدير هذه الوكالة؟')"
-                                                class="px-4 py-2 rounded-lg border border-[rgb(var(--primary-500))] bg-white text-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-50))] transition duration-200 shadow-sm hover:shadow-md">
-                                                تحديث
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
+            <!-- حقل كلمة المرور الجديدة باستخدام input-field component -->
+            <x-input-field
+                type="password"
+                label="كلمة المرور الجديدة"
+                wireModel="newPassword"
+                required
+                errorName="newPassword"
+                class="mb-4"
+            />
+
+            <!-- حقل تأكيد كلمة المرور باستخدام input-field component -->
+            <x-input-field
+                type="password"
+                label="تأكيد كلمة المرور الجديدة"
+                wireModel="confirmPassword"
+                required
+                errorName="confirmPassword"
+                class="mb-4"
+            />
+
+            <div class="flex justify-end gap-3 mt-4">
+                <!-- زر الإلغاء -->
+                <x-primary-button 
+                    type="button" 
+                    wire:click="$set('showPasswordModal', false)"
+                    color="white"
+                    textColor="gray-700"
+                    :gradient="false"
+                    class="border border-gray-300 hover:bg-gray-50"
+                >
+                    إلغاء
+                </x-primary-button>
+
+                <!-- زر التحديث -->
+                <x-primary-button 
+                    type="submit"
+                    textColor="white"
+                >
+                    تحديث
+                </x-primary-button>
+            </div>
+        </form>
+    </div>
+</div>
                             @if (session('error'))
                                 <div class="mb-4 p-3 bg-red-100 border border-red-200 text-red-800 rounded-lg text-sm">
                                     {{ session('error') }}
@@ -117,23 +127,20 @@
             </div>
 
             <!-- رسائل التنبيه -->
-            @if (session('message'))
-                <div
-                    class="mt-4 p-3 bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-lg text-center text-sm">
-                    {{ session('message') }}
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="mt-4 p-3 bg-red-100 border border-red-200 text-red-800 rounded-lg text-center text-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
-            @if (isset($successMessage) && $successMessage)
-                <div
-                    class="mt-4 p-3 bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-lg text-center text-sm">
-                    {{ $successMessage }}
-                </div>
-            @endif
+         <!-- رسائل التنبيه -->
+   
+
+                @if (session('error'))
+                    <div class="mt-4 p-3 bg-red-100 ...">
+                        {{ session('error') }}
+                    </div>
+                @endif
+                @if (isset($successMessage) && $successMessage)
+                    <div class="mt-4 p-3 bg-emerald-100 ...">
+                        {{ $successMessage }}
+                    </div>
+                @endif
+
         </div>
 
         <!-- القسم السفلي مع الجدول القابل للتمرير -->

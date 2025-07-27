@@ -63,23 +63,34 @@ class AllCollections extends Component
 
    
 
-    public function loadSales()
-    {
-        $query = Sale::with('collections')
+public function loadSales()
+{
+    $query = Sale::with('collections')
         ->where('agency_id', auth()->user()->agency_id)
-        ->where('payment_method', '!=', 'all') // ✅ استثناء المدفوعة بالكامل
+        ->where(function ($q) {
+            $q->where('payment_method', '!=', 'all') // كل العمليات عدا "all"
+              ->orWhere(function ($q2) {
+                  // إذا كانت all ولكن لم يتم تحصيلها بالكامل
+                  $q2->where('payment_method', 'all')
+                     ->whereHas('collections', function ($q3) {
+                         $q3->selectRaw('SUM(amount) as total')->groupBy('sale_id')
+                             ->havingRaw('SUM(amount) < sales.usd_sell');
+                     })
+                     ->orWhereDoesntHave('collections'); // أو لا يوجد تحصيل أصلاً
+              });
+        })
         ->latest();
 
-        if (!empty($this->search)) {
-            $query->where(function($q) {
-                $q->where('beneficiary_name', 'like', '%'.$this->search.'%')
-                  ->orWhere('usd_sell', 'like', '%'.$this->search.'%')
-                  ->orWhere('id', 'like', '%'.$this->search.'%');
-            });
-        }
-
-        $this->sales = $query->get();
+    if (!empty($this->search)) {
+        $query->where(function($q) {
+            $q->where('beneficiary_name', 'like', '%'.$this->search.'%')
+              ->orWhere('usd_sell', 'like', '%'.$this->search.'%')
+              ->orWhere('id', 'like', '%'.$this->search.'%');
+        });
     }
+
+    $this->sales = $query->get();
+}
 
     public function updatedSearch()
     {

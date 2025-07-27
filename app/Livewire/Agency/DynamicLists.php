@@ -23,11 +23,6 @@ class DynamicLists extends Component
     public array $itemLabel = [];
     public ?int $editingItemId = null;
     public string $editingItemLabel = '';
-
-    public bool $showRequestModal = false;
-    public string $requestedListName = '';
-    public string $requestTab = 'create';
-    public string $requestReason = '';
     public ?int $agencyId;
 
 
@@ -113,28 +108,7 @@ class DynamicLists extends Component
         $this->itemLabel[$listId] = '';
         $this->dispatch('item-added');
     }
-
-    public function requestList()
-    {
-        $this->validate([
-            'requestedListName' => 'required|string|max:255',
-            'requestReason' => 'nullable|string|max:500',
-        ]);
-
-        DynamicList::create([
-            'name' => $this->requestedListName,
-            'is_requested' => true,
-            'is_approved' => null,
-            'requested_by_agency' => Auth::user()->agency_id,
-            'agency_id' => Auth::user()->agency_id,
-            'request_reason' => $this->requestReason,
-        ]);
-
-        $this->reset('requestedListName', 'requestReason', 'showRequestModal');
-        $this->dispatch('list-requested');
-    }
-
-    public function startEditItem($itemId)
+        public function startEditItem($itemId)
     {
         $item = DynamicListItem::findOrFail($itemId);
 

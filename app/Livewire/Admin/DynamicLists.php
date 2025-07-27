@@ -11,7 +11,6 @@ use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use App\Services\NotificationService;
 
 
 #[Layout('layouts.admin')]
@@ -35,8 +34,6 @@ class DynamicLists extends Component
     public array $subItemLabel = [];
     public ?int $editingSubItemId = null;
     public string $editingSubItemLabel = '';
-    public bool $showRequestsModal = false;
-
 
     /**
      * Initialize component
@@ -105,7 +102,7 @@ class DynamicLists extends Component
      */
     public function canEditList(DynamicList $list): bool
     {
-        return !$list->is_system || Auth::user()->hasRole('super-admin');
+        return !$list->is_system;
     }
 
     /**
@@ -113,7 +110,7 @@ class DynamicLists extends Component
      */
     public function canDeleteList(DynamicList $list): bool
     {
-        return !$list->is_system || Auth::user()->hasRole('super-admin');
+        return !$list->is_system;
     }
 
     /**
@@ -392,36 +389,6 @@ class DynamicLists extends Component
         $this->dispatch('subitem-deleted');
         $this->loadLists();
     }
-    public function approve($id)
-    {
-        $list = DynamicList::findOrFail($id);
-        $list->update(['is_approved' => true]);
-
-        NotificationService::notifyAgencyAboutListDecision(
-            agencyId: $list->agency_id,
-            status: 'approved',
-            listName: $list->name
-        );
-
-        session()->flash('success', 'تمت الموافقة على الطلب.');
-    }
-
-
-    public function reject($id)
-    {
-        $list = DynamicList::findOrFail($id);
-        $list->update(['is_approved' => false]);
-
-        NotificationService::notifyAgencyAboutListDecision(
-            agencyId: $list->agency_id,
-            status: 'rejected',
-            listName: $list->name,
-            reason: $list->request_reason // أو null
-        );
-
-        session()->flash('success', 'تم رفض الطلب.');
-    }
-
     /**
      * Render component
      */

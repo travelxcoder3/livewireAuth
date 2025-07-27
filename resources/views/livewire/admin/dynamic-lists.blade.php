@@ -9,11 +9,6 @@
         <!-- رأس الصفحة -->
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-black">إدارة القوائم</h2>
-            <button wire:click="$set('showRequestsModal', true)"
-                class="text-white font-bold px-4 py-2 rounded-md text-sm transition duration-300 hover:shadow-lg"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                طلبات القوائم
-            </button>
         </div>
 
         <!-- قسم إضافة قائمة جديدة (للسوبر أدمن فقط) -->
@@ -55,7 +50,7 @@
                     <h3 class="text-lg font-bold text-black">{{ $list->name }}</h3>
                     <div class="flex items-center gap-2">
                         <!-- خيارات التعديل والحذف للقائمة -->
-                        @if ($this->canEditList($list))
+                        @if (!$list->is_system)
                             @if ($editingListId === $list->id)
                                 <form wire:submit.prevent="updateList" class="flex items-center gap-2">
                                     <input type="text" wire:model.defer="newListName"
@@ -110,92 +105,6 @@
 
             </div>
         @endforeach
-        <!-- طلبات القوائم -->
-        @if ($showRequestsModal)
-            <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
-                style="background-color: rgba(0,0,0,0.4);">
-                <div
-                    class="bg-white w-full max-w-3xl rounded-lg shadow-xl overflow-hidden transform scale-100 transition-all duration-300">
-                    <div class="p-6">
-                        @if (session()->has('success'))
-                            <div class="text-green-600 text-sm mb-3">
-                                {{ session('success') }}
-                            </div>
-                        @elseif (session()->has('error'))
-                            <div class="text-red-600 text-sm mb-3">
-                                {{ session('error') }}
-                            </div>
-                        @endif
-
-                        <div class="flex justify-between items-center border-b pb-2 mb-4">
-                            <h3 class="text-lg font-bold text-black">طلبات إنشاء القوائم</h3>
-                            <button wire:click="$set('showRequestsModal', false)"
-                                class="text-gray-500 hover:text-black text-xl">&times;</button>
-                        </div>
-
-                        @php
-                            $requests = \App\Models\DynamicList::with('agency')
-                                ->where('is_requested', true)
-                                ->whereNull('is_approved')
-                                ->orderByDesc('created_at')
-                                ->get();
-                        @endphp
-
-                        <div class="space-y-4 max-h-96 overflow-y-auto">
-                            @forelse ($requests as $list)
-                                <div class="border rounded-lg p-4">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <!-- اسم القائمة -->
-                                            <div class="font-bold">{{ $list->name }}</div>
-
-                                            <!-- معلومات الوكالة والتاريخ -->
-                                            <div class="text-sm text-gray-600 mt-1">
-                                                من وكالة: <span
-                                                    class="text-primary-600">{{ $list->agency->name ?? 'غير معروف' }}</span><br>
-                                                تم الطلب بتاريخ: {{ $list->created_at->format('Y-m-d') }}
-                                            </div>
-
-                                            <!-- سبب الطلب: يظهر فقط إذا موجود -->
-                                            @if ($list->request_reason)
-                                                <div
-                                                    class="bg-gray-50 border border-dashed border-gray-300 text-gray-700 text-sm p-3 rounded-md mt-2 shadow-sm">
-                                                    <strong class="block mb-1 text-gray-600">📌 سبب الطلب:</strong>
-                                                    {{ $list->request_reason }}
-                                                </div>
-                                            @endif
-
-                                        </div>
-
-                                        <!-- أزرار التحكم -->
-                                        <div class="flex gap-2 mt-4">
-                                            <!-- زر الموافقة -->
-                                            <button wire:click="approve({{ $list->id }})"
-                                                class="text-green-600 border border-green-500 hover:bg-green-500 hover:text-white font-bold py-1.5 px-4 rounded-md shadow transition-all duration-200">
-                                                موافقة
-                                            </button>
-
-                                            <!-- زر الرفض -->
-                                            <button wire:click="reject({{ $list->id }})"
-                                                class="text-red-600 border border-red-500 hover:bg-red-500 hover:text-white font-bold py-1.5 px-4 rounded-md shadow transition-all duration-200">
-                                                رفض
-                                            </button>
-                                        </div>
-
-
-                                    </div>
-                                </div>
-                            @empty
-                                <div class="text-gray-500 text-sm text-center">لا توجد طلبات حالية.</div>
-                            @endforelse
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-        @endif
-
-
     </div>
 
     @script

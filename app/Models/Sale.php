@@ -55,8 +55,10 @@ class Sale extends Model
 
     public function serviceType()
     {
-        return $this->belongsTo(ServiceType::class);
+        return $this->belongsTo(\App\Models\DynamicListItem::class, 'service_type_id');
     }
+
+
 
     public function provider()
     {
