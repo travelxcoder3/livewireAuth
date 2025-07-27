@@ -206,8 +206,10 @@ $this->monthlyAchieved = $monthlyAchievedQuery
 
     public function updateStatsData()
     {
+        $agencyId = Auth::user()->agency_id;
+        $userId = Auth::user()->id;
+        $isAdmin = Auth::user()->hasRole('agency-admin');
         if ($this->statsViewType === 'monthly') {
-            // توليد آخر 5 أشهر (سنة/شهر)
             $months = collect();
             $now = now()->startOfMonth();
             for ($i = 4; $i >= 0; $i--) {
@@ -219,128 +221,164 @@ $this->monthlyAchieved = $monthlyAchievedQuery
                     'operations_count' => 0,
                 ]);
             }
-
-            $query = Sale::select(
+            // استعلام مبيعات كل شهر
+            $sales = Sale::select(
                 DB::raw('YEAR(sale_date) as year'),
                 DB::raw('MONTH(sale_date) as month'),
-                DB::raw('SUM(amount_paid) as total_sales'),
+                DB::raw('SUM(amount_paid) as direct_sales'),
                 DB::raw('COUNT(*) as operations_count')
             )
-            ->where('agency_id', Auth::user()->agency_id);
-            
-            // إضافة فلتر المستخدم فقط إذا لم يكن أدمن
-            if (!Auth::user()->hasRole('agency-admin')) {
-                $query->where('user_id', Auth::user()->id);
+            ->where('agency_id', $agencyId);
+            if (!$isAdmin) {
+                $sales->where('user_id', $userId);
             }
             if ($this->selectedServiceType) {
-                $query->where('service_type_id', $this->selectedServiceType);
+                $sales->where('service_type_id', $this->selectedServiceType);
             }
-            $sales = $query
-                ->groupBy('year', 'month')
+            $sales = $sales->groupBy('year', 'month')
                 ->orderBy('year', 'desc')
                 ->orderBy('month', 'desc')
                 ->get();
-
-            // دمج النتائج مع الأشهر (أي شهر ليس فيه مبيعات يبقى صفر)
+            // استعلام مجموع المحصلات لكل شهر
+            $collections = DB::table('collections')
+                ->join('sales', 'collections.sale_id', '=', 'sales.id')
+                ->select(
+                    DB::raw('YEAR(sales.sale_date) as year'),
+                    DB::raw('MONTH(sales.sale_date) as month'),
+                    DB::raw('SUM(collections.amount) as collected_sales')
+                )
+                ->where('sales.agency_id', $agencyId);
+            if (!$isAdmin) {
+                $collections->where('sales.user_id', $userId);
+            }
+            if ($this->selectedServiceType) {
+                $collections->where('sales.service_type_id', $this->selectedServiceType);
+            }
+            $collections = $collections->groupBy('year', 'month')->get();
+            $collectionsMap = $collections->keyBy(function($row) {
+                return $row->year . '-' . $row->month;
+            });
             $salesMap = $sales->keyBy(function($row) {
                 return $row->year . '-' . $row->month;
             });
-            $final = $months->map(function($item) use ($salesMap) {
+            $final = $months->map(function($item) use ($salesMap, $collectionsMap) {
                 $key = $item['year'] . '-' . $item['month'];
-                if ($salesMap->has($key)) {
-                    $row = $salesMap[$key];
-                    return [
-                        'year' => $row->year,
-                        'month' => $row->month,
-                        'total_sales' => $row->total_sales,
-                        'operations_count' => $row->operations_count,
-                    ];
-                }
-                return $item;
+                $direct_sales = $salesMap[$key]->direct_sales ?? 0;
+                $collected_sales = $collectionsMap[$key]->collected_sales ?? 0;
+                $operations_count = $salesMap[$key]->operations_count ?? 0;
+                return [
+                    'year' => $item['year'],
+                    'month' => $item['month'],
+                    'total_sales' => $direct_sales + $collected_sales,
+                    'operations_count' => $operations_count,
+                ];
             });
             $this->salesByMonth = $final->values()->toArray();
-
-            // حساب عدد العمليات الفعلية للمستخدم الحالي فقط
-            $countQuery = Sale::where('agency_id', Auth::user()->agency_id)
-                ->where('user_id', Auth::user()->id); // فلتر المستخدم الحالي فقط
+            $countQuery = Sale::where('agency_id', $agencyId)
+                ->where('user_id', $userId);
             if ($this->selectedServiceType) {
                 $countQuery->where('service_type_id', $this->selectedServiceType);
             }
             $this->totalSalesCount = $countQuery->count();
         } else if ($this->statsViewType === 'service') {
-            $query = Sale::select(
+            $sales = Sale::select(
                 'service_type_id',
-                DB::raw('SUM(amount_paid) as total_sales'),
+                DB::raw('SUM(amount_paid) as direct_sales'),
                 DB::raw('COUNT(*) as operations_count')
             )
-            ->where('agency_id', Auth::user()->agency_id);
-            
-            // إضافة فلتر المستخدم فقط إذا لم يكن أدمن
-            if (!Auth::user()->hasRole('agency-admin')) {
-                $query->where('user_id', Auth::user()->id);
+            ->where('agency_id', $agencyId);
+            if (!$isAdmin) {
+                $sales->where('user_id', $userId);
             }
-            
-            $this->salesByService = $query
-            ->groupBy('service_type_id')
-            ->with('service')
-            ->get()
-            ->map(function($row) {
+            $sales = $sales->groupBy('service_type_id')->get();
+            $collections = DB::table('collections')
+                ->join('sales', 'collections.sale_id', '=', 'sales.id')
+                ->select(
+                    'sales.service_type_id',
+                    DB::raw('SUM(collections.amount) as collected_sales')
+                )
+                ->where('sales.agency_id', $agencyId);
+            if (!$isAdmin) {
+                $collections->where('sales.user_id', $userId);
+            }
+            $collections = $collections->groupBy('sales.service_type_id')->get();
+            $collectionsMap = $collections->keyBy('service_type_id');
+            $salesMap = $sales->keyBy('service_type_id');
+            $this->salesByService = $sales->map(function($row) use ($collectionsMap) {
+                $collected_sales = $collectionsMap[$row->service_type_id]->collected_sales ?? 0;
+                $total_sales = ($row->direct_sales ?? 0) + $collected_sales;
                 return [
                     'service_type' => $row->service ? $row->service->label : 'غير محدد',
-                    'total_sales' => $row->total_sales,
+                    'total_sales' => $total_sales,
                     'operations_count' => $row->operations_count
                 ];
             })->toArray();
         } else if ($this->statsViewType === 'employee') {
-            $employeeQuery = Sale::select(
+            $sales = Sale::select(
                 'user_id',
-                DB::raw('SUM(COALESCE(usd_sell, amount_paid, 0)) as total_sales'),
+                DB::raw('SUM(amount_paid) as direct_sales'),
                 DB::raw('COUNT(*) as operations_count')
             )
-            ->where('agency_id', Auth::user()->agency_id)
+            ->where('agency_id', $agencyId)
             ->whereNotNull('user_id');
-            
-            // إضافة فلتر المستخدم فقط إذا لم يكن أدمن
-            if (!Auth::user()->hasRole('agency-admin')) {
-                $employeeQuery->where('user_id', Auth::user()->id);
+            if (!$isAdmin) {
+                $sales->where('user_id', $userId);
             }
-            
-            $salesData = $employeeQuery
-            ->groupBy('user_id')
-            ->get();
-            
-            // جلب بيانات المستخدمين بشكل منفصل
-            $userIds = $salesData->pluck('user_id')->toArray();
+            $sales = $sales->groupBy('user_id')->get();
+            $collections = DB::table('collections')
+                ->join('sales', 'collections.sale_id', '=', 'sales.id')
+                ->select(
+                    'sales.user_id',
+                    DB::raw('SUM(collections.amount) as collected_sales')
+                )
+                ->where('sales.agency_id', $agencyId)
+                ->whereNotNull('sales.user_id');
+            if (!$isAdmin) {
+                $collections->where('sales.user_id', $userId);
+            }
+            $collections = $collections->groupBy('sales.user_id')->get();
+            $collectionsMap = $collections->keyBy('user_id');
+            $salesMap = $sales->keyBy('user_id');
+            $userIds = $sales->pluck('user_id')->toArray();
             $users = User::whereIn('id', $userIds)->get()->keyBy('id');
-            
-            $this->salesByMonth = $salesData->map(function($row) use ($users) {
+            $this->salesByMonth = $sales->map(function($row) use ($collectionsMap, $users) {
+                $collected_sales = $collectionsMap[$row->user_id]->collected_sales ?? 0;
+                $total_sales = ($row->direct_sales ?? 0) + $collected_sales;
                 $user = $users->get($row->user_id);
                 return [
                     'employee' => $user ? $user->name : 'مستخدم غير معروف (ID: ' . $row->user_id . ')',
-                    'total_sales' => $row->total_sales,
+                    'total_sales' => $total_sales,
                     'operations_count' => $row->operations_count,
                     'user_id' => $row->user_id
                 ];
             })->toArray();
         } else if ($this->statsViewType === 'branch') {
-            // جلب جميع الفروع (agencies التي parent_id = id الوكالة الحالية)
-            $mainAgencyId = Auth::user()->agency_id;
+            $mainAgencyId = $agencyId;
             $branchIds = \App\Models\Agency::where('parent_id', $mainAgencyId)->pluck('id')->toArray();
-            // أضف الوكالة الرئيسية دائماً
             $branchIds[] = $mainAgencyId;
-            $this->salesByMonth = Sale::select(
+            $sales = Sale::select(
                 'agency_id',
-                DB::raw('SUM(amount_paid) as total_sales'),
+                DB::raw('SUM(amount_paid) as direct_sales'),
                 DB::raw('COUNT(*) as operations_count')
             )
             ->whereIn('agency_id', $branchIds)
-            ->groupBy('agency_id')
-            ->with('agency')
-            ->get()
-            ->map(function($row) {
+            ->groupBy('agency_id')->get();
+            $collections = DB::table('collections')
+                ->join('sales', 'collections.sale_id', '=', 'sales.id')
+                ->select(
+                    'sales.agency_id',
+                    DB::raw('SUM(collections.amount) as collected_sales')
+                )
+                ->whereIn('sales.agency_id', $branchIds)
+                ->groupBy('sales.agency_id')->get();
+            $collectionsMap = $collections->keyBy('agency_id');
+            $salesMap = $sales->keyBy('agency_id');
+            $this->salesByMonth = $sales->map(function($row) use ($collectionsMap) {
+                $collected_sales = $collectionsMap[$row->agency_id]->collected_sales ?? 0;
+                $total_sales = ($row->direct_sales ?? 0) + $collected_sales;
                 return [
                     'branch' => $row->agency ? $row->agency->name : '-',
-                    'total_sales' => $row->total_sales,
+                    'total_sales' => $total_sales,
                     'operations_count' => $row->operations_count
                 ];
             })->toArray();

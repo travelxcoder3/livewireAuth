@@ -115,6 +115,11 @@ class Users extends Component
         if ($user->agency_id != Auth::user()->agency_id) {
             abort(403, 'غير مصرح لك بتعديل مستخدمي الفروع');
         }
+        // حماية: لا يمكن تعديل أدمن الوكالة
+        if ($user->roles->first()?->name === 'agency-admin') {
+            session()->flash('error', 'لا يمكن تعديل مستخدم أدمن الوكالة.');
+            return;
+        }
         $this->editingUser = $user;
         $this->edit_name = $user->name;
         $this->edit_email = $user->email;
@@ -130,6 +135,11 @@ class Users extends Component
         $user = $this->editingUser;
         if ($user->agency_id != Auth::user()->agency_id) {
             abort(403, 'غير مصرح لك بتحديث مستخدمي الفروع');
+        }
+        // حماية: لا يمكن تحديث أدمن الوكالة
+        if ($user->roles->first()?->name === 'agency-admin') {
+            session()->flash('error', 'لا يمكن تعديل مستخدم أدمن الوكالة.');
+            return;
         }
         $this->validate([
             'edit_name' => 'required|string|max:255',
@@ -175,6 +185,11 @@ class Users extends Component
         $user = User::findOrFail($userId);
         if ($user->agency_id != Auth::user()->agency_id) {
             abort(403, 'غير مصرح لك بحذف مستخدمي الفروع');
+        }
+        // حماية: لا يمكن حذف أدمن الوكالة
+        if ($user->roles->first()?->name === 'agency-admin') {
+            session()->flash('error', 'لا يمكن حذف مستخدم أدمن الوكالة.');
+            return;
         }
         $user->delete();
         $this->loadUsers();

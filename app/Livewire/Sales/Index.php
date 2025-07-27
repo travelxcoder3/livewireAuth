@@ -470,7 +470,7 @@ $sales->each(function ($sale) {
             'usd_sell.gte' => 'البيع ≥ الشراء.',
             'amount_paid.max' => 'المبلغ كبير.',
             'customer_id.required' => 'حدد الحساب.',
-            'amount_paid.lt' => 'المبلغ قليل.',
+            'amount_paid.lt' => ' ادخل مبلغ صحيح.',
             'amount_paid.required' => 'أدخل المبلغ.',
             'amount_paid.prohibited' => 'احذف المبلغ.',
             'sale_date.before_or_equal' => 'تاريخ البيع يجب أن يكون اليوم أو تاريخ سابق.',

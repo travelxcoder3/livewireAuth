@@ -19,34 +19,60 @@
                 </div>
             @endif
 
+            <!-- رسائل الخطأ -->
+            @if ($errors->any())
+                <div class="text-red-600 text-center font-semibold mb-4">
+                    @foreach ($errors->all() as $error)
+                        <p>{{ $error }}</p>
+                    @endforeach
+                </div>
+            @endif
+
             <!-- النموذج -->
             <form wire:submit.prevent="updatePassword" class="space-y-4 text-sm">
                 @php
                     $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none bg-white text-xs peer';
-                    $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all 
+                    $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
                                   peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb('.$colors['primary-600'].')]';
                     $containerClass = 'relative mt-1';
                 @endphp
 
-                <x-input-field 
-                name="password"
-                wireModel="password"
-                label="كلمة المرور الجديدة"
-                placeholder="كلمة المرور الجديدة"
-                type="password"
-                errorName="password"
-                wire:model.defer="password"
-            />
+                <!-- كلمة المرور الجديدة -->
+                <div class="{{ $containerClass }}">
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        wire:model.defer="password"
+                        placeholder="كلمة المرور الجديدة"
+                        class="{{ $fieldClass }}"
+                        required
+                        autocomplete="new-password"
+                    />
+                    <label for="password" class="{{ $labelClass }}">
+                        كلمة المرور الجديدة
+                    </label>
+                    @error('password')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
-            <!-- تأكيد كلمة المرور -->
-            <x-input-field 
-                name="password_confirmation"
-                wireModel="password_confirmation"
-                label="تأكيد كلمة المرور"
-                placeholder="تأكيد كلمة المرور"
-                type="password"
-                wire:model.defer="password_confirmation"
-            />
+                <!-- تأكيد كلمة المرور -->
+                <div class="{{ $containerClass }}">
+                    <input
+                        id="password_confirmation"
+                        name="password_confirmation"
+                        type="password"
+                        wire:model.defer="password_confirmation"
+                        placeholder="تأكيد كلمة المرور"
+                        class="{{ $fieldClass }}"
+                        required
+                        autocomplete="new-password"
+                    />
+                    <label for="password_confirmation" class="{{ $labelClass }}">
+                        تأكيد كلمة المرور
+                    </label>
+                </div>
 
                 <!-- زر التحديث -->
                 <button type="submit"

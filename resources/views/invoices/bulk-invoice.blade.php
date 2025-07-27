@@ -6,6 +6,15 @@
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
     $agencyCurrency = Auth::user()?->agency?->currency ?? 'USD';
+
+     use Carbon\Carbon;
+$saleExample = $invoice->sales->first(); // أول عملية
+$logoPath = $saleExample && $saleExample->agency && $saleExample->agency->logo
+    ? storage_path('app/public/' . $saleExample->agency->logo)
+    : null;
+$logoData = $logoPath && file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+$mime = $logoPath && file_exists($logoPath) ? mime_content_type($logoPath) : null;
+
 @endphp
 
 <!DOCTYPE html>
@@ -79,6 +88,15 @@
 <body>
 
     <div class="title">فاتورة مجمعة</div>
+    @if($logoData && $mime)
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img
+            src="data:{{ $mime }};base64,{{ $logoData }}"
+            alt="شعار الوكالة"
+            style="width: 140px; height: 70px; object-fit: contain;"
+        >
+    </div>
+@endif
 
     <div class="top-info">
         <div>

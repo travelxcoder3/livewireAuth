@@ -118,9 +118,8 @@
             <x-navbar.buttons.icon-button icon="fas fa-chart-line" tooltip="التقارير" label="التقارير" href="#"
                 class="!px-2 !py-1" :active="request()->routeIs('agency.reports.sales') || request()->routeIs('agency.reports.accounts')" dropdown="true" />
 
-            <div
+            <div class="dropdown-reports absolute right-0 top-full min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
                 @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportsSales.view'))
-                class="dropdown-reports absolute right-0 top-full min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
                 <x-navbar.buttons.dropdown-link :href="route('agency.reports.sales')" icon="fas fa-chart-bar" label="تقرير المبيعات"
                     :show="true" />
                 @endif

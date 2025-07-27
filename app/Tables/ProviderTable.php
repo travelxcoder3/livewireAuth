@@ -7,10 +7,10 @@ class ProviderTable
     public static function columns($user)
     {
         return [
-            ['key' => 'service.label', 'label' => 'نوع الخدمة'],
             ['key' => 'name', 'label' => 'اسم المزود', 'class' => 'font-medium'],
             ['key' => 'type', 'label' => 'النوع', 'format' => 'badge'],
             ['key' => 'contact_info', 'label' => 'معلومات التواصل'],
+            ['key' => 'service.label', 'label' => 'نوع الخدمة'],
             ['key' => 'status', 'label' => 'الحالة'],
             [
                 'key' => 'actions',

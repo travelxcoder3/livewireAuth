@@ -68,15 +68,22 @@ public function loadSales()
     $query = Sale::with('collections')
         ->where('agency_id', auth()->user()->agency_id)
         ->where(function ($q) {
-            $q->where('payment_method', '!=', 'all') // كل العمليات عدا "all"
+            $q->where('payment_method', '!=', 'all')
               ->orWhere(function ($q2) {
-                  // إذا كانت all ولكن لم يتم تحصيلها بالكامل
                   $q2->where('payment_method', 'all')
                      ->whereHas('collections', function ($q3) {
                          $q3->selectRaw('SUM(amount) as total')->groupBy('sale_id')
                              ->havingRaw('SUM(amount) < sales.usd_sell');
                      })
-                     ->orWhereDoesntHave('collections'); // أو لا يوجد تحصيل أصلاً
+                     ->orWhereDoesntHave('collections');
+              });
+        })
+        // ✅ استثناء العمليات الكاش المدفوعة بالكامل
+        ->where(function ($q) {
+            $q->where('payment_method', '!=', 'kash')
+              ->orWhereHas('collections', function ($q2) {
+                  $q2->selectRaw('SUM(amount) as total')->groupBy('sale_id')
+                      ->havingRaw('SUM(amount) < sales.usd_sell');
               });
         })
         ->latest();
@@ -91,6 +98,7 @@ public function loadSales()
 
     $this->sales = $query->get();
 }
+
 
     public function updatedSearch()
     {

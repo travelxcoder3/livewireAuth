@@ -15,7 +15,6 @@ class EmployeeTable
             ['key' => 'user_name', 'label' => 'اسم المستخدم'],
             ['key' => 'email', 'label' => 'البريد الإلكتروني'],
             ['key' => 'phone', 'label' => 'الهاتف'],
-            ['key' => 'branch', 'label' => 'الفرع'],
             ['key' => 'department.label','label' => 'القسم',],
             ['key' => 'position.label','label' => 'الوظيفة',],
 
