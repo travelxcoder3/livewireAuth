@@ -1,10 +1,31 @@
 @php
     use Carbon\Carbon;
-    // جلب مسار الشعار وقراءته
-    $logoPath = public_path('images/saas-logo.svg');
-    $logoData = file_exists($logoPath)
-        ? base64_encode(file_get_contents($logoPath))
-        : null;
+    use Illuminate\Support\Facades\Log;
+
+    // الحصول على الوكالة من أول عملية بيع
+    $agency = $sales->first()?->agency;
+
+    // بناء مسار الشعار إذا توفر
+    $logoPath = null;
+    if ($agency && !empty($agency->logo)) {
+        $logoPath = storage_path('app/public/' . ltrim($agency->logo, '/'));
+        if (!file_exists($logoPath)) {
+            Log::error('Logo file not found: ' . $logoPath);
+            $logoPath = null;
+        }
+    }
+
+    // تحويل الشعار إلى base64
+    $logoData = null;
+    $mime = 'image/png';
+    if ($logoPath) {
+        try {
+            $logoData = base64_encode(file_get_contents($logoPath));
+            $mime = mime_content_type($logoPath);
+        } catch (Exception $e) {
+            Log::error('Error reading logo: ' . $e->getMessage());
+        }
+    }
 @endphp
 
 <!DOCTYPE html>
@@ -19,49 +40,60 @@
             font-size: 12px;
             margin: 20px;
         }
+
         .header {
             position: relative;
-            height: 140px;    /* ارتفاع كافٍ لعنصرين رأس */
-            margin-bottom: 20px;
+            height: 120px;
+            margin-bottom: 30px;
         }
+
         .logo {
             position: absolute;
             top: 0;
-            left: 0;
-            width: 180px;
-            height: auto;
+            right: 0;
+            max-width: 150px;
+            max-height: 100px;
+            object-fit: contain;
         }
+
         .title {
             position: absolute;
-            top: 50px;        /* نزلنا العنوان سطرين */
-            left: 50%;
-            transform: translateX(-50%);
-            margin: 0;
-            font-size: 30px;
+            top: 50%;
+            right: 50%;
+            transform: translate(50%, -50%);
+            font-size: 28px;
             font-weight: bold;
+            margin: 0;
+            text-align: center;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 25px;
         }
+
         table th, table td {
             border: 1px solid #aaa;
             padding: 6px;
             text-align: center;
         }
+
         table th {
             background-color: #eee;
         }
+
         .total {
             text-align: right;
             font-weight: bold;
             margin-top: 20px;
         }
+
         .total p {
             margin: 0;
             line-height: 1.2;
         }
+
         .footer {
             text-align: center;
             margin-top: 30px;
@@ -74,7 +106,7 @@
 
     <div class="header">
         @if($logoData)
-            <img src="data:image/svg+xml;base64,{{ $logoData }}" alt="شعار الشركة" class="logo">
+            <img src="data:{{ $mime }};base64,{{ $logoData }}" alt="شعار الوكالة" class="logo">
         @endif
         <h2 class="title">تقرير المبيعات</h2>
     </div>
@@ -87,7 +119,7 @@
                 <th>نوع الخدمة</th>
                 <th>المزود</th>
                 <th>حساب العميل</th>
-                <th>(USD) المبلغ</th>
+                <th>المبلغ (USD)</th>
                 <th>المرجع</th>
                 <th>PNR</th>
                 <th>العميل عبر</th>

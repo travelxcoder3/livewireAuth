@@ -21,112 +21,116 @@ class SalesExport implements FromCollection, WithHeadings
         $this->endDate = $endDate;
     }
 
-    public function collection()
-    {
-        $user = Auth::user();
-        $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account', 'user'])
-            ->where('agency_id', $user->agency_id);
+public function collection()
+{
+    $user = Auth::user();
+    $query = Sale::with(['customer', 'serviceType', 'provider', 'user', 'account'])
+        ->where('agency_id', $user->agency_id);
 
-        // إضافة تصفية المستخدم - عرض مبيعات المستخدم الحالي فقط إلا إذا كان أدمن
-        $isAgencyAdmin = $user->hasRole('agency-admin');
-        
-        if (!$isAgencyAdmin) {
-            $query->where('user_id', $user->id);
-        }
-
-        if ($this->startDate && $this->endDate) {
-            $query->whereBetween('sale_date', [$this->startDate, $this->endDate]);
-        }
-
-        $sales = $query->latest()->get();
-
-        return $sales->map(function ($sale) {
-            $data = [];
-            
-            $fieldMap = [
-                'sale_date' => $sale->sale_date,
-                'beneficiary_name' => $sale->beneficiary_name,
-                'customer' => optional($sale->customer)->name,
-                'serviceType' => optional($sale->serviceType)->name,
-                'provider' => optional($sale->provider)->name,
-                'intermediary' => optional($sale->intermediary)->name,
-                'usd_buy' => $sale->usd_buy,
-                'usd_sell' => $sale->usd_sell,
-                'sale_profit' => $sale->sale_profit,
-                'amount_received' => $sale->amount_received,
-                'account' => optional($sale->account)->name,
-                'reference' => $sale->reference,
-                'pnr' => $sale->pnr,
-                'route' => $sale->route,
-                'action' => $sale->action,
-                'user' => optional($sale->user)->name,
-            ];
-
-            if ($this->fields) {
-                foreach ($this->fields as $field) {
-                    if (isset($fieldMap[$field])) {
-                        $data[$field] = $fieldMap[$field];
-                    }
-                }
-            } else {
-                $data = array_values($fieldMap);
-            }
-
-            return $data;
-        });
+    if (!$user->hasRole('agency-admin')) {
+        $query->where('user_id', $user->id);
     }
+
+    if ($this->startDate && $this->endDate) {
+        $query->whereBetween('sale_date', [$this->startDate, $this->endDate]);
+    }
+
+    $sales = $query->latest()->get();
+
+    return $sales->map(function ($sale) {
+        $fieldMap = [
+            'sale_date' => $sale->sale_date,
+            'user' => optional($sale->user)->name,
+            'beneficiary_name' => $sale->beneficiary_name,
+            'phone_number' => $sale->phone_number,
+            'serviceType' => optional($sale->serviceType)->label,
+            'provider' => optional($sale->provider)->name,
+            'usd_buy' => $sale->usd_buy,
+            'usd_sell' => $sale->usd_sell,
+            'sale_profit' => $sale->sale_profit,
+            'amount_paid' => $sale->amount_paid,
+            'commission' => $sale->commission,
+            'depositor_name' => $sale->depositor_name,
+            'route' => $sale->route,
+            'reference' => $sale->reference,
+            'pnr' => $sale->pnr,
+            'customer' => optional($sale->customer)->name,
+'customer_via' => match ($sale->customer_via) {
+    'facebook' => 'فيسبوك',
+    'call' => 'اتصال',
+    'instagram' => 'إنستغرام',
+    'whatsapp' => 'واتساب',
+    'office' => 'عبر مكتب',
+    'other' => 'أخرى',
+    default => $sale->customer_via,
+},
+
+'payment_method' => match ($sale->payment_method) {
+    'kash' => 'كامل',
+    'part' => 'جزئي',
+    'all' => 'لم يدفع',
+    default => $sale->payment_method,
+},
+
+'payment_type' => match ($sale->payment_type) {
+    'cash' => 'كاش',
+    'transfer' => 'حوالة',
+    'account_deposit' => 'إيداع حساب',
+    'fund' => 'صندوق',
+    'from_account' => 'من حساب',
+    'wallet' => 'محفظة',
+    'other' => 'أخرى',
+    default => $sale->payment_type,
+},
+
+            'receipt_number' => $sale->receipt_number,
+            'service_date' => $sale->service_date,
+            'expected_payment_date' => $sale->expected_payment_date,
+            'status' => $sale->status,
+        ];
+
+        if ($this->fields) {
+            return collect($this->fields)->map(fn($key) => $fieldMap[$key] ?? '')->toArray();
+        }
+
+        return array_values($fieldMap);
+    });
+}
+
 
     public function headings(): array
-    {
-        $defaultHeadings = [
-            'التاريخ',
-            'المستفيد',
-            'العميل',
-            'الخدمة',
-            'المزود',
-            'الوسيط',
-            'USD Buy',
-            'USD Sell',
-            'الربح',
-            'المبلغ',
-            'الحساب',
-            'المرجع',
-            'PNR',
-            'Route',
-            'الإجراء',
-            'اسم الموظف',
-        ];
+{
+    $headingsMap = [
+        'sale_date' => 'تاريخ البيع',
+        'user' => 'اسم الموظف',
+        'beneficiary_name' => 'اسم المستفيد',
+        'phone_number' => 'رقم الهاتف',
+        'serviceType' => 'نوع الخدمة',
+        'provider' => 'المزود',
+        'usd_buy' => 'USD Buy',
+        'usd_sell' => 'USD Sell',
+        'sale_profit' => 'الربح',
+        'amount_paid' => 'المبلغ المدفوع',
+        'commission' => 'العمولة',
+        'depositor_name' => 'اسم المودع',
+        'route' => 'Route',
+        'reference' => 'الرقم المرجعي',
+        'pnr' => 'PNR',
+        'customer' => 'العميل',
+        'customer_via' => 'العميل عبر',
+        'payment_method' => 'حالة الدفع',
+        'payment_type' => 'وسيلة الدفع',
+        'receipt_number' => 'رقم السند',
+        'service_date' => 'تاريخ الخدمة',
+        'expected_payment_date' => 'تاريخ السداد المتوقع',
+        'status' => 'الحالة',
+    ];
 
-        if (!$this->fields) {
-            return $defaultHeadings;
-        }
-
-        $headingsMap = [
-            'sale_date' => 'التاريخ',
-            'beneficiary_name' => 'المستفيد',
-            'customer' => 'العميل',
-            'serviceType' => 'الخدمة',
-            'provider' => 'المزود',
-            'intermediary' => 'الوسيط',
-            'usd_buy' => 'USD Buy',
-            'usd_sell' => 'USD Sell',
-            'sale_profit' => 'الربح',
-            'amount_received' => 'المبلغ',
-            'account' => 'الحساب',
-            'reference' => 'المرجع',
-            'pnr' => 'PNR',
-            'route' => 'Route',
-            'action' => 'الإجراء',
-            'user' => 'اسم الموظف',
-        ];
-
-        $headings = [];
-        foreach ($this->fields as $field) {
-            if (isset($headingsMap[$field])) {
-                $headings[] = $headingsMap[$field];
-            }
-        }
-
-        return $headings;
+    if (!$this->fields) {
+        $this->fields = array_keys($headingsMap);
     }
+
+    return collect($this->fields)->map(fn($key) => $headingsMap[$key] ?? $key)->toArray();
+}
+    
 }

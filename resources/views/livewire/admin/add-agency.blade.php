@@ -29,246 +29,247 @@
 
             <form wire:submit.prevent="save" class="space-y-4 text-sm" id="mainForm">
                 @php
-                        $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none bg-white text-xs';
-                        $labelClass = 'block text-xs font-medium text-gray-700 mb-1';
-                    $containerClass = 'mb-4';
+                        $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none bg-white text-xs peer';
+                        $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs';
+                    $containerClass = 'relative mt-0.5';
                 @endphp
 
                     <!-- الحقول -->
                 <div class="grid md:grid-cols-3 gap-3">
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">اسم الوكالة <span class="text-red-500">*</span></label>
                             <input type="text" wire:model.defer="agency_name" class="{{ $fieldClass }}" placeholder="اسم الوكالة *" />
-                            @error('agency_name')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">اسم الوكالة <span class="text-red-500">*</span></label>
+                            @error('agency_name')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }}" x-data="{ open: false, search: '', selectedId: @entangle('parent_id'), selectedLabel: '' }" class="relative">
-                            <label class="{{ $labelClass }}">الوكالة الرئيسية <span class="text-red-500">*</span></label>
-                            
-                            <!-- الأزرار (وكالة رئيسية / فرع) -->
-                            <div class="flex gap-2 mb-2 items-center">
-                                <button type="button"
-                                    wire:click="$set('isMainAgency', true)"
-                                    class="agency-type-btn-theme {{ $isMainAgency ? 'active' : '' }}">
-                                    وكالة رئيسية
-                                </button>
-                                <button type="button"
-                                    wire:click="$set('isMainAgency', false)"
-                                    class="agency-type-btn-theme {{ !$isMainAgency ? 'active' : '' }}">
-                                    فرع تابع لوكالة رئيسية
-                                </button>
-                            </div>
+    <!-- الأزرار (وكالة رئيسية / فرع) -->
+    <div class="flex gap-2 mb-2 items-center">
+        <button type="button"
+            wire:click="$set('isMainAgency', true)"
+            class="agency-type-btn-theme {{ $isMainAgency ? 'active' : '' }}">
+            وكالة رئيسية
+        </button>
+        <button type="button"
+            wire:click="$set('isMainAgency', false)"
+            class="agency-type-btn-theme {{ !$isMainAgency ? 'active' : '' }}">
+            فرع تابع لوكالة رئيسية
+        </button>
+    </div>
 
-                            <!-- إذا كانت فرع -->
-                            @if(!$isMainAgency)
-                                <div class="mt-1">
-                                    <!-- الزر لفتح القائمة -->
-                                    <div @click="open = !open"
-                                         class="{{ $fieldClass }} cursor-pointer bg-white border border-gray-300 px-4 py-2 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]">
-                                        <span x-text="selectedLabel || 'اختر الوكالة الرئيسية *'"></span>
-                                    </div>
+    <!-- إذا كانت فرع -->
+    @if(!$isMainAgency)
+        <div class="mt-1">
+            <!-- الزر لفتح القائمة -->
+            <div @click="open = !open"
+                 class="{{ $fieldClass }} cursor-pointer bg-white border border-gray-300 px-4 py-2 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]">
+                <span x-text="selectedLabel || 'اختر الوكالة الرئيسية *'"></span>
+            </div>
 
-                                    <!-- القائمة المنسدلة -->
-                                    <div x-show="open" @click.outside="open = false" class="absolute z-50 mt-1 w-full bg-white border rounded shadow-xl max-h-60 overflow-auto">
-                                        <!-- مربع البحث -->
-                                        <div class="p-2 border-b">
-                                            <input type="text" x-model="search"
-                                                   placeholder="ابحث عن وكالة..."
-                                                   class="w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary-500))]">
-                                        </div>
+            <!-- القائمة المنسدلة -->
+            <div x-show="open" @click.outside="open = false" class="absolute z-50 mt-1 w-full bg-white border rounded shadow-xl max-h-60 overflow-auto">
+                <!-- مربع البحث -->
+                <div class="p-2 border-b">
+                    <input type="text" x-model="search"
+                           placeholder="ابحث عن وكالة..."
+                           class="w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary-500))]">
+                </div>
 
-                                        <!-- الخيارات -->
-                                        <ul class="text-sm">
-                                            @foreach($mainAgencies as $agency)
-                                                <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                                    x-show="'{{ $agency->name }}'.toLowerCase().includes(search.toLowerCase())"
-                                                    @click="
-                                                        selectedId = '{{ $agency->id }}';
-                                                        selectedLabel = '{{ $agency->name }}';
-                                                        open = false;
-                                                    ">
-                                                    {{ $agency->name }}
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
+                <!-- الخيارات -->
+                <ul class="text-sm">
+                    @foreach($mainAgencies as $agency)
+                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            x-show="'{{ $agency->name }}'.toLowerCase().includes(search.toLowerCase())"
+                            @click="
+                                selectedId = '{{ $agency->id }}';
+                                selectedLabel = '{{ $agency->name }}';
+                                open = false;
+                            ">
+                            {{ $agency->name }}
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
 
-                                    <!-- ربط القيمة مع Livewire -->
-                                    <input type="hidden" x-model="selectedId" wire:model.defer="parent_id" />
-                                </div>
-                            @endif
+            <!-- ربط القيمة مع Livewire -->
+            <input type="hidden" x-model="selectedId" wire:model.defer="parent_id" />
+        </div>
+    @endif
 
-                            @error('parent_id')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+    <!-- التسمية -->
+    <label class="{{ $labelClass }}">الوكالة الرئيسية <span class="text-red-500">*</span></label>
+
+    @error('parent_id')
+        <span class="inline-error">{{ $message }}</span>
+    @enderror
+</div>
 
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">البريد الإلكتروني <span class="text-red-500">*</span></label>
                             <input type="email" wire:model.defer="agency_email" class="{{ $fieldClass }}" placeholder="البريد الإلكتروني للوكالة *" />
-                            @error('agency_email')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
+                            <label class="{{ $labelClass }}">البريد الإلكتروني <span class="text-red-500">*</span></label>
+                            @error('agency_email')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
                         </div>
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-3">
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">رقم الهاتف <span class="text-red-500">*</span></label>
                             <input type="text" wire:model.defer="agency_phone" class="{{ $fieldClass }}" placeholder="رقم الهاتف *" />
-                            @error('agency_phone')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">رقم الهاتف <span class="text-red-500">*</span></label>
+                            @error('agency_phone')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">الهاتف الثابت</label>
                             <input type="text" wire:model.defer="landline" class="{{ $fieldClass }}" placeholder="الهاتف الثابت" />
-                            @error('landline')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">الهاتف الثابت</label>
+                        @error('landline')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">العملة <span class="text-red-500">*</span></label>
                             <select wire:model.defer="currency" class="{{ $fieldClass }}">
                                 <option value="">اختر العملة *</option>
-                                <option value="SAR">ريال سعودي (SAR)</option>
-                                <option value="USD">دولار أمريكي (USD)</option>
-                                <option value="EUR">يورو (EUR)</option>
-                            </select>
-                            @error('currency')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <option value="SAR">ريال سعودي (SAR)</option>
+                            <option value="USD">دولار أمريكي (USD)</option>
+                            <option value="EUR">يورو (EUR)</option>
+                        </select>
+                            <label class="{{ $labelClass }}">العملة <span class="text-red-500">*</span></label>
+                        @error('currency')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-3">
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">العنوان <span class="text-red-500">*</span></label>
                             <input type="text" wire:model.defer="agency_address" class="{{ $fieldClass }}" placeholder="العنوان *" />
-                            @error('agency_address')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">العنوان <span class="text-red-500">*</span></label>
+                        @error('agency_address')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">رقم الرخصة <span class="text-red-500">*</span></label>
                             <input type="text" wire:model.defer="license_number" class="{{ $fieldClass }}" placeholder="رقم الرخصة *" />
-                            @error('license_number')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">رقم الرخصة <span class="text-red-500">*</span></label>
+                        @error('license_number')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">السجل التجاري <span class="text-red-500">*</span></label>
                             <input type="text" wire:model.defer="commercial_record" class="{{ $fieldClass }}" placeholder="السجل التجاري *" />
-                            @error('commercial_record')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">السجل التجاري <span class="text-red-500">*</span></label>
+                        @error('commercial_record')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-3">
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">الرقم الضريبي <span class="text-red-500">*</span></label>
                             <input type="text" wire:model.defer="tax_number" class="{{ $fieldClass }}" placeholder="الرقم الضريبي *" />
-                            @error('tax_number')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">الرقم الضريبي <span class="text-red-500">*</span></label>
+                        @error('tax_number')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">انتهاء الرخصة</label>
                             <input type="date" wire:model.defer="license_expiry_date" class="{{ $fieldClass }}" placeholder="تاريخ انتهاء الرخصة" />
-                            @error('license_expiry_date')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">انتهاء الرخصة</label>
+                        @error('license_expiry_date')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">حالة الوكالة <span class="text-red-500">*</span></label>
                             <select wire:model.defer="status" class="{{ $fieldClass }}">
-                                <option value="">حالة الوكالة *</option>
-                                <option value="active">نشطة</option>
-                                <option value="inactive">غير نشطة</option>
-                                <option value="suspended">موقوفة</option>
-                            </select>
-                            @error('status')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <option value="">حالة الوكالة *</option>
+                            <option value="active">نشطة</option>
+                            <option value="inactive">غير نشطة</option>
+                            <option value="suspended">موقوفة</option>
+                        </select>
+                            <label class="{{ $labelClass }}">حالة الوكالة <span class="text-red-500">*</span></label>
+                        @error('status')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-3">
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">شعار الوكالة</label>
                             <input type="file" wire:model="logo" class="{{ $fieldClass }}" />
-                            @error('logo')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+
+                            <label class="{{ $labelClass }}">شعار الوكالة</label>
+                        @error('logo')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }} md:col-span-2">
-                            <label class="{{ $labelClass }}">وصف الوكالة</label>
                             <textarea wire:model.defer="description" rows="2" class="{{ $fieldClass }}" placeholder="وصف الوكالة"></textarea>
-                            @error('description')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">وصف الوكالة</label>
+                        @error('description')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-3">
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">بداية الاشتراك</label>
                             <input type="date" wire:model.defer="subscription_start_date" class="{{ $fieldClass }}" placeholder="تاريخ بداية الاشتراك" />
-                            @error('subscription_start_date')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
+                            <label class="{{ $labelClass }}">بداية الاشتراك</label>
+                        @error('subscription_start_date')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                    </div>
                         <div class="{{ $containerClass }}">
-                            <label class="{{ $labelClass }}">نهاية الاشتراك</label>
                             <input type="date" wire:model.defer="subscription_end_date" class="{{ $fieldClass }}" placeholder="تاريخ نهاية الاشتراك" />
-                            @error('subscription_end_date')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
+                            <label class="{{ $labelClass }}">نهاية الاشتراك</label>
+                        @error('subscription_end_date')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+
                         </div>
                                         <!-- ... الحقول الأخرى ... -->
                 <div class="{{ $containerClass }}">
-                    <label class="{{ $labelClass }}">الحد الأقصى للمستخدمين <span class="text-red-500">*</span></label>
                     <input type="number" wire:model.defer="max_users" class="{{ $fieldClass }}" placeholder="الحد الأقصى للمستخدمين *" min="1" max="100" />
-                    @error('max_users')
-                        <span class="text-red-600 text-xs mt-1 block">
-                            {{ $message }}
-                        </span>
-                    @enderror
-                </div>
+                    <label class="{{ $labelClass }}">الحد الأقصى للمستخدمين <span class="text-red-500">*</span></label>
+                    @error('max_users')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
+                            </div>
                     </div>
 
                 <!-- ... باقي الحقول ... -->
@@ -281,27 +282,26 @@
                     <!-- الحقول الأربعة في صف واحد -->
                     <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-[70%]">
                         <div class="{{ $containerClass }} w-full md:w-1/4">
-                            <label class="{{ $labelClass }}">اسم الأدمن <span class="text-red-500">*</span></label>
                             <input type="text" wire:model.defer="admin_name" class="{{ $fieldClass }}" placeholder="اسم الأدمن *" />
-                            @error('admin_name')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
+                            <label class="{{ $labelClass }}">اسم الأدمن <span class="text-red-500">*</span></label>
+                            @error('admin_name')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
                         </div>
 
                         <div class="{{ $containerClass }} w-full md:w-1/4">
-                            <label class="{{ $labelClass }}">بريد الأدمن <span class="text-red-500">*</span></label>
                             <input type="email" wire:model.defer="admin_email" class="{{ $fieldClass }}" placeholder="بريد الأدمن *" />
-                            @error('admin_email')
-                                <span class="text-red-600 text-xs mt-1 block">
-                                    {{ $message }}
-                                </span>
-                            @enderror
+                            <label class="{{ $labelClass }}">بريد الأدمن <span class="text-red-500">*</span></label>
+                            @error('admin_email')     <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">
+        {{ $message }}
+    </span>
+@enderror
+
                         </div>
 
                         <div class="{{ $containerClass }} w-full md:w-1/4">
-                            <label class="{{ $labelClass }}">كلمة المرور <span class="text-red-500">*</span></label>
                             <div class="relative" x-data="{ show: false }">
                                 <input :type="show ? 'text' : 'password'" wire:model.defer="admin_password" class="{{ $fieldClass }} pr-10" placeholder="كلمة المرور *" />
                                 <button type="button" @click="show = !show" class="absolute inset-y-0 left-2 flex items-center text-gray-500">
@@ -319,13 +319,13 @@
                                     </svg>
                                 </button>
                             </div>
+                            <label class="{{ $labelClass }}">كلمة المرور <span class="text-red-500">*</span></label>
                             @error('admin_password')
-                                <span class="text-red-600 text-xs mt-1 block">{{ $message }}</span>
+                                <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">{{ $message }}</span>
                             @enderror
                         </div>
 
                         <div class="{{ $containerClass }} w-full md:w-1/4">
-                            <label class="{{ $labelClass }}">تأكيد كلمة المرور <span class="text-red-500">*</span></label>
                             <div class="relative" x-data="{ show: false }">
                                 <input :type="show ? 'text' : 'password'" wire:model.defer="admin_password_confirmation" class="{{ $fieldClass }} pr-10" placeholder="تأكيد كلمة المرور *" />
                                 <button type="button" @click="show = !show" class="absolute inset-y-0 left-2 flex items-center text-gray-500">
@@ -343,8 +343,9 @@
                                     </svg>
                                 </button>
                             </div>
+                            <label class="{{ $labelClass }}">تأكيد كلمة المرور <span class="text-red-500">*</span></label>
                             @error('admin_password_confirmation')
-                                <span class="text-red-600 text-xs mt-1 block">{{ $message }}</span>
+                                <span class="absolute -bottom-4 right-0 text-red-600 text-xs mt-1">{{ $message }}</span>
                             @enderror
                         </div>
                     </div>

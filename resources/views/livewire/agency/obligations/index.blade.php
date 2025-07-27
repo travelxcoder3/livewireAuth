@@ -123,13 +123,18 @@
     <ul class="space-y-2">
       @foreach($employees as $emp)
         <li class="flex items-center">
-          <input
-            wire:model="selectedUsers"
-            type="checkbox"
-            value="{{ $emp->id }}"
-            @if($for_all) disabled @endif
-            class="h-4 w-4 text-[rgb(var(--primary-600))] border-gray-300 rounded"
-          />
+<input
+    type="checkbox"
+    wire:model="selectedUsers"
+    value="{{ $emp->id }}"
+    @if($for_all) disabled @endif
+    class="custom-checkbox h-4 w-4 border-2 border-gray-300 rounded appearance-none relative cursor-pointer
+           focus:ring-2 focus:ring-[rgb(var(--primary-600))] checked:bg-[rgb(var(--primary-600))] checked:border-transparent"
+/>
+
+
+
+
           <label class="mr-2 text-gray-600">{{ $emp->name }}</label>
         </li>
       @endforeach
@@ -190,6 +195,19 @@
 
 
     <style>
+    .custom-checkbox:checked::before {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -55%);
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: white; /* ← لون العلامة ✓ */
+        pointer-events: none;
+    }
+
+
         .peer:placeholder-shown + label {
             top: 0.75rem;
             font-size: 0.875rem;

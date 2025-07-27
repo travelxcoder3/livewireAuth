@@ -1,12 +1,34 @@
 @php
     use Carbon\Carbon;
-    $logoPath = public_path('images/saas-logo.svg');
-    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    use Illuminate\Support\Facades\Log;
+
+    // الحصول على الوكالة المرتبطة بالعملية
+    $agency = $sale->agency ?? null;
+
+    // محاولة تحميل الشعار من التخزين
+    $logoPath = null;
+    if ($agency && $agency->logo) {
+        $logoPath = storage_path('app/public/' . ltrim($agency->logo, '/'));
+        if (!file_exists($logoPath)) {
+            Log::error('Logo not found: ' . $logoPath);
+            $logoPath = null;
+        }
+    }
+
+    $logoData = null;
+    $mime = 'image/png';
+    if ($logoPath) {
+        try {
+            $logoData = base64_encode(file_get_contents($logoPath));
+            $mime = mime_content_type($logoPath);
+        } catch (Exception $e) {
+            Log::error('Logo read error: ' . $e->getMessage());
+        }
+    }
 @endphp
 
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
     <meta charset="UTF-8">
     <title>تفاصيل عملية البيع</title>
@@ -21,24 +43,23 @@
         .header {
             position: relative;
             height: 120px;
-            /* ارتفاع كافٍ ليحمل الشعار والعنوان */
             margin-bottom: 20px;
         }
 
         .logo {
             position: absolute;
             top: 0;
-            left: 0;
-            width: 180px;
-            /* حجم أكبر للشعار */
-            height: auto;
+            right: 0;
+            max-width: 180px;
+            max-height: 100px;
+            object-fit: contain;
         }
 
         .title {
             position: absolute;
             top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            right: 50%;
+            transform: translate(50%, -50%);
             margin: 0;
             font-size: 20px;
             font-weight: bold;
@@ -50,8 +71,7 @@
             margin-top: 10px;
         }
 
-        table th,
-        table td {
+        table th, table td {
             border: 1px solid #aaa;
             padding: 6px;
             text-align: center;
@@ -74,7 +94,7 @@
 
     <div class="header">
         @if ($logoData)
-            <img src="data:image/svg+xml;base64,{{ $logoData }}" alt="شعار الشركة" class="logo">
+            <img src="data:{{ $mime }};base64,{{ $logoData }}" alt="شعار الوكالة" class="logo">
         @endif
         <h2 class="title">تفاصيل عملية البيع</h2>
     </div>
@@ -111,10 +131,10 @@
             </tr>
         </tbody>
     </table>
-    {{-- توقيع/ختم أو توقيت الإنشاء في الأسفل --}}
+
     <div class="footer">
         تم إنشاء التقرير في {{ Carbon::now()->translatedFormat('Y-m-d H:i:s') }}
     </div>
-</body>
 
+</body>
 </html>

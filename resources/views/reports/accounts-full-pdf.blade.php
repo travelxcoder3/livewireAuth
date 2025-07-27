@@ -1,9 +1,36 @@
 @php
     use Carbon\Carbon;
-    // جلب مسار الشعار وقراءته
-    $logoPath = public_path('images/saas-logo.svg');
-    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    use Illuminate\Support\Facades\Auth;
+    use Illuminate\Support\Facades\Log;
+
+    // الحصول على الوكالة مع التحقق من وجود البيانات
+    $agency = $sales->first()?->agency;
+
+    // بناء مسار الشعار باستخدام الحقل الصحيح (logo)
+    $logoPath = null;
+    if ($agency && !empty($agency->logo)) {
+        $logoPath = storage_path('app/public/' . ltrim($agency->logo, '/'));
+        if (!file_exists($logoPath)) {
+            Log::error('Logo file does not exist at path: ' . $logoPath);
+            $logoPath = null;
+        }
+    }
+
+    // تحويل الصورة إلى base64 مع معالجة الأخطاء
+    $logoData = null;
+    $mime = 'image/png';
+
+    if ($logoPath) {
+        try {
+            $logoData = base64_encode(file_get_contents($logoPath));
+            $mime = mime_content_type($logoPath);
+        } catch (Exception $e) {
+            Log::error('Failed to process logo image: ' . $e->getMessage());
+            $logoData = null;
+        }
+    }
 @endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -18,28 +45,37 @@
             margin: 20px;
         }
 
-        .header {
+        .header-container {
             position: relative;
-            height: 120px;
+            height: 100px;
             margin-bottom: 20px;
         }
 
-        .logo {
+        .logo-container {
             position: absolute;
+            right: 0;
             top: 0;
-            left: 0;
-            width: 180px;
-            height: auto;
+        }
+
+        .logo {
+            max-height: 100px;
+            max-width: 150px;
+            object-fit: contain;
+        }
+
+        .title-container {
+            position: absolute;
+            top: 50%;
+            right: 50%;
+            transform: translate(50%, -50%);
+            text-align: center;
+            width: 100%;
         }
 
         .title {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            margin: 0;
-            font-size: 30px;
+            font-size: 24px;
             font-weight: bold;
+            margin: 0;
         }
 
         table {
@@ -67,7 +103,7 @@
 
         .total p {
             margin: 0;
-            line-height: 1.2;
+            line-height: 1.4;
         }
 
         .footer {
@@ -81,13 +117,24 @@
 
 <body>
 
-    <div class="header">
+    <!-- رأس التقرير -->
+    <div class="header-container">
+        <!-- شعار الوكالة -->
         @if ($logoData)
-            <img src="data:image/svg+xml;base64,{{ $logoData }}" alt="شعار الشركة" class="logo">
+            <div class="logo-container">
+                <img src="data:{{ $mime }};base64,{{ $logoData }}" alt="شعار الوكالة" class="logo">
+            </div>
+        @else
+            <div class="logo-container" style="color: #999;">[شعار غير متوفر]</div>
         @endif
-        <h2 class="title">تقرير الحسابات</h2>
+
+        <!-- عنوان التقرير -->
+        <div class="title-container">
+            <h2 class="title">تقرير الحسابات</h2>
+        </div>
     </div>
 
+    <!-- جدول العمليات -->
     <table>
         <thead>
             <tr>
@@ -119,12 +166,14 @@
         </tbody>
     </table>
 
+    <!-- المجموع والتاريخ -->
     <div class="total">
         <p>الإجمالي: {{ number_format($totalSales, 2) }} USD</p>
         <p>المستخدم: {{ auth()->user()->name }}</p>
         <p>بتاريخ: {{ Carbon::now()->translatedFormat('j-n-Y') }}</p>
     </div>
 
+    <!-- التذييل -->
     <div class="footer">
         تم إنشاء التقرير في {{ Carbon::now()->translatedFormat('Y-m-d H:i:s') }}
     </div>

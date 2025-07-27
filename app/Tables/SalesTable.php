@@ -15,8 +15,8 @@ class SalesTable
     {
         // 1) تعريف جميع الأعمدة
         $columns = [
-            ['key' => 'sale_date', 'label' => 'التاريخ', 'format' => 'date'],
-            ['key' => 'beneficiary_name', 'label' => 'المستفيد'],
+            ['key' => 'sale_date', 'label' => 'تاريخ البيع', 'format' => 'date'],
+            ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
             ['key' => 'customer.name', 'label' => 'العميل'],
             ['key' => 'service.label', 'label' => 'الخدمة'],
             ['key' => 'provider.name', 'label' => 'المزود'],
@@ -41,14 +41,14 @@ class SalesTable
             ['key' => 'expected_payment_date', 'label' => 'تاريخ السداد المتوقع', 'format' => 'date'],
             ['key' => 'reference', 'label' => 'المرجع'],
             ['key' => 'pnr', 'label' => 'PNR'],
-            ['key' => 'route', 'label' => 'Route'],
+            ['key' => 'route', 'label' => 'المسار/ التفاصيل'],
             ['key' => 'status', 'label' => 'الحالة', 'format' => 'status'],
             ['key' => 'user.name', 'label' => 'الموظف'],
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
             ['key' => 'payment_method', 'label' => 'حالة الدفع', 'format' => 'payment_method'],
             ['key' => 'payment_type', 'label' => 'وسيلة الدفع', 'format' => 'payment_type'],
             ['key' => 'receipt_number', 'label' => 'رقم السند'],
-            ['key' => 'phone_number', 'label' => 'رقم الهاتف'],
+            ['key' => 'phone_number', 'label' => 'رقم هاتف المستفيد'],
             ['key' => 'depositor_name', 'label' => 'اسم المودع'],
             ['key' => 'commission', 'label' => 'مبلغ عمولة العميل', 'format' => 'money'],
         ];

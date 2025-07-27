@@ -3,32 +3,12 @@
     <!-- المحتوى القابل للتمرير -->
     <div class="flex-1 overflow-y-auto">
         <div class="bg-white rounded-xl shadow-md min-h-full flex flex-col p-6">
-            @if(session('message'))
-                <div class="mb-4 p-3 text-xs text-center rounded-lg"
-                    style="background-color: rgba(var(--primary-100), 0.5); border: 1px solid rgba(var(--primary-200), 0.5); color: rgb(var(--primary-700));">
-                    {{ session('message') }}
-                </div>
-            @endif
+               <x-toast />
 
-            <!-- صورة الشعار -->
-            <div class="flex justify-center mb-6">
-                <div class="relative">
-                    @if ($tempLogoUrl)
-                        <img src="{{ $tempLogoUrl }}" class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover">
-                    @else
-                        <img src="{{ $logoPreview ?? 'https://via.placeholder.com/128' }}" class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover">
-                    @endif
-                    <div class="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-md">
-                        <label class="cursor-pointer">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" style="color: rgb(var(--primary-600));" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <input type="file" wire:model="logo" class="hidden" accept="image/*">
-                        </label>
-                    </div>
-                </div>
-            </div>
+
+
+
+
 
             <h2 class="text-2xl font-bold text-black mb-6 text-center">تعديل بيانات الوكالة: {{ $agency_name ?? '' }}</h2>
 

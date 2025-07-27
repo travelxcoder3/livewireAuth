@@ -1,9 +1,12 @@
 @php
     use Carbon\Carbon;
-    // جلب مسار الشعار وقراءة محتواه
-    $logoPath = public_path('images/saas-logo.svg');
+    use Illuminate\Support\Facades\Auth;
+
+    $logoPath = storage_path('app/public/' . ($sale->agency->logo ?? ''));
     $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    $mime = file_exists($logoPath) ? mime_content_type($logoPath) : 'image/png';
 @endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -15,31 +18,29 @@
             font-family: 'DejaVu Sans', sans-serif;
             direction: rtl;
             font-size: 13px;
-            margin: 20px;
+            margin: 30px;
         }
 
         .header {
-            position: relative;
-            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
             margin-bottom: 20px;
         }
 
         .logo {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 180px;
-            height: auto;
+            width: 140px;
+            height: 80px;
+            object-fit: contain;
         }
 
         .title {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            margin: 0;
             font-size: 20px;
             font-weight: bold;
+            text-align: center;
+            flex-grow: 1;
         }
 
         table {
@@ -70,13 +71,18 @@
 
 <body>
 
+    <!-- رأس الصفحة: شعار + عنوان -->
     <div class="header">
-        @if ($logoData)
-            <img src="data:image/svg+xml;base64,{{ $logoData }}" alt="شعار الشركة" class="logo">
-        @endif
-        <h2 class="title">تفاصيل الحساب</h2>
+        <div style="flex: 1;">
+            @if ($logoData)
+                <img src="data:{{ $mime }};base64,{{ $logoData }}" alt="شعار الوكالة" class="logo">
+            @endif
+        </div>
+        <div class="title">تفاصيل الحساب</div>
+        <div style="flex: 1;"></div>
     </div>
 
+    <!-- جدول البيانات -->
     <table>
         <thead>
             <tr>
@@ -105,10 +111,12 @@
             </tr>
         </tbody>
     </table>
-    {{-- توقيع/ختم أو توقيت الإنشاء في الأسفل --}}
+
+    <!-- تذييل -->
     <div class="footer">
         تم إنشاء التقرير في {{ Carbon::now()->translatedFormat('Y-m-d H:i:s') }}
     </div>
+
 </body>
 
 </html>
