@@ -91,12 +91,14 @@
                     <td class="px-3 py-2">
                         <div class="flex gap-2">
                             @can('roles.edit')
-                            <button wire:click="editRole({{ $role->id }})"
-                                class="text-xs font-medium flex items-center gap-1"
-                                style="color: rgb(var(--primary-600));">
-                                <i class="fa fa-edit"></i>
-                                تعديل
-                            </button>
+                                @if ($role->name !== 'agency-admin')
+                                <button wire:click="editRole({{ $role->id }})"
+                                    class="text-xs font-medium flex items-center gap-1"
+                                    style="color: rgb(var(--primary-600));">
+                                    <i class="fa fa-edit"></i>
+                                    تعديل
+                                </button>
+                                @endif
                             @endcan
 
                             @can('roles.delete')

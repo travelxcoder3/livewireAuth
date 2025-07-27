@@ -109,8 +109,10 @@ public function delete()
         if ($this->selectedObligation) {
             $this->selectedObligation->update($data);
             $ob = $this->selectedObligation;
+            session()->flash('message', 'تم تعديل الالتزام بنجاح.');
         } else {
             $ob = Obligation::create($data);
+            session()->flash('message', 'تم حفظ الالتزام بنجاح.');
         }
 
         if (! $this->for_all) {
@@ -119,10 +121,9 @@ public function delete()
             $ob->users()->detach();
         }
 
-        session()->flash('message', 'تم حفظ الالتزام.');
         $this->resetForm();
         $this->showModal = false;
-          $this->resetPage(); 
+        $this->resetPage();
     }
 
 

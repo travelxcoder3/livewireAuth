@@ -11,7 +11,7 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-100">
-                @forelse ($rows as $row)
+               @forelse ($rows as $rowIndex => $row)
                     <tr class="hover:bg-gray-50">
                         @foreach ($columns as $col)
                             @php
@@ -26,6 +26,12 @@
                                 // 2) Handle built‑in format strings
                                 elseif (isset($col['format'])) {
                                     switch ($col['format']) {
+ case 'serial':
+    $translatedValue = ($rows->currentPage() - 1) * $rows->perPage() + $rowIndex + 1;
+    break;
+
+
+
                                         case 'money':
                                             $translatedValue = number_format($value, 2);
                                             break;

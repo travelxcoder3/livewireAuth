@@ -16,13 +16,6 @@
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
             إدارة الالتزامات
         </h2>
-
-        @if(session('message'))
-            <div class="bg-white rounded-md px-4 py-2 text-center shadow text-sm"
-                 style="color: rgb(var(--primary-700)); border: 1px solid rgba(var(--primary-200), 0.5);">
-                {{ session('message') }}
-            </div>
-        @endif
     </div>
 
     <!-- محتوى الصفحة -->
@@ -194,14 +187,7 @@
         </div>
     </div>
 @endif
-    <!-- تنبيه عائم -->
-    @if(session()->has('message'))
-        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 2000)" x-show="show" x-transition
-             class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm"
-             style="background-color: rgb(var(--primary-500));">
-            {{ session('message') }}
-        </div>
-    @endif
+
 
     <style>
         .peer:placeholder-shown + label {

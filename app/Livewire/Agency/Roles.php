@@ -206,6 +206,13 @@ class Roles extends Component
     public function editRole($roleId)
     {
         $role = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($roleId);
+        
+        // منع تعديل دور agency-admin
+        if ($role->name === 'agency-admin') {
+            session()->flash('error', 'لا يمكن تعديل الدور الأساسي للوكالة');
+            return;
+        }
+        
         $this->editingRole = $role;
         $this->name = $role->name;
         $this->selectedPermissions = $role->permissions->pluck('name')->toArray();
@@ -218,6 +225,12 @@ class Roles extends Component
         
         if (!$this->editingRole) {
             session()->flash('error', 'لم يتم العثور على الدور المحدد');
+            return;
+        }
+        
+        // منع تحديث دور agency-admin
+        if ($this->editingRole->name === 'agency-admin') {
+            session()->flash('error', 'لا يمكن تعديل الدور الأساسي للوكالة');
             return;
         }
         

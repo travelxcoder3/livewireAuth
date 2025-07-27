@@ -9,7 +9,8 @@ class EmployeeTable
     public static function columns()
     {
         return [
-            ['key' => 'id', 'label' => '#'],
+            ['key' => 'serial', 'label' => '#', 'format' => 'serial'],
+
             ['key' => 'name', 'label' => 'الاسم'],
             ['key' => 'user_name', 'label' => 'اسم المستخدم'],
             ['key' => 'email', 'label' => 'البريد الإلكتروني'],
