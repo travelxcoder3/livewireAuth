@@ -141,7 +141,6 @@ class Providers extends Component
                     \Log::info('لا يوجد تسلسل موافقات');
                 }
             } else {
-                // المستخدم في الوكالة الرئيسية: إضافة المزود مباشرة بحالة approved
                 Provider::create([
                     'agency_id' => $agency->id,
                     'name' => $this->name,
@@ -154,6 +153,9 @@ class Providers extends Component
         }
         $this->showModal = false;
         $this->fetchProviders();
+         session()->flash('message', $this->editMode ? 'تم تحديث المزود بنجاح' : 'تم إضافة المزود بنجاح');
+session()->flash('type', 'success');
+
     }
 
    

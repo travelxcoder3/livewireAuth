@@ -27,8 +27,10 @@ class CustomerTable
                         'label' => 'تعديل',
                         'icon' => 'fa fa-edit',
                         'method' => 'edit',
-                        'class' => 'text-blue-600 hover:text-blue-800',
+                         'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold',
                     ]
+
+                    
                 ]
             ]
         ];

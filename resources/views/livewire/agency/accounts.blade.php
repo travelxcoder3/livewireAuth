@@ -141,7 +141,10 @@
                                 <input type="checkbox" wire:click="toggleSaleSelection({{ $sale->id }})"
                                     @if (in_array($sale->id, $selectedSales)) checked @endif>
                             </td>
-                            <td class="p-2 border-b">{{ $sale->id }}</td>
+                           <td class="p-2 border-b text-center">
+                                {{ ($sales->currentPage() - 1) * $sales->perPage() + $loop->iteration }}
+                            </td>
+
 
                             @foreach ($columns as $col)
                                 @php

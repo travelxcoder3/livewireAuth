@@ -7,16 +7,7 @@
     $columns = ProviderTable::columns($user);
 @endphp
 
-{{-- رسائل الجلسة للتصحيح --}}
-@if (session('message'))
-    <div style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 6px; margin-bottom: 10px;">{{ session('message') }}</div>
-@endif
-@if (session('error'))
-    <div style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 6px; margin-bottom: 10px;">{{ session('error') }}</div>
-@endif
-@if (session('debug'))
-    <div style="background: #fef9c3; color: #92400e; padding: 10px; border-radius: 6px; margin-bottom: 10px;">{{ session('debug') }}</div>
-@endif
+
 
 <div class="space-y-6" wire:poll.3s>
     <!-- العنوان والرسائل -->
@@ -25,13 +16,7 @@
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
             إدارة المزودين
         </h2>
-
-        @if(session('message'))
-            <div class="bg-white rounded-md px-4 py-2 text-center shadow text-sm"
-                 style="color: rgb(var(--primary-700)); border: 1px solid rgba(var(--primary-200), 0.5);">
-                {{ session('message') }}
-            </div>
-        @endif
+       <x-toast />
     </div>
 
     <!-- نموذج الإضافة -->
@@ -127,14 +112,6 @@
         </div>
     @endif
 
-    <!-- تنبيه عائم -->
-    @if(session()->has('message'))
-        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 2000)" x-show="show" x-transition
-             class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm"
-             style="background-color: rgb(var(--primary-500));">
-            {{ session('message') }}
-        </div>
-    @endif
 
     <style>
         .peer:placeholder-shown + label {

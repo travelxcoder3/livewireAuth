@@ -3,6 +3,7 @@
     <!-- المحتوى القابل للتمرير -->
     <div class="flex-1 overflow-y-auto">
         <div class="bg-white rounded-xl shadow-md min-h-full flex flex-col p-6">
+             <x-toast />
             <!-- صورة الشعار -->
             <div class="flex justify-center mb-6">
                 <div class="relative">
@@ -26,11 +27,7 @@
                 </div>
             </div>
 
-            @if (session()->has('error'))
-                <div class="mt-4 p-3 text-xs text-center rounded-lg bg-red-100 text-red-700 border border-red-300">
-                    {{ session('error') }}
-                </div>
-            @endif
+        
 
             <!-- عرض البيانات في وضع القراءة فقط -->
             <div class="space-y-4 text-sm" wire:key="read-only-view">
@@ -168,15 +165,7 @@
             </div>
             @endcan
 
-            <!-- رسالة نجاح -->
-            <!-- رسالة نجاح -->
-                @if (session()->has('success'))
-                    <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition
-                        class="fixed bottom-4 right-4 z-50 text-white px-4 py-2 rounded-md shadow text-sm"
-                        style="background-color: rgb(var(--primary-500));">
-                        {{ session('success') }}
-                    </div>
-                @endif
+       
         </div>
     </div>
 
@@ -189,11 +178,7 @@
             <h3 class="text-xl font-bold" style="color: rgb(var(--primary-700));">تعديل بيانات الوكالة</h3>
             <button wire:click="cancelEditing" class="text-gray-500 hover:text-red-500 text-2xl">&times;</button>
         </div>
-        @if (session()->has('error'))
-            <div class="mb-4 p-3 text-sm text-center rounded-lg bg-red-100 text-red-700 border border-red-300">
-                {{ session('error') }}
-            </div>
-        @endif
+       <x-toast />
 
 
             <form wire:submit.prevent="update" class="space-y-4 text-sm">

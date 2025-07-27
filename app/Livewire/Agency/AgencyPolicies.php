@@ -54,7 +54,8 @@ class AgencyPolicies extends Component
         AgencyPolicy::findOrFail($this->policyToDelete)->delete();
         $this->showDeleteModal = false;
         $this->loadPolicies();
-        session()->flash('success', 'تم حذف السياسة بنجاح');
+         session()->flash('message', 'تم حذف السياسة بنجاح');
+        session()->flash('type', 'success');
     }
 
     public function save()
@@ -69,13 +70,15 @@ class AgencyPolicies extends Component
                 'title' => $this->title,
                 'content' => $this->content,
             ]);
-            session()->flash('success', 'تم تحديث السياسة بنجاح');
+               session()->flash('message',  'تم تحديث السياسة بنجاح');
+        session()->flash('type', 'success');
         } else {
             Auth::user()->agency->policies()->create([
                 'title' => $this->title,
                 'content' => $this->content,
             ]);
-            session()->flash('success', 'تم إضافة السياسة بنجاح');
+               session()->flash('message', 'تم إضافة السياسة بنجاح');
+        session()->flash('type', 'success');
         }
 
         $this->resetFields();

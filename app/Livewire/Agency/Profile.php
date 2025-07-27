@@ -93,7 +93,8 @@ public function showSuccessMessage()
             $this->logo = null;
             $this->tempLogoUrl = null;
 
-            session()->flash('success', 'تم رفع الشعار بنجاح!');
+              session()->flash('message', 'تم رفع الشعار بنجاح!');
+             session()->flash('type', 'success');
         }
     }
 
@@ -101,7 +102,7 @@ public function showSuccessMessage()
     {
         $this->validate([
            'phone' => 'required|numeric|max:999999999',
-           'landline' => 'nullable|numeric|max:999999',
+           'landline' => 'nullable|string|max:30',
             'email' => 'required|email|unique:agencies,email,' . $this->agency->id,
             'address' => 'nullable|string',
             'description' => 'nullable|string',
@@ -153,7 +154,8 @@ public function showSuccessMessage()
             ? Storage::url($this->agency->logo) . '?v=' . now()->timestamp
             : asset('images/default-agency-logo.png');
 
-        session()->flash('success', 'تم تعديل البيانات بنجاح');
+         session()->flash('message',  'تم تعديل البيانات بنجاح');
+         session()->flash('type', 'success');
         $this->editing = false;
 
     }

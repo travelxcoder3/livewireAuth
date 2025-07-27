@@ -4,7 +4,7 @@
         <h2 class="text-2xl font-bold" style="color: rgb(var(--primary-700));">
             السياسات الخاصة بالوكالة
         </h2>
-
+   <x-toast />
         <x-primary-button wire:click="create" icon="+">
             إضافة سياسة جديدة
         </x-primary-button>
@@ -105,17 +105,7 @@
         </div>
     @endif
 
-    <!-- رسالة نجاح -->
-    @if(session()->has('success'))
-        <div x-data="{ show: true }"
-             x-init="setTimeout(() => show = false, 2000)"
-             x-show="show"
-             x-transition
-             class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm"
-             style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-            {{ session('success') }}
-        </div>
-    @endif
+ 
 
     <!-- CSS مخصص -->
     <style>
