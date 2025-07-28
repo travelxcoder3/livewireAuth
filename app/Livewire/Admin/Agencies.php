@@ -42,6 +42,22 @@ class Agencies extends Component
     public $selectedAgencyId = null;
     public $newPassword = '';
     public $confirmPassword = '';
+    public $selectedAgencyAdminName = '';
+    public $selectedAgencyAdminEmail = '';
+
+
+    public function updatedSelectedAgencyId($value)
+    {
+        $agency = Agency::with('admin')->find($value);
+
+        if ($agency && $agency->admin) {
+            $this->selectedAgencyAdminName = $agency->admin->name;
+            $this->selectedAgencyAdminEmail = $agency->admin->email;
+        } else {
+            $this->selectedAgencyAdminName = '';
+            $this->selectedAgencyAdminEmail = '';
+        }
+    }
 
 
     public function render()

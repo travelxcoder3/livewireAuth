@@ -132,7 +132,7 @@ $columns = SalesTable::columns();
                 <div class="lg:col-span-3 flex flex-col sm:flex-row justify-end gap-2 w-full">
                     @can('sales.reports.view')
                     <a href="{{ route('agency.sales.report.preview') }}"
-                        class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm flex items-center justify-center w-full sm:w-auto"
+                        class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm flex items-center justify-center w-full sm:w-auto hover:opacity-70"
                         style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
                         تقارير
                     </a>
@@ -416,11 +416,13 @@ $columns = SalesTable::columns();
 <!-- الأزرار -->
 <div class="col-span-12 md:col-span-6 lg:col-span-6 flex items-end justify-end gap-2 lg:gap-3 w-full">
 
-    <button type="submit"
-            class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm w-full sm:w-auto"
-            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-        تاكيد 
-    </button>
+<x-primary-button
+    type="submit"
+    textColor="white"
+    width="w-full sm:w-auto"
+>
+    تأكيد
+</x-primary-button>
     <button type="button" onclick="openFilterModal()"
             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center w-full sm:w-auto">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

@@ -6,7 +6,7 @@
     'padding' => 'px-4 py-2',
     'fontSize' => 'text-sm',
     'rounded' => 'rounded-xl',
-    'shadow' => 'shadow-md hover:shadow-xl',
+    'shadow' => 'shadow transition duration-300 cursor-pointer hover:opacity-70',
     'gradient' => true,
     'icon' => null, // SVG أو نص يُمرر كأيقونة
 ])

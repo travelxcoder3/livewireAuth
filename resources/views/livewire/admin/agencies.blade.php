@@ -42,74 +42,83 @@
                             class="px-4 py-2 rounded-lg font-medium text-sm transition duration-200 shadow hover:shadow-md whitespace-nowrap">
                             {{ $showAll ? 'عرض الصفحات' : 'عرض الكل' }}
                         </button>
-                        <!-- زر تغيير كلمة المرور -->
+                        <!-- زر تغيير بيانات الادمن -->
                         <button wire:click="$set('showPasswordModal', true)"
                             class="px-4 py-2 rounded-lg font-medium text-sm transition duration-200 shadow hover:shadow-md bg-gradient-to-r from-[rgb(var(--primary-500))] to-[rgb(var(--primary-600))] text-white">
-                            تغيير كلمة المرور
+                            تغيير بيانات الادمن
                         </button>
-                        <!-- مودال تغيير كلمة المرور -->
+                        <!-- مودال تغيير بيانات الادمن -->
                         @if ($showPasswordModal)
                            <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-start pt-24 z-50">
-    <div class="bg-white/90 rounded-lg p-6 w-full md:w-1/3 shadow-xl">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold text-gray-900">تغيير كلمة مرور الوكالة</h3>
-        </div>
-        <form wire:submit.prevent="updatePassword">
-            <!-- حقل اختيار الوكالة باستخدام select-field component -->
-            <x-select-field
-                label="اختيار الوكالة"
-                wireModel="selectedAgencyId"
-                :options="$agencies->pluck('name', 'id')->toArray()"
-                placeholder="-- اختر وكالة --"
-                required
-                errorName="selectedAgencyId"
-                class="mb-4"
-            />
+                                <div class="bg-white/90 rounded-lg p-6 w-full md:w-1/3 shadow-xl">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-xl font-bold text-gray-900">تغيير  بيانات ادمن الوكالة</h3>
+                                    </div>
+                                    <form wire:submit.prevent="updatePassword">
+                                        <!-- حقل اختيار الوكالة باستخدام select-field component -->
+                                        <x-select-field
+                                            wireModel="selectedAgencyId"
+                                            :options="$agencies->pluck('name', 'id')->toArray()"
+                                            placeholder="-- اختر وكالة --"
+                                            required
+                                            errorName="selectedAgencyId"
+                                            class="mb-4"
+                                        />
 
-            <!-- حقل كلمة المرور الجديدة باستخدام input-field component -->
-            <x-input-field
-                type="password"
-                label="كلمة المرور الجديدة"
-                wireModel="newPassword"
-                required
-                errorName="newPassword"
-                class="mb-4"
-            />
+                                        
+                                        <!-- معلومات مدير الوكالة -->
+                                        @if ($selectedAgencyAdminName && $selectedAgencyAdminEmail)
+                                            <div class="mb-4 text-sm text-gray-700 space-y-1">
+                                                <div><span class="font-semibold">مدير الوكالة:</span> {{ $selectedAgencyAdminName }}</div>
+                                                <div><span class="font-semibold">البريد الإلكتروني:</span> {{ $selectedAgencyAdminEmail }}</div>
+                                            </div>
+                                        @endif
 
-            <!-- حقل تأكيد كلمة المرور باستخدام input-field component -->
-            <x-input-field
-                type="password"
-                label="تأكيد كلمة المرور الجديدة"
-                wireModel="confirmPassword"
-                required
-                errorName="confirmPassword"
-                class="mb-4"
-            />
 
-            <div class="flex justify-end gap-3 mt-4">
-                <!-- زر الإلغاء -->
-                <x-primary-button 
-                    type="button" 
-                    wire:click="$set('showPasswordModal', false)"
-                    color="white"
-                    textColor="gray-700"
-                    :gradient="false"
-                    class="border border-gray-300 hover:bg-gray-50"
-                >
-                    إلغاء
-                </x-primary-button>
+                                        <!-- حقل كلمة المرور الجديدة باستخدام input-field component -->
+                                        <x-input-field
+                                            type="password"
+                                            label="كلمة المرور الجديدة"
+                                            wireModel="newPassword"
+                                            required
+                                            errorName="newPassword"
+                                            class="mb-4"
+                                        />
 
-                <!-- زر التحديث -->
-                <x-primary-button 
-                    type="submit"
-                    textColor="white"
-                >
-                    تحديث
-                </x-primary-button>
-            </div>
-        </form>
-    </div>
-</div>
+                                        <!-- حقل تأكيد كلمة المرور باستخدام input-field component -->
+                                        <x-input-field
+                                            type="password"
+                                            label="تأكيد كلمة المرور الجديدة"
+                                            wireModel="confirmPassword"
+                                            required
+                                            errorName="confirmPassword"
+                                            class="mb-4"
+                                        />
+
+                                        <div class="flex justify-end gap-3 mt-4">
+                                            <!-- زر الإلغاء -->
+                                            <x-primary-button 
+                                                type="button" 
+                                                wire:click="$set('showPasswordModal', false)"
+                                                color="white"
+                                                textColor="gray-700"
+                                                :gradient="false"
+                                                class="border border-gray-300 hover:bg-gray-50"
+                                            >
+                                                إلغاء
+                                            </x-primary-button>
+
+                                            <!-- زر التحديث -->
+                                            <x-primary-button 
+                                                type="submit"
+                                                textColor="white"
+                                            >
+                                                تحديث
+                                            </x-primary-button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
                             @if (session('error'))
                                 <div class="mb-4 p-3 bg-red-100 border border-red-200 text-red-800 rounded-lg text-sm">
                                     {{ session('error') }}
@@ -144,11 +153,10 @@
         </div>
 
         <!-- القسم السفلي مع الجدول القابل للتمرير -->
-<div class="flex-1 px-4 pb-4 min-h-0">
-    <div class="bg-white rounded-xl shadow-md h-full flex flex-col">
-        <div class="flex-1 min-h-0">
-            <div class="overflow-x-auto overflow-y-auto w-full max-h-[70vh]">
-
+        <div class="flex-1 overflow-hidden px-4 pb-4">
+            <div class="bg-white rounded-xl shadow-md h-full flex flex-col">
+                <div class="flex-1 overflow-hidden">
+                    <div class="overflow-x-auto overflow-y-auto w-full max-h-[70vh]" style="scrollbar-width: thin; overflow-x: auto !important;">
                         <table class="min-w-max divide-y divide-gray-200 text-xs text-right" style="min-width:2600px;">
                         <thead class="bg-gray-100 text-gray-900 sticky top-0 z-10">
                             <tr>
@@ -314,7 +322,7 @@
         html,
         body {
             height: 100%;
-            overflow: auto;
+            overflow: hidden;
         }
         .peer:placeholder-shown+label {
             top: 0.75rem;

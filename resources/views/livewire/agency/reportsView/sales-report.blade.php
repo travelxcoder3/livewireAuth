@@ -66,20 +66,27 @@
             <x-input-field name="search" label="بحث عام" wireModel="search" placeholder="ابحث في جميع الحقول..."
                 fieldClass="{{ $fieldClass }}" />
 
-            <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter"
-                :options="$serviceTypes->pluck('label', 'id')->toArray()" placeholder="جميع أنواع الخدمات" />
+            <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter" :options="$serviceTypes->pluck('label', 'id')->toArray()"
+                placeholder="جميع أنواع الخدمات" />
 
-            <x-select-field label="المزود" name="provider" wireModel="providerFilter"
-                :options="$providers->pluck('name', 'id')->toArray()" placeholder="جميع المزودين" />
+            <x-select-field label="المزود" name="provider" wireModel="providerFilter" :options="$providers->pluck('name', 'id')->toArray()"
+                placeholder="جميع المزودين" />
 
-            <x-select-field label="الحساب" name="customers" wireModel="accountFilter"
-                :options="$customers->pluck('name', 'id')->toArray()" placeholder="جميع الحسابات" />
+            <x-select-field label="الحساب" name="customers" wireModel="accountFilter" :options="$customers->pluck('name', 'id')->toArray()"
+                placeholder="جميع الحسابات" />
 
-                <x-input-field name="start_date" label="من تاريخ" wireModel="startDate" type="date"
-                containerClass="relative" fieldClass="{{ $fieldClass }}" />
+            <div class="flex flex-col gap-1">
+                <label for="start_date" class="text-sm font-semibold text-gray-600">من تاريخ</label>
+                <input type="date" name="start_date" wire:change="$refresh" wire:model="startDate"
+                    class="{{ $fieldClass }}" />
 
-            <x-input-field name="end_date" label="إلى تاريخ" wireModel="endDate" type="date"
-                containerClass="relative" fieldClass="{{ $fieldClass }}" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="end_date" class="text-sm font-semibold text-gray-600">إلى تاريخ</label>
+                <input type="date" name="end_date" wire:change="$refresh" wire:model="endDate"
+                    class="{{ $fieldClass }}" />
+            </div>
 
         </div>
 

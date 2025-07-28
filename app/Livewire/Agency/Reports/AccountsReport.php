@@ -39,6 +39,7 @@ class AccountsReport extends Component
     public $totalSales = 0;
     public $columns = [];
 
+
     protected $queryString = [
         'search' => ['except' => ''],
         'serviceTypeFilter' => ['except' => ''],
@@ -218,9 +219,8 @@ class AccountsReport extends Component
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
             ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate));
-
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
         $this->totalSales = $salesQuery->clone()->sum('usd_sell');
         $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
 
@@ -246,8 +246,8 @@ class AccountsReport extends Component
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-            ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate))
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
     }

@@ -149,7 +149,7 @@
                     </div>
                         <div class="{{ $containerClass }}">
                             <select wire:model.defer="currency" class="{{ $fieldClass }}">
-                                <option value="">اختر العملة *</option>
+                                <option value="">اختر العمله المستخدمه في النظام *</option>
                             <option value="SAR">ريال سعودي (SAR)</option>
                             <option value="USD">دولار أمريكي (USD)</option>
                             <option value="EUR">يورو (EUR)</option>
@@ -175,7 +175,7 @@
                     </div>
                         <div class="{{ $containerClass }}">
                             <input type="text" wire:model.defer="license_number" class="{{ $fieldClass }}"  />
-                            <label class="{{ $labelClass }}">رقم الترخبص <span class="text-red-500">*</span></label>
+                            <label class="{{ $labelClass }}"> الرقم الترخيص للوكالة  <span class="text-red-500">*</span></label>
                         @error('license_number')     <span class="text-red-600 text-xs mt-1 block">
                                 {{ $message }}
                             </span>
@@ -184,7 +184,7 @@
                     </div>
                         <div class="{{ $containerClass }}">
                             <input type="text" wire:model.defer="commercial_record" class="{{ $fieldClass }}"  />
-                            <label class="{{ $labelClass }}">السجل التجاري <span class="text-red-500">*</span></label>
+                            <label class="{{ $labelClass }}">  رقم السجل التجاري<span class="text-red-500">*</span></label>
                         @error('commercial_record')     <span class="text-red-600 text-xs mt-1 block">
                                 {{ $message }}
                             </span>
@@ -362,12 +362,12 @@
 
                     <!-- زر حفظ الوكالة في نفس الصف -->
                     <div class="w-full md:w-[25%]">
-<button type="submit"
-    class="w-full px-6 py-3 rounded-lg font-medium text-sm text-white transition-all duration-300 shadow-md
-           bg-gradient-to-r from-[rgb(var(--primary-500))] to-[rgb(var(--primary-600))]
-           hover:opacity-80 hover:shadow-lg cursor-pointer flex items-center justify-center">
-    حفظ الوكالة
-</button>
+                        <button type="submit"
+                            class="w-full px-6 py-3 rounded-lg font-medium text-sm text-white transition-all duration-300 shadow-md
+                                bg-gradient-to-r from-[rgb(var(--primary-500))] to-[rgb(var(--primary-600))]
+                                hover:opacity-80 hover:shadow-lg cursor-pointer flex items-center justify-center">
+                            حفظ الوكالة
+                        </button>
 
 
 
@@ -405,10 +405,5 @@
         color: rgb(var(--primary-800));
     }
 </style>
-
-
-
-
-
 
 </div>

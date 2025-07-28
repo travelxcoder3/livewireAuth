@@ -340,7 +340,7 @@
                     @endif
                 </div>
                 <!-- كروت المبيعات المحققة والأرباح والتكاليف -->
-                <div class="w-full md:w-100 flex flex-col gap-2 md:gap-2">
+                <div class="w-full md:w-80 flex flex-col gap-4 md:gap-2 ">
                     <!-- المبيعات المحققة / الهدف -->
                      
                     <div class="bg-primary-50 rounded-xl p-3 md:p-5 shadow-sm border border-primary-200 text-center w-full">

@@ -117,8 +117,8 @@ class SalesReport extends Component
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
             ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate))
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
 
@@ -195,8 +195,8 @@ class SalesReport extends Component
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
             ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', "%{$this->pnrFilter}%"))
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', "%{$this->referenceFilter}%"))
-            ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate));
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
 
         $this->totalSales = (clone $query)->sum('usd_sell');
 

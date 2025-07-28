@@ -82,11 +82,19 @@
             <x-select-field label="الحساب" name="account" wireModel="accountFilter" :options="$customers->pluck('name', 'id')->toArray()"
                 placeholder="جميع الحسابات" containerClass="relative" />
 
-                <x-input-field name="start_date" label="من تاريخ" wireModel="startDate" type="date"
-                containerClass="relative" fieldClass="{{ $fieldClass }}" />
+            <div class="flex flex-col gap-1">
+                <label for="start_date" class="text-sm font-semibold text-gray-600">من تاريخ</label>
+                <input type="date" name="start_date" wire:change="$refresh" wire:model="startDate"
+                    class="{{ $fieldClass }}" />
+                class="{{ $fieldClass }}">
+            </div>
 
-            <x-input-field name="end_date" label="إلى تاريخ" wireModel="endDate" type="date"
-                containerClass="relative" fieldClass="{{ $fieldClass }}" />
+            <div class="flex flex-col gap-1">
+                <label for="end_date" class="text-sm font-semibold text-gray-600">إلى تاريخ</label>
+                <input type="date" name="end_date" wire:change="$refresh" wire:model="endDate"
+                    class="{{ $fieldClass }}" />
+            </div>
+
 
         </div>
 
@@ -94,6 +102,10 @@
             <button wire:click="resetFilters"
                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
                 إعادة تعيين الفلاتر
+            </button>
+            <button wire:click="$refresh"
+                class="bg-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-600))] text-white font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+                تطبيق الفلاتر
             </button>
         </div>
     </div>
