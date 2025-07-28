@@ -61,13 +61,10 @@
 
 
 
-            <!-- من تاريخ -->
-            <x-input-field name="start_date" label="من تاريخ" wireModel="startDate" type="date"
-                containerClass="relative" fieldClass="{{ $fieldClass }}" />
+            <!--  تاريخ -->
+            <input label=" تاريخ " type="date" wire:model="startDate" name="start_date" class="{{ $fieldClass }}" />
+            <input label="الى تاريخ " type="date" wire:model="endDate" name="end_date" class="{{ $fieldClass }}" />
 
-            <!-- إلى تاريخ -->
-            <x-input-field name="end_date" label="إلى تاريخ" wireModel="endDate" type="date"
-                containerClass="relative" fieldClass="{{ $fieldClass }}" />
 
             <!-- PNR -->
             <x-input-field name="pnr" label="PNR" wireModel="pnrFilter" placeholder="بحث بـ PNR"
