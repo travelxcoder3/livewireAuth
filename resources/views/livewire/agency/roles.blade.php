@@ -306,7 +306,7 @@
                                             bg-green-500 text-white border-green-600 shadow-lg
                                         @elseif($isPartiallySelected)
                                             bg-yellow-100 text-yellow-700 border-yellow-300 shadow-md
-                                        @else
+                                        @else 
                                             bg-white text-[rgb(var(--primary-600))] border-[rgb(var(--primary-300))] hover:border-[rgb(var(--primary-500))]
                                         @endif">
                                     <i class="fas {{ $iconMap[$module] ?? $iconMap['default'] }} ml-1 text-xs"></i>

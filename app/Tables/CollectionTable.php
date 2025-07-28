@@ -8,7 +8,7 @@ class CollectionTable
 {
     return [
         ['key' => 'index', 'label' => '#'],
-        ['key' => 'beneficiary_name', 'label' => 'اسم العميل'],
+        ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
         ['key' => 'remaining', 'label' => 'الرصيد', 'format' => 'money', 'color' => 'red-600'],
         ['key' => 'last_payment', 'label' => 'آخر سداد', 'format' => 'date'], 
         ['key' => 'debt_age', 'label' => 'عمر الدين'],

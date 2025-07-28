@@ -72,9 +72,7 @@ class UserTable
                         'permission' => 'users.edit',
                         'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
                         'showIf' => function($user) {
-                            // لا تظهر زر التعديل إذا كان للمستخدم دور agency-admin
-                            $isAgencyAdmin = $user->roles->first()?->name === 'agency-admin';
-                            return $user->agency_id == auth()->user()->agency_id && !$isAgencyAdmin;
+                            return $user->agency_id == auth()->user()->agency_id;
                         },
                     ],
                     // يمكنك إضافة زر حذف بنفس الشرط إذا كان موجودًا

@@ -122,14 +122,21 @@
                 />
 
                 <!-- الدور -->
-                <x-select-field
-                    wireModel="{{ $showEditModal ? 'edit_role' : 'role' }}"
-                    name="role"
-                    label="الدور"
-                    placeholder="اختر دور"
-                    :options="$roles->pluck('name', 'name')->toArray()"
-                    errorName="{{ $showEditModal ? 'edit_role' : 'role' }}"
-                />
+                @if($showEditModal && $editingUser && $editingUser->roles->first()?->name === 'agency-admin')
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">الدور</label>
+                        <input type="text" value="agency-admin" readonly class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-100 text-xs cursor-not-allowed" />
+                    </div>
+                @else
+                    <x-select-field
+                        wireModel="{{ $showEditModal ? 'edit_role' : 'role' }}"
+                        name="role"
+                        label="الدور"
+                        placeholder="اختر دور"
+                        :options="$roles->pluck('name', 'name')->toArray()"
+                        errorName="{{ $showEditModal ? 'edit_role' : 'role' }}"
+                    />
+                @endif
 
                 <!-- الهدف المبيعي -->
                 <x-input-field 

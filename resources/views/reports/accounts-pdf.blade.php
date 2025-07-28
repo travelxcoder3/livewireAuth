@@ -179,18 +179,15 @@
                 @foreach($fields as $field)
                     @if($field == 'sale_date')<th width="8%">التاريخ</th>@endif
                     @if($field == 'beneficiary_name')<th width="12%">المستفيد</th>@endif
-                    @if($field == 'customer')<th width="10%">العميل</th>@endif
                     @if($field == 'serviceType')<th width="8%">الخدمة</th>@endif
-                    @if($field == 'provider')<th width="8%">المزود</th>@endif
-                    @if($field == 'intermediary')<th width="8%">الوسيط</th>@endif
+                    @if($field == 'route')<th width="6%">Route</th>@endif
+                    @if($field == 'pnr')<th width="6%">PNR</th>@endif
+                    @if($field == 'reference')<th width="6%">المرجع</th>@endif
+                    @if($field == 'status')<th width="7%">الحالة</th>@endif
                     @if($field == 'usd_buy')<th width="6%" class="text-center">USD Buy</th>@endif
                     @if($field == 'usd_sell')<th width="6%" class="text-center">USD Sell</th>@endif
-                    @if($field == 'sale_profit')<th width="8%" class="text-center">الربح</th>@endif
-                    @if($field == 'amount_received')<th width="8%" class="text-center">المبلغ</th>@endif
-                    @if($field == 'account')<th width="8%">الحساب</th>@endif
-                    @if($field == 'reference')<th width="6%">المرجع</th>@endif
-                    @if($field == 'pnr')<th width="6%">PNR</th>@endif
-                    @if($field == 'route')<th width="6%">Route</th>@endif
+                    @if($field == 'provider')<th width="8%">المزود</th>@endif
+                     @if($field == 'customer_id')<th width="8%">الحساب</th>@endif
                 @endforeach
             </tr>
         </thead>
@@ -200,18 +197,34 @@
                     @foreach($fields as $field)
                         @if($field == 'sale_date')<td>{{ $sale->sale_date }}</td>@endif
                         @if($field == 'beneficiary_name')<td>{{ $sale->beneficiary_name }}</td>@endif
-                        @if($field == 'customer')<td>{{ $sale->customer->name ?? '-' }}</td>@endif
-                        @if($field == 'serviceType')<td>{{ $sale->serviceType->name ?? '-' }}</td>@endif
-                        @if($field == 'provider')<td>{{ $sale->provider->name ?? '-' }}</td>@endif
-                        @if($field == 'intermediary')<td>{{ $sale->intermediary->name ?? '-' }}</td>@endif
+                        @if($field == 'serviceType')<td>{{ $sale->serviceType->label ?? '-' }}</td>@endif
+                        @if($field == 'route')<td>{{ $sale->route }}</td>@endif
+                        @if($field == 'pnr')<td>{{ $sale->pnr }}</td>@endif
+     @if($field == 'reference')<td>{{ $sale->reference }}</td>@endif
+                          @if($field == 'status')
+    <td>
+        @php
+            $statuses = [
+                 'paid'      => 'مدفوع - Paid',
+                                                            'unpaid'    => 'غير مدفوع - Unpaid',
+                                                            'issued'    => 'تم الإصدار - Issued',
+                                                            'reissued'  => 'أعيد إصداره - Reissued',
+                                                            'refunded'  => 'تم الاسترداد - Refunded',
+                                                            'canceled'  => 'ملغي - Canceled',
+                                                            'pending'   => 'قيد الانتظار - Pending',
+                                                            'void'      => 'ملغي نهائي - Void',
+            ];
+        @endphp
+        {{ $statuses[$sale->status] ?? '-' }}
+    </td>
+@endif
+
                         @if($field == 'usd_buy')<td class="text-center text-green">{{ number_format($sale->usd_buy, 2) }}</td>@endif
                         @if($field == 'usd_sell')<td class="text-center text-red">{{ number_format($sale->usd_sell, 2) }}</td>@endif
-                        @if($field == 'sale_profit')<td class="text-center text-blue">{{ number_format($sale->sale_profit, 2) }}</td>@endif
-                        @if($field == 'amount_received')<td class="text-center">{{ number_format($sale->amount_received, 2) }}</td>@endif
-                        @if($field == 'account')<td>{{ $sale->account->name ?? '-' }}</td>@endif
-                        @if($field == 'reference')<td>{{ $sale->reference }}</td>@endif
-                        @if($field == 'pnr')<td>{{ $sale->pnr }}</td>@endif
-                        @if($field == 'route')<td>{{ $sale->route }}</td>@endif
+                        @if($field == 'provider')<td>{{ $sale->provider->name ?? '-' }}</td>@endif
+                        @if($field == 'customer_id')<td>{{ $sale->customer->name ?? '-' }}</td>@endif
+                    
+                        
                     @endforeach
                 </tr>
             @endforeach

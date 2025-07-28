@@ -144,10 +144,11 @@
         </div>
 
         <!-- القسم السفلي مع الجدول القابل للتمرير -->
-        <div class="flex-1 overflow-hidden px-4 pb-4">
-            <div class="bg-white rounded-xl shadow-md h-full flex flex-col">
-                <div class="flex-1 overflow-hidden">
-                    <div class="overflow-x-auto overflow-y-auto w-full max-h-[70vh]" style="scrollbar-width: thin; overflow-x: auto !important;">
+<div class="flex-1 px-4 pb-4 min-h-0">
+    <div class="bg-white rounded-xl shadow-md h-full flex flex-col">
+        <div class="flex-1 min-h-0">
+            <div class="overflow-x-auto overflow-y-auto w-full max-h-[70vh]">
+
                         <table class="min-w-max divide-y divide-gray-200 text-xs text-right" style="min-width:2600px;">
                         <thead class="bg-gray-100 text-gray-900 sticky top-0 z-10">
                             <tr>
@@ -313,7 +314,7 @@
         html,
         body {
             height: 100%;
-            overflow: hidden;
+            overflow: auto;
         }
         .peer:placeholder-shown+label {
             top: 0.75rem;

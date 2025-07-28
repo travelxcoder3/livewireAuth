@@ -19,7 +19,7 @@ class AccountController extends Controller
 
         $user = Auth::user();
         $agency = $user->agency;
-
+        
         $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account'])
             ->where('agency_id', $agency->id);
 
@@ -57,10 +57,16 @@ class AccountController extends Controller
 
         // تحديد الحقول المراد عرضها
         $fields = $request->input('fields', [
-            'sale_date', 'beneficiary_name', 'customer', 'serviceType',
-            'provider', 'intermediary', 'usd_buy', 'usd_sell',
-            'sale_profit', 'amount_received', 'account',
-            'reference', 'pnr', 'route'
+           'sale_date',
+    'beneficiary_name',
+    'serviceType',
+    'route',
+    'pnr',
+    'reference',
+    'usd_sell',
+    'usd_buy',
+    'provider',
+    'customer_id',
         ]);
 
         // تحضير HTML

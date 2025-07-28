@@ -59,20 +59,16 @@ class AccountsExport implements FromCollection, WithHeadings
             $fieldMap = [
                 'sale_date' => $sale->sale_date,
                 'beneficiary_name' => $sale->beneficiary_name,
-                'customer' => optional($sale->customer)->name,
-                'serviceType' => optional($sale->serviceType)->name,
-                'provider' => optional($sale->provider)->name,
-                'intermediary' => optional($sale->intermediary)->name,
+                'serviceType' => optional($sale->serviceType)->label,
+                'route' => $sale->route,
+                'pnr' => $sale->pnr,
+                'reference' => $sale->reference,
+                'status' => $sale->status,
                 'usd_buy' => $sale->usd_buy,
                 'usd_sell' => $sale->usd_sell,
-                'sale_profit' => $sale->sale_profit,
-                'amount_received' => $sale->amount_received,
-                'account' => optional($sale->account)->name,
-                'reference' => $sale->reference,
-                'pnr' => $sale->pnr,
-                'route' => $sale->route,
-                'action' => $sale->action,
-                'user' => optional($sale->user)->name,
+                'provider' => optional($sale->provider)->name,
+                'customer' => optional($sale->customer)->name,
+                
             ];
 
             if ($this->fields) {
@@ -94,20 +90,16 @@ class AccountsExport implements FromCollection, WithHeadings
         $defaultHeadings = [
             'التاريخ',
             'المستفيد',
-            'العميل',
             'الخدمة',
-            'المزود',
-            'الوسيط',
+             'Route',
+             'PNR',
+            'المرجع',
+            'action',
             'USD Buy',
             'USD Sell',
-            'الربح',
-            'المبلغ',
+            'المزود',
             'الحساب',
-            'المرجع',
-            'PNR',
-            'Route',
-            'الإجراء',
-            'اسم الموظف',
+
         ];
 
         if (!$this->fields) {
@@ -119,18 +111,17 @@ class AccountsExport implements FromCollection, WithHeadings
             'beneficiary_name' => 'المستفيد',
             'customer' => 'العميل',
             'serviceType' => 'الخدمة',
-            'provider' => 'المزود',
-            'intermediary' => 'الوسيط',
+            
+            'route' => 'Route',
+               'pnr' => 'PNR',
+                'reference' => 'المرجع',
+            'action' => 'الإجراء',
             'usd_buy' => 'USD Buy',
             'usd_sell' => 'USD Sell',
-            'sale_profit' => 'الربح',
-            'amount_received' => 'المبلغ',
-            'account' => 'الحساب',
-            'reference' => 'المرجع',
-            'pnr' => 'PNR',
-            'route' => 'Route',
-            'action' => 'الإجراء',
-            'user' => 'اسم الموظف',
+            
+            'provider' => 'المزود',
+            'customer' => 'الحساب',
+           
         ];
 
         $headings = [];

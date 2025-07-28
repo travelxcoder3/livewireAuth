@@ -266,21 +266,18 @@
 
                 <div class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto p-2">
                     @foreach ([
-        'sale_date' => 'التاريخ',
-        'beneficiary_name' => 'المستفيد',
+        'sale_date' => 'تاريخ البيع',
+        'beneficiary_name' => 'اسم المستفيد',
         'customer' => 'العميل',
         'serviceType' => 'الخدمة',
         'provider' => 'المزود',
-        'intermediary' => 'الوسيط',
         'usd_buy' => 'USD Buy',
         'usd_sell' => 'USD Sell',
-        'sale_profit' => 'الربح',
         'amount_received' => 'المبلغ',
         'account' => 'الحساب',
         'reference' => 'المرجع',
         'pnr' => 'PNR',
         'route' => 'Route',
-        'action' => 'الإجراء',
         'user' => 'اسم الموظف',
     ] as $field => $label)
                         <div class="flex items-center">

@@ -157,9 +157,15 @@
 
 <!-- زر الرجوع في أعلى الصفحة خارج الكارد -->
 <div class="fixed top-8 left-8 z-50">
-    <a href="{{ route('agency.sales.index') }}"
-       class="text-[rgb(var(--primary-600))] font-bold px-4 py-2 rounded-lg border border-[rgb(var(--primary-500))] bg-white hover:bg-[rgb(var(--primary-100))] transition duration-150 text-base shadow-sm">
-        ← رجوع
+    <a href="{{ route('agency.collections') }}"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg border transition duration-200 text-sm font-medium
+              bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))]
+              hover:shadow-md hover:text-[rgb(var(--primary-700))]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-180" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        <span>رجوع</span>
     </a>
 </div>
 

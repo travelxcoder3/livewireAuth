@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Models\Beneficiary;
 use App\Tables\SalesTable;
+use Illuminate\Validation\Rule;
+
 
 
 class Index extends Component
@@ -424,21 +426,43 @@ $sales->each(function ($sale) {
             'service_type_id' => 'required|exists:dynamic_list_items,id',
             'provider_id' => 'nullable|exists:providers,id',
             'customer_via' => 'nullable|in:whatsapp,facebook,instagram,call,office,other',
-            'usd_buy' => 'required|numeric|min:0',
-            'usd_sell' => 'required|numeric|min:0|gte:usd_buy',
+'usd_buy' => [
+    'required',
+    'numeric',
+    Rule::when(!in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']), function () {
+        return ['min:0'];
+    }),
+],
+
+'usd_sell' => [
+    'required',
+    'numeric',
+    'gte:usd_buy',
+    Rule::when(!in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']), function () {
+        return ['min:0'];
+    }),
+],
             'commission' => 'nullable|numeric',
             'route' => 'required|string|max:255',
             'pnr' => 'nullable|string|max:50',
             'reference' => 'nullable|string|max:50',
-            'amount_paid' => 'nullable|numeric|min:0',
+            'amount_paid' => [
+                'nullable',
+                'numeric',
+                Rule::when(!in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']), function () {
+                    return ['min:0'];
+                }),
+            ],           
             'depositor_name' => $this->payment_method !== 'all' ? 'required|string|max:255' : 'nullable',
             'customer_id' => 'nullable|exists:customers,id',
             'sale_profit' => 'nullable|numeric',
             'receipt_number' => 'nullable|string|max:50',
             'phone_number' => 'nullable|string|max:20',
-            'status' => 'required|in:Issued,Re-Issued,Re-Route,Refund,Void,Applied,Rejected,Approved',
+            'status' => 'required|in:Issued,Re-Issued,Re-Route,Refund-Full,Refund-Partial,Void,Applied,Rejected,Approved',
             'payment_method' => 'required|in:kash,part,all',
             'payment_type' => $this->payment_method !== 'all' ? 'required|in:cash,transfer,account_deposit,fund,from_account,wallet,other' : 'nullable',            'service_date' => 'nullable|date',
+            
+            
             'expected_payment_date' => 'nullable|date',
         ];
 
@@ -455,7 +479,7 @@ $sales->each(function ($sale) {
                 break;
             case 'part':
                 $rules['customer_id'] = 'required';
-                $rules['amount_paid'] = 'required|numeric|min:0|lt:' . $this->usd_sell;
+                $rules['amount_paid'] = 'required|numeric|lt:' . $this->usd_sell;
                 break;
             case 'all':
                 $rules['customer_id'] = 'required';
@@ -474,6 +498,9 @@ $sales->each(function ($sale) {
             'amount_paid.required' => 'أدخل المبلغ.',
             'amount_paid.prohibited' => 'احذف المبلغ.',
             'sale_date.before_or_equal' => 'تاريخ البيع يجب أن يكون اليوم أو تاريخ سابق.',
+            'usd_buy.min'      => 'سعر الشراء لا يمكن أن يكون سالبًا إلا في حالات الاسترداد أو الإلغاء.',
+'usd_sell.min'     => 'سعر البيع لا يمكن أن يكون سالبًا إلا في حالات الاسترداد أو الإلغاء.',
+'amount_paid.min'  => 'المبلغ المدفوع لا يمكن أن يكون سالبًا إلا في حالات الاسترداد أو الإلغاء.',
     ];
 
 
@@ -620,5 +647,26 @@ public function resetFilters()
     ];
     
     $this->resetPage();
+}
+
+// في المكان المناسب بعد تحديث status أو payment_type
+public function updatedStatus($value)
+{
+    $this->updateShowCustomerField();
+}
+
+public function updatedPaymentType($value)
+{
+    $this->updateShowCustomerField();
+}
+
+public function updateShowCustomerField()
+{
+    // إخفاء الحقل فقط إذا كانت الحالة Re-Issued ووسيلة الدفع كاش
+    if ($this->status === 'Re-Issued' && $this->payment_type === 'cash') {
+        $this->showCustomerField = false;
+    } else {
+        $this->showCustomerField = true;
+    }
 }
 }

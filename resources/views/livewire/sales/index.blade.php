@@ -107,7 +107,8 @@ $columns = SalesTable::columns();
                             'Issued' => 'تم الإصدار - Issued',
                             'Re-Issued' => 'أعيد الإصدار - Re-Issued',
                             'Re-Route' => 'تغيير المسار - Re-Route',
-                            'Refund' => 'استرداد - Refund',
+                            'Refund-Full' => 'استرداد كلي - Refund Full',
+                            'Refund-Partial' => 'استرداد جزئي - Refund Partial',     
                             'Void' => 'ملغي نهائي - Void',
                             'Applied' => 'قيد التقديم - Applied',
                             'Rejected' => 'مرفوض - Rejected',
@@ -495,14 +496,15 @@ $columns = SalesTable::columns();
                 />
 
                 <x-select-field
-                    wireModel="filterInputs.status"
+                    wire:model="filterInputs.status"
                     label="الحالة"
                     :options="[
                     '' => 'الكل',
                     'Issued' => 'تم الإصدار - Issued',
                     'Re-Issued' => 'أعيد الإصدار - Re-Issued',
                     'Re-Route' => 'تغيير المسار - Re-Route',
-                    'Refund' => 'استرداد - Refund',
+                    'Refund-Full' => 'استرداد كلي - Refund Full',
+                    'Refund-Partial' => 'استرداد جزئي - Refund Partial',     
                     'Void' => 'ملغي نهائي - Void',
                     'Applied' => 'قيد التقديم - Applied',
                     'Rejected' => 'مرفوض - Rejected',
@@ -575,7 +577,7 @@ $columns = SalesTable::columns();
                     placeholder="حالة الدفع"
                     containerClass="relative mt-1"
                 />
-
+                
                 <x-select-field
                     wireModel="filterInputs.payment_type"
                     label="وسيلة الدفع"
