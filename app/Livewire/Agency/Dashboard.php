@@ -29,9 +29,13 @@ class Dashboard extends Component
     public $monthlyAchieved = 0;
     public $monthlyProfit = 0;
     public $monthlyCost = 0;
+    public $monthlyPaid = 0;
+public $monthlyCollected = 0;
+public $monthlyRemaining = 0;
 
     public function mount()
     {
+
         if (!Auth::check() || !Auth::user()->agency_id) {
             session()->flash('error', 'ليس لديك صلاحيات للوصول للوحة التحكم.');
             return redirect('/');
@@ -166,9 +170,25 @@ $this->monthlyAchieved = $monthlyAchievedQuery
                 if (!$isAdmin) {
                     $monthlyAchievedQuery2->where('user_id', $userId);
                 }
-                $this->monthlyAchieved = $monthlyAchievedQuery2
-                    ->whereBetween('sale_date', [$start, $end])
-                    ->sum('amount_paid');
+                $paid = Sale::where('agency_id', $agencyId)
+    ->when(!$isAdmin, fn($q) => $q->where('user_id', $userId))
+    ->whereBetween('sale_date', [$start, $end])
+    ->sum('amount_paid');
+
+$collected = DB::table('collections')
+    ->join('sales', 'collections.sale_id', '=', 'sales.id')
+    ->where('sales.agency_id', $agencyId)
+    ->when(!$isAdmin, fn($q) => $q->where('sales.user_id', $userId))
+    ->whereBetween('sales.sale_date', [$start, $end])
+    ->sum('collections.amount');
+
+$totalUsdSell = Sale::where('agency_id', $agencyId)
+    ->when(!$isAdmin, fn($q) => $q->where('user_id', $userId))
+    ->whereBetween('sale_date', [$start, $end])
+    ->sum('usd_sell');
+
+$this->monthlyAchieved = $totalUsdSell;
+
         
                 // 3. التكاليف (شراء)
                 $monthlyCostQuery = Sale::where('agency_id', $agencyId);
@@ -186,7 +206,10 @@ $this->monthlyAchieved = $monthlyAchievedQuery
                 })
                 ->whereBetween('sale_date', [$start, $end])
                 ->sum(\DB::raw('usd_sell - usd_buy'));
-
+                $this->monthlyPaid = $paid;
+                $this->monthlyCollected = $collected;
+                $this->monthlyRemaining = $totalUsdSell - ($paid + $collected);
+                
 // أو يمكنك حسابها كالتالي إذا كنت تريد استخدام القيم المجمعة سابقاً:
 // $this->monthlyProfit = $this->monthlyAchieved - $this->monthlyCost; // لكن هذا يعتمد على أن amount_paid = usd_sell
     }

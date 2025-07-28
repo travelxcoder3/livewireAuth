@@ -340,8 +340,9 @@
                     @endif
                 </div>
                 <!-- كروت المبيعات المحققة والأرباح والتكاليف -->
-                <div class="w-full md:w-72 flex flex-col gap-4 md:gap-6">
+                <div class="w-full md:w-100 flex flex-col gap-2 md:gap-2">
                     <!-- المبيعات المحققة / الهدف -->
+                     
                     <div class="bg-primary-50 rounded-xl p-3 md:p-5 shadow-sm border border-primary-200 text-center w-full">
                         <div class="flex items-center justify-center gap-2 mb-1">
                             <i class="fas fa-bullseye text-primary-600"></i>
@@ -350,7 +351,40 @@
                         <div class="text-2xl font-extrabold text-primary-700">
                             {{ number_format($monthlyAchieved, 2) }} / {{ number_format($monthlyTarget, 2) }}
                         </div>
+                               <!-- كروت صغيرة أسفل الهدف -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+    <!-- المدفوع -->
+    <div class="rounded-xl bg-green-50 px-3 py-2 text-center shadow-sm border border-green-100">
+        <div class="text-xs text-green-700 font-semibold flex justify-center items-center gap-1 mb-1">
+            <i class="fas fa-hand-holding-usd"></i> المدفوع مباشرة
+        </div>
+        <div class="text-base font-bold text-green-800">
+            {{ number_format($monthlyPaid, 2) }}
+        </div>
+    </div>
+
+    <!-- المحصل -->
+    <div class="rounded-xl bg-blue-50 px-3 py-2 text-center shadow-sm border border-blue-100">
+        <div class="text-xs text-blue-700 font-semibold flex justify-center items-center gap-1 mb-1">
+            <i class="fas fa-wallet"></i> المبالغ المحصلة
+        </div>
+        <div class="text-base font-bold text-blue-800">
+            {{ number_format($monthlyCollected, 2) }}
+        </div>
+    </div>
+
+    <!-- المؤجل -->
+    <div class="rounded-xl bg-gray-50 px-3 py-2 text-center shadow-sm border border-gray-100">
+        <div class="text-xs text-gray-700 font-semibold flex justify-center items-center gap-1 mb-1">
+            <i class="fas fa-clock"></i> المبالغ المؤجلة
+        </div>
+        <div class="text-base font-bold text-gray-800">
+            {{ number_format($monthlyRemaining, 2) }}
+        </div>
+    </div>
+</div>
                     </div>
+
                     <!-- الأرباح -->
                     <div class="bg-green-50 rounded-xl p-3 md:p-5 shadow-sm text-center w-full">
                         <div class="flex items-center justify-center gap-2 mb-1">
