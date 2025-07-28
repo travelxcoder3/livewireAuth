@@ -25,11 +25,10 @@
             <h2 class="text-xl font-bold" style="color: rgb(var(--primary-700));">قائمة المزودين</h2>
 
             @if($user->can('providers.create'))
-            <button wire:click="showAddModal"
-                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                + إضافة مزود جديد
-            </button>
+                <x-primary-button wire:click="showAddModal" padding="px-4 py-2">
+                    + إضافة مزود جديد
+                </x-primary-button>
+
             @endif
         </div>
 
@@ -101,11 +100,10 @@
                                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
                             إلغاء
                         </button>
-                        <button type="submit"
-                                class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                        <x-primary-button type="submit" padding="px-4 py-2">
                             {{ $editMode ? 'تحديث' : 'إضافة' }}
-                        </button>
+                        </x-primary-button>
+
                     </div>
                 </form>
             </div>

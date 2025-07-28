@@ -30,11 +30,10 @@
                 class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center">
         </div>
         @if ($sales->count())
-            <button wire:click="openBulkInvoiceModal"
-                class="text-white font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm ml-2"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)), rgb(var(--primary-600)));">
-                إصدار فاتورة مجمعة
-            </button>
+<x-primary-button wire:click="openBulkInvoiceModal" class="ml-2">
+    إصدار فاتورة مجمعة
+</x-primary-button>
+
         @endif
 
     </div>
@@ -87,20 +86,18 @@
 
             <!-- زر تصدير إكسل -->
             @can('accounts.export')
-                <button onclick="openReportModal('excel')"
-                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                    تصدير إكسل
-                </button>
+            <x-primary-button onclick="openReportModal('excel')">
+                تصدير إكسل
+            </x-primary-button>
+
             @endcan
 
             <!-- زر طباعة PDF -->
             @can('accounts.print')
-                <button onclick="openReportModal('pdf')"
-                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                <x-primary-button onclick="openReportModal('pdf')">
                     طباعة PDF
-                </button>
+                </x-primary-button>
+
             @endcan
 
 
@@ -226,17 +223,15 @@
                 <input type="hidden" name="start_date" value="{{ $startDate }}">
                 <input type="hidden" name="end_date" value="{{ $endDate }}">
 
-                <button type="button" onclick="generateFullReport()"
-                    class="text-white font-bold px-6 py-3 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                <x-primary-button type="button" onclick="generateFullReport()" padding="px-6 py-3">
                     تقرير كامل
-                </button>
+                </x-primary-button>
 
-                <button type="button" onclick="openFieldsModal()"
-                    class="text-white font-bold px-6 py-3 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+
+                <x-primary-button type="button" onclick="openFieldsModal()" padding="px-6 py-3">
                     تقرير مخصص
-                </button>
+                </x-primary-button>
+
 
 
                 <button type="button" onclick="closeReportModal()"
@@ -298,11 +293,10 @@
                         duration-300 text-sm">
                         رجوع
                     </button>
-                    <button type="submit"
-                        class="text-white font-bold px-6 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        تحميل التقرير
-                    </button>
+                        <x-primary-button type="submit" padding="px-6 py-2">
+                            تحميل التقرير
+                        </x-primary-button>
+
                 </div>
             </form>
         </div>
@@ -430,10 +424,10 @@
                     <div class="flex justify-end gap-2 mt-4">
                         <button type="button" wire:click="$set('showBulkInvoiceModal', false)"
                             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">إلغاء</button>
-                        <button type="submit" class="text-white font-bold px-4 py-2 rounded-xl shadow text-sm"
-                            style="background: linear-gradient(to right, rgb(var(--primary-500)), rgb(var(--primary-600)));">
+                        <x-primary-button type="submit">
                             تأكيد وإنشاء الفاتورة
-                        </button>
+                        </x-primary-button>
+
                     </div>
                 </form>
             </div>

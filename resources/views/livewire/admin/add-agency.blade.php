@@ -362,12 +362,13 @@
 
                     <!-- زر حفظ الوكالة في نفس الصف -->
                     <div class="w-full md:w-[25%]">
-                        <button type="submit"
-                            class="w-full px-6 py-3 rounded-lg font-medium text-sm text-white transition-all duration-300 shadow-md
-                                bg-gradient-to-r from-[rgb(var(--primary-500))] to-[rgb(var(--primary-600))]
-                                hover:opacity-80 hover:shadow-lg cursor-pointer flex items-center justify-center">
+                       <x-primary-button
+                            type="submit"
+                            class="w-full px-6 py-3 hover:opacity-80 hover:shadow-lg"
+                        >
                             حفظ الوكالة
-                        </button>
+                        </x-primary-button>
+
 
 
 
