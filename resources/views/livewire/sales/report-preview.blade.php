@@ -157,7 +157,7 @@
 
 <!-- زر الرجوع في أعلى الصفحة خارج الكارد -->
 <div class="fixed top-8 left-8 z-50">
-    <a href="{{ route('agency.collections') }}"
+    <a href="{{ route('agency.sales.index') }}"
        class="flex items-center gap-2 px-4 py-2 rounded-lg border transition duration-200 text-sm font-medium
               bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))]
               hover:shadow-md hover:text-[rgb(var(--primary-700))]">

@@ -19,11 +19,10 @@
             <div class="flex space-x-4">
                 @can('employees.create')
                     <!-- زر إضافة موظف -->
-                    <button wire:click="createEmployee"
-                        class="text-white font-bold px-4 py-2 rounded-xl border border-white shadow-md transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        + إضافة موظف
-                    </button>
+                        <x-primary-button wire:click="createEmployee" padding="px-4 py-2">
+                            + إضافة موظف
+                        </x-primary-button>
+
                 @endcan
             </div>
         </div>
@@ -187,11 +186,10 @@
                             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
                             إلغاء
                         </button>
-                        <button type="submit"
-                            class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                            {{ $editingEmployee ? 'تحديث' : 'إضافة' }}
-                        </button>
+                            <x-primary-button type="submit" padding="px-4 py-2">
+                                {{ $editingEmployee ? 'تحديث' : 'إضافة' }}
+                            </x-primary-button>
+
                     </div>
                 </form>
             </div>

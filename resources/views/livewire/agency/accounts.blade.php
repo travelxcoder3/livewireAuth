@@ -38,7 +38,7 @@
 
     </div>
 
-    <!-- فلاتر البحث -->
+  <!-- فلاتر البحث -->
     <div class="bg-white rounded-xl shadow-md p-4">
         <div class="grid md:grid-cols-4 gap-4">
             <x-input-field name="search" label="بحث عام" wireModel="search" placeholder="ابحث في جميع الحقول..."
@@ -51,22 +51,25 @@
             <!-- المزود -->
             <x-select-field label="المزود" name="provider" wireModel="providerFilter" :options="$providers->pluck('name', 'id')->toArray()"
                 placeholder="جميع المزودين" containerClass="relative" />
-
-
-
             <!-- الحساب -->
             <x-select-field label="الحساب" name="account" wireModel="accountFilter" :options="$customers->pluck('name', 'id')->toArray()"
                 placeholder="جميع الحسابات" containerClass="relative" />
-
-
-
-            <!--  تاريخ -->
-            <x-input-field name="start_date" label="من تاريخ" wireModel="startDate" type="date"
-                containerClass="relative" fieldClass="{{ $fieldClass }}" />
-
-            <x-input-field name="end_date" label="إلى تاريخ" wireModel="endDate" type="date"
-                containerClass="relative" fieldClass="{{ $fieldClass }}" />
-
+            <!-- من تاريخ -->
+            <div class="relative mt-1">
+                <input type="date" name="start_date" id="start_date" wire:model="startDate" wire:change="$refresh"
+                    placeholder=" " {{-- ضروري لعمل floating label --}} class="peer {{ $fieldClass }}" />
+                <label for="start_date" class="{{ $labelClass }}">
+                    من تاريخ
+                </label>
+            </div>
+            <!-- إلى تاريخ -->
+            <div class="relative mt-1">
+                <input type="date" name="end_date" id="end_date" wire:model="endDate" wire:change="$refresh"
+                    placeholder=" " class="peer {{ $fieldClass }}" />
+                <label for="end_date" class="{{ $labelClass }}">
+                    إلى تاريخ
+                </label>
+            </div>
             <!-- PNR -->
             <x-input-field name="pnr" label="PNR" wireModel="pnrFilter" placeholder="بحث بـ PNR"
                 containerClass="relative" fieldClass="{{ $fieldClass }}" />
@@ -86,18 +89,16 @@
 
             <!-- زر تصدير إكسل -->
             @can('accounts.export')
-            <x-primary-button onclick="openReportModal('excel')">
-                تصدير إكسل
-            </x-primary-button>
-
+    <x-primary-button type="button" onclick="openReportModal('excel')">
+        تقرير Excel
+    </x-primary-button>
             @endcan
 
             <!-- زر طباعة PDF -->
             @can('accounts.print')
-                <x-primary-button onclick="openReportModal('pdf')">
-                    طباعة PDF
-                </x-primary-button>
-
+    <x-primary-button type="button" onclick="openReportModal('pdf')">
+        تقرير PDF
+    </x-primary-button>
             @endcan
 
 
@@ -122,7 +123,7 @@
                             <input type="checkbox" wire:model="selectAll"
                                 wire:click="$set('selectedSales', $sales->pluck('id')->toArray())">
                         </th>
-                        <th class="p-2 border-b">#</th>
+                        <th class="p-2 border-b">الرقم</th>
 
                         @foreach ($columns as $col)
                             <th class="p-2 border-b">{{ $col['label'] }}</th>
@@ -137,7 +138,7 @@
                                 <input type="checkbox" wire:click="toggleSaleSelection({{ $sale->id }})"
                                     @if (in_array($sale->id, $selectedSales)) checked @endif>
                             </td>
-                           <td class="p-2 border-b text-center">
+                            <td class="p-2 border-b text-center">
                                 {{ ($sales->currentPage() - 1) * $sales->perPage() + $loop->iteration }}
                             </td>
 

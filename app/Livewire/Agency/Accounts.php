@@ -93,10 +93,10 @@ class Accounts extends Component
 
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
             $q->where('name', 'قائمة الخدمات')
-            ->where(function($query) {
-                $query->where('created_by_agency', auth()->user()->agency_id)
-                      ->orWhereNull('created_by_agency');
-            });
+                ->where(function ($query) {
+                    $query->where('created_by_agency', auth()->user()->agency_id)
+                        ->orWhereNull('created_by_agency');
+                });
         })->orderBy('order')->get();
 
         $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
@@ -262,15 +262,15 @@ class Accounts extends Component
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
             ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate));
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
 
         $totalSales = $filteredSalesQuery->clone()->sum('usd_sell'); // لحساب الإجمالي الصحيح
         $sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
         foreach ($sales as $sale) {
-        $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
-        $sale->remaining = $sale->usd_sell - $sale->paid_total;
-}
+            $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+            $sale->remaining = $sale->usd_sell - $sale->paid_total;
+        }
 
         return view('livewire.agency.accounts', compact('customers', 'sales', 'totalSales'))
             ->layout('layouts.agency');

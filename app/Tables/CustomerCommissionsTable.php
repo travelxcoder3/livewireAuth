@@ -21,7 +21,7 @@ class CustomerCommissionsTable
 
                 'sortable' => true
             ],
-            ['key' => 'date', 'label' => 'التاريخ', 'format' => 'date', 'sortable' => true],
+            ['key' => 'date', 'label' => 'التاريخ', 'sortable' => true],
         ];
     }
 }

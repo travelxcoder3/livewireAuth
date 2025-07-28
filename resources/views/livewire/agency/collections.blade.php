@@ -99,10 +99,12 @@ $rows = $sales->map(function($sale, $i) {
         <div class="col-span-1 md:col-span-4 flex justify-end gap-2 mt-2">
 
         <a href="{{ route('agency.collections.all') }}"
-    class="px-4 py-2 rounded-lg text-white text-sm shadow"
-    style="background-color: rgb(var(--primary-500))">
-    إظهار جميع التحصيلات
-</a>
+            class="px-4 py-2 rounded-lg text-white text-sm shadow"
+            style="background-color: rgb(var(--primary-500))">
+            إظهار جميع التحصيلات
+        </a>
+
+
             <button wire:click="resetFilters" class="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1.5 rounded shadow">
                 إعادة تعيين الفلاتر
             </button>

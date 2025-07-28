@@ -24,14 +24,14 @@
             </div>
 
             <div wire:ignore.self x-data="{ open: false }" class="relative">
-                <button @click="open = !open"
-                    class="flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                <x-primary-button type="button" @click="open = !open" padding="px-4 py-2"
+                    class="flex items-center gap-2 hover:shadow-lg">
                     <i class="fas fa-file-export"></i>
                     <span>تصدير التقرير</span>
                     <i class="fas fa-chevron-down text-xs transition-transform duration-200"
                         :class="{ 'transform rotate-180': open }"></i>
-                </button>
+                </x-primary-button>
+
 
                 <div x-show="open" @click.away="open = false" x-transition
                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">

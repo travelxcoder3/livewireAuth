@@ -86,7 +86,6 @@
                 <label for="start_date" class="text-sm font-semibold text-gray-600">من تاريخ</label>
                 <input type="date" name="start_date" wire:change="$refresh" wire:model="startDate"
                     class="{{ $fieldClass }}" />
-                class="{{ $fieldClass }}">
             </div>
 
             <div class="flex flex-col gap-1">

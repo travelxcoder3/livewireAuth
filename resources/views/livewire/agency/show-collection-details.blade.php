@@ -91,11 +91,10 @@
                     تحصيل المبالغ
                 </h3>
 
-                <button wire:click="openEditAmountModal({{ $sale->id }})"
-                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                    تعديل المبلغ
-                </button>
+            <x-primary-button wire:click="openEditAmountModal({{ $sale->id }})" padding="px-4 py-2">
+                تعديل المبلغ
+            </x-primary-button>
+
             </div>
 
             <div class="overflow-x-auto">
