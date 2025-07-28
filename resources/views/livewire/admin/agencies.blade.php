@@ -1,5 +1,5 @@
 <div>
-    <div class="flex flex-col h-screen overflow-hidden">
+    <div class="flex flex-col h-screen overflow-hidden" style="overflow-x: auto; overflow-y: auto;">
             <x-toast />
 
         <!-- القسم العلوي الثابت -->
@@ -147,16 +147,16 @@
         <div class="flex-1 overflow-hidden px-4 pb-4">
             <div class="bg-white rounded-xl shadow-md h-full flex flex-col">
                 <div class="flex-1 overflow-hidden">
-                    <div class="overflow-x-auto overflow-y-auto w-full max-h-[70vh]" style="scrollbar-width: thin;">
-                        <table class="min-w-max divide-y divide-gray-200 text-xs text-right" style="min-width:1800px;">
+                    <div class="overflow-x-auto overflow-y-auto w-full max-h-[70vh]" style="scrollbar-width: thin; overflow-x: auto !important;">
+                        <table class="min-w-max divide-y divide-gray-200 text-xs text-right" style="min-width:2600px;">
                         <thead class="bg-gray-100 text-gray-900 sticky top-0 z-10">
                             <tr>
                                 <th class="px-3 py-2 whitespace-nowrap">الشعار</th>
-                                <th class="px-3 py-2 whitespace-nowrap text-gray-900">اسم الوكالة</th>
-                                <th class="px-3 py-2 whitespace-nowrap" style="width:200px;">البريد الإلكتروني</th>
-                                <th class="px-3 py-2 whitespace-nowrap" style="width:150px;">الهاتف</th>
+                                <th class="px-3 py-2 whitespace-nowrap text-gray-900" style="width:180px;">اسم الوكالة</th>
+                                <th class="px-3 py-2 whitespace-nowrap" style="width:220px;">البريد الإلكتروني</th>
+                                <th class="px-3 py-2 whitespace-nowrap" style="width:170px;">الهاتف</th>
                                 <th class="px-3 py-2 whitespace-nowrap">العملة</th>
-                                <th class="px-3 py-2 whitespace-nowrap" style="width:180px;">العنوان</th>
+                                <th class="px-3 py-2 whitespace-nowrap" style="width:200px;">العنوان</th>
                                 <th class="px-3 py-2 whitespace-nowrap">رقم الرخصة</th>
                                 <th class="px-3 py-2 whitespace-nowrap">السجل التجاري</th>
                                 <th class="px-3 py-2 whitespace-nowrap">الرقم الضريبي</th>
@@ -166,7 +166,7 @@
                                 <th class="px-3 py-2 whitespace-nowrap">نهاية الاشتراك</th>
                                 <th class="px-3 py-2 whitespace-nowrap">حالة الاشتراك</th> <!-- العمود الجديد -->
                                 <th class="px-3 py-2 whitespace-nowrap">المستخدمين</th>
-                                <th class="px-3 py-2 whitespace-nowrap" style="width:160px;">الإجراءات</th>
+                                <th class="px-3 py-2 whitespace-nowrap" style="width:180px;">الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">

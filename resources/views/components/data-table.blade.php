@@ -44,18 +44,19 @@
                                                 : '-';
                                             break;
 
-                                        case 'status':
+                                            case 'status':
                                             $translatedValue = match ($value) {
-                                                'paid'      => 'مدفوع - Paid',
-                                                    'unpaid'    => 'غير مدفوع - Unpaid',
-                                                    'issued'    => 'تم الإصدار - Issued',
-                                                    'reissued'  => 'أعيد إصداره - Reissued',
-                                                    'refunded'  => 'تم الاسترداد - Refunded',
-                                                    'canceled'  => 'ملغي - Canceled',
-                                                    'pending'   => 'قيد الانتظار - Pending',
-                                                    'void'      => 'ملغي نهائي - Void',
-                                                default => $value,
+                                                'Issued'     => 'تم الإصدار - Issued',
+                                                'Re-Issued'  => 'أعيد الإصدار - Re-Issued',
+                                                'Re-Route'   => 'تغيير مسار - Re-Route',
+                                                'Refund'     => 'استرداد - Refund',
+                                                'Void'       => 'ملغي نهائي - Void',
+                                                'Applied'    => 'تم التقديم - Applied',
+                                                'Rejected'   => 'مرفوض - Rejected',
+                                                'Approved'   => 'مقبول - Approved',
+                                                default      => $value,
                                             };
+
                                             break;
                                         case 'payment_method':
                                             $translatedValue = match ($value) {

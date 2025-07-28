@@ -102,11 +102,11 @@ public function showSuccessMessage()
     {
         $this->validate([
            'phone' => 'required|numeric|max:999999999',
-           'landline' => 'nullable|string|max:30',
+           'landline' => 'required|string|max:30',
             'email' => 'required|email|unique:agencies,email,' . $this->agency->id,
-            'address' => 'nullable|string',
-            'description' => 'nullable|string',
-            'monthlyTarget' => 'nullable|numeric|min:0',
+            'address' => 'required|string',
+            'description' => 'required|string',
+            'monthlyTarget' => 'required|numeric|min:0',
         ]);
 
         $this->agency->phone = $this->phone;
@@ -132,10 +132,15 @@ public function showSuccessMessage()
             ->first();
 
         if ($existingTarget && $this->monthlyTarget != $existingTarget->target_amount) {
-            // لا يُسمح بالتعديل
-            session()->flash('error', 'لا يمكن تعديل الهدف الشهري بعد تحديده لهذا الشهر.');
+
+             session()->flash('message',  'لا يمكن تعديل الهدف الشهري بعد تحديده لهذا الشهر.');
+             session()->flash('type', 'error');
+
             return; // إيقاف المعالجة هنا
         }
+
+  
+
 
         // إنشاء الهدف إذا لم يكن موجودًا
         if (!$existingTarget && $this->monthlyTarget !== null) {
@@ -153,7 +158,7 @@ public function showSuccessMessage()
         $this->logoPreview = $this->agency->logo
             ? Storage::url($this->agency->logo) . '?v=' . now()->timestamp
             : asset('images/default-agency-logo.png');
-
+        $this->currentTarget = $this->monthlyTarget;
          session()->flash('message',  'تم تعديل البيانات بنجاح');
          session()->flash('type', 'success');
         $this->editing = false;

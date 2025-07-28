@@ -6,7 +6,7 @@
 @php
     $bgColors = [
         'success' => 'bg-[rgb(var(--primary-600))] text-white',
-        'error' => 'bg-[rgb(var(--error-600),255,77,77)] text-white',
+          'error' => 'bg-red-600 text-white',
         'warning' => 'bg-[rgb(var(--warning-400),255,193,7)] text-black',
         'info' => 'bg-[rgb(var(--info-600),59,130,246)] text-white',
     ];

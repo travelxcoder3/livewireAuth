@@ -104,15 +104,16 @@ $columns = SalesTable::columns();
                         wireModel="status"
                         label="الحالة"
                         :options="[
-                            'issued' => 'تم الإصدار - Issued',
-                            'refunded' => 'تم الاسترداد - Refunded',
-                            'canceled' => 'ملغي - Canceled',
-                            'pending' => 'قيد الانتظار - Pending',
-                            'reissued' => 'أعيد إصداره - Reissued',
-                            'void' => 'ملغي نهائي - Void',
-                            'paid' => 'مدفوع - Paid',
-                            'unpaid' => 'غير مدفوع - Unpaid',
+                            'Issued' => 'تم الإصدار - Issued',
+                            'Re-Issued' => 'أعيد الإصدار - Re-Issued',
+                            'Re-Route' => 'تغيير المسار - Re-Route',
+                            'Refund' => 'استرداد - Refund',
+                            'Void' => 'ملغي نهائي - Void',
+                            'Applied' => 'قيد التقديم - Applied',
+                            'Rejected' => 'مرفوض - Rejected',
+                            'Approved' => 'مقبول - Approved',
                         ]"
+
                         placeholder=" الحالة"
                         containerClass="relative mt-1"
                         fieldClass="peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm placeholder-transparent text-gray-600 
@@ -497,16 +498,17 @@ $columns = SalesTable::columns();
                     wireModel="filterInputs.status"
                     label="الحالة"
                     :options="[
-                        '' => 'الكل',
-                        'issued' => 'تم الإصدار - Issued',
-                        'refunded' => 'تم الاسترداد - Refunded',
-                        'canceled' => 'ملغي - Canceled',
-                        'pending' => 'قيد الانتظار - Pending',
-                        'reissued' => 'أعيد إصداره - Reissued',
-                        'void' => 'ملغي نهائي - Void',
-                        'paid' => 'مدفوع - Paid',
-                        'unpaid' => 'غير مدفوع - Unpaid',
-                    ]"
+                    '' => 'الكل',
+                    'Issued' => 'تم الإصدار - Issued',
+                    'Re-Issued' => 'أعيد الإصدار - Re-Issued',
+                    'Re-Route' => 'تغيير المسار - Re-Route',
+                    'Refund' => 'استرداد - Refund',
+                    'Void' => 'ملغي نهائي - Void',
+                    'Applied' => 'قيد التقديم - Applied',
+                    'Rejected' => 'مرفوض - Rejected',
+                    'Approved' => 'مقبول - Approved',
+                ]"
+
                     placeholder="الحالة"
                     containerClass="relative mt-1"
                 />

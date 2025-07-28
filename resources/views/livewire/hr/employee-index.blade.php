@@ -89,46 +89,59 @@
                     @endphp
 
                     <!-- الصف الأول -->
-                   <div class="grid md:grid-cols-2 gap-8">
-                        <x-input-field
-                            name="name"
-                            label="الاسم"
-                            placeholder="الاسم"
-                            wireModel="name"
-                            errorName="name"
-                        />
+                <!-- الصف الأول -->
+<div class="grid md:grid-cols-2 gap-8">
+      <div class="relative">
+        <input type="text" id="name" name="name" wire:model.defer="name" placeholder=" "
+            class="peer w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder-transparent
+            focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))]">
+        <label for="name" class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
+            peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400
+            peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-gray-500">
+            الاسم
+        </label>
+        @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+    </div>
 
-                        <x-input-field
-                            name="email"
-                            label="البريد الإلكتروني"
-                            type="email"
-                            placeholder="البريد الإلكتروني"
-                            wireModel="email"
-                            errorName="email"
-                        />
-                    </div>
+    <div class="relative">
+        <input type="email" id="email" name="email" wire:model.defer="email" placeholder=" "
+            class="peer w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder-transparent
+            focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))]">
+        <label for="email" class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
+            peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400
+            peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-gray-500">
+            البريد الإلكتروني
+        </label>
+        @error('email') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+    </div>
+</div>
 
                     <!-- الصف الثاني -->
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- كلمة المرور -->
-                         <x-input-field
-                                name="password"
-                                label="{{ $editingEmployee ? 'كلمة مرور جديدة' : 'كلمة المرور' }}"
-                                type="password"
-                                placeholder="{{ $editingEmployee ? 'كلمة المرور الجديدة (اختياري)' : 'كلمة المرور' }}"
-                                wireModel="password"
-                                errorName="password"
-                            />
+                <div class="grid md:grid-cols-2 gap-6 mt-6">
+     <div class="relative">
+        <input type="password" id="password" name="password" wire:model.defer="password" placeholder=" "
+            class="peer w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder-transparent
+            focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))]">
+        <label for="password" class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
+            peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400
+            peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-gray-500">
+            {{ $editingEmployee ? 'كلمة المرور الجديدة (اختياري)' : 'كلمة المرور' }}
+        </label>
+        @error('password') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+    </div>
 
-                            <x-input-field
-                                name="password_confirmation"
-                                label="تأكيد كلمة المرور"
-                                type="password"
-                                placeholder="{{ $editingEmployee ? 'تأكيد كلمة المرور الجديدة' : 'تأكيد كلمة المرور' }}"
-                                wireModel="password_confirmation"
-                                errorName="password_confirmation"
-                            />
-                    </div>
+    <div class="relative">
+        <input type="password" id="password_confirmation" name="password_confirmation" wire:model.defer="password_confirmation" placeholder=" "
+            class="peer w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder-transparent
+            focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))]">
+        <label for="password_confirmation" class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
+            peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400
+            peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-gray-500">
+            {{ $editingEmployee ? 'تأكيد كلمة المرور الجديدة' : 'تأكيد كلمة المرور' }}
+        </label>
+        @error('password_confirmation') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+    </div>
+</div>
 
                     <!-- الصف الثالث -->
                     <div class="grid md:grid-cols-2 gap-6">
@@ -142,24 +155,32 @@
                     </div>
 
                     <!-- الصف الرابع -->
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- رقم الهاتف -->
-                         <x-input-field
-                            name="phone"
-                            label="رقم الهاتف"
-                            placeholder="رقم الهاتف"
-                            wireModel="phone"
-                            errorName="phone"
-                        />
+                 <!-- الصف الرابع -->
+<div class="grid md:grid-cols-2 gap-6 mt-6">
+     <div class="relative">
+        <input type="text" id="phone" name="phone" wire:model.defer="phone" placeholder=" "
+            class="peer w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder-transparent
+            focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))]">
+        <label for="phone" class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
+            peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400
+            peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-gray-500">
+            رقم الهاتف
+        </label>
+        @error('phone') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+    </div>
 
-                        <x-input-field
-                            name="user_name"
-                            label="اسم المستخدم"
-                            placeholder="اسم المستخدم"
-                            wireModel="user_name"
-                            errorName="user_name"
-                        />
-                    </div>
+    <div class="relative">
+        <input type="text" id="user_name" name="user_name" wire:model.defer="user_name" placeholder=" "
+            class="peer w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder-transparent
+            focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))]">
+        <label for="user_name" class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
+            peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400
+            peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-gray-500">
+            اسم المستخدم
+        </label>
+        @error('user_name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+    </div>
+</div>
                     <!-- الأزرار -->
                     <div class="flex justify-end gap-3 pt-4">
                         <button type="button" wire:click="closeForm"

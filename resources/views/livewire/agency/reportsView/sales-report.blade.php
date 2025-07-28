@@ -75,11 +75,8 @@
             <x-select-field label="الحساب" name="customers" wireModel="accountFilter"
                 :options="$customers->pluck('name', 'id')->toArray()" placeholder="جميع الحسابات" />
 
-            <x-input-field name="start_date" label="من تاريخ" wireModel="startDate" type="date"
-                fieldClass="{{ $fieldClass }}" />
-
-            <x-input-field name="end_date" label="إلى تاريخ" wireModel="endDate" type="date"
-                fieldClass="{{ $fieldClass }}" />
+            <input type="date" wire:model="startDate" name="start_date" class="{{ $fieldClass }}" />
+            <input type="date" wire:model="endDate" name="end_date" class="{{ $fieldClass }}" />
         </div>
 
         <div class="flex justify-end mt-4">

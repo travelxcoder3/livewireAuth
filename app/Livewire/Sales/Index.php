@@ -436,7 +436,7 @@ $sales->each(function ($sale) {
             'sale_profit' => 'nullable|numeric',
             'receipt_number' => 'nullable|string|max:50',
             'phone_number' => 'nullable|string|max:20',
-            'status' => 'required|in:issued,refunded,canceled,pending,reissued,void,paid,unpaid',
+            'status' => 'required|in:Issued,Re-Issued,Re-Route,Refund,Void,Applied,Rejected,Approved',
             'payment_method' => 'required|in:kash,part,all',
             'payment_type' => $this->payment_method !== 'all' ? 'required|in:cash,transfer,account_deposit,fund,from_account,wallet,other' : 'nullable',            'service_date' => 'nullable|date',
             'expected_payment_date' => 'nullable|date',
