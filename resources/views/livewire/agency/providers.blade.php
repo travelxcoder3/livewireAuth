@@ -82,7 +82,7 @@
                     <!-- معلومات التواصل -->
                     <div class="{{ $containerClass }}">
                         <textarea wire:model.defer="contact_info" rows="2" class="{{ $fieldClass }}" placeholder="معلومات التواصل"></textarea>
-                        <label class="{{ $labelClass }}">معلومات التواصل</label>
+                        <label class="{{ $labelClass }}">رقم التواصل</label>
                         @error('contact_info') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <!-- نوع الخدمة -->

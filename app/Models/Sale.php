@@ -35,9 +35,7 @@ class Sale extends Model
         'expected_payment_date'
     ];
 
-        protected $casts = [
-            'sale_date' => 'date',
-        ];
+
     public function agency()
     {
         return $this->belongsTo(Agency::class);

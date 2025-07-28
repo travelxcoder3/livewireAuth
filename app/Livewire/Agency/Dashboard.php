@@ -266,12 +266,12 @@ $this->monthlyAchieved = $monthlyAchievedQuery
                 $direct_sales = $salesMap[$key]->direct_sales ?? 0;
                 $collected_sales = $collectionsMap[$key]->collected_sales ?? 0;
                 $operations_count = $salesMap[$key]->operations_count ?? 0;
-                return [
+                    return [
                     'year' => $item['year'],
                     'month' => $item['month'],
                     'total_sales' => $direct_sales + $collected_sales,
                     'operations_count' => $operations_count,
-                ];
+                    ];
             });
             $this->salesByMonth = $final->values()->toArray();
             $countQuery = Sale::where('agency_id', $agencyId)

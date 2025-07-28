@@ -35,6 +35,7 @@ class Roles extends Component
 
     public $showPermissions = false;
     public $openModules = [];
+    public $search = '';
 
     protected function rules()
     {
@@ -291,15 +292,21 @@ class Roles extends Component
 
     public function render()
     {
-        $roles = Role::where('agency_id', Auth::user()->agency_id)
+        $rolesQuery = Role::where('agency_id', Auth::user()->agency_id)
             ->with('permissions')
-            ->withCount('users')
-            ->orderBy('id', 'desc')
-            ->paginate(10);
-
+            ->withCount('users');
+        if (!empty($this->search)) {
+            $rolesQuery->where(function($q) {
+                $q->where('name', 'like', '%' . $this->search . '%');
+            });
+        }
+        $roles = $rolesQuery->orderBy('id', 'desc')->paginate(10);
         return view('livewire.agency.roles', [
             'roles' => $roles,
             'permissions' => $this->permissions,
+            'selectedPermissions' => $this->selectedPermissions,
+            'showPermissions' => $this->showPermissions,
+            'openModules' => $this->openModules,
         ])
         ->layout('layouts.agency')
         ->title('إدارة الأدوار - ' . Auth::user()->agency->name);

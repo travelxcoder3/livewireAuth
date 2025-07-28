@@ -19,14 +19,15 @@ $colors = ThemeService::getCurrentThemeColors($themeName);
         </h3>
 
         <div class="grid md:grid-cols-3 gap-4 text-sm">
-            <div class="flex items-center">
-                <strong class="min-w-[100px] text-gray-500">اسم المستفيد:</strong>
-                <span class="font-medium">{{ $sale->beneficiary_name }}</span>
+            <div>
+                <span class="text-gray-500">اسم المستفيد:</span>
+                <span class="font-bold">{{ $sale->beneficiary_name ?? 'غير معروف' }}</span>
             </div>
-            <div class="flex items-center">
-                <strong class="min-w-[100px] text-gray-500">رقم الهاتف:</strong>
-                <span class="font-medium">{{ $sale->customer->phone ?? '-' }}</span>
+            <div>
+                <span class="text-gray-500">رقم الهاتف:</span>
+                <span class="font-bold">{{ $sale->phone_number ?? 'غير معروف' }}</span>
             </div>
+
             <div class="flex items-center">
                 <strong class="min-w-[100px] text-gray-500">الحالة:</strong>
                 <span class="font-medium">{{ optional($sale->collections->last()?->customerType)->label ?? 'غير محدد' }}</span>

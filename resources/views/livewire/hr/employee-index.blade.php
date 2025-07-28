@@ -89,46 +89,45 @@
                     @endphp
 
                     <!-- الصف الأول -->
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- الاسم -->
-                        <div class="{{ $containerClass }}">
-                            <input wire:model="name" type="text" class="{{ $fieldClass }}" placeholder="الاسم" />
-                            <label class="{{ $labelClass }}">الاسم</label>
-                            @error('name')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
+                   <div class="grid md:grid-cols-2 gap-8">
+                        <x-input-field
+                            name="name"
+                            label="الاسم"
+                            placeholder="الاسم"
+                            wireModel="name"
+                            errorName="name"
+                        />
 
-                        <!-- البريد الإلكتروني -->
-                        <div class="{{ $containerClass }}">
-                            <input wire:model="email" type="email" class="{{ $fieldClass }}"
-                                placeholder="البريد الإلكتروني" />
-                            <label class="{{ $labelClass }}">البريد الإلكتروني</label>
-                            @error('email')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
+                        <x-input-field
+                            name="email"
+                            label="البريد الإلكتروني"
+                            type="email"
+                            placeholder="البريد الإلكتروني"
+                            wireModel="email"
+                            errorName="email"
+                        />
                     </div>
 
                     <!-- الصف الثاني -->
                     <div class="grid md:grid-cols-2 gap-6">
                         <!-- كلمة المرور -->
-                        <div class="{{ $containerClass }}">
-                            <input wire:model="password" type="password" class="{{ $fieldClass }}"
-                                placeholder="{{ $editingEmployee ? 'كلمة المرور الجديدة (اختياري)' : 'كلمة المرور' }}" />
-                            <label
-                                class="{{ $labelClass }}">{{ $editingEmployee ? 'كلمة مرور جديدة' : 'كلمة المرور' }}</label>
-                            @error('password')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
+                         <x-input-field
+                                name="password"
+                                label="{{ $editingEmployee ? 'كلمة مرور جديدة' : 'كلمة المرور' }}"
+                                type="password"
+                                placeholder="{{ $editingEmployee ? 'كلمة المرور الجديدة (اختياري)' : 'كلمة المرور' }}"
+                                wireModel="password"
+                                errorName="password"
+                            />
 
-                        <!-- تأكيد كلمة المرور -->
-                        <div class="{{ $containerClass }}">
-                            <input wire:model="password_confirmation" type="password" class="{{ $fieldClass }}"
-                                placeholder="{{ $editingEmployee ? 'تأكيد كلمة المرور الجديدة' : 'تأكيد كلمة المرور' }}" />
-                            <label class="{{ $labelClass }}">تأكيد كلمة المرور</label>
-                        </div>
+                            <x-input-field
+                                name="password_confirmation"
+                                label="تأكيد كلمة المرور"
+                                type="password"
+                                placeholder="{{ $editingEmployee ? 'تأكيد كلمة المرور الجديدة' : 'تأكيد كلمة المرور' }}"
+                                wireModel="password_confirmation"
+                                errorName="password_confirmation"
+                            />
                     </div>
 
                     <!-- الصف الثالث -->
@@ -145,24 +144,21 @@
                     <!-- الصف الرابع -->
                     <div class="grid md:grid-cols-2 gap-6">
                         <!-- رقم الهاتف -->
-                        <div class="{{ $containerClass }}">
-                            <input wire:model="phone" type="text" class="{{ $fieldClass }}"
-                                placeholder="رقم الهاتف" />
-                            <label class="{{ $labelClass }}">رقم الهاتف</label>
-                            @error('phone')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
+                         <x-input-field
+                            name="phone"
+                            label="رقم الهاتف"
+                            placeholder="رقم الهاتف"
+                            wireModel="phone"
+                            errorName="phone"
+                        />
 
-                        <!-- اسم المستخدم -->
-                        <div class="{{ $containerClass }}">
-                            <input wire:model="user_name" type="text" class="{{ $fieldClass }}"
-                                placeholder="اسم المستخدم" />
-                            <label class="{{ $labelClass }}">اسم المستخدم</label>
-                            @error('user_name')
-                                <span class="text-red-600 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
+                        <x-input-field
+                            name="user_name"
+                            label="اسم المستخدم"
+                            placeholder="اسم المستخدم"
+                            wireModel="user_name"
+                            errorName="user_name"
+                        />
                     </div>
                     <!-- الأزرار -->
                     <div class="flex justify-end gap-3 pt-4">

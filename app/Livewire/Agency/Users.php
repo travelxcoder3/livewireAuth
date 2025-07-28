@@ -115,11 +115,6 @@ class Users extends Component
         if ($user->agency_id != Auth::user()->agency_id) {
             abort(403, 'غير مصرح لك بتعديل مستخدمي الفروع');
         }
-        // حماية: لا يمكن تعديل أدمن الوكالة
-        if ($user->roles->first()?->name === 'agency-admin') {
-            session()->flash('error', 'لا يمكن تعديل مستخدم أدمن الوكالة.');
-            return;
-        }
         $this->editingUser = $user;
         $this->edit_name = $user->name;
         $this->edit_email = $user->email;
@@ -135,11 +130,6 @@ class Users extends Component
         $user = $this->editingUser;
         if ($user->agency_id != Auth::user()->agency_id) {
             abort(403, 'غير مصرح لك بتحديث مستخدمي الفروع');
-        }
-        // حماية: لا يمكن تحديث أدمن الوكالة
-        if ($user->roles->first()?->name === 'agency-admin') {
-            session()->flash('error', 'لا يمكن تعديل مستخدم أدمن الوكالة.');
-            return;
         }
         $this->validate([
             'edit_name' => 'required|string|max:255',
@@ -186,11 +176,6 @@ class Users extends Component
         if ($user->agency_id != Auth::user()->agency_id) {
             abort(403, 'غير مصرح لك بحذف مستخدمي الفروع');
         }
-        // حماية: لا يمكن حذف أدمن الوكالة
-        if ($user->roles->first()?->name === 'agency-admin') {
-            session()->flash('error', 'لا يمكن حذف مستخدم أدمن الوكالة.');
-            return;
-        }
         $user->delete();
         $this->loadUsers();
         session()->flash('success', 'تم حذف المستخدم بنجاح');
@@ -218,10 +203,52 @@ class Users extends Component
 
     }
 
-    public function render()
-    {
-        return view('livewire.agency.users')
-            ->layout('layouts.agency')
-            ->title('إدارة المستخدمين - ' . Auth::user()->agency->name);
-    }
+ 
+
+
+    // أضف هذه الخصائص في بداية الكلاس
+public $search = '';
+public $role_filter = '';
+public $status_filter = '';
+
+// عدل دالة render لتشمل الفلاتر
+public function render()
+{
+    $agency = Auth::user()->agency;
+    
+    $query = User::query()
+        ->with(['roles', 'agency'])
+        ->when($agency->parent_id === null, function ($query) use ($agency) {
+            $query->whereIn('agency_id', array_merge([$agency->id], $agency->branches()->pluck('id')->toArray()));
+        }, function ($query) use ($agency) {
+            $query->where('agency_id', $agency->id);
+        })
+        ->when($this->search, function ($query) {
+            $query->where(function ($q) {
+                $q->where('name', 'like', '%'.$this->search.'%')
+                  ->orWhere('email', 'like', '%'.$this->search.'%');
+            });
+        })
+        ->when($this->role_filter, function ($query) {
+            $query->whereHas('roles', function ($q) {
+                $q->where('name', $this->role_filter);
+            });
+        })
+        ->when($this->status_filter !== '', function ($query) {
+            $query->where('is_active', $this->status_filter);
+        })
+        ->latest();
+
+    $this->users = $query->get();
+
+    return view('livewire.agency.users')
+        ->layout('layouts.agency')
+        ->title('إدارة المستخدمين - ' . $agency->name);
+}
+
+// أضف دالة لإعادة تعيين الفلاتر
+public function resetFilters()
+{
+    $this->reset(['search', 'role_filter', 'status_filter']);
+}
 } 

@@ -50,7 +50,7 @@
                 <tr>
                     <th class="px-3 py-2">اسم الدور</th>
                     <th class="px-3 py-2">الصلاحيات</th>
-                    <th class="px-3 py-2">عدد المستخدمين</th>
+                    <th class="px-3 py-0 text-center" style="padding-top:2px; padding-bottom:2px; line-height:1.1; font-size:1.1em;">عدد المستخدمين</th>
                     <th class="px-3 py-2">تاريخ الإنشاء</th>
                     <th class="px-3 py-2">الإجراءات</th>
                 </tr>
@@ -68,7 +68,6 @@
                                 </span>
                             @endif
                         </div>
-                        <div class="text-gray-500 text-xs">{{ $role->name }}</div>
                     </td>
                     <!-- زر عرض الصلاحيات -->
                     <td class="px-3 py-2 text-center">
@@ -86,7 +85,9 @@
                         </x-primary-button>
                     </td>
 
-                    <td class="px-3 py-2 text-center">{{ $role->users_count ?? 0 }}</td>
+                    <td class="px-3 py-0 text-center" style="padding-top:2px; padding-bottom:2px; line-height:1.1; font-size:1.1em; vertical-align:top;">
+                        {{ $role->users_count ?? 0 }}
+                    </td>
                     <td class="px-3 py-2">{{ $role->created_at->format('Y-m-d') }}</td>
                     <td class="px-3 py-2">
                         <div class="flex gap-2">
@@ -301,14 +302,15 @@
                                 @endphp
                                 <button type="button" wire:click="toggleModule('{{ $module }}')"
                                     class="w-full text-center px-3 py-2 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105 border-2 relative
-                                        @if(!empty($openModules[$module])) 
-                                            @if($isFullySelected) bg-green-500 text-white border-green-600 shadow-lg @else bg-[rgb(var(--primary-500))] text-white border-[rgb(var(--primary-600))] shadow-lg @endif
-                                        @else 
-                                            @if($isFullySelected) bg-green-100 text-green-700 border-green-300 shadow-md @elseif($isPartiallySelected) bg-yellow-100 text-yellow-700 border-yellow-300 shadow-md @else bg-white text-[rgb(var(--primary-600))] border-[rgb(var(--primary-300))] hover:border-[rgb(var(--primary-500))] @endif
+                                        @if($isFullySelected)
+                                            bg-green-500 text-white border-green-600 shadow-lg
+                                        @elseif($isPartiallySelected)
+                                            bg-yellow-100 text-yellow-700 border-yellow-300 shadow-md
+                                        @else
+                                            bg-white text-[rgb(var(--primary-600))] border-[rgb(var(--primary-300))] hover:border-[rgb(var(--primary-500))]
                                         @endif">
                                     <i class="fas {{ $iconMap[$module] ?? $iconMap['default'] }} ml-1 text-xs"></i>
                                     {{ __(ucfirst($module)) }}
-                                    
                                     @if($selectedCount > 0)
                                         <div class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-md">
                                             {{ $selectedCount }}
@@ -412,13 +414,9 @@
                                     <!-- قائمة الصلاحيات -->
                                     <div class="space-y-2 text-xs max-h-60 overflow-y-auto">
                                         @foreach($perms as $perm)
-                                            @php
-                                                $isSelected = in_array($perm->name, $selectedPermissions);
-                                            @endphp
-                                            <label class="flex items-center justify-between border-b pb-1 hover:bg-gray-50 p-1 rounded transition
-                                                @if($isSelected) bg-green-50 border-green-200 @endif">
+                                            <label class="flex items-center justify-between border-b pb-1 hover:bg-gray-50 p-1 rounded transition">
                                                 <span class="flex items-center gap-2 text-gray-700 font-medium">
-                                                    <i class="fas {{ $isSelected ? 'fa-check-circle text-green-500' : 'fa-circle text-gray-300' }} text-sm"></i>
+                                                    <i class="fas fa-circle text-gray-300 text-sm"></i>
                                                     {{ $perm->name }}
                                                 </span>
                                                 <input type="checkbox" wire:model="selectedPermissions" value="{{ $perm->name }}"

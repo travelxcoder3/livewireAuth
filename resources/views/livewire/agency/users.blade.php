@@ -4,7 +4,66 @@
         <h2 class="text-2xl font-bold" style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
             إدارة المستخدمين
         </h2>
+        
     </div>
+<!-- البحث والفلاتر -->
+<div class="bg-white rounded-xl shadow-md p-4 mb-6">
+    <div class="grid md:grid-cols-4 gap-3">
+        <!-- حقل البحث -->
+        <div class="relative mt-1">
+            <input type="text" wire:model.live="search"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer"
+                placeholder=" ">
+            <label
+                class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
+                ابحث بالاسم أو البريد
+            </label>
+        </div>
+
+        <!-- فلتر الدور -->
+        <div class="relative mt-1">
+            <select wire:model.live="role_filter"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer">
+                <option value="">كل الأدوار</option>
+                @foreach($roles as $role)
+                    <option value="{{ $role->name }}">{{ $role->name }}</option>
+                @endforeach
+            </select>
+            <label
+                class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
+                الدور
+            </label>
+        </div>
+
+        <!-- فلتر الحالة -->
+        <div class="relative mt-1">
+            <select wire:model.live="status_filter"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer">
+                <option value="">كل الحالات</option>
+                <option value="1">نشط</option>
+                <option value="0">غير نشط</option>
+            </select>
+            <label
+                class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
+                الحالة
+            </label>
+        </div>
+
+        <!-- عدد المستخدمين -->
+        <div class="flex items-center text-xs" style="color: rgb(var(--primary-700));">
+            عدد المستخدمين: {{ $users->count() }}
+        </div>
+    </div>
+
+    <!-- زر إعادة تعيين الفلاتر -->
+    <div class="flex justify-end mt-3">
+        <button wire:click="resetFilters"
+            class="text-gray-800 font-bold px-4 py-2 rounded-xl border border-gray-800 shadow-md transition duration-300 text-sm"
+            style="background: linear-gradient(to right, rgb(var(--primary-200)) 0%, rgb(var(--primary-300)) 100%);">
+            إعادة تعيين الفلاتر
+        </button>
+    </div>
+</div>
 
     <!-- جدول المستخدمين -->
     @php
