@@ -21,44 +21,69 @@ class Collections extends Component
     public $relationType = '';
     public $movementType = '';
 
-    public function render()
-    {
-      $query = Sale::with(['customer', 'account', 'serviceType', 'provider', 'collections'])
-             ->where('agency_id', Auth::user()->agency_id);
+ public function render()
+{
+    // ✅ جلب كل المبيعات المرتبطة بالعملاء مع علاقاتها
+    $allSales = Sale::with(['customer', 'collections', 'collections.customerType', 'collections.debtType', 'collections.customerResponse', 'collections.customerRelation'])
+        ->where('agency_id', Auth::user()->agency_id)
+        ->when($this->search, fn($q) =>
+            $q->whereHas('customer', fn($q2) =>
+                $q2->where('name', 'like', "%{$this->search}%")
+            )
+        )
+        ->when($this->startDate, fn($q) =>
+            $q->whereDate('sale_date', '>=', $this->startDate)
+        )
+        ->when($this->endDate, fn($q) =>
+            $q->whereDate('sale_date', '<=', $this->endDate)
+        )
+        ->get();
+
+    // ✅ جمع المبيعات حسب العميل ثم حسب sale_group_id
+    $groupedByCustomer = $allSales->groupBy('customer_id');
+
+    $customers = $groupedByCustomer->map(function ($sales, $customerId) {
+        $customer = $sales->first()->customer;
+
+        // 🔄 نجمع حسب sale_group_id أو id
+        $groupedByGroup = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
+
+        // ✅ حساب المديونية الحقيقية فقط من المجموعات
+        $totalDue = $groupedByGroup->sum(function ($group) {
+            $total = $group->sum('usd_sell');
+            $paid = $group->sum('amount_paid');
+            $collected = $group->flatMap->collections->sum('amount');
+            return $total - $paid - $collected;
+        });
+
+        // ✅ فقط العملاء الذين عليهم مديونية
+        if ($totalDue <= 0) return null;
+
+        $latestCollection = $sales->flatMap->collections->sortByDesc('payment_date')->first();
+
+        return (object) [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'total_due' => $totalDue,
+            'last_payment' => optional($latestCollection)->payment_date,
+            'customer_type' => optional($latestCollection?->customerType)->label ?? '-',
+            'debt_type' => optional($latestCollection?->debtType)->label ?? '-',
+            'customer_response' => optional($latestCollection?->customerResponse)->label ?? '-',
+            'customer_relation' => optional($latestCollection?->customerRelation)->label ?? '-',
+            'first_sale_id' => $sales->first()->id,
+        ];
+    })->filter()->values(); // ⬅️ نحذف nulls من العملاء غير المدينين
+
+    return view('livewire.agency.collections', [
+        'sales' => $customers,
+        'customerTypes' => $this->getOptions('نوع العميل'),
+        'debtTypes' => $this->getOptions('نوع المديونية'),
+        'responseTypes' => $this->getOptions('تجاوب العميل'),
+        'relationTypes' => $this->getOptions('نوع ارتباطه بالشركة'),
+    ])->layout('layouts.agency');
+}
 
 
-
-        // ✅ استعلام فقط المبيعات التي لم تُسدد بالكامل
-        $query->whereRaw('
-            (usd_sell - COALESCE(amount_paid, 0) - (
-                SELECT COALESCE(SUM(amount), 0)
-                FROM collections
-                WHERE collections.sale_id = sales.id
-            )) > 0
-        ');
-
-        if ($this->search) {
-            $query->where('beneficiary_name', 'like', "%{$this->search}%");
-        }
-
-        if ($this->startDate) {
-            $query->whereDate('sale_date', '>=', $this->startDate);
-        }
-
-        if ($this->endDate) {
-            $query->whereDate('sale_date', '<=', $this->endDate);
-        }
-
-        $sales = $query->orderBy('sale_date', 'desc')->paginate(10);
-
-        return view('livewire.agency.collections', [
-            'sales' => $sales,
-            'customerTypes' => $this->getOptions('نوع العميل'),
-            'debtTypes' => $this->getOptions('نوع المديونية'),
-            'responseTypes' => $this->getOptions('تجاوب العميل'),
-            'relationTypes' => $this->getOptions('نوع ارتباطه بالشركة'),
-        ])->layout('layouts.agency');
-    }
 
     protected function getOptions($label)
     {

@@ -61,7 +61,7 @@
     @endif
 
     {{-- التحصيل --}}
-    @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('collections.view'))
+    @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.view'))
         <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">
             <x-navbar.buttons.icon-button
                 icon="fas fa-hand-holding-usd"

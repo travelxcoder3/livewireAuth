@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 use App\Models\Beneficiary;
 use App\Tables\SalesTable;
 use Illuminate\Validation\Rule;
-
+use Illuminate\Support\Str;
 
 
 class Index extends Component
@@ -44,6 +44,7 @@ public $userCommissionDue  = 0;
     public $showCustomerField = true;
     public $showPaymentDetails = true;
     public $showDepositorField = true;
+    public ?string $sale_group_id = null;
 
     public $filters = [
     'start_date' => '',
@@ -77,6 +78,7 @@ public $filterInputs = [
 
 public $filterServices = [];
 public $filterCustomers = [];
+
     // في دالة mount أو مكان مناسب
     public function fetchServices()
     {
@@ -116,6 +118,7 @@ public $filterCustomers = [];
         $this->phone_number = $sale->phone_number;
         $this->service_date = $sale->service_date;
         $this->expected_payment_date = $sale->expected_payment_date;
+        $this->sale_group_id = $sale->sale_group_id;
 
         // معالجة الحقول الشرطية يدويًا
         $this->showExpectedDate = in_array($sale->payment_method, ['part', 'all']);
@@ -188,6 +191,8 @@ if ($sale->payment_method === 'all') {
         $this->amount_due = 0;
         $this->showCommission = false;
         $this->showExpectedDate = false;
+        $this->sale_group_id = Str::uuid(); // توليد UUID جديد عند تنظيف الحقول
+
     }
 
 
@@ -396,7 +401,10 @@ $sales->each(function ($sale) {
         $this->sale_date = now()->format('Y-m-d');
         $this->fetchServices();
         $this->showExpectedDate = false;
-
+        // ✅ توليد UUID جديد فقط إذا لم يتم تحديده مسبقًا
+        if (!$this->sale_group_id) {
+            $this->sale_group_id = (string) Str::uuid();
+        }
         // تحميل البيانات للفلترة
         $this->filterServices = \App\Models\DynamicListItem::whereHas('list', function($query) {
             $query->where('name', 'قائمة الخدمات');
@@ -579,6 +587,7 @@ $sales->each(function ($sale) {
             'agency_id' => Auth::user()->agency_id,
             'service_date' => $this->service_date,
             'expected_payment_date' => $this->expected_payment_date,
+            'sale_group_id' => $this->sale_group_id, // ✅ نستخدم القيمة المخزنة بدون تغيير
         ]);
 
         $this->resetForm();

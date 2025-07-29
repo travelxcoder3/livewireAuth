@@ -4,15 +4,13 @@ namespace App\Tables;
 
 class CollectionTable
 {
-   public static function columns()
+ public static function columns()
 {
     return [
         ['key' => 'index', 'label' => '#'],
-        ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
-        ['key' => 'remaining', 'label' => 'الرصيد', 'format' => 'money', 'color' => 'red-600'],
-        ['key' => 'last_payment', 'label' => 'آخر سداد', 'format' => 'date'], 
-        ['key' => 'debt_age', 'label' => 'عمر الدين'],
-        ['key' => 'expected_payment_date', 'label' => 'تاريخ السداد المتوقع', 'format' => 'date'],
+        ['key' => 'name', 'label' => 'اسم العميل'],
+        ['key' => 'total_due', 'label' => 'إجمالي المديونية', 'format' => 'money', 'color' => 'red-600'],
+        ['key' => 'last_payment', 'label' => 'آخر سداد', 'format' => 'date'],
         ['key' => 'customer_type', 'label' => 'نوع العميل'],
         ['key' => 'debt_type', 'label' => 'نوع المديونية'],
         ['key' => 'customer_response', 'label' => 'تجاوب العميل'],
@@ -23,12 +21,15 @@ class CollectionTable
             'actions' => [
                 [
                     'type' => 'details',
-                    'label' => 'تفاصيل المديونية',
-                    'url' => function($row) { return route('agency.collection.details', $row->id); },
+                    'label' => 'تفاصيل',
+                    'url' => fn($row) => route('agency.collection.details', $row->first_sale_id),
+
+
                     'class' => 'text-white text-xs px-3 py-1 bg-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-600))] rounded-lg shadow',
                 ]
             ]
         ]
     ];
 }
+
 } 

@@ -11,31 +11,11 @@
 
     $columns = CollectionTable::columns();
     // تجهيز البيانات مع القيم المحسوبة
-$rows = $sales->map(function($sale, $i) {
-    $totalInvoice = $sale->usd_sell ?? 0;
-
-    $paidFromSales = $sale->amount_paid ?? 0; // ✅ تعديل هنا
-    $paidFromCollections = $sale->collections->sum('amount');
-    $paidTotal = $paidFromSales + $paidFromCollections;
-
-    $remaining = $totalInvoice - $paidTotal;
-
-    $debtAge = $sale->sale_date ? round(abs(now()->diffInDays($sale->sale_date, false))) : null;
-
-    return (object) [
-        'id' => $sale->id,
-        'index' => $i + 1,
-        'beneficiary_name' => $sale->beneficiary_name ?? '-',
-        'remaining' => $remaining,
-        'last_payment' => optional($sale->collections->last())->payment_date ?? '-',
-        'debt_age' => $debtAge,
-        'expected_payment_date' => $sale->expected_payment_date,
-        'customer_type' => optional($sale->collections->last()?->customerType)->label ?? '-',
-        'debt_type' => optional($sale->collections->last()?->debtType)->label ?? '-',
-        'customer_response' => optional($sale->collections->last()?->customerResponse)->label ?? '-',
-        'customer_relation' => optional($sale->collections->last()?->customerRelation)->label ?? '-',
-    ];
+$rows = $sales->map(function($customer, $i) {
+    $customer->index = $i + 1;
+    return $customer;
 });
+
 
 
     // معالجة url في actions
@@ -114,9 +94,5 @@ $rows = $sales->map(function($sale, $i) {
     <!-- جدول التحصيلات -->
     <x-data-table :rows="$rows" :columns="$columns" />
 
-        @if($sales->hasPages())
-            <div class="px-4 py-2 border-t border-gray-200">
-                {{ $sales->links() }}
-            </div>
-        @endif
+     
 </div>

@@ -35,12 +35,16 @@
 
             <div class="grid md:grid-cols-3 gap-4 text-sm">
                 <div>
-                    <span class="text-gray-500">اسم المستفيد:</span>
-                    <span class="font-bold">{{ $sale->beneficiary_name ?? 'غير معروف' }}</span>
+                    <span class="text-gray-500">اسم العميل:</span>
+                    <span class="font-bold">{{  $sale->customer?->name ?? 'غير معروف' }}</span>
+
+                   
+
+
                 </div>
                 <div>
                     <span class="text-gray-500">رقم الهاتف:</span>
-                    <span class="font-bold">{{ $sale->phone_number ?? 'غير معروف' }}</span>
+                    <span class="font-bold">{{ $sale->customer?->phone ?? 'غير معروف' }}</span>
                 </div>
 
                 <div class="flex items-center">
@@ -83,6 +87,59 @@
             </div>
         </div>
 
+        <!-- المبيعات الأخرى لنفس العميل -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="text-lg font-bold mb-4"
+                style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
+                جميع المبيعات المرتبطة بالعميل
+            </h3>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
+                    <thead class="bg-gray-100 text-gray-600">
+                        <tr>
+                            <th class="px-2 py-1">اسم المستفيد</th>
+                            <th class="px-2 py-1">الخدمة</th>
+                            <th class="px-2 py-1">تاريخ البيع</th>
+                            <th class="px-2 py-1">المبلغ المحصل</th>
+                            <th class="px-2 py-1">المتبقي</th>
+                            <th class="px-2 py-1">تاريخ السداد المتوقع</th>
+                            <th class="px-2 py-1">الموظف</th>
+                            <th class="px-2 py-1">الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        @foreach ($customerSales as $s)
+                            @php
+                                $collected = $s->collections_total ?? 0;
+                                $paidFromSale = $s->amount_paid ?? 0;
+                                $totalPaid = $collected + $paidFromSale;
+                                $remaining = ($s->usd_sell ?? 0) - $totalPaid;
+                            @endphp
+
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-2 py-1">{{ $s->beneficiary_name ?? '-' }}</td>
+                                <td class="px-2 py-1">{{ $s->service_type_name ?? '-' }}</td>
+
+                                <td class="px-2 py-1">{{ $s->sale_date }}</td>
+                                <td class="px-2 py-1 text-green-700 font-bold">{{ number_format($totalPaid, 2) }}</td>
+                                <td class="px-2 py-1 text-red-600 font-bold">{{ number_format($remaining, 2) }}</td>
+                                <td class="px-2 py-1">{{ $s->expected_payment_date ?? '-' }}</td>
+                                <td class="px-2 py-1">{{ optional($s->employee)->name ?? '-' }}</td>
+                                <td class="px-2 py-1">
+                                    <x-primary-button wire:click="openEditAmountModal({{ $s->id }})" padding="px-2 py-1"
+                                        class="text-xs">
+                                        سداد
+                                    </x-primary-button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
         <!-- تحصيل المبالغ -->
         <div class="bg-white rounded-xl shadow-md p-6">
             <div class="flex justify-between items-center mb-4">
@@ -90,10 +147,6 @@
                     style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
                     تحصيل المبالغ
                 </h3>
-
-            <x-primary-button wire:click="openEditAmountModal({{ $sale->id }})" padding="px-4 py-2">
-                تعديل المبلغ
-            </x-primary-button>
 
             </div>
 

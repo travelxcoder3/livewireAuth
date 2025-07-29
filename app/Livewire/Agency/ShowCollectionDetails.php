@@ -22,31 +22,82 @@ class ShowCollectionDetails extends Component
     public $paidTotal = 0;
     public $payRemainingNow = 0;
 
-    public function mount($sale)
-    {
-        $this->sale = Sale::with([
-            'customer',
-            'collections.customerType',
-            'collections.debtType',
-            'collections.customerResponse',
-            'collections.customerRelation'
-        ])
-        ->where('agency_id', Auth::user()->agency_id)
-        ->findOrFail($sale);
+    public $customerSales = [];
 
-        $this->calculateAmounts();
-    }
+public function mount($sale)
+{
+    $this->sale = Sale::with([
+        'customer',
+        'collections.customerType',
+        'collections.debtType',
+        'collections.customerResponse',
+        'collections.customerRelation',
+    ])
+    ->where('agency_id', Auth::user()->agency_id)
+    ->findOrFail($sale);
+
+    $this->calculateAmounts();
+
+    // ✅ جلب مبيعات العميل مجمعة حسب sale_group_id أو id إن لم يوجد group
+   $rawSales = Sale::with(['employee', 'collections', 'serviceType'])
+        ->where('agency_id', Auth::user()->agency_id)
+        ->where('customer_id', $this->sale->customer_id)
+        ->get();
+
+    $grouped = $rawSales->groupBy(function ($item) {
+        return $item->sale_group_id ?? $item->id;
+    });
+
+    $this->customerSales = $grouped->map(function ($sales) {
+    $first = $sales->first();
+    return (object)[
+        'id' => $first->id,
+        'group_id' => $first->sale_group_id,
+        'employee' => $first->employee,
+        'beneficiary_name' => $first->beneficiary_name,
+        'service_date' => $first->service_date,
+        'service_type_name' => optional($first->serviceType)->label,
+         'sale_date' => $first->sale_date, 
+        'service' => $first->service,
+        'usd_sell' => $sales->sum('usd_sell'),
+        'amount_paid' => $sales->sum('amount_paid'),
+        'collections_total' => $sales->flatMap->collections->sum('amount'),
+    ];
+})->values();
+}
+
+
+
+  
 
     // دالة جديدة لحساب المبالغ
-   protected function calculateAmounts()
+protected function calculateAmounts()
 {
-    $this->totalAmount = $this->sale->usd_sell ?? 0;
-    $this->paidFromSales = $this->sale->amount_paid ?? 0; // ✅ هنا التعديل
-    $this->paidFromCollections = $this->sale->collections->sum('amount');
+    // التحقق هل لدى العملية sale_group_id
+    $groupId = $this->sale->sale_group_id;
+
+    if ($groupId) {
+        // جلب كل المبيعات بنفس sale_group_id لنفس الوكالة
+        $groupedSales = Sale::with('collections')
+            ->where('agency_id', Auth::user()->agency_id)
+            ->where('sale_group_id', $groupId)
+            ->get();
+
+        $this->totalAmount = $groupedSales->sum('usd_sell');
+        $this->paidFromSales = $groupedSales->sum('amount_paid');
+        $this->paidFromCollections = $groupedSales->flatMap->collections->sum('amount');
+    } else {
+        // العملية مفردة بدون مجموعة
+        $this->totalAmount = $this->sale->usd_sell ?? 0;
+        $this->paidFromSales = $this->sale->amount_paid ?? 0;
+        $this->paidFromCollections = $this->sale->collections->sum('amount');
+    }
+
     $this->paidTotal = $this->paidFromSales + $this->paidFromCollections;
     $this->amountReceived = $this->paidTotal;
     $this->remainingAmount = $this->totalAmount - $this->paidTotal;
 }
+
 
 
     public function render()

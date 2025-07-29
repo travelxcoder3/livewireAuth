@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Sale extends Model
 {
@@ -32,9 +33,20 @@ class Sale extends Model
         'sale_profit',
         'customer_via',
         'service_date',
-        'expected_payment_date'
+        'expected_payment_date',
+        'sale_group_id'
     ];
 
+        protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($sale) {
+            if (empty($sale->sale_group_id)) {
+                $sale->sale_group_id = Str::uuid();
+            }
+        });
+    }
 
     public function agency()
     {
@@ -91,6 +103,11 @@ class Sale extends Model
     public function invoices()
     {
         return $this->belongsToMany(Invoice::class, 'invoice_sale');
+    }
+
+        public function employee()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
 

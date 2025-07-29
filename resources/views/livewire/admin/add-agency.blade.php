@@ -175,7 +175,7 @@
                     </div>
                         <div class="{{ $containerClass }}">
                             <input type="text" wire:model.defer="license_number" class="{{ $fieldClass }}"  />
-                            <label class="{{ $labelClass }}"> الرقم الترخيص للوكالة  <span class="text-red-500">*</span></label>
+                            <label class="{{ $labelClass }}"> رقم ترخيص الوكالة  <span class="text-red-500">*</span></label>
                         @error('license_number')     <span class="text-red-600 text-xs mt-1 block">
                                 {{ $message }}
                             </span>
