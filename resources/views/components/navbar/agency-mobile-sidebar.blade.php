@@ -136,7 +136,8 @@
             @endif
 
             <!-- التقارير -->
-            @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportsSales.view') || Auth::user()->can('reportsAccounts.view'))
+            @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportsSales.view') || Auth::user()->can('reportsAccounts.view')
+            || Auth::user()->can('reportCustomers.view'))
             <div x-data="{open: false}" class="relative">
                 <button @click="open = !open" class="flex items-center justify-between w-full px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                     <div class="flex items-center gap-3">
@@ -158,6 +159,13 @@
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                         <i class="fas fa-file-alt"></i>
                         <span>تقارير الحسابات</span>
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportCustomers.view'))
+                    <a href="{{ route('agency.reports.customers-follow-up') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-file-alt"></i>
+                        <span> تقرير تتبع العملاء </span>
                     </a>
                     @endif
                 </div>

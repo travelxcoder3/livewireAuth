@@ -47,6 +47,7 @@ use App\Livewire\Agency\AgencyPolicies;
 use App\Livewire\Agency\Commissions;
 use App\Livewire\Agency\Obligations\Index;
 use App\Http\Controllers\SalesReportController;
+use App\Http\Controllers\CustomerFollowUpReportController;
 
 
 
@@ -172,12 +173,21 @@ Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
         ->middleware('role:agency-admin');
     // === رابط الموافقات للوكالة (جديد) ===
     Route::get('/approvals', \App\Livewire\Agency\ApprovalRequests::class)->name('approvals.index');
+    // ============================
+    // 🧑‍💼 قسم التقارير داخل لوحة الوكالة
+    // ============================
     Route::prefix('reports')->group(function () {
         Route::get('/accounts', \App\Livewire\Agency\Reports\AccountsReport::class)->name('reports.accounts');
         Route::get('/accounts/pdf', [AccountsReportController::class, 'downloadPdf'])->name('reports.accounts.pdf');
 
-        Route::get('/sales', \App\Livewire\Agency\Reports\SalesReport::class )->name('reports.sales');
+        Route::get('/sales', \App\Livewire\Agency\Reports\SalesReport::class)->name('reports.sales');
         Route::get('/sales/pdf', [SalesReportController::class, 'downloadPdf'])->name('reports.sales.pdf');
+        // تقرير تتبع العملاء
+        Route::get('/customers-follow-up', \App\Livewire\Agency\Reports\CustomerFollowUpReport::class)
+            ->name('reports.customers-follow-up');
+        Route::get('customers-follow-up/pdf', [CustomerFollowUpReportController::class, 'downloadPdf'])
+            ->name('reports.customers-follow-up.pdf');
+      
     });
 });
 // Route::post('/update-theme', [ThemeController::class, 'updateTheme'])

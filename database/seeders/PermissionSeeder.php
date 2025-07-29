@@ -130,6 +130,7 @@ class PermissionSeeder extends Seeder
         //صلاحيات عرض صفحه التقارير
         'reportsAccounts.view',
         'reportsSales.view',
+        'reportCustomers.view'
     ];
 
     /**

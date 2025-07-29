@@ -27,16 +27,16 @@ class SalesTable
             ['key' => 'sale_profit', 'label' => 'الربح', 'format' => 'money', 'color' => 'primary-700'],
             ['key' => 'amount_paid', 'label' => 'المبلغ المدفوع أثناء البيع', 'format' => 'money'],
             [
-                'key'    => 'collections_sum_amount',
-                'label'  => 'إجمالي المبلغ المحصل',
+                'key' => 'collections_sum_amount',
+                'label' => 'إجمالي المبلغ المحصل',
                 'format' => 'money',
-                'color'  => fn($value) => $value > 0 ? 'green-600' : 'gray-500',
+                'color' => fn($value) => $value > 0 ? 'green-600' : 'gray-500',
             ],
             [
-                'key'    => 'remaining_payment',
-                'label'  => 'المتبقي من المبلغ المحصل',
+                'key' => 'remaining_payment',
+                'label' => 'المتبقي من المبلغ المحصل',
                 'format' => 'money',
-                'color'  => fn($value) => ($value ?? 0) > 0 ? 'red-600' : 'green-700',
+                'color' => fn($value) => ($value ?? 0) > 0 ? 'red-600' : 'green-700',
             ],
             ['key' => 'expected_payment_date', 'label' => 'تاريخ السداد المتوقع', 'format' => 'date'],
             ['key' => 'reference', 'label' => 'المرجع'],
@@ -55,9 +55,9 @@ class SalesTable
 
         // 2) عمود الإجراءات
         $actionsColumn = [
-            'key'     => 'actions',
-            'label'   => 'الإجراءات',
-            'format'  => 'custom',
+            'key' => 'actions',
+            'label' => 'الإجراءات',
+            'format' => 'custom',
         ];
 
         // 3) إذا مطلوب عرض زر PDF فقط
@@ -69,10 +69,10 @@ class SalesTable
         if (!$hideDuplicate) {
             $actionsColumn['actions'] = [
                 [
-                    'type'   => 'duplicate',
-                    'label'  => 'تكرار',
-                    'icon'   => 'fa fa-copy',
-                    'class'  => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
+                    'type' => 'duplicate',
+                    'label' => 'تكرار',
+                    'icon' => 'fa fa-copy',
+                    'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
                     'showIf' => fn($row) => $row->agency_id == auth()->user()->agency_id,
                 ],
             ];
@@ -82,4 +82,21 @@ class SalesTable
 
         return $columns;
     }
+    public static function customerFollowUpColumns(): array
+    {
+        return [
+            ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
+            ['key' => 'customer.name', 'label' => 'العميل'],
+            ['key' => 'service.label', 'label' => 'الخدمة'],
+            ['key' => 'provider.name', 'label' => 'المزود'],
+            ['key' => 'service_date', 'label' => 'تاريخ الخدمة', 'format' => 'date'],
+            [
+                'key' => 'actions',
+                'label' => 'الإجراءات',
+                'format' => 'custom',
+                'buttons' => ['pdf']
+            ],
+        ];
+    }
+
 }
