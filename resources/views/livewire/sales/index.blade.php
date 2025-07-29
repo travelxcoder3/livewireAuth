@@ -341,6 +341,7 @@ $columns = SalesTable::columns();
 
                <!-- الصف الرابع -->
 <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-24 gap-2 lg:gap-3 items-end">
+    
     <!-- USD Buy -->
     <x-input-field
         name="usd_buy"

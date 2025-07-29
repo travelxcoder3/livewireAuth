@@ -437,11 +437,11 @@ $sales->each(function ($sale) {
 'usd_sell' => [
     'required',
     'numeric',
-    'gte:usd_buy',
     Rule::when(!in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']), function () {
-        return ['min:0'];
+        return ['gte:usd_buy', 'min:0'];
     }),
 ],
+
             'commission' => 'nullable|numeric',
             'route' => 'required|string|max:255',
             'pnr' => 'nullable|string|max:50',
@@ -503,6 +503,20 @@ $sales->each(function ($sale) {
 'amount_paid.min'  => 'المبلغ المدفوع لا يمكن أن يكون سالبًا إلا في حالات الاسترداد أو الإلغاء.',
     ];
 
+
+    public function toggleBuySellSigns()
+    {
+        if (is_numeric($this->usd_buy)) {
+            $this->usd_buy *= -1;
+        }
+    
+        if (is_numeric($this->usd_sell)) {
+            $this->usd_sell *= -1;
+        }
+    
+        $this->calculateProfit();
+    }
+    
 
     public function updatedCustomerId($value)
     {
