@@ -1,8 +1,9 @@
 <div class="space-y-6">
     <!-- رسائل النجاح -->
-    @if (session()->has('message'))
-        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition
-             class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50">
+@if (session()->has('message') && !$showPermissionsModal && !$showForm)
+    <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition
+         class="fixed bottom-4 right-4 bg-[rgb(var(--primary-500))] text-white px-4 py-2 rounded-lg shadow-lg text-sm z-40">
+
             <div class="flex items-center gap-2">
                 <i class="fas fa-check-circle"></i>
                 {{ session('message') }}
@@ -104,11 +105,11 @@
 
                             @can('roles.delete')
                                 @if (!in_array($role->name, ['super-admin', 'agency-admin']))
-                                    <button wire:click="deleteRole({{ $role->id }})"
-                                        onclick="return confirm('هل أنت متأكد من حذف هذا الدور؟')"
-                                        class="text-xs font-medium text-red-600 hover:text-red-800">
-                                        حذف
-                                    </button>
+                                  <button wire:click="confirmDelete({{ $role->id }})"
+    class="text-xs font-medium text-red-600 hover:text-red-800">
+    حذف
+</button>
+
                                 @endif
                             @endcan
                         </div>
@@ -300,10 +301,11 @@
                                     $isFullySelected = $this->isModuleFullySelected($module);
                                     $isPartiallySelected = $this->isModulePartiallySelected($module);
                                 @endphp
-                                <button type="button" wire:click="toggleModule('{{ $module }}')"
-                                    class="w-full text-center px-3 py-2 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105 border-2 relative
-                                        @if($isFullySelected)
-                                            bg-green-500 text-white border-green-600 shadow-lg
+<button type="button" wire:click="toggleModule('{{ $module }}')"
+    class="relative z-50 w-full text-center px-3 py-2 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105 border-2
+        @if($isFullySelected)
+            bg-[rgb(var(--primary-500))] text-white border-[rgb(var(--primary-600))] shadow-lg
+
                                         @elseif($isPartiallySelected)
                                             bg-yellow-100 text-yellow-700 border-yellow-300 shadow-md
                                         @else 
@@ -321,7 +323,7 @@
                         </div>
 
                         <!-- لوحات الصلاحيات -->
-                        <div class="absolute top-0 right-[calc(100%+0.75rem)] z-40 space-y-3 max-h-[80vh] overflow-y-auto"
+                        <div class="absolute top-0 right-[calc(100%+0.75rem)] z-40 bg-transparent space-y-3 max-h-[80vh] overflow-y-auto"
                              wire:ignore.self>
                             @foreach($grouped as $module => $perms)
                                 @if(!empty($openModules[$module]))
@@ -432,6 +434,9 @@
                         @error('selectedPermissions') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
 
+ 
+
+
                     <!-- زر الإلغاء والإضافة -->
                     <div class="flex justify-end gap-3 mt-6">
                         <x-primary-button 
@@ -463,4 +468,33 @@
         </div>
     </div>
     @endif
+
+
+                       @if($showDeleteModal)
+    <div class="fixed inset-0 z-50 bg-black/10 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
+            <button wire:click="$set('showDeleteModal', false)"
+                    class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">
+                &times;
+            </button>
+
+            <h3 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">
+                تأكيد الحذف
+            </h3>
+
+            <p class="text-sm text-gray-600 mb-6 text-center">هل أنت متأكد من رغبتك في حذف هذا الدور؟ لا يمكن التراجع عن هذا الإجراء.</p>
+
+            <div class="flex justify-center gap-3 pt-4">
+                <button type="button" wire:click="$set('showDeleteModal', false)"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+                    إلغاء
+                </button>
+
+                <x-primary-button wire:click="delete">
+                    حذف
+                </x-primary-button>
+            </div>
+        </div>
+    </div>
+@endif
 </div>

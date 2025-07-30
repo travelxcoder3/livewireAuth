@@ -437,30 +437,48 @@ $sales->each(function ($sale) {
 'usd_buy' => [
     'required',
     'numeric',
-    Rule::when(!in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']), function () {
-        return ['min:0'];
-    }),
+    Rule::when(!in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']), fn() => ['min:0']),
 ],
+
 
 'usd_sell' => [
     'required',
     'numeric',
-    Rule::when(!in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']), function () {
-        return ['gte:usd_buy', 'min:0'];
-    }),
+    function ($attribute, $value, $fail) {
+        if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
+            if ($value >= 0) {
+                $fail('في حالة الاسترداد، يجب أن يكون سعر البيع سالبًا.');
+            }
+        } else {
+            if (!is_numeric($this->usd_buy) || $value < $this->usd_buy) {
+                $fail('البيع ≥ الشراء.');
+            }
+            if ($value < 0) {
+                $fail('سعر البيع لا يمكن أن يكون سالبًا.');
+            }
+        }
+    },
 ],
+
 
             'commission' => 'nullable|numeric',
             'route' => 'required|string|max:255',
             'pnr' => 'nullable|string|max:50',
             'reference' => 'nullable|string|max:50',
-            'amount_paid' => [
-                'nullable',
-                'numeric',
-                Rule::when(!in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']), function () {
-                    return ['min:0'];
-                }),
-            ],           
+'amount_paid' => [
+    'nullable',
+    'numeric',
+    function ($attribute, $value, $fail) {
+        if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
+            if ($value >= 0) {
+                $fail('المبلغ المسترد يجب أن يكون سالبًا.');
+            }
+        } elseif ($value < 0) {
+            $fail('المبلغ المدفوع لا يمكن أن يكون سالبًا.');
+        }
+    },
+],
+         
             'depositor_name' => $this->payment_method !== 'all' ? 'required|string|max:255' : 'nullable',
             'customer_id' => 'nullable|exists:customers,id',
             'sale_profit' => 'nullable|numeric',
@@ -485,10 +503,29 @@ $sales->each(function ($sale) {
                                                                     }];
 
                 break;
-            case 'part':
-                $rules['customer_id'] = 'required';
-                $rules['amount_paid'] = 'required|numeric|lt:' . $this->usd_sell;
-                break;
+case 'part':
+    $rules['customer_id'] = 'required';
+    $rules['amount_paid'] = [
+        'required',
+        'numeric',
+        function ($attribute, $value, $fail) {
+            $sell = floatval(trim($this->usd_sell));
+            $paid = floatval(trim($value));
+            // ✅ إذا كانت الحالة Refund, اسمح بالقيم السالبة
+            if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
+                if ($paid >= 0) {
+                    $fail('في الاسترداد، يجب أن يكون المبلغ المدفوع سالبًا.');
+                }
+            } else {
+                if (!is_numeric($sell) || $paid >= $sell) {
+                    $fail('ادخل مبلغ صحيح.');
+                }
+            }
+        },
+    ];
+    break;
+
+
             case 'all':
                 $rules['customer_id'] = 'required';
                 $rules['amount_paid'] = 'prohibited';

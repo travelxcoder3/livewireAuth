@@ -22,19 +22,19 @@ class SalesTable
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'service_date', 'label' => 'تاريخ الخدمة', 'format' => 'date'],
             ['key' => 'customer_via', 'label' => 'العميل عبر', 'format' => 'customer_via'],
-            ['key' => 'usd_buy', 'label' => 'Buy', 'format' => 'money', 'color' => 'primary-500'],
-            ['key' => 'usd_sell', 'label' => 'Sell', 'format' => 'money', 'color' => 'primary-600'],
+            ['key' => 'usd_buy', 'label' => 'سعر المزود', 'format' => 'money', 'color' => 'primary-500'],
+            ['key' => 'usd_sell', 'label' => 'السعر للعميل', 'format' => 'money', 'color' => 'primary-600'],
             ['key' => 'sale_profit', 'label' => 'الربح', 'format' => 'money', 'color' => 'primary-700'],
-            ['key' => 'amount_paid', 'label' => 'المبلغ المدفوع أثناء البيع', 'format' => 'money'],
+            ['key' => 'amount_paid', 'label' => 'المدفوع', 'format' => 'money'],
             [
                 'key' => 'collections_sum_amount',
-                'label' => 'إجمالي المبلغ المحصل',
+                'label' => 'المتحصل',
                 'format' => 'money',
                 'color' => fn($value) => $value > 0 ? 'green-600' : 'gray-500',
             ],
             [
                 'key' => 'remaining_payment',
-                'label' => 'المتبقي من المبلغ المحصل',
+                'label' => 'الباقي',
                 'format' => 'money',
                 'color' => fn($value) => ($value ?? 0) > 0 ? 'red-600' : 'green-700',
             ],
@@ -50,7 +50,7 @@ class SalesTable
             ['key' => 'receipt_number', 'label' => 'رقم السند'],
             ['key' => 'phone_number', 'label' => 'رقم هاتف المستفيد'],
             ['key' => 'depositor_name', 'label' => 'اسم المودع'],
-            ['key' => 'commission', 'label' => 'مبلغ عمولة العميل', 'format' => 'money'],
+            ['key' => 'commission', 'label' => 'عمولة العميل', 'format' => 'money'],
         ];
 
         // 2) عمود الإجراءات

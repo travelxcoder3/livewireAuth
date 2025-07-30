@@ -201,8 +201,15 @@ class SalesReport extends Component
         $this->totalSales = (clone $query)->sum('usd_sell');
 
         $sales = $query
+            ->withSum('collections', 'amount')
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
+
+        $sales->each(function ($sale) {
+            $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum_amount ?? 0);
+            $sale->remaining_payment = ($sale->usd_sell ?? 0) - $sale->total_paid;
+        });
+
 
         $columns = SalesTable::columns(
             true // true = اخفاء زر "تكرار" في تقرير المبيعات

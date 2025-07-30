@@ -37,6 +37,16 @@ class Roles extends Component
     public $openModules = [];
     public $search = '';
 
+
+    public $showDeleteModal = false;
+public $roleToDelete;
+
+public function confirmDelete($roleId)
+{
+    $this->roleToDelete = $roleId;
+    $this->showDeleteModal = true;
+}
+
     protected function rules()
     {
         return [
@@ -267,23 +277,27 @@ class Roles extends Component
         }
     }
 
-    public function deleteRole($roleId)
-    {
-        $role = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($roleId);
-        if (in_array($role->name, ['super-admin', 'agency-admin'])) {
-            session()->flash('error', 'لا يمكن حذف الأدوار الأساسية');
-            return;
-        }
-        
-        // التحقق من وجود مستخدمين مرتبطين بالدور
-        if ($role->users()->count() > 0) {
-            session()->flash('error', 'لا يمكن حذف الدور لوجود مستخدمين مرتبطين به');
-            return;
-        }
-        
-        $role->delete();
-        session()->flash('message', 'تم حذف الدور بنجاح');
+    public function delete()
+{
+    $role = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($this->roleToDelete);
+
+    if (in_array($role->name, ['super-admin', 'agency-admin'])) {
+        session()->flash('error', 'لا يمكن حذف الأدوار الأساسية');
+        return;
     }
+
+    if ($role->users()->count() > 0) {
+        session()->flash('error', 'لا يمكن حذف الدور لوجود مستخدمين مرتبطين به');
+        return;
+    }
+
+    $role->delete();
+    session()->flash('message', 'تم حذف الدور بنجاح');
+
+    $this->showDeleteModal = false;
+    $this->roleToDelete = null;
+}
+
 
     public function toggleModule($module)
     {
