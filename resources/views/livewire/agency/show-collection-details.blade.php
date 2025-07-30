@@ -103,6 +103,7 @@
                             <th class="px-2 py-1">تاريخ البيع</th>
                             <th class="px-2 py-1">المبلغ المحصل</th>
                             <th class="px-2 py-1">المتبقي</th>
+                            <th class="px-2 py-1">ديون الشركة للعميل</th>
                             <th class="px-2 py-1">تاريخ السداد المتوقع</th>
                             <th class="px-2 py-1">الموظف</th>
                             <th class="px-2 py-1">الإجراء</th>
@@ -123,7 +124,13 @@
 
                                 <td class="px-2 py-1">{{ $s->sale_date }}</td>
                                 <td class="px-2 py-1 text-green-700 font-bold">{{ number_format($totalPaid, 2) }}</td>
-                                <td class="px-2 py-1 text-red-600 font-bold">{{ number_format($remaining, 2) }}</td>
+                                @if ($remaining < 0)
+    <td class="px-2 py-1 text-green-700 font-bold">-</td> {{-- عمود المتبقي --}}
+    <td class="px-2 py-1 text-red-600 font-bold">{{ number_format(abs($remaining), 2) }}</td> {{-- ديون --}}
+@else
+    <td class="px-2 py-1 text-red-600 font-bold">{{ number_format($remaining, 2) }}</td> {{-- عمود المتبقي --}}
+    <td class="px-2 py-1 text-green-700 font-bold">-</td> {{-- ديون --}}
+@endif
                                 <td class="px-2 py-1">{{ $s->expected_payment_date ?? '-' }}</td>
                                 <td class="px-2 py-1">{{ optional($s->employee)->name ?? '-' }}</td>
                                 <td class="px-2 py-1">

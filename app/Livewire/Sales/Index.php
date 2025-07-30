@@ -45,6 +45,8 @@ public $userCommissionDue  = 0;
     public $showPaymentDetails = true;
     public $showDepositorField = true;
     public ?string $sale_group_id = null;
+    public bool $isDuplicated = false; // تم التكرار
+    public bool $showRefundModal = false; // لعرض واجهة تعديل المبالغ
 
     public $filters = [
     'start_date' => '',
@@ -95,6 +97,7 @@ public $filterCustomers = [];
     public function duplicate($id)
     {
         $sale = Sale::findOrFail($id);
+        $this->isDuplicated = true;
 
         $this->beneficiary_name = $sale->beneficiary_name;
         $this->sale_date = $sale->sale_date;
@@ -497,12 +500,17 @@ $sales->each(function ($sale) {
             case 'kash':
                 $rules['customer_id'] = 'nullable|exists:customers,id';
                 $rules['amount_paid'] = ['required', 'numeric', function ($attribute, $value, $fail) {
-                                                                        if (floatval($value) !== floatval($this->usd_sell)) {
-                                                                            $fail('الدفع كاش، يشترط الدفع كامل.');
-                                                                        }
-                                                                    }];
+                    // ✅ في حالة الاسترداد، السماح بأي مبلغ (حتى 0 أو سالب)
+                    if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
+                        return;
+                    }
 
+                    if (floatval($value) !== floatval($this->usd_sell)) {
+                        $fail('الدفع كاش، يشترط الدفع كامل.');
+                    }
+                }];
                 break;
+
 case 'part':
     $rules['customer_id'] = 'required';
     $rules['amount_paid'] = [
@@ -511,19 +519,20 @@ case 'part':
         function ($attribute, $value, $fail) {
             $sell = floatval(trim($this->usd_sell));
             $paid = floatval(trim($value));
-            // ✅ إذا كانت الحالة Refund, اسمح بالقيم السالبة
+
+            // ✅ السماح بأي مبلغ في حالة الاسترداد أو الإلغاء
             if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
-                if ($paid >= 0) {
-                    $fail('في الاسترداد، يجب أن يكون المبلغ المدفوع سالبًا.');
-                }
-            } else {
-                if (!is_numeric($sell) || $paid >= $sell) {
-                    $fail('ادخل مبلغ صحيح.');
-                }
+                return;
+            }
+
+            // ⚠️ في الحالة العادية، المبلغ المدفوع يجب أن يكون أقل من البيع
+            if (!is_numeric($sell) || $paid >= $sell) {
+                $fail('ادخل مبلغ صحيح.');
             }
         },
     ];
     break;
+
 
 
             case 'all':
@@ -625,7 +634,11 @@ case 'part':
             'service_date' => $this->service_date,
             'expected_payment_date' => $this->expected_payment_date,
             'sale_group_id' => $this->sale_group_id, // ✅ نستخدم القيمة المخزنة بدون تغيير
+            
         ]);
+if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
+    $this->amount_paid = 0;
+}
 
         $this->resetForm();
         $this->successMessage = 'تمت إضافة العملية بنجاح';
@@ -713,7 +726,19 @@ public function resetFilters()
 public function updatedStatus($value)
 {
     $this->updateShowCustomerField();
+
+    // 🟢 تحقق هل هي حالة استرداد ونسخة مكررة
+    if ($this->isDuplicated && in_array($value, ['Refund-Full', 'Refund-Partial', 'Void'])) {
+        $this->showRefundModal = true;
+
+        // اجعل حالة الدفع غير قابلة للتعديل واحفظ القيمة الحالية
+        $this->payment_method = $this->payment_method; // تبقى ثابتة
+$this->amount_paid = 0;
+    } else {
+        $this->showRefundModal = false;
+    }
 }
+
 
 public function updatedPaymentType($value)
 {
@@ -729,4 +754,39 @@ public function updateShowCustomerField()
         $this->showCustomerField = true;
     }
 }
+
+public function openRefundModal()
+{
+    // فتح النافذة فقط يدويًا
+    $this->showRefundModal = true;
+}
+
+public function saveRefundValues()
+{
+    // ✅ اجعل المبالغ سالبة للتأكد
+    if ($this->usd_buy > 0) {
+        $this->usd_buy *= -1;
+    }
+
+    if ($this->usd_sell > 0) {
+        $this->usd_sell *= -1;
+    }
+
+    // ✅ تصفير المبلغ المدفوع
+    $this->amount_paid = 0;
+
+    // ✅ إعادة حساب الربح
+    $this->calculateProfit();
+
+    // ✅ إغلاق النافذة
+    $this->showRefundModal = false;
+
+    // ✅ تحديث واجهة الحقول
+    $this->updatedPaymentMethod($this->payment_method);
+
+    // ✅ إعطاء رسالة مؤقتة مثلاً
+    $this->successMessage = 'تم تعديل المبالغ بنجاح';
+}
+
+
 }

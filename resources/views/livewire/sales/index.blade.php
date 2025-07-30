@@ -373,7 +373,7 @@ $columns = SalesTable::columns();
         $showAmountPaid = $payment_method !== 'all';
     @endphp
 
-    @if($showAmountPaid)
+    @if($showAmountPaid && !$showRefundModal)
         <x-input-field
             name="amount_paid"
             label="المبلغ المدفوع"
@@ -417,13 +417,26 @@ $columns = SalesTable::columns();
 <!-- الأزرار -->
 <div class="col-span-12 md:col-span-6 lg:col-span-6 flex items-end justify-end gap-2 lg:gap-3 w-full">
 
-<x-primary-button
-    type="submit"
-    textColor="white"
-    width="w-full sm:w-auto"
->
-    تأكيد
-</x-primary-button>
+@if($showRefundModal)
+    <x-primary-button
+        type="button"
+        textColor="white"
+        width="w-full sm:w-auto"
+        wire:click="openRefundModal"
+    >
+        تعديل
+    </x-primary-button>
+@else
+    <x-primary-button
+        type="submit"
+        textColor="white"
+        width="w-full sm:w-auto"
+    >
+        تأكيد
+    </x-primary-button>
+@endif
+
+
     <button type="button" onclick="openFilterModal()"
             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center w-full sm:w-auto">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -457,6 +470,52 @@ $columns = SalesTable::columns();
         <div class="overflow-x-auto mt-2">
         <x-data-table :rows="$sales" :columns="$columns" />
         </div>
+        <!-- نافذة تعديل الاسترداد -->
+@if($showRefundModal)
+<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+        <h2 class="text-xl font-bold mb-4 text-center">تعديل مبالغ الاسترداد</h2>
+
+        <div class="space-y-4">
+            <!-- المسترد من المزود -->
+            <x-input-field
+                name="usd_buy"
+                label="المسترد من المزود"
+                wireModel="usd_buy"
+                placeholder="المسترد من المزود"
+                type="number"
+                step="0.01"
+                containerClass="relative"
+            />
+
+            <!-- المسترد من العميل -->
+            <x-input-field
+                name="usd_sell"
+                label="المسترد من العميل"
+                wireModel="usd_sell"
+                placeholder="المسترد من العميل"
+                type="number"
+                step="0.01"
+                containerClass="relative"
+            />
+        </div>
+
+<div class="flex justify-end gap-3 mt-6">
+    <button type="button" wire:click="saveRefundValues"
+            class="bg-[rgb(var(--primary-600))] hover:bg-[rgb(var(--primary-700))] text-white font-bold px-4 py-2 rounded-xl">
+        حفظ
+    </button>
+    
+    <button type="button" wire:click="$set('showRefundModal', false)"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl">
+        إغلاق
+    </button>
+</div>
+
+    </div>
+</div>
+@endif
+
 <!-- نافذة الفلترة -->
 <div id="filterModal" x-data="{ show: false }" x-show="show" @toggle-filter-modal.window="show = $event.detail"
      x-cloak class="fixed inset-0 z-50 bg-black/10 flex items-start justify-center pt-24 backdrop-blur-sm overflow-visible">
@@ -568,18 +627,20 @@ $columns = SalesTable::columns();
                     containerClass="relative mt-1"
                 />
 
-                <x-select-field
-                    wireModel="filterInputs.payment_method"
-                    label="حالة الدفع"
-                    :options="[
-                        '' => 'الكل',
-                        'kash' => 'كامل',
-                        'part' => 'جزئي',
-                        'all' => 'لم يدفع'
-                    ]"
-                    placeholder="حالة الدفع"
-                    containerClass="relative mt-1"
-                />
+<x-select-field
+    wireModel="payment_method"
+    label="حالة الدفع"
+    :options="[
+        'kash' => 'كامل',
+        'part' => 'جزئي',
+        'all' => 'لم يدفع'
+    ]"
+    placeholder="حالة الدفع"
+    containerClass="relative mt-1 col-span-3"
+    errorName="payment_method"
+    :disabled="$showRefundModal" 
+/>
+
                 
                 <x-select-field
                     wireModel="filterInputs.payment_type"
