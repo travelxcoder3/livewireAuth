@@ -42,37 +42,37 @@ class Collections extends Component
     // ✅ جمع المبيعات حسب العميل ثم حسب sale_group_id
     $groupedByCustomer = $allSales->groupBy('customer_id');
 
-    $customers = $groupedByCustomer->map(function ($sales, $customerId) {
-        $customer = $sales->first()->customer;
+  $customers = $groupedByCustomer->map(function ($sales, $customerId) {
+    $customer = $sales->first()->customer;
 
-        // 🔄 نجمع حسب sale_group_id أو id
-        $groupedByGroup = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
+    $groupedByGroup = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
 
-        // ✅ حساب المديونية الحقيقية فقط من المجموعات
-        $totalDue = $groupedByGroup->sum(function ($group) {
-            $total = $group->sum('usd_sell');
-            $paid = $group->sum('amount_paid');
-            $collected = $group->flatMap->collections->sum('amount');
-            return $total - $paid - $collected;
-        });
+    $totalDue = $groupedByGroup->sum(function ($group) {
+        $total = $group->sum('usd_sell');
+        $paid = $group->sum('amount_paid');
+        $collected = $group->flatMap->collections->sum('amount');
+        return $total - $paid - $collected;
+    });
 
-        // ✅ فقط العملاء الذين عليهم مديونية
-        if ($totalDue <= 0) return null;
+    // ✅ إذا لم يكن عليه شيء إطلاقًا (صفر) نهمل السطر
+    if ($totalDue == 0) return null;
 
-        $latestCollection = $sales->flatMap->collections->sortByDesc('payment_date')->first();
+    $latestCollection = $sales->flatMap->collections->sortByDesc('payment_date')->first();
 
-        return (object) [
-            'id' => $customer->id,
-            'name' => $customer->name,
-            'total_due' => $totalDue,
-            'last_payment' => optional($latestCollection)->payment_date,
-            'customer_type' => optional($latestCollection?->customerType)->label ?? '-',
-            'debt_type' => optional($latestCollection?->debtType)->label ?? '-',
-            'customer_response' => optional($latestCollection?->customerResponse)->label ?? '-',
-            'customer_relation' => optional($latestCollection?->customerRelation)->label ?? '-',
-            'first_sale_id' => $sales->first()->id,
-        ];
-    })->filter()->values(); // ⬅️ نحذف nulls من العملاء غير المدينين
+    return (object) [
+        'id' => $customer->id,
+        'name' => $customer->name,
+        'total_due' => abs($totalDue), // نعرض القيمة بدون إشارة فقط للعرض
+        'due_type' => $totalDue > 0 ? 'مديون' : 'دائن', // جديد: يحدد نوع الحالة
+        'last_payment' => optional($latestCollection)->payment_date,
+        'customer_type' => optional($latestCollection?->customerType)->label ?? '-',
+        'debt_type' => optional($latestCollection?->debtType)->label ?? '-',
+        'customer_response' => optional($latestCollection?->customerResponse)->label ?? '-',
+        'customer_relation' => optional($latestCollection?->customerRelation)->label ?? '-',
+        'first_sale_id' => $sales->first()->id,
+    ];
+})->filter()->values();
+
 
     return view('livewire.agency.collections', [
         'sales' => $customers,

@@ -47,6 +47,8 @@ public $userCommissionDue  = 0;
     public ?string $sale_group_id = null;
     public bool $isDuplicated = false; // تم التكرار
     public bool $showRefundModal = false; // لعرض واجهة تعديل المبالغ
+    public bool $showAmountPaidField = true;
+    public bool $disablePaymentMethod = false;
 
     public $filters = [
     'start_date' => '',
@@ -98,6 +100,7 @@ public $filterCustomers = [];
     {
         $sale = Sale::findOrFail($id);
         $this->isDuplicated = true;
+$this->showAmountPaidField = !in_array($sale->status, ['Refund-Full', 'Refund-Partial', 'Void']);
 
         $this->beneficiary_name = $sale->beneficiary_name;
         $this->sale_date = $sale->sale_date;
@@ -189,12 +192,15 @@ if ($sale->payment_method === 'all') {
             'expected_payment_date',
         ]);
 
+        $this->showAmountPaidField = true;
+        $this->disablePaymentMethod = false;
+
         // تنظيف الحقول المحسوبة يدويًا
         $this->sale_profit = 0;
         $this->amount_due = 0;
         $this->showCommission = false;
         $this->showExpectedDate = false;
-        $this->sale_group_id = Str::uuid(); // توليد UUID جديد عند تنظيف الحقول
+        $this->sale_group_id  = Str::uuid(); // توليد UUID جديد عند تنظيف الحقول
 
     }
 
@@ -727,17 +733,25 @@ public function updatedStatus($value)
 {
     $this->updateShowCustomerField();
 
-    // 🟢 تحقق هل هي حالة استرداد ونسخة مكررة
     if ($this->isDuplicated && in_array($value, ['Refund-Full', 'Refund-Partial', 'Void'])) {
         $this->showRefundModal = true;
 
-        // اجعل حالة الدفع غير قابلة للتعديل واحفظ القيمة الحالية
-        $this->payment_method = $this->payment_method; // تبقى ثابتة
-$this->amount_paid = 0;
+        $this->payment_method = $this->payment_method;
+        $this->amount_paid = 0;
+
+        // ✅ إخفاء حقل المبلغ المدفوع
+        $this->showAmountPaidField = false;
     } else {
         $this->showRefundModal = false;
+
+        // ✅ إظهار الحقل في الحالات العادية
+        $this->showAmountPaidField = true;
     }
+
+     // ✅ تفعيل/تعطيل حقل حالة الدفع بناءً على الحالة
+    $this->disablePaymentMethod = in_array($value, ['Refund-Full', 'Refund-Partial', 'Void']);
 }
+
 
 
 public function updatedPaymentType($value)
@@ -788,5 +802,8 @@ public function saveRefundValues()
     $this->successMessage = 'تم تعديل المبالغ بنجاح';
 }
 
-
+public function getDisablePaymentMethodProperty()
+{
+    return in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']);
+}
 }

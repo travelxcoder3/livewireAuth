@@ -7,6 +7,7 @@
     'placeholder' => 'اختر',
     'containerClass' => 'relative mt-1',
     'errorName' => '',
+    'disabled' => false,
 ])
 
 @php
@@ -55,17 +56,19 @@
     class="{{ $containerClass }} w-full"
 >
     <!-- حقل الاختيار مع التسمية العائمة -->
-    <div 
-        @click="open = !open"
-        x-ref="trigger"
-        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs cursor-pointer flex justify-between items-center peer"
-    >
-        <span x-text="options[selected] || '{{ $placeholder }}'" class="truncate"></span>
-        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
-             viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 9l6 6 6-6"/>
-        </svg>
-    </div>
+<div 
+    @click="!{{ $disabled ? 'true' : 'false' }} && (open = !open)"
+    x-ref="trigger"
+    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs cursor-pointer flex justify-between items-center peer"
+    :class="{ 'bg-gray-100 cursor-not-allowed': {{ $disabled ? 'true' : 'false' }} }"
+>
+    <span x-text="options[selected] || '{{ $placeholder }}'" class="truncate"></span>
+    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
+         viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"
+         :class="{ 'hidden': {{ $disabled ? 'true' : 'false' }} }">
+        <path d="M6 9l6 6 6-6"/>
+    </svg>
+</div>
     
     <!-- التسمية العائمة -->
     <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">

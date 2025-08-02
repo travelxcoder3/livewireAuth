@@ -27,7 +27,7 @@ class SalesTable
             ['key' => 'sale_profit', 'label' => 'الربح', 'format' => 'money', 'color' => 'primary-700'],
             ['key' => 'amount_paid', 'label' => 'المدفوع', 'format' => 'money'],
             [
-                'key' => 'collections_sum_amount',
+                'key' => 'total_paid',
                 'label' => 'المتحصل',
                 'format' => 'money',
                 'color' => fn($value) => $value > 0 ? 'green-600' : 'gray-500',

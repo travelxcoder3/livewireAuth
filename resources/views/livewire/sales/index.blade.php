@@ -169,19 +169,20 @@ $columns = SalesTable::columns();
                         errorName="route"
                     />
                   
-                    <!-- حالة الدفع -->
-                    <x-select-field
-                        wireModel="payment_method"
-                        label="حالة الدفع"
-                        :options="[
-                            'kash' => 'كامل',
-                            'part' => 'جزئي',
-                            'all' => 'لم يدفع'
-                        ]"
-                        placeholder=" حالة الدفع"
-                        containerClass="relative mt-1 col-span-3"
-                        errorName="payment_method"
-                    />
+                        <!-- حالة الدفع -->
+                        <x-select-field
+                            wireModel="payment_method"
+                            label="حالة الدفع"
+                            :options="[
+                                'kash' => 'كامل',
+                                'part' => 'جزئي',
+                                'all' => 'لم يدفع'
+                            ]"
+                            placeholder="حالة الدفع"
+                            containerClass="relative mt-1 col-span-3"
+                            errorName="payment_method"
+                            :disabled="$disablePaymentMethod || $showRefundModal"
+                        />
 
                     @if($showDepositorField)
                         <x-input-field
@@ -373,7 +374,7 @@ $columns = SalesTable::columns();
         $showAmountPaid = $payment_method !== 'all';
     @endphp
 
-    @if($showAmountPaid && !$showRefundModal)
+    @if($showAmountPaid && !$showRefundModal && $showAmountPaidField)
         <x-input-field
             name="amount_paid"
             label="المبلغ المدفوع"
@@ -386,6 +387,7 @@ $columns = SalesTable::columns();
             fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
         />
     @endif
+
 
     <!-- تاريخ السداد المتوقع -->
     @if($showExpectedDate)
@@ -472,7 +474,7 @@ $columns = SalesTable::columns();
         </div>
         <!-- نافذة تعديل الاسترداد -->
 @if($showRefundModal)
-<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+<div class="fixed inset-0 z-50 bg-black/40 flex items-start justify-center pt-24 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
         <h2 class="text-xl font-bold mb-4 text-center">تعديل مبالغ الاسترداد</h2>
 
@@ -501,10 +503,14 @@ $columns = SalesTable::columns();
         </div>
 
 <div class="flex justify-end gap-3 mt-6">
-    <button type="button" wire:click="saveRefundValues"
-            class="bg-[rgb(var(--primary-600))] hover:bg-[rgb(var(--primary-700))] text-white font-bold px-4 py-2 rounded-xl">
+    <x-primary-button
+        type="button"
+        wire:click="saveRefundValues"
+        textColor="white"
+        width="w-full sm:w-auto"
+    >
         حفظ
-    </button>
+    </x-primary-button>
     
     <button type="button" wire:click="$set('showRefundModal', false)"
             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl">

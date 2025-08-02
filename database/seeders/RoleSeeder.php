@@ -27,7 +27,7 @@ class RoleSeeder extends Seeder
         $permissions = [
             'employees.create',
             'employees.view',
-            'employees.update',
+            'employees.edit',
             'employees.delete',
         ];
         foreach ($permissions as $permission) {

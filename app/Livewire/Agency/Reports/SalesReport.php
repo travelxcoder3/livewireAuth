@@ -185,7 +185,7 @@ class SalesReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $query = Sale::with(['user', 'service', 'provider', 'account', 'customer'])
+        $query = Sale::with(['user', 'service', 'provider', 'account', 'customer', 'collections'])
             ->whereIn('agency_id', $agencyIds)
             ->when($this->search, fn($q) => $q->where('beneficiary_name', 'like', "%{$this->search}%")
                 ->orWhere('reference', 'like', "%{$this->search}%")
@@ -205,10 +205,24 @@ class SalesReport extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
 
-        $sales->each(function ($sale) {
-            $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum_amount ?? 0);
+        $sales->each(function ($sale) use ($agencyIds) {
+            if ($sale->sale_group_id) {
+                $groupedSales = Sale::with('collections')
+                    ->whereIn('agency_id', $agencyIds)
+                    ->where('sale_group_id', $sale->sale_group_id)
+                    ->get();
+
+                $paidFromSales = $groupedSales->sum('amount_paid');
+                $paidFromCollections = $groupedSales->flatMap->collections->sum('amount');
+            } else {
+                $paidFromSales = $sale->amount_paid ?? 0;
+                $paidFromCollections = $sale->collections->sum('amount');
+            }
+
+            $sale->total_paid = $paidFromSales + $paidFromCollections;
             $sale->remaining_payment = ($sale->usd_sell ?? 0) - $sale->total_paid;
         });
+
 
 
         $columns = SalesTable::columns(
