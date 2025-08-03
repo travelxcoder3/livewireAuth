@@ -39,8 +39,6 @@ class CustomerAccounts extends Component
     }
     public function render()
     {
-        logger('🔍 فلترة الاسم بعد trim: [' . trim($this->clientName) . ']');
-
         $agencyId = Auth::user()->agency_id;
         $from = $this->fromDate ? Carbon::parse($this->fromDate)->startOfDay() : null;
         $to = $this->toDate ? Carbon::parse($this->toDate)->endOfDay() : null;
@@ -74,9 +72,13 @@ class CustomerAccounts extends Component
 
         $customers = $filteredCustomers->map(function ($customer) use ($sales, $collections, $from, $to) {
             $customerSales = $sales->where('customer_id', $customer->id);
+            $customerCollections = $collections->filter(fn($c) => $c->sale?->customer_id === $customer->id);
+
+            // ⚠️ هذا السطر يحدد آخر عملية بيع بناءً على ID كما طلبت
             $lastSale = $customerSales->sortByDesc('id')->first();
             $lastSaleDate = $lastSale && $lastSale->sale_date ? Carbon::parse($lastSale->sale_date) : null;
 
+            // تطبيق الفلاتر بالتاريخ على تاريخ آخر عملية بيع
             if (
                 ($from && (!$lastSaleDate || $lastSaleDate->lt($from))) ||
                 ($to && (!$lastSaleDate || $lastSaleDate->gt($to)))
@@ -84,25 +86,41 @@ class CustomerAccounts extends Component
                 return null;
             }
 
-            $customerCollections = $collections->filter(fn($c) => $c->sale?->customer_id === $customer->id);
+            // ✅ منطق "له" و"عليه" بالتجميع حسب group
+            $groupedSales = $customerSales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
 
-            $totalSell = $customerSales->sum('usd_sell');
-            $totalPaid = $customerSales->sum('amount_paid');
-            $totalRefund = $customerSales->whereIn('status', ['refunded', 'void', 'canceled'])->sum('amount_paid');
-            $totalCollected = $customerCollections->sum('amount');
-            $netBalance = $totalSell - $totalPaid - $totalCollected;
+            $totalCustomerOwes = 0;
+            $rawCredit = 0;
+
+            foreach ($groupedSales as $group) {
+                $remaining = $group->sum(fn($s) => $s->usd_sell - $s->amount_paid - $s->collections->sum('amount'));
+
+                if ($remaining > 0) {
+                    $totalCustomerOwes += $remaining;
+                } elseif ($remaining < 0) {
+                    $rawCredit += abs($remaining);
+                }
+            }
+
+            // خصم ما تم استخدامه لتسديد عملاء آخرين
+            $usedCredit = \App\Models\Collection::whereHas('sale', function ($q) use ($customer) {
+                $q->where('customer_id', $customer->id);
+            })->where('note', 'like', '%تسديد من رصيد الشركة للعميل%')->sum('amount');
+
+            $totalCompanyOwes = max(0, $rawCredit - $usedCredit);
+            $netBalance = $totalCustomerOwes - $totalCompanyOwes;
 
             return [
                 'id' => $customer->id,
                 'name' => $customer->name,
-                'currency' => 'USD',
-                'total' => $totalSell,
-                'paid' => $totalPaid,
-                'collected' => $totalCollected,
-                'refunded' => $totalRefund,
+                'currency' => Auth::user()->agency->currency ?? 'USD',
+                'total' => $customerSales->sum('usd_sell'),
+                'paid' => $customerSales->sum('amount_paid'),
+                'collected' => $customerCollections->sum('amount'),
+                'refunded' => 0,
                 'net_balance' => $netBalance,
-                'remaining_for_customer' => max(0, $netBalance),
-                'remaining_for_company' => max(0, $totalRefund - $totalCollected),
+                'remaining_for_customer' => $totalCustomerOwes,
+                'remaining_for_company' => $totalCompanyOwes,
                 'last_sale_date' => $lastSaleDate,
             ];
         })->filter()->values();
@@ -112,5 +130,4 @@ class CustomerAccounts extends Component
             'columns' => CustomerAccountsTable::columns(),
         ]);
     }
-
 }

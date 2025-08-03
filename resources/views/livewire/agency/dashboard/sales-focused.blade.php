@@ -1,16 +1,19 @@
 <div class="space-y-6">
     <!-- معلومات الشركة - قسم كامل العرض في الأعلى -->
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <!-- Header معلومات الشركة -->
+    <div class="space-y-6">
+    <!-- بياناتي الشخصية -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <!-- رأس القسم -->
         <div class="px-6 py-4" style="background: linear-gradient(135deg, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-building text-white text-xl"></i>
+                        <i class="fas fa-user text-white text-xl"></i>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-white">معلومات الشركة</h1>
-                        <p class="text-white/80 text-sm">بيانات وإحصائيات الوكالة</p>
+                        <h1 class="text-xl font-bold text-white">بياناتي</h1>
+                        <p class="text-white/80 text-sm">إحصائيات خاصة بك فقط</p>
                     </div>
                 </div>
                 <div class="text-white/60 text-sm">
@@ -20,96 +23,44 @@
             </div>
         </div>
 
-        <!-- محتوى معلومات الشركة -->
+        <!-- محتوى البيانات -->
         <div class="p-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- معلومات أساسية -->
-                <div class="lg:col-span-2">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- اسم الشركة -->
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-building text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-blue-600 font-medium">اسم الوكالة</p>
-                                    <p class="text-lg font-bold text-blue-800">{{ Auth::user()->agency->name }}</p>
-                                </div>
-                            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- اسم المستخدم -->
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user text-white"></i>
                         </div>
-
-                        <!-- نوع الوكالة -->
-                        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-tag text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-green-600 font-medium">نوع الوكالة</p>
-                                    <p class="text-lg font-bold text-green-800">
-                                        {{ Auth::user()->agency->parent_id ? 'فرع' : 'وكالة رئيسية' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- الوكالة الرئيسية (إذا كان فرع) -->
-                        @if(Auth::user()->agency->parent_id)
-                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-sitemap text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-purple-600 font-medium">الوكالة الرئيسية</p>
-                                    <p class="text-lg font-bold text-purple-800">{{ Auth::user()->agency->parent->name }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <!-- تاريخ الإنشاء -->
-                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-calendar-plus text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-orange-600 font-medium">تاريخ الإنشاء</p>
-                                    <p class="text-lg font-bold text-orange-800">{{ Auth::user()->agency->created_at->format('Y-m-d') }}</p>
-                                </div>
-                            </div>
+                        <div>
+                            <p class="text-sm text-blue-600 font-medium">الاسم</p>
+                            <p class="text-lg font-bold text-blue-800">{{ Auth::user()->name }}</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- إحصائيات سريعة -->
-                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <i class="fas fa-chart-bar text-gray-600"></i>
-                        إحصائيات سريعة
-                    </h3>
-                    <div class="space-y-3">
-                        <!-- إجمالي المبيعات -->
-                        <div class="flex justify-between items-center py-2 border-b border-gray-200">
-                            <span class="text-sm text-gray-600">إجمالي المبيعات</span>
-                            <span class="font-bold text-gray-800">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->count() }}</span>
+                <!-- البريد -->
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-envelope text-white"></i>
                         </div>
-                        <!-- مبيعات اليوم -->
-                        <div class="flex justify-between items-center py-2 border-b border-gray-200">
-                            <span class="text-sm text-gray-600">مبيعات اليوم</span>
-                            <span class="font-bold text-green-600">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->whereDate('sale_date', today())->count() }}</span>
+                        <div>
+                            <p class="text-sm text-green-600 font-medium">البريد الإلكتروني</p>
+                            <p class="text-lg font-bold text-green-800">{{ Auth::user()->email }}</p>
                         </div>
-                        <!-- المبيعات الشهرية -->
-                        <div class="flex justify-between items-center py-2 border-b border-gray-200">
-                            <span class="text-sm text-gray-600">المبيعات الشهرية</span>
-                            <span class="font-bold text-blue-600">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->whereMonth('sale_date', now()->month)->whereYear('sale_date', now()->year)->count() }}</span>
+                    </div>
+                </div>
+
+                <!-- تاريخ الانضمام -->
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-alt text-white"></i>
                         </div>
-                        <!-- عدد المستخدمين -->
-                        <div class="flex justify-between items-center py-2">
-                            <span class="text-sm text-gray-600">عدد المستخدمين</span>
-                            <span class="font-bold text-purple-600">{{ \App\Models\User::where('agency_id', Auth::user()->agency_id)->count() }}</span>
+                        <div>
+                            <p class="text-sm text-orange-600 font-medium">تاريخ الانضمام</p>
+                            <p class="text-lg font-bold text-orange-800">{{ Auth::user()->created_at->format('Y-m-d') }}</p>
                         </div>
                     </div>
                 </div>
@@ -117,145 +68,62 @@
         </div>
     </div>
 
-    <!-- Sales Dashboard Header -->
-    <div class="rounded-xl p-6 mb-6" style="background: linear-gradient(135deg, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">لوحة تحكم إدارة المبيعات</h1>
-                <p class="text-white/90">
-                    إحصائيات وتقارير المبيعات لوكالة {{ Auth::user()->agency->name }}
+    <!-- كروت الإحصائيات الشخصية -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <!-- إجمالي المبيعات -->
+        <x-stat-card title="إجمالي المبيعات" icon="shopping-cart" color="primary"
+                     :value="\App\Models\Sale::where('user_id', Auth::id())->count()" />
+
+        <!-- مبيعات اليوم -->
+        <x-stat-card title="مبيعات اليوم" icon="calendar-day" color="green"
+                     :value="\App\Models\Sale::where('user_id', Auth::id())
+                                ->whereDate('sale_date', today())->count()" />
+
+        <!-- المبيعات الشهرية -->
+        <x-stat-card title="المبيعات الشهرية" icon="chart-line" color="blue"
+                     :value="\App\Models\Sale::where('user_id', Auth::id())
+                                ->whereMonth('sale_date', now()->month)
+                                ->whereYear('sale_date', now()->year)->count()" />
+
+        <!-- المبيعات الأسبوعية -->
+        <x-stat-card title="المبيعات الأسبوعية" icon="calendar-week" color="purple"
+                     :value="\App\Models\Sale::where('user_id', Auth::id())
+                                ->whereBetween('sale_date', [now()->startOfWeek(), now()->endOfWeek()])
+                                ->count()" />
+    </div>
+
+    <!-- الهدف الشخصي -->
+    @php
+        $userTarget = Auth::user()->sales_target ?? 0;
+        $userMonthlySales = \App\Models\Sale::where('user_id', Auth::id())
+            ->whereMonth('sale_date', now()->month)
+            ->whereYear('sale_date', now()->year)
+            ->sum('usd_sell');
+        $targetPercentage = $userTarget > 0 ? min(($userMonthlySales / $userTarget) * 100, 100) : 0;
+    @endphp
+
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+        <div class="flex items-start justify-between">
+            <div class="p-3 rounded-lg mr-3"
+                style="background-color: rgba(var(--orange-100), 0.5); color: rgb(var(--orange-600));">
+                <i class="fas fa-bullseye text-lg"></i>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-600">الهدف الشخصي</p>
+                <p class="text-2xl font-bold mt-1" style="color: rgb(var(--orange-600));">
+                    ${{ number_format($userTarget, 0) }}
                 </p>
-            </div>
-            <div class="mt-4 md:mt-0 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
-                        <p class="text-white text-sm">إجمالي المبيعات: <span class="font-bold">{{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->count() }}</span></p>
-                        <p class="text-white/80 text-xs mt-1">
-                            <i class="fas fa-calendar-alt mr-1"></i>
-                            آخر تحديث: {{ now()->format('Y-m-d H:i') }}
-                        </p>
-                    </div>
+                <p class="text-xs text-gray-500 mt-1">
+                    محقق: ${{ number_format($userMonthlySales, 0) }} ({{ number_format($targetPercentage, 1) }}%)
+                </p>
+                <div class="mt-2 h-1 rounded-full overflow-hidden bg-gray-100">
+                    <div class="h-full transition-all duration-300"
+                         style="width: {{ $targetPercentage }}%; background-color: rgb(var(--orange-500));"></div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Sales Statistics Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-        <!-- Total Sales Card -->
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-start justify-between">
-                <div class="p-3 rounded-lg mr-3"
-                    style="background-color: rgba(var(--primary-100), 0.5); color: rgb(var(--primary-600));">
-                    <i class="fas fa-shopping-cart text-lg"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600">إجمالي المبيعات</p>
-                    <p class="text-2xl font-bold mt-1" style="color: rgb(var(--primary-600));">
-                        {{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)->count() }}
-                    </p>
-                </div>
-            </div>
-            <div class="mt-3 h-1 rounded-full overflow-hidden bg-gray-100">
-                <div class="h-full" style="width: 100%; background-color: rgb(var(--primary-500));"></div>
-            </div>
-        </div>
-
-        <!-- Today's Sales Card -->
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-start justify-between">
-                <div class="p-3 rounded-lg mr-3"
-                    style="background-color: rgba(var(--green-100), 0.5); color: rgb(var(--green-600));">
-                    <i class="fas fa-calendar-day text-lg"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600">مبيعات اليوم</p>
-                    <p class="text-2xl font-bold mt-1" style="color: rgb(var(--green-600));">
-                        {{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
-                            ->whereDate('sale_date', today())
-                            ->count() }}
-                    </p>
-                </div>
-            </div>
-            <div class="mt-3 h-1 rounded-full overflow-hidden bg-gray-100">
-                <div class="h-full" style="width: 100%; background-color: rgb(var(--green-500));"></div>
-            </div>
-        </div>
-
-        <!-- Monthly Sales Card -->
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-start justify-between">
-                <div class="p-3 rounded-lg mr-3"
-                    style="background-color: rgba(var(--blue-100), 0.5); color: rgb(var(--blue-600));">
-                    <i class="fas fa-chart-line text-lg"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600">المبيعات الشهرية</p>
-                    <p class="text-2xl font-bold mt-1" style="color: rgb(var(--blue-600));">
-                        {{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
-                            ->whereMonth('sale_date', now()->month)
-                            ->whereYear('sale_date', now()->year)
-                            ->count() }}
-                    </p>
-                </div>
-            </div>
-            <div class="mt-3 h-1 rounded-full overflow-hidden bg-gray-100">
-                <div class="h-full" style="width: 100%; background-color: rgb(var(--blue-500));"></div>
-            </div>
-        </div>
-
-        <!-- Weekly Sales Card -->
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-start justify-between">
-                <div class="p-3 rounded-lg mr-3"
-                    style="background-color: rgba(var(--purple-100), 0.5); color: rgb(var(--purple-600));">
-                    <i class="fas fa-calendar-week text-lg"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600">المبيعات الأسبوعية</p>
-                    <p class="text-2xl font-bold mt-1" style="color: rgb(var(--purple-600));">
-                        {{ \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
-                            ->whereBetween('sale_date', [now()->startOfWeek(), now()->endOfWeek()])
-                            ->count() }}
-                    </p>
-                </div>
-            </div>
-            <div class="mt-3 h-1 rounded-full overflow-hidden bg-gray-100">
-                <div class="h-full" style="width: 100%; background-color: rgb(var(--purple-500));"></div>
-            </div>
-        </div>
-
-        <!-- Personal Sales Target Card -->
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-start justify-between">
-                <div class="p-3 rounded-lg mr-3"
-                    style="background-color: rgba(var(--orange-100), 0.5); color: rgb(var(--orange-600));">
-                    <i class="fas fa-bullseye text-lg"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600">الهدف الشخصي</p>
-                    @php
-                        $userTarget = Auth::user()->sales_target ?? 0;
-                        $userMonthlySales = \App\Models\Sale::where('user_id', Auth::id())
-                            ->whereMonth('sale_date', now()->month)
-                            ->whereYear('sale_date', now()->year)
-                            ->sum('usd_sell');
-                        $targetPercentage = $userTarget > 0 ? min(($userMonthlySales / $userTarget) * 100, 100) : 0;
-                    @endphp
-                    <p class="text-2xl font-bold mt-1" style="color: rgb(var(--orange-600));">
-                        ${{ number_format($userTarget, 0) }}
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1">
-                        محقق: ${{ number_format($userMonthlySales, 0) }} ({{ number_format($targetPercentage, 1) }}%)
-                    </p>
-                </div>
-            </div>
-            <div class="mt-3 h-1 rounded-full overflow-hidden bg-gray-100">
-                <div class="h-full transition-all duration-300" 
-                     style="width: {{ $targetPercentage }}%; background-color: rgb(var(--orange-500));"></div>
-            </div>
-        </div>
-    </div>
+</div>
 
     <!-- إحصائيات المبيعات (منسوخة من لوحة التحكم الشاملة) -->
     @include('livewire.agency.dashboard.partials.sales-stats')

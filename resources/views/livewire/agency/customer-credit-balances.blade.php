@@ -2,7 +2,7 @@
 <div class="space-y-6">
 
     <!-- العنوان + زر الرجوع في صف واحد -->
-    <div class="flex justify-between items-center border-b pb-2 mb-4">
+    <div class="flex justify-between items-center pb-2 mb-4">
         <h2 class="text-xl font-bold text-[rgb(var(--primary-700))]">
             أرصدة العملاء
         </h2>

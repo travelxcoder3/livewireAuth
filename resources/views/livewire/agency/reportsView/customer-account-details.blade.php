@@ -1,3 +1,11 @@
+@php
+    $accountNumber =
+        \App\Models\Customer::where('agency_id', $customer->agency_id)
+            ->orderBy('created_at')
+            ->pluck('id')
+            ->search($customer->id) + 1;
+@endphp
+
 <div class="space-y-6">
 
     <!-- العنوان العلوي -->
@@ -33,11 +41,11 @@
     <div class="bg-white rounded-xl shadow-md p-4 grid md:grid-cols-3 gap-4 text-sm text-center">
         <div><span class="text-gray-500">اسم العميل:</span> <strong>{{ $customer->name }}</strong></div>
         <div><span class="text-gray-500">نوع الحساب:</span> {{ $customer->has_commission ? 'عمولة' : 'عادي' }}</div>
-        <div><span class="text-gray-500">رقم الحساب:</span> {{ $customer->id }}</div>
+        <div><span class="text-gray-500">رقم الحساب:</span> {{ $accountNumber }}</div>
         <div><span class="text-gray-500">تاريخ فتح الحساب:</span> {{ $customer->created_at->format('Y-m-d') }}</div>
         <div><span class="text-gray-500">الجوال:</span> {{ $customer->phone ?? '-' }}</div>
         <div><span class="text-gray-500">البريد الإلكتروني:</span> {{ $customer->email ?? '-' }}</div>
-        <div><span class="text-gray-500">العملة:</span> USD</div>
+        <div><span class="text-gray-500">العملة:</span> {{ Auth::user()?->agency?->currency ?? 'USD' }}</div>
     </div>
 
     <!-- جدول العمليات -->

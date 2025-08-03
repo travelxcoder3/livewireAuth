@@ -1,6 +1,6 @@
 @php
-    use App\Tables\CustomerAccountsCpllectionsTable;
-    $columns = CustomerAccountsCpllectionsTable::columns();
+    use App\Tables\CustomerAccountsTable;
+    $columns = CustomerAccountsTable::columns();
 @endphp
 
 <div class="space-y-6">
@@ -23,6 +23,22 @@
             </a>
         </div>
     </div>
+
+    <!-- مربع البحث عن العملاء -->
+    <div class="flex items-center gap-4 mb-4">
+        <input type="text" 
+            wire:model.live.debounce.500ms="search" 
+            placeholder="بحث باسم العميل..."
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring text-sm" />
+
+        @if($search)
+            <button wire:click="$set('search', '')" 
+                    class="text-gray-500 hover:text-gray-700 text-sm">
+                إلغاء البحث
+            </button>
+        @endif
+    </div>
+
 
     <!-- جدول الحسابات -->
     <div class="overflow-x-auto rounded-xl shadow-lg bg-white">

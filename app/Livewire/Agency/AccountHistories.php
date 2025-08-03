@@ -12,7 +12,7 @@ class AccountHistories extends Component
 {
     public $selectedCustomerId = null;
     public $collections = [];
-
+    public $search = '';
     public Collection $rawCustomers;
 
     public function mount()
@@ -28,7 +28,7 @@ class AccountHistories extends Component
         // ✅ تحويل إلى كولكشن منظمة
         $this->rawCustomers = $groupedByCustomer->map(function ($sales) {
             $customer = $sales->first()?->customer;
-if (!$customer) return null;
+            if (!$customer) return null;
 
             $groupedByGroup = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
 
@@ -81,19 +81,30 @@ if (!$customer) return null;
         $perPage = 10;
         $page = request()->get('page', 1);
 
-        $collections = collect($this->collections);
+        // ✅ فلترة العملاء حسب البحث
+        $filteredCustomers = $this->rawCustomers;
 
-        $paginatedCollections = new LengthAwarePaginator(
-            $collections->forPage($page, $perPage),
-            $collections->count(),
+        if ($this->search) {
+            $searchTerm = strtolower(trim($this->search));
+            $filteredCustomers = $filteredCustomers->filter(function ($customer) use ($searchTerm) {
+                return str_contains(strtolower($customer->name), $searchTerm);
+            });
+        }
+
+        // ✅ ترقيم الصفحات للعملاء
+        $paginatedCustomers = new LengthAwarePaginator(
+            $filteredCustomers->forPage($page, $perPage),
+            $filteredCustomers->count(),
             $perPage,
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        $paginatedCustomers = new LengthAwarePaginator(
-            $this->rawCustomers->forPage($page, $perPage),
-            $this->rawCustomers->count(),
+        // ✅ ترقيم صفحات التحصيلات (إن وُجدت)
+        $collections = collect($this->collections);
+        $paginatedCollections = new LengthAwarePaginator(
+            $collections->forPage($page, $perPage),
+            $collections->count(),
             $perPage,
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
@@ -105,4 +116,5 @@ if (!$customer) return null;
             'selectedCustomerId' => $this->selectedCustomerId,
         ])->layout('layouts.agency');
     }
+
 }

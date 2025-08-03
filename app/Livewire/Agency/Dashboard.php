@@ -615,9 +615,11 @@ $this->monthlyAchieved = $totalUsdSell;
     }
 
     public function render()
-    {
-        // تجهيز بيانات المبيعات الشهرية (نفس ما يُستخدم للجدول)
-        return view('livewire.agency.dashboard.comprehensive')
-            ->layout('layouts.agency');
-    }
+{
+    $dashboardType = $this->dashboardType;
+
+    return view("livewire.agency.dashboard.{$dashboardType}")
+        ->layout('layouts.agency');
+}
+
 } 

@@ -20,8 +20,7 @@
     </div>
 
     <!-- حقل البحث -->
-    <div class="bg-white rounded-xl shadow-sm p-4">
-        <div class="relative">
+    <div class="relative mt-2">
             <input type="text" wire:model.live="search" placeholder="ابحث باسم المستفيد أو المبلغ أو رقم العملية..."
                 class="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[rgb(var(--primary-300))] focus:border-[rgb(var(--primary-300))] transition">
             <div class="absolute left-3 top-2.5 text-gray-400">
@@ -32,7 +31,6 @@
                 </svg>
             </div>
         </div>
-    </div>
 
     <!-- عرض البطاقات -->
     @if ($sales->isEmpty())
