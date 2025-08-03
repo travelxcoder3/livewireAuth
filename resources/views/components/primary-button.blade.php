@@ -1,5 +1,6 @@
 @props([
     'type' => 'button',
+    'href' => null,
     'color' => 'primary',
     'textColor' => 'white',
     'width' => null,
@@ -8,7 +9,7 @@
     'rounded' => 'rounded-xl',
     'shadow' => 'shadow transition duration-300 cursor-pointer hover:opacity-70',
     'gradient' => true,
-    'icon' => null, // SVG أو نص يُمرر كأيقونة
+    'icon' => null,
 ])
 
 @php
@@ -19,19 +20,24 @@
         $baseStyle = "background-color: {$color};";
     }
 
-    // أيقونة افتراضية إذا ما تم تمرير أيقونة
-    $defaultIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>';
+    $classes = "{$padding} {$fontSize} font-bold text-{$textColor} {$rounded} {$shadow} transition duration-300 flex items-center gap-2 justify-center " . ($width ?? '');
 @endphp
 
-<button
-    type="{{ $type }}"
-    {{ $attributes->merge([
-        'class' => "{$padding} {$fontSize} font-bold text-{$textColor} {$rounded} {$shadow} transition duration-300 flex items-center gap-2 justify-center " . ($width ?? ''),
-        'style' => $baseStyle,
-    ]) }}
->
-    @if (!is_null($icon))
-        {!! $icon !== '' ? $icon : $defaultIcon !!}
-    @endif
-    {{ $slot }}
-</button>
+@if ($href)
+    <a href="{{ $href }}"
+       {{ $attributes->merge(['class' => $classes, 'style' => $baseStyle]) }}>
+        @if (!is_null($icon))
+            {!! $icon !== '' ? $icon : $defaultIcon !!}
+        @endif
+        {{ $slot }}
+    </a>
+@else
+    <button
+        type="{{ $type }}"
+        {{ $attributes->merge(['class' => $classes, 'style' => $baseStyle]) }}>
+        @if (!is_null($icon))
+            {!! $icon !== '' ? $icon : $defaultIcon !!}
+        @endif
+        {{ $slot }}
+    </button>
+@endif

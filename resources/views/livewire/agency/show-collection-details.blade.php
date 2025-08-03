@@ -32,6 +32,7 @@
                 style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
                 المعلومات الأساسية
             </h3>
+           
 
             <div class="grid md:grid-cols-3 gap-4 text-sm">
                 <div>
@@ -68,7 +69,7 @@
                     <span
                         class="font-medium">{{ optional($sale->collections->last()?->customerType)->label ?? '-' }}</span>
                 </div>
-                @can('debt.details.view')
+                @can('collection.details.view')
                     <div class="flex items-center">
                         <strong class="min-w-[100px] text-gray-500">نوع المديونية:</strong>
                         <span class="font-medium">{{ optional($sale->collections->last()?->debtType)->label ?? '-' }}</span>
@@ -93,6 +94,27 @@
                 style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
                 جميع المبيعات المرتبطة بالعميل
             </h3>
+ @if($availableBalanceToPayOthers > 0)
+    <div class="flex justify-between items-center mb-4">
+        <div></div> {{-- حجز مكان --}}
+        <div class="flex items-center gap-4">
+            <span class="text-sm font-bold text-[rgb(var(--primary-700))]">
+                رصيد العميل لدى الشركة: 
+                <span class="text-green-700">{{ number_format($availableBalanceToPayOthers, 2) }}</span>
+            </span>
+
+            <x-primary-button
+                wire:click="openPayToOthersModal"
+                padding="px-4 py-2"
+                fontSize="text-sm"
+                class="font-bold"
+            >
+                تسديد للعملاء
+            </x-primary-button>
+
+        </div>
+    </div>
+@endif
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
@@ -102,14 +124,14 @@
                             <th class="px-2 py-1">الخدمة</th>
                             <th class="px-2 py-1">تاريخ البيع</th>
                             <th class="px-2 py-1">المبلغ المحصل</th>
-                            <th class="px-2 py-1">المتبقي</th>
-                            <th class="px-2 py-1">ديون الشركة للعميل</th>
+                            <th class="px-2 py-1">تحت التحصيل</th>
                             <th class="px-2 py-1">تاريخ السداد المتوقع</th>
                             <th class="px-2 py-1">الموظف</th>
                             <th class="px-2 py-1">الإجراء</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
+                        
                         @foreach ($customerSales as $s)
                             @php
                                 $collected = $s->collections_total ?? 0;
@@ -124,13 +146,10 @@
 
                                 <td class="px-2 py-1">{{ $s->sale_date }}</td>
                                 <td class="px-2 py-1 text-green-700 font-bold">{{ number_format($totalPaid, 2) }}</td>
-                                @if ($remaining < 0)
-    <td class="px-2 py-1 text-green-700 font-bold">-</td> {{-- عمود المتبقي --}}
-    <td class="px-2 py-1 text-red-600 font-bold">{{ number_format(abs($remaining), 2) }}</td> {{-- ديون --}}
-@else
-    <td class="px-2 py-1 text-red-600 font-bold">{{ number_format($remaining, 2) }}</td> {{-- عمود المتبقي --}}
-    <td class="px-2 py-1 text-green-700 font-bold">-</td> {{-- ديون --}}
-@endif
+ <td class="px-2 py-1 text-red-600 font-bold">
+    {{ $remaining > 0 ? number_format($remaining, 2) : '-' }}
+</td>
+
                                 <td class="px-2 py-1">{{ $s->expected_payment_date ?? '-' }}</td>
                                 <td class="px-2 py-1">{{ optional($s->employee)->name ?? '-' }}</td>
                                 <td class="px-2 py-1">
@@ -236,7 +255,11 @@
                     </h3>
 
                     <!-- رسالة تنبيه عند عدم وجود مبلغ متبقي -->
-                    @if ($remainingAmount <= 0)
+                    @if ($isPayToOthersMode)
+    <div class="mb-4 px-4 py-2 rounded-lg text-xs bg-blue-50 border border-blue-200 text-blue-700">
+        سيتم استخدام رصيد الشركة لدى العميل لتسديد مديونية المستفيدين الآخرين.
+    </div>
+@elseif ($remainingAmount <= 0)
                         <div class="mb-4 px-4 py-2 rounded-lg text-xs"
                             style="background-color: rgba(var(--primary-100), 0.5); border: 1px solid rgba(var(--primary-200), 0.5); color: rgb(var(--primary-700));">
                             تم سداد كامل المبلغ، لا يمكن التحصيل.
@@ -249,14 +272,29 @@
                             {{ $errors->first('amount') }}
                         </div>
                     @endif
+                @if($isPayToOthersMode)
+                    <div class="text-sm mb-4">
+                <x-select-field
+                    label="اختر المستفيد"
+                    :options="collect($payToCustomerList)->mapWithKeys(fn($item) => [$item['id'] => $item['name']])->toArray()"
+                    wireModel="selectedPayCustomerId"
+                    placeholder="اختر مستفيداً"
+                    name="selectedPayCustomerId"
+                />
+
+                    </div>
+                @endif
 
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <!-- إجمالي الفاتورة -->
                         <div class="text-sm">
                             <strong class="text-[rgb(var(--primary-700))]">إجمالي الفاتورة:</strong>
                             <input type="text" readonly
-                                class="w-full mt-1 border rounded-lg px-3 py-2 bg-[rgb(var(--primary-50))]"
-                                value="{{ number_format($totalAmount, 2) }}">
+    class="w-full mt-1 border rounded-lg px-3 py-2 bg-[rgb(var(--primary-50))] text-right font-bold"
+    value="{{ number_format($totalAmount, 2) }}"
+    @if($isPayToOthersMode && !$selectedPayCustomerId) disabled @endif>
+
+
                         </div>
 
                         <!-- المدفوع من المبيعات -->
@@ -295,7 +333,7 @@
                     <!-- تسديد المتبقي (يأخذ السطر كامل) -->
                     <div class="text-sm mb-4">
                         <strong class="text-[rgb(var(--primary-700))]">تسديد المتبقي:</strong>
-                        <input type="number" wire:model.defer="payRemainingNow" max="{{ $remainingAmount }}"
+                        <input type="number" wire:model.defer="payRemainingNow" max="{{ $isPayToOthersMode ? $availableBalanceToPayOthers : $remainingAmount }}"
                             class="w-full mt-1 border rounded-lg px-3 py-2 bg-[rgb(var(--primary-50))] text-right font-bold focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none"
                             placeholder="أدخل المبلغ أو اتركه كما هو"
                             value="{{ number_format($remainingAmount, 2) }}"
@@ -328,12 +366,23 @@
                             class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300">
                             إلغاء
                         </button>
+                        
+                        @php
+                            $disableSaveButton = false;
+
+                            if ($isPayToOthersMode) {
+                                $disableSaveButton = !$selectedPayCustomerId; // ✅ نغلق الزر فقط إذا لم يُحدد مستفيد
+                            }
+                        @endphp
+
+
                         <button wire:click="saveAmounts"
                             class="flex-1 text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300"
                             style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);"
-                            @if ($remainingAmount <= 0) disabled @endif>
+                            @if($disableSaveButton) disabled @endif>
                             حفظ التغييرات
                         </button>
+
                     </div>
                 </div>
             </div>

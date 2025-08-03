@@ -12,9 +12,11 @@
                 class="text-sm px-4 py-2 bg-white border border-[rgb(var(--primary-500))] text-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-50))] hover:shadow-md rounded-lg transition">
                 تنظيف الفلاتر
             </button>
+            @can('customers.create')
             <x-primary-button wire:click="openModal" class="text-sm">
                 + إضافة عميل جديد
             </x-primary-button>
+            @endcan
         </div>
         <x-toast />
     </div>

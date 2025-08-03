@@ -183,14 +183,26 @@
         </div>
         <!-- أزرار التقارير تحت الكارد -->
         <div class="flex justify-end gap-4 mb-8">
-            <button type="button" onclick="openReportModal('pdf')"
-                class="bg-gradient-to-tr from-[rgb(var(--primary-500))] to-[rgb(var(--primary-600))] text-white font-bold shadow-md hover:from-[rgb(var(--primary-600))] hover:to-[rgb(var(--primary-500))] transition duration-200 px-6 py-2 rounded-xl text-base">
+            <x-primary-button
+                type="button"
+                onclick="openReportModal('pdf')"
+                padding="px-6 py-2"
+                fontSize="text-base"
+                class="font-bold"
+            >
                 تقرير PDF
-            </button>
-            <button type="button" onclick="openReportModal('excel')"
-                class="bg-gradient-to-tr from-[rgb(var(--primary-500))] to-[rgb(var(--primary-600))] text-white font-bold shadow-md hover:from-[rgb(var(--primary-600))] hover:to-[rgb(var(--primary-500))] transition duration-200 px-6 py-2 rounded-xl text-base">
+            </x-primary-button>
+
+            <x-primary-button
+                type="button"
+                onclick="openReportModal('excel')"
+                padding="px-6 py-2"
+                fontSize="text-base"
+                class="font-bold"
+            >
                 تقرير Excel
-            </button>
+            </x-primary-button>
+
         </div>
         <!-- صف: عدد السجلات يمين، تاريخ التقرير يسار -->
         <div class="flex items-center justify-between mb-6 text-gray-700">
@@ -274,10 +286,15 @@
                 </button>
 
 
-                    <button type="submit"
-                        class="bg-gradient-to-tr from-[rgb(var(--primary-500))] to-[rgb(var(--primary-600))] text-white font-bold px-6 py-2 rounded-xl shadow-md hover:from-[rgb(var(--primary-600))] hover:to-[rgb(var(--primary-500))] transition duration-200 text-sm">
-                        تحميل التقرير
-                    </button>
+                <x-primary-button
+                    type="submit"
+                    padding="px-6 py-2"
+                    fontSize="text-sm"
+                    class="font-bold shadow-md"
+                >
+                    تحميل التقرير
+                </x-primary-button>
+
                 </div>
             </form>
         </div>

@@ -120,8 +120,12 @@
                 <thead class="bg-gray-100">
                     <tr>
                         <th class="p-2 border-b text-center">
-                            <input type="checkbox" wire:model="selectAll"
-                                wire:click="$set('selectedSales', $sales->pluck('id')->toArray())">
+                        <input type="checkbox"
+       wire:model="selectAll"
+       wire:change="toggleSelectAll"
+       class="form-checkbox h-4 w-4 text-green-600">
+
+
                         </th>
                         <th class="p-2 border-b">الرقم</th>
 
@@ -135,8 +139,12 @@
                     @foreach ($sales as $sale)
                         <tr>
                             <td class="p-2 border-b text-center">
-                                <input type="checkbox" wire:click="toggleSaleSelection({{ $sale->id }})"
-                                    @if (in_array($sale->id, $selectedSales)) checked @endif>
+                            <input type="checkbox"
+       value="{{ $sale->id }}"
+       wire:model="selectedSales"
+       class="form-checkbox h-4 w-4 text-green-600">
+
+
                             </td>
                             <td class="p-2 border-b text-center">
                                 {{ ($sales->currentPage() - 1) * $sales->perPage() + $loop->iteration }}

@@ -79,11 +79,13 @@
                     />
 
                     <!-- معلومات التواصل -->
-                    <div class="{{ $containerClass }}">
-                        <textarea wire:model.defer="contact_info" rows="2" class="{{ $fieldClass }}" placeholder="معلومات التواصل"></textarea>
-                        <label class="{{ $labelClass }}">رقم التواصل</label>
-                        @error('contact_info') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        name="type"
+                        label=" رقم التواصل"
+                        placeholder="  رقم التواصل"
+                        wireModel="contact_info"
+                        
+                    />
                     <!-- نوع الخدمة -->
                     <x-select-field
                         label="نوع الخدمة"

@@ -49,24 +49,27 @@ use App\Livewire\Agency\Obligations\Index;
 use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\CustomerFollowUpReportController;
 
+use App\Livewire\Agency\Reports\CustomerAccountDetails;
+use App\Http\Controllers\CustomerAccountReportController;
 
+use App\Livewire\Agency\AccountHistories;
 
 
 // ============================
 // 🌐 المسارات العامة والمصادقة
 // ============================
 
-Route::get('/', fn () => view('welcome'));
+Route::get('/', fn() => view('welcome'));
 
 Route::get('/login', Login::class)->name('login');
 
-Route::get('reset-password/{token}', fn ($token) => 'This is a fake reset password page for testing. Token: ' . $token)
+Route::get('reset-password/{token}', fn($token) => 'This is a fake reset password page for testing. Token: ' . $token)
     ->name('password.reset');
 
-Route::get('/forgot-password', fn () => view('livewire.auth.forgot-password'))
+Route::get('/forgot-password', fn() => view('livewire.auth.forgot-password'))
     ->name('password.request');
 
-Route::get('/register', fn () => redirect('/')->with('error', 'إنشاء الحسابات يتم فقط عن طريق السوبر أدمن أو أدمن الوكالة.'));
+Route::get('/register', fn() => redirect('/')->with('error', 'إنشاء الحسابات يتم فقط عن طريق السوبر أدمن أو أدمن الوكالة.'));
 
 Route::post('/logout', function () {
     Auth::logout();
@@ -87,9 +90,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super-admin'])
     Route::get('/agencies/{agency}/edit', EditAgency::class)->name('edit-agency');
     Route::get('/agencies/{agency}/delete', DeleteAgency::class)->name('delete-agency');
     Route::get('/dynamic-lists', DynamicLists::class)
-    ->name('dynamic-lists');
+        ->name('dynamic-lists');
     Route::post('/system/update-theme', [SystemSettingsController::class, 'updateTheme'])
-    ->name('system.update-theme');
+        ->name('system.update-theme');
 });
 
 
@@ -97,7 +100,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super-admin'])
 // 🏢 مسارات أدمن الوكالة
 // ============================
 
-Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePassword','active.user'])->group(function () {
+Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePassword', 'active.user'])->group(function () {
     Route::get('/dashboard', AgencyDashboard::class)->name('dashboard');
     Route::get('/users', Users::class)->name('users');
     Route::get('/roles', Roles::class)->name('roles');
@@ -109,55 +112,65 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
     Route::get('/dynamic-lists', \App\Livewire\Agency\DynamicLists::class)->name('dynamic-lists');
     Route::get('/change-password', ChangePassword::class)->name('change-password');
     Route::get('/obligations', Index::class)
-    ->name('obligations');
-Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
-)->name('obligations-view');
+        ->name('obligations');
+        Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
+        )->name('obligations-view');
+    
+    
+            Route::get('/customer-accounts/{customer}/history', \App\Livewire\Agency\AccountHistoryDetails::class)
+                ->name('customer-accounts.details');
+                
+     Route::get('/customer-accounts', AccountHistories::class)
+        ->name('customer-accounts');
+    
+        Route::get('/customer-credit-balances', \App\Livewire\Agency\CustomerCreditBalances::class)
+        ->name('customer-credit-balances');
     // ✅ واجهة المبيعات الخاصة بأدمن الوكالة
     Route::get('/sales', SalesIndex::class)->name('sales.index');
     // ✅ تقارير المبيعات PDF و Excel
-   Route::get('/sales/report/pdf', [\App\Http\Controllers\Agency\ReportController::class, 'salesPdf'])
-            ->name('sales.report.pdf');
-            // تقرير Excel
-            Route::get('/excel', function (\Illuminate\Http\Request $request) {
-                $fields = $request->input('fields');
-                $startDate = $request->input('start_date');
-                $endDate = $request->input('end_date');
-                
-                return Excel::download(
-                    new \App\Exports\SalesExport($fields, $startDate, $endDate), 
-                    'sales-report.xlsx'
-                );
-            })->name('sales.report.excel');
-    Route::get('/sales/report-preview', function() {
+    Route::get('/sales/report/pdf', [\App\Http\Controllers\Agency\ReportController::class, 'salesPdf'])
+        ->name('sales.report.pdf');
+    // تقرير Excel
+    Route::get('/excel', function (\Illuminate\Http\Request $request) {
+        $fields = $request->input('fields');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        return Excel::download(
+            new \App\Exports\SalesExport($fields, $startDate, $endDate),
+            'sales-report.xlsx'
+        );
+    })->name('sales.report.excel');
+    Route::get('/sales/report-preview', function () {
         return view('livewire.sales.report-preview');
     })->name('sales.report.preview');
-// ============================
+    // ============================
     // 🧑‍💼 قسم الحسابات داخل لوحة الوكالة
     // ============================
-        Route::prefix('accounts')->group(function () {
-                Route::get('/report/pdf', [\App\Http\Controllers\Agency\AccountController::class, 'generatePdfReport'])
-                    ->name('accounts.report.pdf');
-                    
-                Route::get('/report/excel', [\App\Http\Controllers\Agency\AccountController::class, 'generateExcelReport'])
-                    ->name('accounts.report.excel');
-            });
-        
-            Route::get('/accounts', Accounts::class)->name('accounts');
-  // ============================
+    Route::prefix('accounts')->group(function () {
+        Route::get('/report/pdf', [\App\Http\Controllers\Agency\AccountController::class, 'generatePdfReport'])
+            ->name('accounts.report.pdf');
+
+        Route::get('/report/excel', [\App\Http\Controllers\Agency\AccountController::class, 'generateExcelReport'])
+            ->name('accounts.report.excel');
+    });
+
+    Route::get('/accounts', Accounts::class)->name('accounts');
+    // ============================
     // 🧑‍💼 قسم التحصيلات داخل لوحة الوكالة
     // ============================
-            Route::get('/collections', \App\Livewire\Agency\Collections::class)
-            ->name('collections');
-            Route::get('/collections/all', \App\Livewire\Agency\AllCollections::class)
-    ->name('collections.all');
-        Route::get('/collections/{sale}', \App\Livewire\Agency\ShowCollectionDetails::class)
-            ->name('collection.details');
- // ============================
+    Route::get('/collections', \App\Livewire\Agency\Collections::class)
+        ->name('collections');
+    Route::get('/collections/all', \App\Livewire\Agency\AllCollections::class)
+        ->name('collections.all');
+    Route::get('/collections/{sale}', \App\Livewire\Agency\ShowCollectionDetails::class)
+        ->name('collection.details');
+    // ============================
     // 🧑‍💼 قسم التسلسلات داخل لوحة الوكالة
     // ============================
-            Route::get('/approval-sequences', \App\Livewire\Agency\ApprovalSequences::class)
+    Route::get('/approval-sequences', \App\Livewire\Agency\ApprovalSequences::class)
         ->name('approval-sequences');
-            // ============================
+    // ============================
     // 🧑‍💼 قسم الموارد البشرية داخل لوحة الوكالة
     // ============================
     Route::prefix('hr')->name('hr.')->group(function () {
@@ -187,13 +200,19 @@ Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
             ->name('reports.customers-follow-up');
         Route::get('customers-follow-up/pdf', [CustomerFollowUpReportController::class, 'downloadPdf'])
             ->name('reports.customers-follow-up.pdf');
-      
+        Route::get('customer-accounts', \App\Livewire\Agency\Reports\CustomerAccounts::class)
+            ->name('reports.customer-accounts');
+        Route::get('customer-accounts/{id}/details', CustomerAccountDetails::class)
+            ->name('reports.customer-accounts.details');
+        Route::get('customer-accounts/{id}/pdf', [CustomerAccountReportController::class, 'generatePdf'])
+            ->name('reports.customer-accounts.pdf');
+
     });
 });
 // Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
 //     ->middleware(['auth', 'agency']);
 Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
-->middleware(['auth']);
+    ->middleware(['auth']);
 
 Route::get('/commissions', Commissions::class)->name('agency.commissions');
 

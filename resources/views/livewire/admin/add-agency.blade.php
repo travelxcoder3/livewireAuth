@@ -51,7 +51,6 @@
                     </div>
                       <div class="{{ $containerClass }}" x-data="{ open: false, search: '', selectedId: @entangle('parent_id'), selectedLabel: '' }">
                         <!-- عنوان الحقل -->
-                        <label class="{{ $labelClass }}">نوع الوكالة <span class="text-red-500">*</span></label>
 
                         <!-- الزرين: وكالة رئيسية / فرع -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2 mt-1">

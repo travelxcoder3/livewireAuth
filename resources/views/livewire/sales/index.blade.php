@@ -536,24 +536,25 @@ $columns = SalesTable::columns();
         </h3>
         
         <form id="filterForm" class="space-y-4">
-            <!-- تاريخ البيع -->
             <div class="grid grid-cols-2 gap-4">
-                <!-- في نافذة الفلترة -->
-                <x-date-picker
-                    name="start_date"
-                    label="من تاريخ"
-                    wireModel="filterInputs.start_date"
-                    placeholder="من تاريخ"
-                    containerClass="relative mt-1"
-                />
+                <!-- تاريخ البيع -->
+                <div class="col-span-2 grid grid-cols-2 gap-4">
+                    <x-date-picker
+                        name="start_date"
+                        label="من تاريخ"
+                        wireModel="filterInputs.start_date"
+                        placeholder="من تاريخ"
+                        containerClass="relative mt-1"
+                    />
 
-                <x-date-picker
-                    name="end_date"
-                    label="إلى تاريخ"
-                    wireModel="filterInputs.end_date"
-                    placeholder="إلى تاريخ"
-                    containerClass="relative mt-1"
-                />
+                    <x-date-picker
+                        name="end_date"
+                        label="إلى تاريخ"
+                        wireModel="filterInputs.end_date"
+                        placeholder="إلى تاريخ"
+                        containerClass="relative mt-1"
+                    />
+                </div>
 
                 <x-select-field
                     wireModel="filterInputs.service_type_id"
@@ -564,21 +565,20 @@ $columns = SalesTable::columns();
                 />
 
                 <x-select-field
-                    wire:model="filterInputs.status"
+                    wireModel="filterInputs.status"
                     label="الحالة"
                     :options="[
-                    '' => 'الكل',
-                    'Issued' => 'تم الإصدار - Issued',
-                    'Re-Issued' => 'أعيد الإصدار - Re-Issued',
-                    'Re-Route' => 'تغيير المسار - Re-Route',
-                    'Refund-Full' => 'استرداد كلي - Refund Full',
-                    'Refund-Partial' => 'استرداد جزئي - Refund Partial',     
-                    'Void' => 'ملغي نهائي - Void',
-                    'Applied' => 'قيد التقديم - Applied',
-                    'Rejected' => 'مرفوض - Rejected',
-                    'Approved' => 'مقبول - Approved',
-                ]"
-
+                        '' => 'الكل',
+                        'Issued' => 'تم الإصدار - Issued',
+                        'Re-Issued' => 'أعيد الإصدار - Re-Issued',
+                        'Re-Route' => 'تغيير المسار - Re-Route',
+                        'Refund-Full' => 'استرداد كلي - Refund Full',
+                        'Refund-Partial' => 'استرداد جزئي - Refund Partial',     
+                        'Void' => 'ملغي نهائي - Void',
+                        'Applied' => 'قيد التقديم - Applied',
+                        'Rejected' => 'مرفوض - Rejected',
+                        'Approved' => 'مقبول - Approved',
+                    ]"
                     placeholder="الحالة"
                     containerClass="relative mt-1"
                 />
@@ -624,7 +624,6 @@ $columns = SalesTable::columns();
                     containerClass="relative mt-1"
                 />
 
-
                 <x-input-field
                     name="route"
                     label="Route"
@@ -633,21 +632,20 @@ $columns = SalesTable::columns();
                     containerClass="relative mt-1"
                 />
 
-<x-select-field
-    wireModel="payment_method"
-    label="حالة الدفع"
-    :options="[
-        'kash' => 'كامل',
-        'part' => 'جزئي',
-        'all' => 'لم يدفع'
-    ]"
-    placeholder="حالة الدفع"
-    containerClass="relative mt-1 col-span-3"
-    errorName="payment_method"
-    :disabled="$showRefundModal" 
-/>
+                <x-select-field
+                    wireModel="filterInputs.payment_method"
+                    label="حالة الدفع"
+                    :options="[
+                        'kash' => 'كامل',
+                        'part' => 'جزئي',
+                        'all' => 'لم يدفع'
+                    ]"
+                    placeholder="حالة الدفع"
+                    containerClass="relative mt-1"
+                    errorName="payment_method"
+                    :disabled="$showRefundModal" 
+                />
 
-                
                 <x-select-field
                     wireModel="filterInputs.payment_type"
                     label="وسيلة الدفع"
@@ -664,18 +662,19 @@ $columns = SalesTable::columns();
                     placeholder="وسيلة الدفع"
                     containerClass="relative mt-1"
                 />
+            </div>
 
-<div class="mt-6 flex justify-center gap-3">
-<button type="button" onclick="closeFilterModal()"
-    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm w-full sm:w-auto">
-    إلغاء
-</button>
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <button type="button" onclick="closeFilterModal()"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm w-full">
+                    إلغاء
+                </button>
 
-            <button type="button" wire:click="applyFilters"
-                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm w-full sm:w-auto"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                تطبيق الفلترة
-            </button>
+                <button type="button" wire:click="applyFilters"
+                        class="text-white font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm w-full"
+                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                    تطبيق الفلترة
+                </button>
             </div>
         </form>
     </div>

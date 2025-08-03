@@ -187,7 +187,7 @@
             @endif
 
             <!-- إعدادات الشركة -->
-             @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('profile.view') || Auth::user()->can('dynamic-lists.view')|| Auth::user()->can('approval-sequences.view') || Auth::user()->can('commissions.view') || Auth::user()->can('policies.view') || Auth::user()->can('obligations.view'))
+             @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('profile.view') || Auth::user()->can('lists.view')|| Auth::user()->can('approval-sequences.view') || Auth::user()->can('commissions.view') || Auth::user()->can('policies.view') || Auth::user()->can('obligations.view'))
             <div x-data="{open: false}" class="relative">
                 <button @click="open = !open" class="flex items-center justify-between w-full px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                     <div class="flex items-center gap-3">
@@ -204,7 +204,7 @@
                         <span>بيانات الشركة</span>
                     </a>
                     @endif
-                    @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('dynamic-lists.view'))
+                    @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('lists.view'))
                     <a href="{{ route('agency.dynamic-lists') }}" @click="mobileSidebarOpen = false"
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                         <i class="fas fa-list-alt"></i>

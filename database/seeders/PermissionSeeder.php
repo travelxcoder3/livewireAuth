@@ -10,9 +10,8 @@ class PermissionSeeder extends Seeder
     // الصلاحيات الأساسية العامة لجميع الوكالات
     protected $basicPermissions = [
         'users.view',
-        'users.create',
         'users.edit',
-        'users.delete',
+        // 'users.delete',
         'roles.view',
         'roles.create',
         'roles.edit',
@@ -24,20 +23,20 @@ class PermissionSeeder extends Seeder
         // صلاحيات المبيعات
         'sales.view',
         'sales.create',
-        'sales.edit',
-        'sales.delete',
+        // 'sales.edit',
+        // 'sales.delete',
         'sales.report',
         'sales.reports.view',
         // صلاحيات الموظفين
         'employees.view',
         'employees.create',
         'employees.edit',
-        'employees.delete',
+        // 'employees.delete',
         // صلاحيات المزودين
         'providers.view',
         'providers.create',
         'providers.edit',
-        'providers.delete',
+        // 'providers.delete',
         // // صلاحيات الوسطاء
         // 'intermediaries.view',
         // 'intermediaries.create',
@@ -47,7 +46,7 @@ class PermissionSeeder extends Seeder
         'customers.view',
         'customers.create',
         'customers.edit',
-        'customers.delete',
+        // 'customers.delete',
         // صلاحيات الخدمات
         // 'service_types.view',
         // 'service_types.create',
@@ -71,7 +70,7 @@ class PermissionSeeder extends Seeder
         'sequences.view',
         'sequences.create',
         'sequences.edit',
-        'sequences.delete',
+        // 'sequences.delete',
         // صلاحيات الأقسام
         // 'departments.view',
         // 'departments.create',
@@ -87,13 +86,13 @@ class PermissionSeeder extends Seeder
         'notifications.send',
         'notifications.delete',
         // صلاحيات الموافقات
-        'approvals.view',
-        'approvals.manage',
+        // 'approvals.view',
+        // 'approvals.manage',
         // إعدادات النظام
-        'system.settings.view',
-        'system.settings.edit',
-        'theme.view',
-        'theme.edit',
+        // 'system.settings.view',
+        // 'system.settings.edit',
+        // 'theme.view',
+        // 'theme.edit',
         // أرشفة واستعادة
         // 'users.archive',
         // 'users.restore',
@@ -119,18 +118,19 @@ class PermissionSeeder extends Seeder
         'lists.delete',
         // صلاحيات إضافية مستخدمة في النظام
         'agency.profile.view',
-        'dynamic-lists.view',
         'collection.view',
+        'collection.edit',
+        'collection.details.view',
         // صلاحيات إضافية للحسابات
         'accounts.export',
         'accounts.print',
         'accounts.invoice',
         'agency.profile.edit',
-        'debt.details.view',
         //صلاحيات عرض صفحه التقارير
         'reportsAccounts.view',
         'reportsSales.view',
-        'reportCustomers.view'
+        'reportCustomers.view',
+        'reportCustomerAccounts.view'
     ];
 
     /**

@@ -38,8 +38,6 @@ class AccountsReport extends Component
     public $customers = [];
     public $totalSales = 0;
     public $columns = [];
-
-
     protected $queryString = [
         'search' => ['except' => ''],
         'serviceTypeFilter' => ['except' => ''],
@@ -52,13 +50,11 @@ class AccountsReport extends Component
         'sortField' => ['except' => 'created_at'],
         'sortDirection' => ['except' => 'desc'],
     ];
-
     public function mount()
     {
         $this->loadInitialData();
         $this->columns = AccountTable::columns();
     }
-
     public function exportToPdf()
     {
         dd('triggered');
@@ -98,7 +94,6 @@ class AccountsReport extends Component
 
         return $value;
     }
-
     public function exportToExcel()
     {
         $data = $this->prepareReportData();
@@ -110,7 +105,6 @@ class AccountsReport extends Component
             'accounts-' . now()->format('Y-m-d') . '.xlsx'
         );
     }
-
     protected function prepareReportData()
     {
         $agency = auth()->user()->agency;
@@ -119,7 +113,7 @@ class AccountsReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $sales = Sale::with(['service', 'provider', 'account', 'customer'])
+        $sales = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
@@ -138,7 +132,10 @@ class AccountsReport extends Component
             ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate))
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
-
+        foreach ($sales as $sale) {
+            $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+            $sale->remaining = $sale->usd_sell - $sale->paid_total;
+        }
         return [
             'agency' => $agency,
             'sales' => $sales,
@@ -156,7 +153,6 @@ class AccountsReport extends Component
             'totalSales' => $sales->sum('usd_sell')
         ];
     }
-
     protected function loadInitialData()
     {
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
@@ -170,7 +166,6 @@ class AccountsReport extends Component
         $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
         $this->customers = Customer::where('agency_id', auth()->user()->agency_id)->latest()->get();
     }
-
     public function sortBy($field)
     {
         if ($this->sortField === $field) {
@@ -181,7 +176,6 @@ class AccountsReport extends Component
 
         $this->sortField = $field;
     }
-
     public function resetFilters()
     {
         $this->reset([
@@ -195,7 +189,6 @@ class AccountsReport extends Component
             'referenceFilter'
         ]);
     }
-
     public function render()
     {
         $agency = auth()->user()->agency;
@@ -204,7 +197,7 @@ class AccountsReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $salesQuery = Sale::with(['service', 'provider', 'account', 'customer'])
+        $salesQuery = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
@@ -223,7 +216,10 @@ class AccountsReport extends Component
             ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
         $this->totalSales = $salesQuery->clone()->sum('usd_sell');
         $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
-
+        foreach ($sales as $sale) {
+            $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+            $sale->remaining = $sale->usd_sell - $sale->paid_total;
+        }
         return view('livewire.agency.reportsView.accounts-report', [
             'sales' => $sales,
             'totalSales' => $this->totalSales,
@@ -233,7 +229,6 @@ class AccountsReport extends Component
             'customers' => $this->customers
         ]);
     }
-
     public function filteredSales()
     {
         return Sale::with(['customer', 'provider', 'serviceType'])
@@ -267,7 +262,4 @@ class AccountsReport extends Component
             'account-details-' . $sale->id . '.pdf'
         );
     }
-
-
-
 }
