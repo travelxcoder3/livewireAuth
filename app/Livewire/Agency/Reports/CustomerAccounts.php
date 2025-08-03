@@ -119,7 +119,9 @@ class CustomerAccounts extends Component
                 'collected' => $customerCollections->sum('amount'),
                 'refunded' => 0,
                 'net_balance' => $netBalance,
+                // ⚖️ "عليه" = المتبقي على العميل = totalAmount - المدفوع - المحصل
                 'remaining_for_customer' => $totalCustomerOwes,
+                // ⚖️ "له" = المتبقي للعميل = العمليات الزائدة - ما تم استخدامه
                 'remaining_for_company' => $totalCompanyOwes,
                 'last_sale_date' => $lastSaleDate,
             ];

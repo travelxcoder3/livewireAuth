@@ -4,6 +4,7 @@
             ->orderBy('created_at')
             ->pluck('id')
             ->search($customer->id) + 1;
+    $currency = Auth::user()->agency->currency ?? 'USD';
 @endphp
 
 <div class="space-y-6">
@@ -64,7 +65,7 @@
                     <tr class="hover:bg-gray-50">
                         <td class="p-2 text-red-600 font-medium">بيع</td>
                         <td class="p-2">{{ $sale->sale_date }}</td>
-                        <td class="p-2 text-gray-800">${{ number_format($sale->usd_sell, 2) }}</td>
+                        <td class="p-2 text-gray-800">{{ number_format($sale->usd_sell, 2) }} {{ $currency }}</td>
                         <td class="p-2 text-gray-600">{{ ucfirst($sale->status) }}</td>
                     </tr>
                 @empty
