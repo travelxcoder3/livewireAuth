@@ -351,16 +351,29 @@ public function updateStatusOptions()
         $customers = Customer::where('agency_id', Auth::user()->agency_id)->get();
         $accounts = Account::all();
 
-        // إجمالي البيع = مجموع usd_sell
-        $this->totalAmount = $salesQuery->sum('usd_sell');
-        // المبلغ المحصل = amount_paid
-        $this->totalReceived = $salesQuery->sum('amount_paid');
-        // الآجل = إجمالي البيع - المحصل
-       // جمع المدفوع المباشر + مجموع التحصيلات
-$this->totalReceived = $salesQuery->sum('amount_paid') 
-+ $salesQuery->withSum('collections', 'amount')->get()->sum('collections_sum_amount');
+        $salesWithCollections = $salesQuery->with(['collections'])->get();
 
-$this->totalPending = $this->totalAmount - $this->totalReceived;
+        // نجمع حسب مجموعة البيع
+        $groupedSales = $salesWithCollections->groupBy('sale_group_id');
+        
+        $this->totalAmount = 0;
+        $this->totalReceived = 0;
+        
+        foreach ($groupedSales as $group) {
+            $groupUsdSell = $group->sum('usd_sell');
+            $groupAmountPaid = $group->sum('amount_paid');
+            $groupCollections = $group->pluck('collections')->flatten()->sum('amount');
+        
+            // لو البيع = 0 بعد الاسترداد، تجاهله
+            if (round($groupUsdSell, 2) === 0.00) {
+                continue;
+            }
+        
+            $this->totalAmount += $groupUsdSell;
+            $this->totalReceived += $groupAmountPaid + $groupCollections;
+        }
+        
+        $this->totalPending = $this->totalAmount - $this->totalReceived;
 
 
         // الربح الإجمالي

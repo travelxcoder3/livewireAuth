@@ -27,29 +27,41 @@ class Commissions extends Component
     $agencyId = Auth::user()->agency_id;
 
     $this->customerCommissions = Sale::with(['customer', 'collections'])
-        ->whereHas('customer', function ($q) use ($agencyId) {
-            $q->where('has_commission', true)
-              ->where('agency_id', $agencyId);
-        })
-        ->whereMonth('sale_date', $this->month)
-        ->whereYear('sale_date', $this->year)
-        ->get()
-        ->map(function ($sale) {
-            $collected = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
-            $isFullyCollected = $collected >= ($sale->usd_sell ?? 0);
+    ->whereHas('customer', function ($q) use ($agencyId) {
+        $q->where('has_commission', true)
+          ->where('agency_id', $agencyId);
+    })
+    ->whereMonth('sale_date', $this->month)
+    ->whereYear('sale_date', $this->year)
+    ->get()
+    ->groupBy('sale_group_id')  // ✅ لتجميع المبيعات المكررة
+    ->map(function ($sales) {
+        $first = $sales->first();
 
-            // ✅ يتم عرض العمولة المُدخلة فقط إذا تم التحصيل بالكامل
-            return [
-                'customer' => $sale->customer?->name ?? 'غير معروف',
-                'amount' => $sale->usd_sell,
-                'profit' => $sale->sale_profit,
-                'status' => $isFullyCollected ? 'تم التحصيل' : 'غير محصل',
-                'commission' => $sale->commission,
+        // ✅ إذا إحدى المبيعات عمولتها = 0 وحالتها "Refund-Full"، نحسب 0
+        $hasFullRefund = $sales->contains(function ($s) {
+            return $s->status === 'Refund-Full' && floatval($s->commission) == 0;
+        });
 
-                'date' => \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d'),
-            ];
-        })
-        ->toArray();
+        $commission = $hasFullRefund
+            ? 0
+            : $sales->first()->commission; // ✅ نأخذ فقط أول عمولة إن لم يكن هناك استرداد كلي
+
+        $collected = ($first->amount_paid ?? 0) + $first->collections->sum('amount');
+        $isFullyCollected = $collected >= ($first->usd_sell ?? 0);
+
+        return [
+            'customer' => $first->customer?->name ?? 'غير معروف',
+            'amount' => $first->usd_sell,
+            'profit' => $first->sale_profit,
+            'status' => $isFullyCollected ? 'تم التحصيل' : 'غير محصل',
+            'commission' => $commission,
+            'date' => \Carbon\Carbon::parse($first->sale_date)->format('Y-m-d'),
+        ];
+    })
+    ->values() // تحويل Collection إلى Array مرتبة
+    ->toArray();
+
 }
 
     public function loadEmployeeCommissions() // تغيير اسم الدالة

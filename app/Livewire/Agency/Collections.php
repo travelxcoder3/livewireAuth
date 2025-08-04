@@ -24,17 +24,19 @@ class Collections extends Component
  public function render()
 {
     // ✅ جلب كل المبيعات المرتبطة بالعملاء مع علاقاتها
-$allSales = Sale::with([
-    'customer',
-    'collections' => function ($q) {
-        $q->latest(); // ✅ ترتيب التحصيلات من الأحدث
-    },
-    'collections.customerType',
-    'collections.debtType',
-    'collections.customerResponse',
-    'collections.customerRelation'
-])
+    $allSales = Sale::with([
+        'customer',
+        'collections' => function ($q) {
+            $q->latest();
+        },
+        'collections.customerType',
+        'collections.debtType',
+        'collections.customerResponse',
+        'collections.customerRelation'
+    ])
         ->where('agency_id', Auth::user()->agency_id)
+        ->where('user_id', Auth::id()) // ✅ عرض فقط عمليات الموظف الحالي
+    
         ->when($this->search, fn($q) =>
             $q->whereHas('customer', fn($q2) =>
                 $q2->where('name', 'like', "%{$this->search}%")
@@ -56,7 +58,14 @@ logger()->info('تجميع العمليات لكل عميل', [
 ]);
 
   $customers = $groupedByCustomer->map(function ($sales, $customerId) {
-    $customer = $sales->first()->customer;
+    $firstSale = $sales->first();
+
+if (!$firstSale || !$firstSale->customer) {
+    return null;
+}
+
+$customer = $firstSale->customer;
+
 
     $groupedByGroup = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
 

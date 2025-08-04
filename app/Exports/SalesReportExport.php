@@ -11,10 +11,13 @@ use App\Models\Sale;
 class SalesReportExport implements FromCollection, WithHeadings, WithMapping
 {
     protected $sales;
+    protected $currency;
 
     public function __construct(array $data)
     {
         $this->sales = $data['sales'];
+        $this->currency = $data['currency'] ?? 'USD'; // ← عملة الوكالة أو الافتراضية
+
     }
 
     public function collection()
@@ -30,7 +33,7 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping
             'نوع الخدمة',
             'المزود',
             'حساب العميل',
-            'المبلغ (USD)',
+            "المبلغ ({$this->currency})",
             'المرجع',
             'PNR',
             'العميل عبر',
@@ -40,6 +43,11 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping
 
     public function map($sale): array
     {
+        $amount = match ($this->currency) {
+            'USD' => $sale->usd_sell,
+            'SAR' => $sale->sar_sell ?? $sale->usd_sell, // fallback if needed
+            default => $sale->usd_sell,
+        };
         return [
             $sale->created_at?->format('Y-m-d'),
             $sale->user->name ?? '', // الموظف المسؤول
