@@ -335,9 +335,11 @@ $columns = SalesTable::columns();
                         placeholder="مبلغ عمولة العميل"
                         type="number"
                         step="0.01"
+                        :readonly="$commissionReadOnly"
                         containerClass="relative mt-1"
                     />
                     @endif
+
                 </div>
 
                <!-- الصف الرابع -->

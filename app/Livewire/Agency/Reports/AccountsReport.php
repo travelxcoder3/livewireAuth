@@ -57,9 +57,8 @@ class AccountsReport extends Component
     }
     public function exportToPdf()
     {
-        dd('triggered');
-        $data = $this->prepareReportData();
 
+        $data = $this->prepareReportData(auth()->user()); // ✅ تمرير المستخدم يدويًا
         $html = view('reports.accounts-full-pdf', [
             'sales' => $data['sales'],
             'totalSales' => $data['totalSales'],
@@ -96,7 +95,7 @@ class AccountsReport extends Component
     }
     public function exportToExcel()
     {
-        $data = $this->prepareReportData();
+        $data = $this->prepareReportData(auth()->user()); // ✅ تمرير المستخدم يدويًا
 
         return Excel::download(
             new AccountsReportExport([
@@ -105,16 +104,21 @@ class AccountsReport extends Component
             'accounts-' . now()->format('Y-m-d') . '.xlsx'
         );
     }
-    protected function prepareReportData()
+    protected function prepareReportData($user = null)
     {
-        $agency = auth()->user()->agency;
-
+        $user = $user ?? \Illuminate\Support\Facades\Auth::user();
+        $agency = $user->agency;
+    
         $agencyIds = $agency->parent_id
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
-
+    
         $sales = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
+            ->when(! $user->hasAnyRole(['agency-admin']), function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            // باقي الفلاتر بدون تغيير
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
                 $query->where(function ($q) use ($term) {
@@ -128,14 +132,16 @@ class AccountsReport extends Component
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
             ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('created_at', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('created_at', '<=', $this->endDate))
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
+    
         foreach ($sales as $sale) {
             $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
             $sale->remaining = $sale->usd_sell - $sale->paid_total;
         }
+    
         return [
             'agency' => $agency,
             'sales' => $sales,
@@ -153,6 +159,8 @@ class AccountsReport extends Component
             'totalSales' => $sales->sum('usd_sell')
         ];
     }
+    
+
     protected function loadInitialData()
     {
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
@@ -190,45 +198,54 @@ class AccountsReport extends Component
         ]);
     }
     public function render()
-    {
-        $agency = auth()->user()->agency;
+{
+    $user = auth()->user();
+    $agency = $user->agency;
 
-        $agencyIds = $agency->parent_id
-            ? [$agency->id]
-            : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
+    $agencyIds = $agency->parent_id
+        ? [$agency->id]
+        : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $salesQuery = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
-            ->whereIn('agency_id', $agencyIds)
-            ->when($this->search, function ($query) {
-                $term = '%' . $this->search . '%';
-                $query->where(function ($q) use ($term) {
-                    $q->where('beneficiary_name', 'like', $term)
-                        ->orWhere('reference', 'like', $term)
-                        ->orWhere('pnr', 'like', $term);
-                });
-            })
-            ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
-            ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
-            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
-        $this->totalSales = $salesQuery->clone()->sum('usd_sell');
-        $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
-        foreach ($sales as $sale) {
-            $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
-            $sale->remaining = $sale->usd_sell - $sale->paid_total;
-        }
-        return view('livewire.agency.reportsView.accounts-report', [
-            'sales' => $sales,
-            'totalSales' => $this->totalSales,
-            'columns' => $this->columns,
-            'serviceTypes' => $this->serviceTypes,
-            'providers' => $this->providers,
-            'customers' => $this->customers
-        ]);
+    $salesQuery = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
+        ->whereIn('agency_id', $agencyIds)
+        ->when(!$user->hasRole('agency-admin'), function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })
+        ->when($this->search, function ($query) {
+            $term = '%' . $this->search . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('beneficiary_name', 'like', $term)
+                    ->orWhere('reference', 'like', $term)
+                    ->orWhere('pnr', 'like', $term);
+            });
+        })
+        ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
+        ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
+        ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
+        ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
+        ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
+        ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+        ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
+
+    $this->totalSales = $salesQuery->clone()->sum('usd_sell');
+
+    $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+
+    foreach ($sales as $sale) {
+        $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+        $sale->remaining = $sale->usd_sell - $sale->paid_total;
     }
+
+    return view('livewire.agency.reportsView.accounts-report', [
+        'sales' => $sales,
+        'totalSales' => $this->totalSales,
+        'columns' => $this->columns,
+        'serviceTypes' => $this->serviceTypes,
+        'providers' => $this->providers,
+        'customers' => $this->customers
+    ]);
+}
+
     public function filteredSales()
     {
         return Sale::with(['customer', 'provider', 'serviceType'])

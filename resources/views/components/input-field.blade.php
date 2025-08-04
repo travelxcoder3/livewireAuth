@@ -10,6 +10,7 @@
     'wireChange' => null,
     'wireInput' => null,
     'errorName' => '', 
+    'readonly' => false,
     'containerClass' => 'relative mt-1',
     'fieldClass' => 'peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm placeholder-transparent text-gray-600 
                     focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] transition duration-200',
@@ -26,6 +27,7 @@
         {{ $label }}
     </label>    
     <input type="{{ $type }}"
+        @if($readonly) readonly @endif
        @if($wireModel) wire:model.live.debounce.500ms="{{ $wireModel }}" @endif
        @if($wireChange) wire:change="{{ $wireChange }}" @endif
        @if($wireInput) wire:input="{{ $wireInput }}" @endif

@@ -2,23 +2,25 @@
 
 namespace App\Exports;
 
+use App\Models\Sale;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Illuminate\Support\Collection;
-use App\Models\Sale;
 
 class AccountsReportExport implements FromCollection, WithHeadings, WithMapping
 {
-    protected $sales;
+    protected Collection $sales;
 
     public function __construct(array $data)
     {
-        $this->sales = $data['sales'];
+        // تأكد أن sales عبارة عن Collection
+        $this->sales = collect($data['sales'])->filter(fn($item) => $item instanceof Sale);
     }
+
     public function collection()
     {
-        return collect($this->sales)->filter(fn($item) => $item instanceof Sale);
+        return $this->sales;
     }
 
     public function headings(): array
@@ -37,13 +39,13 @@ class AccountsReportExport implements FromCollection, WithHeadings, WithMapping
     public function map($sale): array
     {
         return [
-            $sale->created_at?->format('Y-m-d'),
-            $sale->customer->name ?? '',
-            $sale->service->label ?? '',
-            $sale->provider->name ?? '',
-            $sale->usd_sell,
-            $sale->reference,
-            $sale->pnr,
+            optional($sale->created_at)->format('Y-m-d'),
+            optional($sale->customer)->name ?? '-',
+            optional($sale->service)->label ?? '-',
+            optional($sale->provider)->name ?? '-',
+            number_format($sale->usd_sell, 2),
+            $sale->reference ?? '-',
+            $sale->pnr ?? '-',
         ];
     }
 }

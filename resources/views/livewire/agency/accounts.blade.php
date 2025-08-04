@@ -29,12 +29,15 @@
             <input type="text" value="{{ number_format($totalSales, 2) }}" readonly
                 class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center">
         </div>
+        @can('accounts.invoice')
+        
         @if ($sales->count())
 <x-primary-button wire:click="openBulkInvoiceModal" class="ml-2">
     إصدار فاتورة مجمعة
 </x-primary-button>
 
         @endif
+        @endcan
 
     </div>
 
@@ -174,12 +177,14 @@
                                                 {{ strtoupper($value) }}
                                             </span>
                                         @break
-
+                                        
                                         @case('custom')
+                                        @can('accounts.invoice')
                                             <button wire:click="openInvoiceModal({{ $sale->id }})" class="font-semibold"
                                                 style="color: rgb(var(--primary-600));">
                                                 فاتورة فردية
                                             </button>
+                                        @endcan
                                         @break
 
                                         @default

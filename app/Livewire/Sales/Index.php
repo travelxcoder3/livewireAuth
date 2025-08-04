@@ -49,6 +49,7 @@ public $userCommissionDue  = 0;
     public bool $showRefundModal = false; // لعرض واجهة تعديل المبالغ
     public bool $showAmountPaidField = true;
     public bool $disablePaymentMethod = false;
+    public bool $commissionReadOnly = false;
 
     public $filters = [
     'start_date' => '',
@@ -110,6 +111,16 @@ $this->showAmountPaidField = !in_array($sale->status, ['Refund-Full', 'Refund-Pa
         $this->usd_buy = $sale->usd_buy;
         $this->usd_sell = $sale->usd_sell;
         $this->commission = $sale->commission;
+        // 🔐 ضبط حالة حقل العمولة
+        if ($this->showCommission) {
+            if ($sale->status === 'Refund-Full') {
+                $this->commission = 0;
+                $this->commissionReadOnly = true;
+            } elseif (!is_null($sale->commission)) {
+                $this->commissionReadOnly = true;
+            }
+        }
+
         $this->route = $sale->route;
         $this->pnr = $sale->pnr;
         $this->reference = $sale->reference;
@@ -750,6 +761,19 @@ public function updatedStatus($value)
 
      // ✅ تفعيل/تعطيل حقل حالة الدفع بناءً على الحالة
     $this->disablePaymentMethod = in_array($value, ['Refund-Full', 'Refund-Partial', 'Void']);
+
+    // 🔄 تحديث حالة قراءة حقل العمولة عند تغيير الحالة
+    if ($this->isDuplicated && $this->showCommission) {
+        if ($value === 'Refund-Full') {
+            $this->commission = 0;
+            $this->commissionReadOnly = true;
+        } elseif (!is_null($this->commission)) {
+            $this->commissionReadOnly = true;
+        } else {
+            $this->commissionReadOnly = false;
+        }
+    }
+
 }
 
 

@@ -96,14 +96,18 @@ class SalesReport extends Component
 
     protected function prepareReportData()
     {
-        $agency = auth()->user()->agency;
-
+        $user = auth()->user(); // ✅ أضف هذا السطر أولاً
+        $agency = $user->agency;
+    
         $agencyIds = $agency->parent_id
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
-
+    
         $sales = Sale::with(['service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
+            ->when(! $user->hasAnyRole(['agency-admin']), function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
                 $query->where(function ($q) use ($term) {
@@ -121,7 +125,7 @@ class SalesReport extends Component
             ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
-
+    
         return [
             'agency' => $agency,
             'sales' => $sales,
@@ -138,6 +142,7 @@ class SalesReport extends Component
             'totalSales' => $sales->sum('usd_sell')
         ];
     }
+    
 
     protected function loadInitialData()
     {
@@ -180,16 +185,23 @@ class SalesReport extends Component
 
     public function render()
     {
-        $agency = auth()->user()->agency;
+        $user = auth()->user(); // ✅ تأكد من تعريف المستخدم أولاً
+        $agency = $user->agency;
+    
         $agencyIds = $agency->parent_id
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
-
+    
         $query = Sale::with(['user', 'service', 'provider', 'account', 'customer', 'collections'])
             ->whereIn('agency_id', $agencyIds)
-            ->when($this->search, fn($q) => $q->where('beneficiary_name', 'like', "%{$this->search}%")
-                ->orWhere('reference', 'like', "%{$this->search}%")
-                ->orWhere('pnr', 'like', "%{$this->search}%"))
+            ->when(! $user->hasAnyRole(['agency-admin']), function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->when($this->search, fn($q) => $q->where(function ($q2) {
+                $q2->where('beneficiary_name', 'like', "%{$this->search}%")
+                    ->orWhere('reference', 'like', "%{$this->search}%")
+                    ->orWhere('pnr', 'like', "%{$this->search}%");
+            }))
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
@@ -197,49 +209,42 @@ class SalesReport extends Component
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', "%{$this->referenceFilter}%"))
             ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
             ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
-
+    
         $this->totalSales = (clone $query)->sum('usd_sell');
-
+    
         $sales = $query
             ->withSum('collections', 'amount')
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
-
+    
         $sales->each(function ($sale) use ($agencyIds) {
             if ($sale->sale_group_id) {
                 $groupedSales = Sale::with('collections')
                     ->whereIn('agency_id', $agencyIds)
                     ->where('sale_group_id', $sale->sale_group_id)
                     ->get();
-
+    
                 $paidFromSales = $groupedSales->sum('amount_paid');
                 $paidFromCollections = $groupedSales->flatMap->collections->sum('amount');
             } else {
                 $paidFromSales = $sale->amount_paid ?? 0;
                 $paidFromCollections = $sale->collections->sum('amount');
             }
-
+    
             $sale->total_paid = $paidFromSales + $paidFromCollections;
             $sale->remaining_payment = ($sale->usd_sell ?? 0) - $sale->total_paid;
         });
-
-
-
-        $columns = SalesTable::columns(
-            true // true = اخفاء زر "تكرار" في تقرير المبيعات
-        );
-
+    
         return view('livewire.agency.reportsView.sales-report', [
             'sales' => $sales,
-            'columns' => $columns,
+            'columns' => SalesTable::columns(true, true),
             'totalSales' => $this->totalSales,
             'serviceTypes' => $this->serviceTypes,
             'providers' => $this->providers,
             'customers' => $this->customers,
-            'columns' => SalesTable::columns(true, true),
-
         ]);
     }
+    
 
     public function printPdf($saleId)
     {
