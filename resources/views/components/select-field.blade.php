@@ -24,7 +24,8 @@
         init() {
             this.menuWidth = this.$refs.trigger.offsetWidth;
         },
-        options: {{ json_encode($options) }},
+        options: @js($options),
+
 
         // دالة البحث الضبابي
         fuzzySearch(query, items) {

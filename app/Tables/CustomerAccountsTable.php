@@ -8,6 +8,18 @@ class CustomerAccountsTable
         return [
             ['key' => 'name', 'label' => 'اسم العميل'],
             [
+                'key' => 'account_type',
+                'label' => 'نوع الحساب',
+                'format' => function ($value) {
+                    return match ($value) {
+                        'individual' => 'فرد',
+                        'company' => 'شركة',
+                        'organization' => 'منظمة',
+                        default => 'غير محدد',
+                    };
+                },
+            ],
+            [
                 'key' => 'net_balance',
                 'label' => 'الرصيد',
                 'format' => function ($value, $row = null) {

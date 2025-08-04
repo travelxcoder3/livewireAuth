@@ -19,6 +19,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 
+
 class Index extends Component
 {
     use WithPagination;
@@ -50,6 +51,8 @@ public $userCommissionDue  = 0;
     public bool $showAmountPaidField = true;
     public bool $disablePaymentMethod = false;
     public bool $commissionReadOnly = false;
+    public array $statusOptions = [];
+
 
     public $filters = [
     'start_date' => '',
@@ -101,6 +104,8 @@ public $filterCustomers = [];
     {
         $sale = Sale::findOrFail($id);
         $this->isDuplicated = true;
+        $this->updateStatusOptions(); // ✅ توليد قائمة الحالات الجديدة المسموح بها
+
 $this->showAmountPaidField = !in_array($sale->status, ['Refund-Full', 'Refund-Partial', 'Void']);
 
         $this->beneficiary_name = $sale->beneficiary_name;
@@ -172,6 +177,10 @@ if ($sale->payment_method === 'all') {
     $this->amount_paid = null;
 }
 
+$this->status = null; // لتفريغ الحقل وإعادة توليد القائمة
+$this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفيذ getStatusOptionsProperty
+
+
 
     }
 
@@ -231,6 +240,28 @@ if ($sale->payment_method === 'all') {
             ->where('status', 'approved')
             ->get();
     }
+  
+
+public function updateStatusOptions()
+{
+    // استبعاد الحالتين "تم الإصدار" و"قيد التقديم" عند التكرار
+    $this->statusOptions = $this->isDuplicated
+        ? [
+            'Re-Issued' => 'أعيد الإصدار - Re-Issued',
+            'Re-Route' => 'تغيير المسار - Re-Route',
+            'Refund-Full' => 'استرداد كلي - Refund Full',
+            'Refund-Partial' => 'استرداد جزئي - Refund Partial',
+            'Void' => 'ملغي نهائي - Void',
+            'Rejected' => 'مرفوض - Rejected',
+            'Approved' => 'مقبول - Approved',
+        ]
+        : [
+            'Issued' => 'تم الإصدار - Issued',
+            'Applied' => 'قيد التقديم - Applied',
+        ];
+}
+
+
 
 
     public function render()
@@ -417,6 +448,8 @@ $sales->each(function ($sale) {
 
     public function mount()
     {
+        $this->updateStatusOptions();
+
         $this->currency = auth()->user()->agency->currency ?? 'USD';
         $this->sale_date = now()->format('Y-m-d');
         $this->fetchServices();

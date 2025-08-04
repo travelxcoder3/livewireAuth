@@ -5,6 +5,7 @@
     $logoPath = storage_path('app/public/' . ($sale->agency->logo ?? ''));
     $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
     $mime = file_exists($logoPath) ? mime_content_type($logoPath) : 'image/png';
+      $currency = $sale->agency->currency ?? 'USD';
 @endphp
 
 <!DOCTYPE html>
@@ -106,8 +107,9 @@
                 <td>{{ $sale->provider->name ?? '-' }}</td>
                 <td>{{ $sale->pnr ?? '-' }}</td>
                 <td>{{ $sale->reference ?? '-' }}</td>
-                <td>{{ number_format($sale->usd_sell ?? 0, 2) }} USD</td>
-                <td>{{ number_format($sale->usd_buy ?? 0, 2) }} USD</td>
+                <td>{{ number_format($sale->usd_sell ?? 0, 2) }} {{ $currency }}</td>
+                <td>{{ number_format($sale->usd_buy ?? 0, 2) }} {{ $currency }}</td>
+
             </tr>
         </tbody>
     </table>

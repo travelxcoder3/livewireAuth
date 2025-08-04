@@ -27,20 +27,20 @@
                 <label class="block mb-1 text-sm font-medium" style="color: rgb(var(--primary-700));">
                     اسم العميل
                 </label>
-                <input type="text" wire:model.debounce.500ms="clientName" placeholder="ابحث عن اسم العميل"
+                <input type="text" wire:model.live="clientName" placeholder="ابحث عن اسم العميل"
                     class="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300 {{ $fieldClass }}" />
             </div>
-            <!-- نوع العميل -->
+            <!-- نوع الحساب -->
             <div class="relative">
                 <label class="block mb-1 text-sm font-medium" style="color: rgb(var(--primary-700));">
-                    نوع العميل
+                    نوع الحساب
                 </label>
-                <select wire:model="customerTypeId"
+                <select wire:model.live="accountTypeFilter"
                     class="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300 {{ $fieldClass }}">
-                    <option value="">نوع العميل</option>
-                    @foreach ($customerTypes as $type)
-                        <option value="{{ $type->id }}">{{ $type->name }}</option>
-                    @endforeach
+                    <option value="">الكل</option>
+                    <option value="individual">فرد</option>
+                    <option value="company">شركة</option>
+                    <option value="organization">منظمة</option>
                 </select>
             </div>
             <!-- من تاريخ -->
@@ -79,6 +79,7 @@
                 <thead class="bg-[rgb(var(--primary-100))] text-gray-700">
                     <tr class="text-white bg-[rgb(var(--primary-700))]">
                         <th class="py-3 px-4 border-b">اسم العميل</th>
+                        <th class="py-3 px-4 border-b">نوع الحساب</th>
                         <th class="py-3 px-4 border-b" colspan="2">الرصيد</th>
                         <th class="py-3 px-4 border-b">الإجمالي</th>
                         <th class="py-3 px-4 border-b">تاريخ آخر عملية بيع</th>
@@ -87,17 +88,28 @@
                     </tr>
                     <tr class="bg-gray-50 text-xs text-gray-500">
                         <th></th>
+                        <th></th>
                         <th class="py-1 px-4 border-b">له</th>
                         <th class="py-1 px-4 border-b">عليه</th>
-                        <th colspan="3"></th>
+                        <th colspan="4"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
                     @forelse ($customers as $customer)
-                    <tr class="hover:bg-gray-50">
-                    <td class="py-2 px-4 font-medium text-right">{{ $customer['name'] }}</td>
-                    <td class="py-2 px-4 text-green-600 font-mono">{{ number_format($customer['remaining_for_company'], 2) }}</td>
-                    <td class="py-2 px-4 text-red-600 font-mono">{{ number_format($customer['remaining_for_customer'], 2) }}</td>
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-2 px-4 font-medium text-right">{{ $customer['name'] }}</td>
+                            <td class="py-2 px-4 text-gray-800">
+                                {{ match ($customer['account_type'] ?? '') {
+                                    'individual' => 'فرد',
+                                    'company' => 'شركة',
+                                    'organization' => 'منظمة',
+                                    default => 'غير محدد',
+                                } }}
+                            </td>
+                            <td class="py-2 px-4 text-green-600 font-mono">
+                                {{ number_format($customer['remaining_for_company'], 2) }}</td>
+                            <td class="py-2 px-4 text-red-600 font-mono">
+                                {{ number_format($customer['remaining_for_customer'], 2) }}</td>
                             <td class="py-2 px-4 font-mono text-gray-800">{{ number_format($customer['total'], 2) }}
                             </td>
                             <td class="py-2 px-4 text-gray-600">

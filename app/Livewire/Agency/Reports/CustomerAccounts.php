@@ -11,15 +11,17 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use App\Tables\CustomerAccountsTable;
 use Carbon\Carbon;
+use Livewire\WithPagination;
 
 #[Layout('layouts.agency')]
 class CustomerAccounts extends Component
 {
+    use WithPagination;
     public $clientName = '';
     public $customerTypeId = '';
     public $fromDate = '';
     public $toDate = '';
-    public $customerTypes = [];
+    public $accountTypeFilter = '';
 
     public function mount()
     {
@@ -50,10 +52,8 @@ class CustomerAccounts extends Component
             $customersQuery->where('name', 'like', '%' . trim($this->clientName) . '%');
         }
 
-        if (!empty($this->customerTypeId)) {
-            $customersQuery->whereHas('sales.collections', function ($q) {
-                $q->where('customer_type_id', $this->customerTypeId);
-            });
+        if (!empty($this->accountTypeFilter)) {
+            $customersQuery->where('account_type', $this->accountTypeFilter);
         }
 
         $filteredCustomers = $customersQuery->get();
@@ -124,6 +124,7 @@ class CustomerAccounts extends Component
                 // ⚖️ "له" = المتبقي للعميل = العمليات الزائدة - ما تم استخدامه
                 'remaining_for_company' => $totalCompanyOwes,
                 'last_sale_date' => $lastSaleDate,
+                'account_type' => $customer->account_type,
             ];
         })->filter()->values();
 

@@ -215,12 +215,14 @@
             <div class="flex flex-col items-end gap-4 font-bold text-[rgb(var(--primary-600))] text-lg">
                 <div>إجمالي المبيعات:</div>
                 <div>إجمالي الأرباح:</div>
-                <div>متوسط الربح:</div>
+                <div>اجمالي المدفوع:</div>
             </div>
             <div class="flex flex-col items-start gap-4 font-bold text-lg min-w-[120px]">
-            <div class="text-[rgb(var(--primary-500))]">{{ $agencyCurrency }} {{ number_format($totalAmount,2) }}</div>
-                <div class="text-[rgb(var(--primary-500))]">{{ $agencyCurrency }} {{ number_format($totalProfit,2) }}</div>
-                <div class="text-gray-800">{{ $agencyCurrency }} {{ number_format($avgProfit,2) }}</div>
+            <div class="text-[rgb(var(--primary-500))]">{{ $agencyCurrency }}  {{ number_format($sales->sum('usd_sell'), 2) }}</div>
+                <div class="text-[rgb(var(--primary-500))]">{{ $agencyCurrency }}  {{ number_format($sales->sum(function($sale) {
+        return ($sale->usd_sell ?? 0) - ($sale->usd_buy ?? 0);
+    }), 2) }}</div>
+                <div class="text-gray-800">{{ $agencyCurrency }}   {{ number_format($sales->sum('amount_paid'), 2) }}</div>
             </div>
         </div>
         <div class="report-table w-full">

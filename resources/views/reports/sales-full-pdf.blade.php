@@ -119,7 +119,7 @@
                 <th>نوع الخدمة</th>
                 <th>المزود</th>
                 <th>حساب العميل</th>
-                <th>المبلغ (USD)</th>
+                <th>المبلغ ({{ $agency?->currency ?? 'USD' }})</th>
                 <th>المرجع</th>
                 <th>PNR</th>
                 <th>العميل عبر</th>
@@ -149,7 +149,7 @@
     </table>
 
     <div class="total">
-        <p>الإجمالي: {{ number_format($totalSales, 2) }} USD</p>
+       <p>الإجمالي: {{ number_format($totalSales, 2) }} {{ $agency?->currency ?? 'USD' }}</p>
         <p>المستخدم: {{ auth()->user()->name }}</p>
         <p>بتاريخ: {{ Carbon::now()->translatedFormat('j-n-Y') }}</p>
     </div>

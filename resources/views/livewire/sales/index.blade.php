@@ -100,28 +100,19 @@ $columns = SalesTable::columns();
 
 
                     <!-- الحالة -->
-                    <x-select-field
-                        wireModel="status"
-                        label="الحالة"
-                        :options="[
-                            'Issued' => 'تم الإصدار - Issued',
-                            'Re-Issued' => 'أعيد الإصدار - Re-Issued',
-                            'Re-Route' => 'تغيير المسار - Re-Route',
-                            'Refund-Full' => 'استرداد كلي - Refund Full',
-                            'Refund-Partial' => 'استرداد جزئي - Refund Partial',     
-                            'Void' => 'ملغي نهائي - Void',
-                            'Applied' => 'قيد التقديم - Applied',
-                            'Rejected' => 'مرفوض - Rejected',
-                            'Approved' => 'مقبول - Approved',
-                        ]"
+                    <div class="relative mb-3 w-full">
+    <select wire:model="status" id="status"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs">
+        <option value="">اختر الحالة</option>
+        @foreach($statusOptions as $key => $label)
+            <option value="{{ $key }}">{{ $label }}</option>
+        @endforeach
+    </select>
+    @error('status') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+</div>
 
-                        placeholder=" الحالة"
-                        containerClass="relative mt-1"
-                        fieldClass="peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm placeholder-transparent text-gray-600 
-                                    focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] transition duration-200"
-                        labelClass="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all
-                                    peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]"
-                    />
+
+
                   
                 
                </div>

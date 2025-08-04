@@ -18,8 +18,6 @@ class AccountTable
             ['key' => 'status', 'label' => 'الحدث', 'format' => 'status'],
             ['key' => 'usd_sell', 'label' => 'سعر البيع', 'format' => 'money', 'color' => 'primary-600', 'sortable' => true],
             ['key' => 'usd_buy', 'label' => 'سعر الشراء', 'format' => 'money', 'color' => 'primary-500', 'sortable' => true],
-            ['key' => 'paid_total', 'label' => 'المدفوع', 'format' => 'money', 'color' => 'green-600'],
-             ['key' => 'remaining', 'label' => 'المتبقي', 'format' => 'money', 'color' => 'red-600'],
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'customer.name', 'label' => 'العميل'],
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],

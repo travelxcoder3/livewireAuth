@@ -4,6 +4,8 @@
 
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
+    $currency = Auth::user()?->agency?->currency ?? 'USD';
+
 @endphp
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -161,15 +163,25 @@
     <div class="summary">
         <div class="summary-item">
             <span class="summary-title">إجمالي المبيعات:</span>
-            <span class="summary-value text-green">{{ number_format($sales->sum('amount_received'), 2) }} USD</span>
+            <span class="summary-value text-green">
+    {{ number_format($sales->sum('usd_sell'), 2) }} {{ $currency }}
+</span>
+
         </div>
         <div class="summary-item">
             <span class="summary-title">إجمالي الأرباح:</span>
-            <span class="summary-value text-blue">{{ number_format($sales->sum('sale_profit'), 2) }} USD</span>
+           <span class="summary-value text-blue">
+    {{ number_format($sales->sum(function($sale) {
+        return ($sale->usd_sell ?? 0) - ($sale->usd_buy ?? 0);
+    }), 2) }} {{ $currency }}
+</span>
+
         </div>
         <div class="summary-item">
-            <span class="summary-title">متوسط الربح:</span>
-            <span class="summary-value">{{ number_format($sales->avg('sale_profit'), 2) }} USD</span>
+            <span class="summary-title">اجمالي المدفوع:</span>
+            <span class="summary-value text-blue">
+    {{ number_format($sales->sum('amount_paid'), 2) }} {{ $currency }}
+</span>
         </div>
     </div>
     
@@ -184,8 +196,8 @@
                     @if($field == 'pnr')<th width="6%">PNR</th>@endif
                     @if($field == 'reference')<th width="6%">المرجع</th>@endif
                     @if($field == 'status')<th width="7%">الحالة</th>@endif
-                    @if($field == 'usd_buy')<th width="6%" class="text-center">USD Buy</th>@endif
-                    @if($field == 'usd_sell')<th width="6%" class="text-center">USD Sell</th>@endif
+                    @if($field == 'usd_buy')<th width="6%" class="text-center">{{ $currency }} Buy</th>@endif
+                    @if($field == 'usd_sell')<th width="6%" class="text-center">{{ $currency }} Sell</th>@endif
                     @if($field == 'provider')<th width="8%">المزود</th>@endif
                      @if($field == 'customer_id')<th width="8%">الحساب</th>@endif
                 @endforeach

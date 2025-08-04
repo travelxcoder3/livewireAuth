@@ -6,13 +6,13 @@
     $mime = file_exists($logoPath) ? mime_content_type($logoPath) : 'image/png';
 
     $transactions = [];
-
+    $currency = $customer->agency->currency ?? 'USD';
     foreach ($sales as $sale) {
         $transactions[] = [
             'date' => $sale->sale_date,
             'type' => 'فاتورة مبيعات',
             'ref' => $sale->receipt_number ?? $sale->id,
-            'description' => 'بيع: ' . ($sale->note ?? '---'),
+            'description' => $sale->note ? 'بيع: ' . $sale->note : 'عملية بيع',
             'debit' => $sale->usd_sell,
             'credit' => 0,
         ];
@@ -23,7 +23,7 @@
             'date' => $collection->payment_date,
             'type' => 'سند قبض',
             'ref' => $collection->receipt_number ?? $collection->id,
-            'description' => 'تحصيل: ' . ($collection->note ?? '---'),
+            'description' => $collection->note ? 'تحصيل: ' . $collection->note : 'تحصيل نقدي',
             'debit' => 0,
             'credit' => $collection->amount,
         ];
@@ -37,7 +37,19 @@
         $f = new NumberFormatter('ar', NumberFormatter::SPELLOUT);
         return $f->format($number);
     }
-
+    function currencyNameAr($code)
+    {
+        return match (strtoupper($code)) {
+            'USD' => 'دولار',
+            'SAR' => 'ريال سعودي',
+            'EUR' => 'يورو',
+            'AED' => 'درهم إماراتي',
+            'EGP' => 'جنيه مصري',
+            'TRY' => 'ليرة تركية',
+            'GBP' => 'جنيه إسترليني',
+            default => $code,
+        };
+    }
     usort($transactions, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
 
     $totalDebit = collect($transactions)->sum('debit');
@@ -135,13 +147,7 @@
             <div class="logo"></div>
         @endif
         <div class="title"
-            style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        white-space: nowrap;
-    ">
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); white-space: nowrap;">
             كشف حساب العميل
         </div>
     </div>
@@ -156,7 +162,8 @@
             <th>رقم الحساب</th>
             <td>{{ $customer->id }}</td>
             <th>نوع الحساب</th>
-            <td>{{ $customer->has_commission ? 'عمولة' : 'عادي' }}</td>
+            <td>{{ $customer->account_type === 'company' ? 'شركة' : ($customer->account_type === 'organization' ? 'منظمة' : 'فرد') }}
+            </td>
         </tr>
         <tr>
             <th>البريد الإلكتروني</th>
@@ -164,7 +171,7 @@
             <th>الجوال</th>
             <td>{{ $customer->phone ?? '—' }}</td>
             <th>العملة</th>
-            <td>USD</td>
+            <td>{{ $customer->agency->currency ?? 'USD' }}</td>
         </tr>
         <tr>
             <th>العنوان</th>
@@ -177,18 +184,18 @@
     <table>
         <thead>
             <tr>
-                <th>التاريخ</th>
+                <th>تاريخ العملية</th>
                 <th>نوع المستند</th>
                 <th>رقم المستند</th>
                 <th>البيان</th>
-                <th>مدين (USD)</th>
-                <th>دائن (USD)</th>
+                <th>مدين ({{ $currency }})</th>
+                <th>دائن ({{ $currency }})</th>
             </tr>
         </thead>
         <tbody>
             @forelse($transactions as $row)
                 <tr>
-                    <td>{{ $row['date'] }}</td>
+                    <td>{{ \Carbon\Carbon::parse($row['date'])->format('Y-m-d') }}</td>
                     <td>{{ $row['type'] }}</td>
                     <td>{{ $row['ref'] }}</td>
                     <td>{{ $row['description'] }}</td>
@@ -204,19 +211,19 @@
             <!-- Totals -->
             <tr>
                 <td colspan="4"><strong>الإجماليات</strong></td>
-                <td><strong>{{ number_format($totalDebit, 2) }}</strong></td>
-                <td><strong>{{ number_format($totalCredit, 2) }}</strong></td>
+                <td><strong>{{ number_format($totalDebit, 2) }} {{ $currency }}</strong></td>
+                <td><strong>{{ number_format($totalCredit, 2) }} {{ $currency }}</strong></td>
             </tr>
             <tr>
                 <td colspan="4"><strong>إجمالي الحركة</strong></td>
-                <td colspan="2"><strong>{{ number_format($totalMovement, 2) }} USD</strong></td>
+                <td colspan="2"><strong>{{ number_format($totalMovement, 2) }} {{ $currency }}</strong></td>
             </tr>
             <tr>
                 <td colspan="4"><strong>الرصيد النهائي</strong></td>
                 <td colspan="2">
-                    <strong style="color: {{ $balance > 0 ? 'red' : ($balance < 0 ? 'green' : 'gray') }}">
-                        {{ number_format(abs($balance), 2) }}
-                        {{ $balance > 0 ? 'على العميل' : ($balance < 0 ? 'للعميل' : '') }}
+                    <strong style="color: {{ $balance > 0 ? 'red' : ($balance < 0 ? 'green' : 'black') }}">
+                        {{ number_format(abs($balance), 2) }} {{ $currency }}
+                        {{ $balance > 0 ? 'مستحق على العميل' : ($balance < 0 ? 'رصيد دائن للعميل' : 'لا يوجد رصيد') }}
                     </strong>
                 </td>
             </tr>
@@ -226,15 +233,14 @@
     <!-- Summary -->
     <div class="summary">
         <div style="margin-top: 10px; font-size: 12px;">
-            الرصيد النهائي: {{ numberToWords(abs($balance)) }} 
+            الرصيد النهائي: {{ numberToWords(abs($balance)) }} {{ currencyNameAr($currency) }}
             {{ $balance > 0 ? 'ديون فقط، قابلة للدفع نقداً أو تحويل بنكي' : 'رصيد دائن للعميل' }}
         </div>
     </div>
-
     <div class="footer">
         تم توليد التقرير بتاريخ {{ now()->format('Y-m-d H:i') }}
+        بواسطة {{ Auth::user()->name ?? 'النظام' }}
     </div>
-
 </body>
 
 </html>

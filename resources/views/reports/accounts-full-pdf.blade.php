@@ -5,6 +5,8 @@
 
     // الحصول على الوكالة مع التحقق من وجود البيانات
     $agency = $sales->first()?->agency;
+    $currency = $agency?->currency ?? 'USD';
+
 
     // بناء مسار الشعار باستخدام الحقل الصحيح (logo)
     $logoPath = null;
@@ -142,7 +144,7 @@
                 <th>العميل</th>
                 <th>نوع الخدمة</th>
                 <th>المزود</th>
-                <th>المبلغ (USD)</th>
+                <th>المبلغ ({{ $currency }})</th>
                 <th>المرجع</th>
                 <th>PNR</th>
             </tr>
@@ -168,7 +170,7 @@
 
     <!-- المجموع والتاريخ -->
     <div class="total">
-        <p>الإجمالي: {{ number_format($totalSales, 2) }} USD</p>
+        <p>الإجمالي: {{ number_format($totalSales, 2) }} {{ $currency }}</p>
         <p>المستخدم: {{ auth()->user()->name }}</p>
         <p>بتاريخ: {{ Carbon::now()->translatedFormat('j-n-Y') }}</p>
     </div>

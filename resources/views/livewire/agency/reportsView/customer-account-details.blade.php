@@ -5,11 +5,13 @@
             ->pluck('id')
             ->search($customer->id) + 1;
     $currency = Auth::user()->agency->currency ?? 'USD';
+    $paid = $sales->sum('amount_paid') + $collections->sum('amount');
+    $balance = $sales->sum('usd_sell') - $paid;
 @endphp
 
 <div class="space-y-6">
 
-    <!-- العنوان العلوي -->
+    <!-- 🔵 العنوان العلوي -->
     <div class="flex justify-between items-center mb-4">
         <!-- عنوان الصفحة -->
         <h2
@@ -38,78 +40,107 @@
     </div>
 
 
-    <!-- بيانات العميل -->
-    <div class="bg-white rounded-xl shadow-md p-4 grid md:grid-cols-3 gap-4 text-sm text-center">
-        <div><span class="text-gray-500">اسم العميل:</span> <strong>{{ $customer->name }}</strong></div>
-        <div><span class="text-gray-500">نوع الحساب:</span> {{ $customer->has_commission ? 'عمولة' : 'عادي' }}</div>
-        <div><span class="text-gray-500">رقم الحساب:</span> {{ $accountNumber }}</div>
-        <div><span class="text-gray-500">تاريخ فتح الحساب:</span> {{ $customer->created_at->format('Y-m-d') }}</div>
-        <div><span class="text-gray-500">الجوال:</span> {{ $customer->phone ?? '-' }}</div>
-        <div><span class="text-gray-500">البريد الإلكتروني:</span> {{ $customer->email ?? '-' }}</div>
-        <div><span class="text-gray-500">العملة:</span> {{ Auth::user()?->agency?->currency ?? 'USD' }}</div>
-    </div>
-
-    <!-- جدول العمليات -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <table class="w-full text-sm border text-center">
-            <thead class="bg-[rgb(var(--primary-500))] text-white text-sm">
-                <tr>
-                    <th class="p-3 border-b">النوع</th>
-                    <th class="p-3 border-b">التاريخ</th>
-                    <th class="p-3 border-b">المبلغ</th>
-                    <th class="p-3 border-b">الوصف</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($sales as $sale)
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-2 text-red-600 font-medium">بيع</td>
-                        <td class="p-2">{{ $sale->sale_date }}</td>
-                        <td class="p-2 text-gray-800">{{ number_format($sale->usd_sell, 2) }} {{ $currency }}</td>
-                        <td class="p-2 text-gray-600">{{ ucfirst($sale->status) }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="text-center text-gray-400 p-4">لا توجد عمليات بيع</td>
-                    </tr>
-                @endforelse
-
-                @forelse($collections as $collection)
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-2 text-green-600 font-medium">تحصيل</td>
-                        <td class="p-2">{{ $collection->payment_date }}</td>
-                        <td class="p-2 text-gray-800">${{ number_format($collection->amount, 2) }}</td>
-                        <td class="p-2 text-gray-600">{{ $collection->note ?? '—' }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="text-center text-gray-400 p-4">لا توجد تحصيلات</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <!-- ملخص -->
-    <div class="bg-white rounded-xl shadow-md p-4 flex flex-col md:flex-row justify-between text-sm gap-3">
-        <div>
-            <strong>إجمالي المبيعات:</strong>
-            <span class="text-gray-700">${{ number_format($sales->sum('usd_sell'), 2) }}</span>
+    <!-- 🔷 بيانات العميل -->
+    <div>
+        <h3 class="text-lg font-semibold text-[rgb(var(--primary-600))] mb-2 px-4">بيانات العميل</h3>
+        <div class="bg-white rounded-xl shadow-md p-4 grid md:grid-cols-3 gap-4 text-sm text-center">
+            <div><span class="text-gray-500">اسم العميل:</span> <strong>{{ $customer->name }}</strong></div>
+            <div><span class="text-gray-500">نوع الحساب:</span>
+                {{ match ($customer->account_type) {
+                    'individual' => 'فرد',
+                    'company' => 'شركة',
+                    'organization' => 'منظمة',
+                    default => 'غير محدد',
+                } }}
+            </div>
+            <div><span class="text-gray-500">رقم الحساب:</span> {{ $accountNumber }}</div>
+            <div><span class="text-gray-500">تاريخ فتح الحساب:</span> {{ $customer->created_at->format('Y-m-d') }}</div>
+            <div><span class="text-gray-500">الجوال:</span> {{ $customer->phone ?? '-' }}</div>
+            <div><span class="text-gray-500">البريد الإلكتروني:</span> {{ $customer->email ?? '-' }}</div>
+            <div><span class="text-gray-500">العملة:</span> {{ Auth::user()?->agency?->currency ?? 'USD' }}</div>
         </div>
-        <div>
-            <strong>إجمالي التحصيل:</strong>
-            <span class="text-gray-700">${{ number_format($collections->sum('amount'), 2) }}</span>
+    </div>
+    <!-- 🟦 العمليات -->
+    <div>
+        <h3 class="text-lg font-semibold text-[rgb(var(--primary-600))] mb-2">عمليات البيع والتحصيل</h3>
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <table class="w-full text-sm border text-center">
+                <thead class="bg-[rgb(var(--primary-500))] text-white text-sm">
+                    <tr>
+                        <th class="p-3 border-b">نوع العملية</th>
+                        <th class="p-3 border-b">تاريخ العملية</th>
+                        <th class="p-3 border-b">مبلغ العملية</th>
+                        <th class="p-3 border-b">وصف الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($sales as $sale)
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-2 text-red-600 font-medium">بيع</td>
+                            <td class="p-2">{{ $sale->sale_date }}</td>
+                            <td class="p-2 text-gray-800">{{ number_format($sale->usd_sell, 2) }} {{ $currency }}
+                            </td>
+                            <td class="p-2 text-gray-600">{{ ucfirst($sale->status) }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-400 p-4">لا توجد عمليات بيع</td>
+                        </tr>
+                    @endforelse
+
+                    @forelse($collections as $collection)
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-2 text-green-600 font-medium">تحصيل</td>
+                            <td class="p-2">{{ $collection->payment_date }}</td>
+                            <td class="p-2 text-gray-800">{{ number_format($collection->amount, 2) }}
+                                {{ $currency }}</td>
+                            <td class="p-2 text-gray-600">{{ $collection->note ?? '—' }}</td>
+                        </tr>
+                    @empty
+                        @if ($sales->sum('amount_paid') > 0)
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-2 text-green-600 font-medium">دفع مباشر</td>
+                                <td class="p-2">{{ $sales->first()?->sale_date ?? '—' }}</td>
+                                <td class="p-2 text-gray-800">{{ number_format($sales->sum('amount_paid'), 2) }}
+                                    {{ $currency }}</td>
+                                <td class="p-2 text-gray-600">تم الدفع ضمن عملية البيع</td>
+                            </tr>
+                        @else
+                            <tr>
+                                <td colspan="4" class="text-center text-gray-400 p-4">لا توجد تحصيلات</td>
+                            </tr>
+                        @endif
+                    @endforelse
+                </tbody>
+            </table>
         </div>
-        <div>
-            <strong>الرصيد:</strong>
-            @php
-                $balance = $sales->sum('usd_sell') - $collections->sum('amount');
-            @endphp
-            <span
-                class="{{ $balance > 0 ? 'text-red-600' : ($balance < 0 ? 'text-green-600' : 'text-gray-600') }} font-semibold">
-                ${{ number_format(abs($balance), 2) }}
-                {{ $balance > 0 ? 'على العميل' : ($balance < 0 ? 'للعميل' : '') }}
-            </span>
+    </div>
+    <!-- 🟨 الملخص -->
+    <div>
+        <h3 class="text-lg font-semibold text-[rgb(var(--primary-600))] mb-2">ملخص الحساب</h3>
+        <div class="bg-white rounded-xl shadow-md p-4 flex flex-col md:flex-row justify-between text-sm gap-3">
+            <div>
+                <strong>إجمالي المبيعات:</strong>
+                <span class="text-gray-700">{{ number_format($sales->sum('usd_sell'), 2) }} {{ $currency }}</span>
+            </div>
+            <div>
+                <strong>إجمالي التحصيل:</strong>
+                <span class="text-gray-700">
+                    {{ number_format($paid, 2) }} {{ $currency }}
+                </span>
+            </div>
+            <div>
+                <strong>رصيد الفارق:</strong>
+                <span
+                    class="{{ $balance > 0 ? 'text-red-600' : ($balance < 0 ? 'text-green-600' : 'text-gray-600') }} font-semibold">
+                    @if ($balance == 0)
+                        لا يوجد فرق بين المبيعات والتحصيل.
+                    @else
+                        {{ number_format(abs($balance), 2) }} {{ $currency }}
+                        {{ $balance > 0 ? 'على العميل' : 'للعميل' }}
+                    @endif
+                </span>
+            </div>
         </div>
     </div>
 </div>

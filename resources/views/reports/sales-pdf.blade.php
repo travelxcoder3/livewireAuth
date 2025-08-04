@@ -5,8 +5,9 @@
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
     $agencyCurrency = Auth::user()?->agency?->currency ?? 'USD';
-    
+    $currency = $agencyCurrency;
 @endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -164,15 +165,25 @@
     <div class="summary">
         <div class="summary-item">
             <span class="summary-title">إجمالي المبيعات:</span>
-            <span class="summary-value text-green">{{ number_format($sales->sum('amount_received'), 2) }} {{ $agencyCurrency }}</span>
+            <span class="summary-value text-green">
+    {{ number_format($sales->sum('usd_sell'), 2) }} {{ $currency }}
+</span>
+
         </div>
         <div class="summary-item">
             <span class="summary-title">إجمالي الأرباح:</span>
-            <span class="summary-value text-blue">{{ number_format($sales->sum('sale_profit'), 2) }} {{ $agencyCurrency }}</span>
+           <span class="summary-value text-blue">
+    {{ number_format($sales->sum(function($sale) {
+        return ($sale->usd_sell ?? 0) - ($sale->usd_buy ?? 0);
+    }), 2) }} {{ $currency }}
+</span>
+
         </div>
         <div class="summary-item">
-            <span class="summary-title">متوسط الربح:</span>
-            <span class="summary-value">{{ number_format($sales->avg('sale_profit'), 2) }} {{ $agencyCurrency }}</span>
+            <span class="summary-title">اجمالي المدفوع:</span>
+            <span class="summary-value text-blue">
+    {{ number_format($sales->sum('amount_paid'), 2) }} {{ $currency }}
+</span>
         </div>
     </div>
     
