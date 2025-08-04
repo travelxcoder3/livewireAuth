@@ -181,6 +181,7 @@
                 <div class="report-period">فترة التقرير: بداية النشاط إلى {{ $now->format('Y-m-d') }}</div>
             </div>
         </div>
+        @can('sales.report')
         <!-- أزرار التقارير تحت الكارد -->
         <div class="flex justify-end gap-4 mb-8">
             <x-primary-button
@@ -202,7 +203,7 @@
             >
                 تقرير Excel
             </x-primary-button>
-
+        @endcan
         </div>
         <!-- صف: عدد السجلات يمين، تاريخ التقرير يسار -->
         <div class="flex items-center justify-between mb-6 text-gray-700">

@@ -5,11 +5,16 @@ namespace App\Livewire\Agency;
 use Livewire\Component;
 use App\Models\Customer;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
 
 class AddCustomer extends Component
 {
     use WithPagination;
+    use WithFileUploads;
+
+    public $images = [];
+
 
     public $name, $email, $phone, $address, $has_commission = false;
 
@@ -18,12 +23,18 @@ class AddCustomer extends Component
     public $phoneFilter = '';
     public $addressFilter = '';
     public $commissionFilter = '';
+    public $accountTypeFilter = ''; // فلتر نوع الحساب
+    public $account_type = 'individual'; // القيمة الابتدائية
+    public $existingImages = []; // الصور القديمة (من قاعدة البيانات)
+
     public function openModal()
-    {
-        $this->resetFields(); // تنظيف الحقول
-        $this->editingId = null; // إضافة جديدة
-        $this->showModal = true;
-    }
+{
+    $this->resetFields();
+    $this->account_type = 'individual'; // ✅ فقط هنا إذا كنا في وضع إضافة
+    $this->editingId = null;
+    $this->showModal = true;
+}
+
 
     public function closeModal()
     {
@@ -34,7 +45,7 @@ class AddCustomer extends Component
     {
         \Log::info('Commission Filter Value:', ['value' => $this->commissionFilter]);
 
-        $customers = Customer::query()
+        $customers = Customer::with('images')
             ->where('agency_id', auth()->user()->agency_id)
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
@@ -48,6 +59,10 @@ class AddCustomer extends Component
             ->when($this->addressFilter, function ($query) {
                 $query->where('address', 'like', '%' . $this->addressFilter . '%');
             })
+            ->when($this->accountTypeFilter, function ($query) {
+                $query->where('account_type', $this->accountTypeFilter);
+            })
+
             ->when(!is_null($this->commissionFilter) && $this->commissionFilter !== '', function ($query) {
                 $query->where('has_commission', (int) $this->commissionFilter);
             })
@@ -69,6 +84,8 @@ class AddCustomer extends Component
         $this->phone = $customer->phone;
         $this->address = $customer->address;
         $this->has_commission = (bool) $customer->has_commission;
+        $this->account_type = $customer->account_type;
+        $this->existingImages = $customer->images->pluck('image_path', 'id')->toArray();
         $this->showModal = true; // ✅ فتح المودال عند التعديل
     }
 
@@ -80,48 +97,109 @@ class AddCustomer extends Component
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
+            'account_type' => 'required|in:individual,company,organization',
+            'images.*' => 'nullable|image|max:2048',
         ]);
 
         if ($this->editingId) {
-            // تحديث العميل
-            $customer = Customer::findOrFail($this->editingId);
-            $customer->update([
-                'name' => $this->name,
-                'email' => $this->email,
-                'phone' => $this->phone,
-                'address' => $this->address,
-                'has_commission' => $this->has_commission,
-            ]);
-            session()->flash('message', 'تم تحديث بيانات العميل بنجاح');
-            session()->flash('type', 'success');
+    $customer = Customer::findOrFail($this->editingId);
+    $customer->update([
+        'name' => $this->name,
+        'email' => $this->email,
+        'phone' => $this->phone,
+        'address' => $this->address,
+        'has_commission' => $this->has_commission,
+        'account_type' => $this->account_type,
+    ]);
 
-        } else {
+  if (!empty(array_filter($this->images))) {
+    foreach ($customer->images as $img) {
+        \Storage::disk('public')->delete($img->image_path);
+        $img->delete();
+    }
+
+    // حفظ الصور الجديدة
+    foreach ($this->images as $image) {
+        if ($image instanceof \Illuminate\Http\UploadedFile) {
+            $path = $image->store('customers', 'public');
+            $customer->images()->create([
+                'image_path' => $path,
+            ]);
+        }
+    }
+}
+
+    session()->flash('message', 'تم تحديث بيانات العميل بنجاح');
+    session()->flash('type', 'success');
+}
+ else {
             // إضافة جديد
-            Customer::create([
+        $customer = Customer::create([
                 'agency_id' => auth()->user()->agency_id,
                 'name' => $this->name,
                 'email' => $this->email,
                 'phone' => $this->phone,
                 'address' => $this->address,
                 'has_commission' => $this->has_commission,
+                'account_type' => $this->account_type,
             ]);
+
+            if ($this->images && is_array($this->images)) {
+                foreach ($this->images as $image) {
+                    $path = $image->store('customers', 'public');
+                    $customer->images()->create([
+                        'image_path' => $path,
+                    ]);
+                }
+            }
+
+
             session()->flash('message', 'تم إضافة العميل بنجاح');
             session()->flash('type', 'success');
 
         }
 
-        $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission']);
+       $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission', 'account_type']);
+
         $this->showModal = false;
     }
     public function resetFilters()
     {
-        $this->reset(['search', 'phoneFilter', 'addressFilter', 'commissionFilter']);
+        $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission', 'account_type']);
+
     }
 
-    public function resetFields()
-    {
-        $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission']);
+
+ public function resetFields()
+{
+    $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission']);
+    // احذف هذا السطر:
+    // $this->account_type = 'individual';
+}
+
+public function addImage()
+{
+    $this->images[] = null;
+}
+
+public function removeImage($index)
+{
+    unset($this->images[$index]);
+    $this->images = array_values($this->images); // إعادة الفهرسة
+}
+
+public function deleteExistingImage($id)
+{
+    $image = \App\Models\CustomerImage::find($id);
+    if ($image && $image->customer_id == $this->editingId) {
+        \Storage::disk('public')->delete($image->image_path);
+        $image->delete();
+        unset($this->existingImages[$id]); // احذفه من الواجهة
     }
+}
+
+
+
 
 }
 

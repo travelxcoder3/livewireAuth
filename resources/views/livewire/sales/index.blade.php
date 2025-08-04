@@ -680,33 +680,6 @@ $columns = SalesTable::columns();
     </div>
 </div>
     
-<!-- نافذة المعاينة الكبيرة -->
-<div id="previewModal" class="fixed inset-0 z-50 bg-black/20 flex items-center justify-center hidden backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl mx-4 p-8 relative flex flex-col min-h-[60vh]">
-        <button onclick="closePreviewModal()"
-                class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-2xl font-bold">
-            &times;
-        </button>
-        <h2 class="text-2xl font-bold mb-6 text-center text-[rgb(var(--primary-700))]">معاينة التقرير</h2>
-        <div class="flex-1 overflow-auto mb-6">
-            <!-- عرض نفس جدول المبيعات -->
-            <x-data-table :rows="$sales" :columns="$columns" />
-        </div>
-        <div class="flex justify-center gap-6 mt-4">
-            <button type="button" onclick="openReportModal('pdf')"
-                class="text-white font-bold px-8 py-3 rounded-xl shadow-md transition duration-300 text-lg"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                تقرير PDF
-            </button>
-            <button type="button" onclick="openReportModal('excel')"
-                class="text-white font-bold px-8 py-3 rounded-xl shadow-md transition duration-300 text-lg"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                تقرير Excel
-            </button>
-        </div>
-    </div>
-</div>
-
 <script>
     let currentReportType = '';
 function openFilterModal() {

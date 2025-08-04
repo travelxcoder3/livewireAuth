@@ -46,7 +46,7 @@ class Commissions extends Component
                 'status' => $isFullyCollected ? 'تم التحصيل' : 'غير محصل',
                 'commission' => $sale->commission,
 
-                'date' => $sale->sale_date->format('Y-m-d'),
+                'date' => \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d'),
             ];
         })
         ->toArray();

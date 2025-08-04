@@ -17,6 +17,28 @@ class CustomerTable
                 'format' => fn($value) => $value == 1 ? 'نعم' : 'لا',
             ],
             ['key' => 'created_at', 'label' => 'تاريخ الإضافة', 'format' => 'date'],
+
+            [
+                'key' => 'account_type',
+                'label' => 'نوع الحساب',
+                'format' => fn($value) => match ($value) {
+                    'individual' => 'individual-فرد',
+                    'company' => 'company-شركة',
+                    'organization' => ' organization-منظمة',
+                    default => '-',
+                },
+            ],
+
+            [
+                'key' => 'images',
+                'label' => 'الصور',
+                'format' => function ($value) {
+    return view('components.customer-image-preview', ['images' => $value])->render();
+},
+
+            ],
+
+
            
             [
                 'key' => 'actions',

@@ -170,7 +170,7 @@
                                         @endif
                                     </div>
                                 @else
-                                    {{ $display !== null && $display !== '' ? $display : '-' }}
+                                       {!! $display !== null && $display !== '' ? $display : '-' !!}
                                 @endif
                             </td>
                         @endforeach

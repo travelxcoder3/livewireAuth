@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
-    protected $fillable = ['agency_id', 'name', 'email', 'phone', 'address', 'has_commission'];
+    protected $fillable = ['agency_id', 'name', 'email', 'phone', 'address', 'has_commission','account_type'];
 
     public function agency()
     {
@@ -27,4 +27,10 @@ class Customer extends Model
             'id'                           // المفتاح المحلي في جدول Sale
         );
     }
+
+    public function images()
+    {
+        return $this->hasMany(CustomerImage::class);
+    }
+
 }

@@ -72,6 +72,7 @@ class SalesTable
                     'type' => 'duplicate',
                     'label' => 'تكرار',
                     'icon' => 'fa fa-copy',
+                    'can' => auth()->user()->can('sales.edit'),
                     'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
                     'showIf' => fn($row) => $row->agency_id == auth()->user()->agency_id,
                 ],

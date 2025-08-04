@@ -31,7 +31,8 @@
                     {{ $editingId ? 'تعديل عميل' : 'إضافة عميل جديد' }}
                 </h2>
 
-                <form wire:submit.prevent="save" class="space-y-4 text-sm">
+               <form wire:submit.prevent="save" class="space-y-4 text-sm" enctype="multipart/form-data">
+
                     <div class="grid md:grid-cols-2 gap-3">
                         <!-- السطر الأول -->
                         <x-input-field wireModel="name" label="الاسم الكامل" placeholder="الاسم الكامل"
@@ -46,6 +47,49 @@
 
                         <x-input-field wireModel="address" label="العنوان" placeholder="العنوان" errorName="address" />
                     </div>
+
+                    <x-select-field
+                        label="نوع الحساب"
+                        name="account_type"
+                        wireModel="account_type"
+                        :options="[
+                            'individual' => 'فرد',
+                            'company' => 'شركة',
+                            'organization' => 'منظمة'
+                        ]"
+                        placeholder="اختر نوع الحساب"
+                    />
+
+<div class="space-y-2">
+    <label class="block text-sm text-gray-700">صور العميل</label>
+
+    {{-- الصور الموجودة مسبقًا --}}
+    @foreach ($existingImages as $id => $path)
+        <div class="flex items-center gap-2">
+            <img src="{{ asset('storage/' . $path) }}" class="w-10 h-10 rounded border object-cover" alt="صورة حالية">
+            <button type="button" wire:click="deleteExistingImage({{ $id }})"
+                class="text-red-600 text-xs hover:underline">حذف</button>
+        </div>
+    @endforeach
+
+    {{-- الصور الجديدة --}}
+    @foreach ($images as $index => $img)
+        <div class="flex items-center gap-2">
+            <input type="file" wire:model="images.{{ $index }}" class="text-sm border rounded p-1 w-full" />
+            <button type="button" wire:click="removeImage({{ $index }})"
+                class="text-red-600 text-xs hover:underline">حذف</button>
+        </div>
+    @endforeach
+
+    <button type="button" wire:click="addImage"
+        class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] text-sm font-bold">
+        + أضف صورة جديدة
+    </button>
+
+    @error('images.*') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+</div>
+
+
 
 
                     <x-checkbox-field name="has_commission" wireModel="has_commission" label="هل لهذا العميل عمولة؟"
@@ -66,23 +110,39 @@
         </div>
     @endif
     <!-- الفلترة -->
-    <div class="bg-white rounded-xl shadow-md p-4 mb-4 grid md:grid-cols-4 gap-3 text-sm">
-        <x-input-field wireModel="search" label="الاسم أو البريد الإلكتروني" placeholder="ابحث بالاسم أو البريد" />
-        <x-input-field wireModel="phoneFilter" label="رقم الهاتف" placeholder="ابحث برقم الهاتف" />
-        <x-input-field wireModel="addressFilter" label="العنوان" placeholder="ابحث بالعنوان" />
-        <div class="relative mt-0.5">
-            <select wire:model.live="commissionFilter" id="commissionFilter"
-                class="w-full rounded-lg border border-gray-300 text-xs py-2 px-3 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white">
-                <option value="">الكل</option>
-                <option value="1">نعم</option>
-                <option value="0">لا</option>
-            </select>
-            <label for="commissionFilter"
-                class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm peer-focus:-top-2.5 peer-focus:text-xs">
-                العمولة
-            </label>
-        </div>
-    </div>
+<div class="bg-white rounded-xl shadow-md p-5 mb-5 grid md:grid-cols-5 gap-3 text-sm">
+    <x-input-field wireModel="search" label="الاسم أو البريد الإلكتروني" placeholder="ابحث بالاسم أو البريد" />
+    <x-input-field wireModel="phoneFilter" label="رقم الهاتف" placeholder="ابحث برقم الهاتف" />
+    <x-input-field wireModel="addressFilter" label="العنوان" placeholder="ابحث بالعنوان" />
+
+    <!-- فلتر العمولة -->
+    <x-select-field
+        label="العمولة"
+        wireModel="commissionFilter"
+        name="commissionFilter"
+        :options="[
+            '' => 'الكل',
+            '1' => 'نعم',
+            '0' => 'لا',
+        ]"
+    />
+
+
+    <!-- فلتر نوع الحساب -->
+   <x-select-field
+        label="نوع الحساب"
+        wireModel="accountTypeFilter"
+        name="accountTypeFilter"
+        :options="[
+            '' => 'الكل',
+            'individual' => 'فرد',
+            'company' => 'شركة',
+            'organization' => 'منظمة',
+        ]"
+    />
+
+</div>
+
     <!-- جدول العملاء -->
     @php
         use App\Tables\CustomerTable;
