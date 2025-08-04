@@ -369,8 +369,23 @@ public function updateStatusOptions()
                 continue;
             }
         
-            $this->totalAmount += $groupUsdSell;
-            $this->totalReceived += $groupAmountPaid + $groupCollections;
+            $netSell = $groupUsdSell;
+            $netCollected = $groupAmountPaid + $groupCollections;
+            $netRemaining = $netSell - $netCollected;
+            
+            // تجاهل المجموعات التي ليس لها قيمة بيع (تم استردادها بالكامل)
+            if (round($netSell, 2) === 0.00) {
+                continue;
+            }
+            
+            // إذا كان المحصل النهائي للمجموعة > 0 نضيفه إلى المحصل، وإلا نعتبره غير محصل
+            if ($netRemaining <= 0) {
+                $this->totalReceived += $netSell;  // تم تحصيل كامل المبلغ
+            } else {
+                $this->totalReceived += $netCollected; // المحصل الحقيقي
+            }
+            
+            $this->totalAmount += $netSell;
         }
         
         $this->totalPending = $this->totalAmount - $this->totalReceived;
@@ -704,6 +719,10 @@ if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
 }
 
         $this->resetForm();
+        $this->resetForm();
+        $this->isDuplicated = false; // ✅ العودة للوضع الطبيعي بعد الحفظ
+        $this->updateStatusOptions(); // ✅ توليد خيارات الحالة الافتراضية
+        $this->status = 'Issued'; // ✅ إعادة الحالة الافتراضية تلقائيًا
         $this->successMessage = 'تمت إضافة العملية بنجاح';
     }
 
