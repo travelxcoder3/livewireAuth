@@ -12,9 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-    $table->enum('account_type', ['individual', 'company', 'organization'])->default('individual')->after('has_commission');
-});
+            $table->enum('account_type', ['individual', 'company', 'organization'])
+                  ->default('individual')
+                  ->after('has_commission');
 
+            $table->decimal('opening_balance', 12, 2)
+                  ->default(0)
+                  ->after('account_type'); // بعد نوع الحساب
+        });
     }
 
     /**
@@ -22,9 +27,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-       Schema::table('customers', function (Blueprint $table) {
-                    $table->dropColumn('account_type');
-                });
-
+        Schema::table('customers', function (Blueprint $table) {
+            $table->dropColumn('account_type');
+            $table->dropColumn('opening_balance');
+        });
     }
 };
