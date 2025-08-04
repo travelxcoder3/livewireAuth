@@ -105,7 +105,7 @@
             Auth::user()->hasRole('agency-admin') ||
             Auth::user()->can('reportsSales.view') ||
             Auth::user()->can('reportsAccounts.view') ||
-            Auth::user()->can('reportCustomers.view')||
+            Auth::user()->can('reportCustomers.view') ||
             Auth::user()->can('reportCustomerAccounts.view');
     @endphp
 
@@ -208,7 +208,7 @@
         <a href="{{ route('agency.obligations-view') }}"
             class="flex items-center px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 transition group">
             <span class="nav-icon icon-button">
-                <i class="fas fa-file-contract text-white text-base"></i>
+                <i class="fas fa-balance-scale text-white text-base"></i>
             </span>
             <span
                 class="nav-text text-xs text-white whitespace-nowrap ml-2 transition-all duration-300 ease-in-out opacity-0 max-w-0 group-hover:opacity-100 group-hover:max-w-xs">

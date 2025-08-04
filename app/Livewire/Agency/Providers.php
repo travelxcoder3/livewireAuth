@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Notification;
 
 class Providers extends Component
 {
-    public $providers;
+    //public $providers;
     public $showModal = false;
     public $editMode = false;
     public $contact_info;
@@ -20,6 +20,11 @@ class Providers extends Component
     public $type;
     public $service_item_id;
     public $services = [];
+
+    public $search = '';
+    public $typeFilter = '';
+    public $serviceFilter = '';
+
     
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -170,10 +175,33 @@ session()->flash('type', 'success');
 
 }
 
-    public function render()
-    {
-        return view('livewire.agency.providers')
-            ->layout('layouts.agency')
-            ->title('إدارة المزودين');
+  public function render()
+{
+    $query = Provider::query()->where('agency_id', auth()->user()->agency_id);
+
+    if ($this->search) {
+        $query->where('name', 'like', '%' . $this->search . '%');
     }
+
+    if ($this->typeFilter) {
+        $query->where('type', 'like', '%' . $this->typeFilter . '%');
+    }
+
+    if ($this->serviceFilter) {
+        $query->where('service_item_id', $this->serviceFilter);
+    }
+
+    $providers = $query->latest()->paginate(10);
+
+    return view('livewire.agency.providers', compact('providers'))
+        ->layout('layouts.agency')
+        ->title('إدارة المزودين');
+}
+
+
+    public function resetFilters()
+{
+    $this->reset(['search', 'typeFilter', 'serviceFilter']);
+}
+
 }

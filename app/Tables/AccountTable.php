@@ -7,7 +7,6 @@ class AccountTable
     {
         // الأعمدة الأصلية
         $columns = [
-            ['key' => 'user.name', 'label' => 'الموظف'],
             ['key' => 'created_at', 'label' => 'تاريخ الاجراء ', 'format' => 'date', 'sortable' => true],
             ['key' => 'sale_date', 'label' => 'تاريخ البيع', 'format' => 'date', 'sortable' => true],
             ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
@@ -21,6 +20,7 @@ class AccountTable
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'customer.name', 'label' => 'العميل'],
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
+            ['key' => 'user.name', 'label' => 'الموظف'],
             ['key' => 'actions', 'label' => 'الإجراءات', 'format' => 'custom','buttons' => ['pdf']],
         ];
 

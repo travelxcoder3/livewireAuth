@@ -43,11 +43,14 @@ class AccountsExport implements FromCollection, WithHeadings
             }
 
             if (!empty($this->filters['pnr'])) {
-                $query->where('pnr', 'like', '%'.$this->filters['pnr'].'%');
+                $query->where('pnr', 'like', '%' . $this->filters['pnr'] . '%');
             }
 
             if (!empty($this->filters['reference'])) {
-                $query->where('reference', 'like', '%'.$this->filters['reference'].'%');
+                $query->where('reference', 'like', '%' . $this->filters['reference'] . '%');
+            }
+            if (!empty($this->filters['user_id'])) {
+                $query->where('user_id', $this->filters['user_id']);
             }
         }
 
@@ -55,7 +58,7 @@ class AccountsExport implements FromCollection, WithHeadings
 
         return $sales->map(function ($sale) {
             $data = [];
-            
+
             $fieldMap = [
                 'sale_date' => $sale->sale_date,
                 'beneficiary_name' => $sale->beneficiary_name,
@@ -68,7 +71,7 @@ class AccountsExport implements FromCollection, WithHeadings
                 'usd_sell' => $sale->usd_sell,
                 'provider' => optional($sale->provider)->name,
                 'customer' => optional($sale->customer)->name,
-                
+
             ];
 
             if ($this->fields) {
@@ -91,8 +94,8 @@ class AccountsExport implements FromCollection, WithHeadings
             'التاريخ',
             'المستفيد',
             'الخدمة',
-             'Route',
-             'PNR',
+            'Route',
+            'PNR',
             'المرجع',
             'action',
             'USD Buy',
@@ -111,17 +114,17 @@ class AccountsExport implements FromCollection, WithHeadings
             'beneficiary_name' => 'المستفيد',
             'customer' => 'العميل',
             'serviceType' => 'الخدمة',
-            
+
             'route' => 'Route',
-               'pnr' => 'PNR',
-                'reference' => 'المرجع',
+            'pnr' => 'PNR',
+            'reference' => 'المرجع',
             'action' => 'الإجراء',
             'usd_buy' => 'USD Buy',
             'usd_sell' => 'USD Sell',
-            
+
             'provider' => 'المزود',
             'customer' => 'الحساب',
-           
+
         ];
 
         $headings = [];

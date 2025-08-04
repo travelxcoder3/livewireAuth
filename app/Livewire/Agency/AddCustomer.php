@@ -170,12 +170,17 @@ class AddCustomer extends Component
     }
 
 
- public function resetFields()
-{
-    $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission']);
-    // احذف هذا السطر:
-    // $this->account_type = 'individual';
-}
+    public function resetFields()
+    {
+        $this->reset([
+            // حقول النموذج
+            'name', 'email', 'phone', 'address', 'editingId', 'has_commission',
+            
+            // حقول الفلاتر
+            'search', 'phoneFilter', 'addressFilter', 'commissionFilter', 'accountTypeFilter',
+        ]);
+    }
+
 
 public function addImage()
 {

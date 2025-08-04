@@ -57,10 +57,9 @@
 
     <!-- زر إعادة تعيين الفلاتر -->
     <div class="flex justify-end mt-3">
-        <button wire:click="resetFilters"
-            class="text-gray-800 font-bold px-4 py-2 rounded-xl border border-gray-800 shadow-md transition duration-300 text-sm"
-            style="background: linear-gradient(to right, rgb(var(--primary-200)) 0%, rgb(var(--primary-300)) 100%);">
-            إعادة تعيين الفلاتر
+    <button type="button" wire:click="resetFilters"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm w-full sm:w-auto">
+            تنظيف الفلاتر
         </button>
     </div>
 </div>

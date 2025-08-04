@@ -1,40 +1,63 @@
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-4">
-    <div class="w-full max-w-md">
-        <div class="bg-white/90 rounded-3xl shadow-2xl p-8 space-y-8 border border-emerald-100 backdrop-blur-md">
-            <div class="text-center">
-                <h2 class="text-2xl font-extrabold text-emerald-700 mb-1">استعادة كلمة المرور</h2>
-                <p class="text-emerald-400 font-medium">أدخل بريدك الإلكتروني لإرسال رابط إعادة تعيين كلمة المرور</p>
-            </div>
-            @if(session('message'))
-                <div class="bg-emerald-100 text-emerald-700 rounded-lg p-3 text-center mb-4">{{ session('message') }}</div>
-            @endif
-            @if(session('error'))
-                <div class="bg-red-100 text-red-700 rounded-lg p-3 text-center mb-4">{{ session('error') }}</div>
-            @endif
-            <form wire:submit.prevent="sendResetLink" class="space-y-6">
-                <div>
-                    <label for="email" class="block text-sm font-bold text-emerald-600 mb-2">البريد الإلكتروني</label>
-                    <input
-                        wire:model="email"
-                        type="email"
-                        id="email"
-                        class="block w-full pr-3 py-3 border border-teal-200 rounded-xl focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition duration-200 bg-white/80 placeholder-teal-300 text-emerald-700 font-semibold shadow-sm @error('email') border-red-400 focus:ring-red-200 focus:border-red-400 @enderror"
-                        placeholder="example@email.com"
-                        dir="ltr"
-                    >
-                    @error('email')
-                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                    @enderror
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>استعادة كلمة المرور</title>
+    @php
+        use App\Services\ThemeService;
+        $themeName = ThemeService::getSystemTheme();
+        $colors = ThemeService::getCurrentThemeColors($themeName);
+    @endphp
+    <script src="https://cdn.tailwindcss.com"></script>
+    @livewireStyles
+</head>
+<body class="bg-gray-50">
+
+    <div class="flex flex-col h-screen overflow-hidden bg-gray-50">
+        <div class="flex-none p-4">
+            <div class="bg-white rounded-xl shadow-md p-8 max-w-md mx-auto">
+                <!-- محتوى العنوان -->
+                <div class="text-center mb-6">
+                    <div class="mx-auto h-16 w-16 rounded-full flex items-center justify-center mb-4"
+                        style="background: linear-gradient(to right, rgb({{ $colors['primary-500'] }}), rgb({{ $colors['primary-600'] }}));">
+                        <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-1">استعادة كلمة المرور</h2>
+                    <p class="text-gray-600">أدخل بريدك الإلكتروني لإرسال رابط إعادة تعيين كلمة المرور</p>
                 </div>
-                <div>
-                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent text-base font-bold rounded-xl text-white bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 shadow-lg hover:from-emerald-500 hover:to-cyan-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-200 transition duration-200 transform hover:scale-105">
-                        إرسال رابط إعادة التعيين
-                    </button>
+
+                @if(session('message'))
+                    <div class="bg-emerald-100 text-emerald-700 rounded-lg p-3 text-center mb-4">{{ session('message') }}</div>
+                @endif
+
+                <form wire:submit.prevent="sendResetLink" class="space-y-6">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-600 mb-2">البريد الإلكتروني</label>
+                        <input wire:model="email" type="email" id="email"
+                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none bg-white placeholder-gray-400 text-gray-600"
+                            placeholder="example@email.com" dir="ltr">
+                    </div>
+                    <div>
+                        <button type="submit"
+                            class="w-full flex justify-center py-3 px-4 border border-transparent text-base font-medium rounded-lg shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition duration-150"
+                            style="background: linear-gradient(to right, rgb({{ $colors['primary-500'] }}), rgb({{ $colors['primary-600'] }}));">
+                            إرسال رابط إعادة التعيين
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-6">
+                    <a href="/login" class="text-sm font-bold text-primary-500 hover:text-primary-600 transition">
+                        العودة لتسجيل الدخول
+                    </a>
                 </div>
-            </form>
-            <div class="text-center mt-4">
-                <a href="/login" class="text-emerald-400 hover:text-teal-500 font-bold">العودة لتسجيل الدخول</a>
             </div>
         </div>
     </div>
-</div>
+
+    @livewireScripts
+</body>
+</html>

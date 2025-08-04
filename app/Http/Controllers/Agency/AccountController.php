@@ -12,17 +12,17 @@ use App\Exports\AccountsExport;
 
 class AccountController extends Controller
 {
- public function generatePdfReport(Request $request)
-
+    public function generatePdfReport(Request $request)
     {
         $pdfPath = storage_path('app/public/sales_report.pdf');
 
         $user = Auth::user();
         $agency = $user->agency;
-        
         $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account'])
-            ->where('agency_id', $agency->id);
-
+            ->where('agency_id', $agency->id)
+            ->when(!$user->hasRole('agency-admin'), function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
         // فلترة التاريخ
         if ($request->filled('start_date')) {
             $query->whereDate('sale_date', '>=', $request->start_date);
@@ -57,16 +57,16 @@ class AccountController extends Controller
 
         // تحديد الحقول المراد عرضها
         $fields = $request->input('fields', [
-           'sale_date',
-    'beneficiary_name',
-    'serviceType',
-    'route',
-    'pnr',
-    'reference',
-    'usd_sell',
-    'usd_buy',
-    'provider',
-    'customer_id',
+            'sale_date',
+            'beneficiary_name',
+            'serviceType',
+            'route',
+            'pnr',
+            'reference',
+            'usd_sell',
+            'usd_buy',
+            'provider',
+            'customer_id',
         ]);
 
         // تحضير HTML
@@ -96,6 +96,13 @@ class AccountController extends Controller
     {
         $fields = $request->has('fields') ? $request->fields : null;
         $filters = $request->only(['start_date', 'end_date', 'service_type', 'provider', 'account', 'pnr', 'reference']);
+
+        $user = Auth::user();
+        $isAgencyAdmin = $user->hasRole('agency-admin');
+
+        if (!$isAgencyAdmin) {
+            $filters['user_id'] = $user->id;
+        }
 
         return Excel::download(new AccountsExport($fields, $filters), 'accounts_report_' . now()->format('Y-m-d') . '.xlsx');
     }

@@ -11,7 +11,6 @@ use App\Models\DynamicListItem;
 use Livewire\Attributes\Layout;
 use App\Tables\AccountTable;
 use App\Exports\AccountsReportExport;
-use Spatie\Browsershot\Browsershot;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
 
@@ -38,6 +37,7 @@ class AccountsReport extends Component
     public $customers = [];
     public $totalSales = 0;
     public $columns = [];
+
     protected $queryString = [
         'search' => ['except' => ''],
         'serviceTypeFilter' => ['except' => ''],
@@ -50,75 +50,47 @@ class AccountsReport extends Component
         'sortField' => ['except' => 'created_at'],
         'sortDirection' => ['except' => 'desc'],
     ];
+
     public function mount()
     {
         $this->loadInitialData();
         $this->columns = AccountTable::columns();
     }
-    public function exportToPdf()
-    {
 
-        $data = $this->prepareReportData(auth()->user()); // ✅ تمرير المستخدم يدويًا
-        $html = view('reports.accounts-full-pdf', [
-            'sales' => $data['sales'],
-            'totalSales' => $data['totalSales'],
-            'agency' => $data['agency'],
-            'startDate' => $data['startDate'],
-            'endDate' => $data['endDate'],
-        ])->render();
-
-        return response(
-            Browsershot::html($html)
-                ->format('A4')
-                ->margins(10, 10, 10, 10)
-                ->emulateMedia('screen')
-                ->noSandbox()
-                ->waitUntilNetworkIdle()
-                ->pdf()
-        )->withHeaders([
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'inline; filename="accounts-full-report.pdf"',
-                ]);
-    }
-    protected function safeUtf8($value)
-    {
-        if (is_null($value))
-            return '';
-
-        if (is_string($value)) {
-            // إزالة الأحرف غير الصالحة
-            $value = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $value);
-            return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
-        }
-
-        return $value;
-    }
     public function exportToExcel()
     {
-        $data = $this->prepareReportData(auth()->user()); // ✅ تمرير المستخدم يدويًا
+        $data = $this->prepareReportData();
+        $currency = $data['agency']->currency ?? 'USD';
+
+        $user = auth()->user();
+        $filters = $data['filters'];
+
+        if (!$user->hasRole('agency-admin')) {
+            $filters['user_id'] = $user->id;
+        }
 
         return Excel::download(
             new AccountsReportExport([
-                'sales' => $data['sales']
+                'sales' => $data['sales'],
+                'currency' => $currency,
+                'filters' => $filters,
             ]),
             'accounts-' . now()->format('Y-m-d') . '.xlsx'
         );
     }
-    protected function prepareReportData($user = null)
+
+    protected function prepareReportData()
     {
-        $user = $user ?? \Illuminate\Support\Facades\Auth::user();
+        $user = auth()->user();
         $agency = $user->agency;
-    
+
         $agencyIds = $agency->parent_id
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
-    
+
         $sales = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
-            ->when(! $user->hasAnyRole(['agency-admin']), function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            // باقي الفلاتر بدون تغيير
+            ->when(!$user->hasRole('agency-admin'), fn($q) => $q->where('user_id', $user->id))
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
                 $query->where(function ($q) use ($term) {
@@ -136,12 +108,12 @@ class AccountsReport extends Component
             ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
-    
+
         foreach ($sales as $sale) {
             $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
             $sale->remaining = $sale->usd_sell - $sale->paid_total;
         }
-    
+
         return [
             'agency' => $agency,
             'sales' => $sales,
@@ -155,11 +127,10 @@ class AccountsReport extends Component
                 'pnrFilter' => $this->pnrFilter,
                 'referenceFilter' => $this->referenceFilter,
             ],
-            'columns' => $this->columns,
+            'columns' => $this->columns ?? [],
             'totalSales' => $sales->sum('usd_sell')
         ];
     }
-    
 
     protected function loadInitialData()
     {
@@ -174,6 +145,7 @@ class AccountsReport extends Component
         $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
         $this->customers = Customer::where('agency_id', auth()->user()->agency_id)->latest()->get();
     }
+
     public function sortBy($field)
     {
         if ($this->sortField === $field) {
@@ -184,6 +156,7 @@ class AccountsReport extends Component
 
         $this->sortField = $field;
     }
+
     public function resetFilters()
     {
         $this->reset([
@@ -197,54 +170,53 @@ class AccountsReport extends Component
             'referenceFilter'
         ]);
     }
+
     public function render()
-{
-    $user = auth()->user();
-    $agency = $user->agency;
+    {
+        $user = auth()->user();
+        $agency = $user->agency;
 
-    $agencyIds = $agency->parent_id
-        ? [$agency->id]
-        : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
+        $agencyIds = $agency->parent_id
+            ? [$agency->id]
+            : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-    $salesQuery = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
-        ->whereIn('agency_id', $agencyIds)
-        ->when(!$user->hasRole('agency-admin'), function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })
-        ->when($this->search, function ($query) {
-            $term = '%' . $this->search . '%';
-            $query->where(function ($q) use ($term) {
-                $q->where('beneficiary_name', 'like', $term)
-                    ->orWhere('reference', 'like', $term)
-                    ->orWhere('pnr', 'like', $term);
-            });
-        })
-        ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
-        ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-        ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-        ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
-        ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-        ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-        ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
+        $salesQuery = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
+            ->whereIn('agency_id', $agencyIds)
+            ->when(!$user->hasRole('agency-admin'), fn($q) => $q->where('user_id', $user->id))
+            ->when($this->search, function ($query) {
+                $term = '%' . $this->search . '%';
+                $query->where(function ($q) use ($term) {
+                    $q->where('beneficiary_name', 'like', $term)
+                        ->orWhere('reference', 'like', $term)
+                        ->orWhere('pnr', 'like', $term);
+                });
+            })
+            ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
+            ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
+            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
+            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
+            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
 
-    $this->totalSales = $salesQuery->clone()->sum('usd_sell');
+        $this->totalSales = $salesQuery->clone()->sum('usd_sell');
 
-    $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+        $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
 
-    foreach ($sales as $sale) {
-        $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
-        $sale->remaining = $sale->usd_sell - $sale->paid_total;
+        foreach ($sales as $sale) {
+            $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+            $sale->remaining = $sale->usd_sell - $sale->paid_total;
+        }
+
+        return view('livewire.agency.reportsView.accounts-report', [
+            'sales' => $sales,
+            'totalSales' => $this->totalSales,
+            'columns' => $this->columns,
+            'serviceTypes' => $this->serviceTypes,
+            'providers' => $this->providers,
+            'customers' => $this->customers
+        ]);
     }
-
-    return view('livewire.agency.reportsView.accounts-report', [
-        'sales' => $sales,
-        'totalSales' => $this->totalSales,
-        'columns' => $this->columns,
-        'serviceTypes' => $this->serviceTypes,
-        'providers' => $this->providers,
-        'customers' => $this->customers
-    ]);
-}
 
     public function filteredSales()
     {
@@ -263,9 +235,10 @@ class AccountsReport extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
     }
+
     public function printPdf($saleId)
     {
-        $sale = \App\Models\Sale::with(['customer', 'provider', 'user', 'service'])->findOrFail($saleId);
+        $sale = Sale::with(['customer', 'provider', 'user', 'service'])->findOrFail($saleId);
 
         $html = view('reports.account-single', compact('sale'))->render();
 

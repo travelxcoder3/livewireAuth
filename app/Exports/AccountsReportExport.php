@@ -13,16 +13,24 @@ class AccountsReportExport implements FromCollection, WithHeadings, WithMapping
     protected Collection $sales;
     protected string $currency;
 
-
+    protected array $filters = [];
     public function __construct(array $data)
     {
         $this->sales = collect($data['sales'])->filter(fn($item) => $item instanceof Sale);
         $this->currency = $data['currency'] ?? 'USD';
+        $this->filters = $data['filters'] ?? [];
     }
 
     public function collection()
     {
-        return $this->sales;
+        $query = Sale::with(['customer', 'service', 'provider'])
+            ->where('agency_id', auth()->user()->agency_id);
+
+        if (!empty($this->filters['user_id'])) {
+            $query->where('user_id', $this->filters['user_id']);
+        }
+
+        return $query->latest()->get();
     }
 
     public function headings(): array

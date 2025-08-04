@@ -26,7 +26,7 @@
             <button wire:click="create"
                     class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
                     style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                + إضافة التزام جديد
+                 إضافة التزام جديد
             </button>
         </div>
 

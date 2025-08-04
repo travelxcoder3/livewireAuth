@@ -5,7 +5,7 @@
             السياسات الخاصة بالوكالة
         </h2>
    <x-toast />
-        <x-primary-button wire:click="create" icon="+">
+        <x-primary-button wire:click="create" >
             إضافة سياسة جديدة
         </x-primary-button>
     </div>

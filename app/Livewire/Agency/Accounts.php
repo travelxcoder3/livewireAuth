@@ -39,37 +39,37 @@ class Accounts extends Component
     // وهكذا ...
     public $showInvoiceModal = false;
     public $selectedSale;
-public $selectAll = false;
-public $selectedSales = [];
+    public $selectAll = false;
+    public $selectedSales = [];
+    public array $visibleSaleIds = [];
+
+    public function updatedSelectedSales()
+    {
+        $sales = $this->getCurrentSales();
+        $this->selectAll = count($this->selectedSales) === $sales->count();
+    }
 
 
-public function updatedSelectedSales()
-{
-    $sales = $this->getCurrentSales();
-    $this->selectAll = count($this->selectedSales) === $sales->count();
-}
+    public function getCurrentSales()
+    {
+        $agency = Auth::user()->agency;
 
+        $agencyIds = $agency->parent_id
+            ? [$agency->id]
+            : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-public function getCurrentSales()
-{
-    $agency = Auth::user()->agency;
-
-    $agencyIds = $agency->parent_id
-        ? [$agency->id]
-        : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
-
-    return Sale::whereIn('agency_id', $agencyIds)
-        ->when($this->search, fn($q) => $q->where('beneficiary_name', 'like', '%' . $this->search . '%'))
-        ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
-        ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-        ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-        ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
-        ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-        ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-        ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
-        ->orderBy($this->sortField, $this->sortDirection)
-        ->paginate(10);
-}
+        return Sale::whereIn('agency_id', $agencyIds)
+            ->when($this->search, fn($q) => $q->where('beneficiary_name', 'like', '%' . $this->search . '%'))
+            ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
+            ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
+            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
+            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
+            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
+            ->orderBy($this->sortField, $this->sortDirection)
+            ->paginate(10);
+    }
 
 
 
@@ -260,60 +260,61 @@ public function getCurrentSales()
     }
 
     public function render()
-{
-    $user = Auth::user();
-    $agency = $user->agency;
+    {
+        $user = Auth::user();
+        $agency = $user->agency;
 
-    // جلب الحسابات الخاصة بوكالة المستخدم الحالي فقط (كما هو)
-    $customers = Customer::where('agency_id', $agency->id)
-        ->latest()
-        ->get();
+        // جلب الحسابات الخاصة بوكالة المستخدم الحالي فقط (كما هو)
+        $customers = Customer::where('agency_id', $agency->id)
+            ->latest()
+            ->get();
 
-    // تحديد الوكالات المطلوبة في العمليات
-    if ($agency->parent_id) {
-        // فرع: يعرض فقط عملياته
-        $agencyIds = [$agency->id];
-    } else {
-        // وكالة رئيسية: يعرض عمليات الوكالة وكل الفروع التابعة لها
-        $branchIds = $agency->branches()->pluck('id')->toArray();
-        $agencyIds = array_merge([$agency->id], $branchIds);
+        // تحديد الوكالات المطلوبة في العمليات
+        if ($agency->parent_id) {
+            // فرع: يعرض فقط عملياته
+            $agencyIds = [$agency->id];
+        } else {
+            // وكالة رئيسية: يعرض عمليات الوكالة وكل الفروع التابعة لها
+            $branchIds = $agency->branches()->pluck('id')->toArray();
+            $agencyIds = array_merge([$agency->id], $branchIds);
+        }
+
+        $filteredSalesQuery = Sale::with(['service', 'provider', 'account', 'customer', 'collections'])
+            ->whereIn('agency_id', $agencyIds)
+            ->when(!$user->hasRole('agency-admin'), function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->when($this->search, function ($query) {
+                $searchTerm = '%' . $this->search . '%';
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('beneficiary_name', 'like', $searchTerm)
+                        ->orWhere('reference', 'like', $searchTerm)
+                        ->orWhere('pnr', 'like', $searchTerm);
+                });
+            })
+            ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
+            ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
+            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
+            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
+            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
+            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
+
+        $totalSales = $filteredSalesQuery->clone()->sum('usd_sell');
+        $this->sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+        $this->exportSales = $this->sales->getCollection();
+
+        foreach ($this->sales as $sale) {
+            $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+            $sale->remaining = $sale->usd_sell - $sale->paid_total;
+        }
+        $this->visibleSaleIds = $this->exportSales->pluck('id')->toArray();
+        return view('livewire.agency.accounts', [
+            'customers' => $customers,
+            'sales' => $this->sales,
+            'totalSales' => $totalSales,
+        ])->layout('layouts.agency');
     }
-
-    $filteredSalesQuery = Sale::with(['service', 'provider', 'account', 'customer', 'collections'])
-        ->whereIn('agency_id', $agencyIds)
-        ->when(!$user->hasRole('agency-admin'), function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })
-        ->when($this->search, function ($query) {
-            $searchTerm = '%' . $this->search . '%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('beneficiary_name', 'like', $searchTerm)
-                    ->orWhere('reference', 'like', $searchTerm)
-                    ->orWhere('pnr', 'like', $searchTerm);
-            });
-        })
-        ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
-        ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-        ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-        ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
-        ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-        ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-        ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
-
-    $totalSales = $filteredSalesQuery->clone()->sum('usd_sell');
-    $this->sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
-
-    foreach ($this->sales as $sale) {
-        $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
-        $sale->remaining = $sale->usd_sell - $sale->paid_total;
-    }
-
-    return view('livewire.agency.accounts', [
-        'customers' => $customers,
-        'sales' => $this->sales,
-        'totalSales' => $totalSales,
-    ])->layout('layouts.agency');
-}
 
     // في ملف App\Livewire\Agency\Accounts.php
     public function downloadBulkInvoicePdf($invoiceId)
@@ -367,10 +368,10 @@ public function getCurrentSales()
 
 
     public function toggleSelectAll()
-{
-    $sales = $this->getCurrentSales();
-    $this->selectedSales = $this->selectAll ? $sales->pluck('id')->toArray() : [];
-}
+    {
+        $sales = $this->getCurrentSales();
+        $this->selectedSales = $this->selectAll ? $sales->pluck('id')->toArray() : [];
+    }
 
 
 

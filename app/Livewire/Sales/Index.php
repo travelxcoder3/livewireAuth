@@ -116,15 +116,22 @@ $this->showAmountPaidField = !in_array($sale->status, ['Refund-Full', 'Refund-Pa
         $this->usd_buy = $sale->usd_buy;
         $this->usd_sell = $sale->usd_sell;
         $this->commission = $sale->commission;
-        // 🔐 ضبط حالة حقل العمولة
         if ($this->showCommission) {
+            if (!is_null($sale->commission)) {
+                $this->commission = $sale->commission;
+            }
+
+            // ❗ شرط التصفير فقط إذا كانت الحالة Refund-Full
             if ($sale->status === 'Refund-Full') {
                 $this->commission = 0;
                 $this->commissionReadOnly = true;
             } elseif (!is_null($sale->commission)) {
                 $this->commissionReadOnly = true;
+            } else {
+                $this->commissionReadOnly = false;
             }
         }
+
 
         $this->route = $sale->route;
         $this->pnr = $sale->pnr;
@@ -743,12 +750,15 @@ if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
         $this->showCustomerField = true;
         $this->depositor_name = null; 
     } elseif ($value === 'kash') {
+    if (!$this->isDuplicated) {
         $this->commission = null;
         $this->showCommission = false;
-        $this->showCustomerField = true;
-    } else {
-        $this->showCustomerField = true;
     }
+    $this->showCustomerField = true;
+} else {
+    $this->showCustomerField = true;
+}
+
 }
 
 public function applyFilters()

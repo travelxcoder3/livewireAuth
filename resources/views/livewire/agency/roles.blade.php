@@ -29,7 +29,7 @@
         </h2>
         @can('roles.create')
         <x-primary-button wire:click="$set('showForm', true)">
-            + إضافة دور جديد
+             إضافة دور جديد
         </x-primary-button>
         @endcan
     </div>

@@ -22,9 +22,13 @@ class AccountsReportController extends Controller
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        // بنية الاستعلام مع تطبيق جميع الفلاتر من الـ URL
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('agency-admin');
+
         $query = Sale::with(['account', 'customer', 'service', 'provider'])
             ->whereIn('agency_id', $agencyIds)
+            ->when(!$isAdmin, fn($q) => $q->where('user_id', $user->id)) // ✅ فلترة حسب المستخدم
+
             // فلترة حسب نوع الخدمة
             ->when($request->serviceTypeFilter, function ($q) use ($request) {
                 $q->where('service_type_id', $request->serviceTypeFilter);

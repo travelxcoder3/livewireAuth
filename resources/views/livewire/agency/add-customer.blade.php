@@ -1,20 +1,17 @@
 <div class="space-y-6">
+  <div class="bg-white rounded-xl shadow-md p-5 mb-6 space-y-4">
+    <!-- صف العنوان وزر الإضافة -->
     <div class="flex justify-between items-center">
-        <!-- العنوان (أقصى اليمين) -->
-        <h2 class="text-2xl font-bold"
-            style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
+        <h2 class="text-2xl font-bold text-gray-800">
             إدارة العملاء
         </h2>
         <!-- العميل الجديد (أقصى اليسار) -->
         <div class="flex items-center gap-4">
             <!-- زر التنظيف (بجواره) -->
-            <button wire:click="resetFilters" type="button"
-                class="text-sm px-4 py-2 bg-white border border-[rgb(var(--primary-500))] text-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-50))] hover:shadow-md rounded-lg transition">
-                تنظيف الفلاتر
-            </button>
+          
             @can('customers.create')
             <x-primary-button wire:click="openModal" class="text-sm">
-                + إضافة عميل جديد
+                إضافة عميل جديد
             </x-primary-button>
             @endcan
         </div>
@@ -60,57 +57,58 @@
                         placeholder="اختر نوع الحساب"
                     />
 
-<div class="space-y-2">
-    <label class="block text-sm text-gray-700">صور العميل</label>
+                    <div class="space-y-2">
+                        <label class="block text-sm text-gray-700">صور العميل</label>
 
-    {{-- الصور الموجودة مسبقًا --}}
-    @foreach ($existingImages as $id => $path)
-        <div class="flex items-center gap-2">
-            <img src="{{ asset('storage/' . $path) }}" class="w-10 h-10 rounded border object-cover" alt="صورة حالية">
-            <button type="button" wire:click="deleteExistingImage({{ $id }})"
-                class="text-red-600 text-xs hover:underline">حذف</button>
-        </div>
-    @endforeach
+                        {{-- الصور الموجودة مسبقًا --}}
+                        @foreach ($existingImages as $id => $path)
+                            <div class="flex items-center gap-2">
+                                <img src="{{ asset('storage/' . $path) }}" class="w-10 h-10 rounded border object-cover" alt="صورة حالية">
+                                <button type="button" wire:click="deleteExistingImage({{ $id }})"
+                                    class="text-red-600 text-xs hover:underline">حذف</button>
+                            </div>
+                        @endforeach
 
-    {{-- الصور الجديدة --}}
-    @foreach ($images as $index => $img)
-        <div class="flex items-center gap-2">
-            <input type="file" wire:model="images.{{ $index }}" class="text-sm border rounded p-1 w-full" />
-            <button type="button" wire:click="removeImage({{ $index }})"
-                class="text-red-600 text-xs hover:underline">حذف</button>
-        </div>
-    @endforeach
+                        {{-- الصور الجديدة --}}
+                        @foreach ($images as $index => $img)
+                            <div class="flex items-center gap-2">
+                                <input type="file" wire:model="images.{{ $index }}" class="text-sm border rounded p-1 w-full" />
+                                <button type="button" wire:click="removeImage({{ $index }})"
+                                    class="text-red-600 text-xs hover:underline">حذف</button>
+                            </div>
+                        @endforeach
 
-    <button type="button" wire:click="addImage"
-        class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] text-sm font-bold">
-        + أضف صورة جديدة
-    </button>
+                        <button type="button" wire:click="addImage"
+                            class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] text-sm font-bold">
+                            + أضف صورة جديدة
+                        </button>
 
-    @error('images.*') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-</div>
-
-
+                        @error('images.*') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
 
 
-                    <x-checkbox-field name="has_commission" wireModel="has_commission" label="هل لهذا العميل عمولة؟"
-                        containerClass="mt-3 col-span-4" />
 
-                    <div class="flex justify-center gap-4 pt-6">
-                        <x-primary-button type="submit">
-                            {{ $editingId ? 'تأكيد التعديل' : 'حفظ العميل' }}
-                        </x-primary-button>
 
-                        <x-primary-button type="button" wire:click="closeModal" color="bg-gray-200"
-                            textColor="text-gray-800" :gradient="false">
-                            إلغاء
-                        </x-primary-button>
-                    </div>
+                       <x-checkbox-field name="has_commission" wireModel="has_commission" label="هل لهذا العميل عمولة؟"
+                            containerClass="mt-3 col-span-4" />
+
+                        <div class="flex justify-center gap-4 pt-6">
+                            <x-primary-button type="submit">
+                                {{ $editingId ? 'تأكيد التعديل' : 'حفظ العميل' }}
+                            </x-primary-button>
+
+                            <x-primary-button type="button" wire:click="closeModal" color="bg-gray-200"
+                                textColor="text-gray-800" :gradient="false">
+                                إلغاء
+                            </x-primary-button>
+                        </div>
                 </form>
             </div>
         </div>
     @endif
     <!-- الفلترة -->
-<div class="bg-white rounded-xl shadow-md p-5 mb-5 grid md:grid-cols-5 gap-3 text-sm">
+<div class="bg-white grid md:grid-cols-5 gap-3 text-sm">
+
     <x-input-field wireModel="search" label="الاسم أو البريد الإلكتروني" placeholder="ابحث بالاسم أو البريد" />
     <x-input-field wireModel="phoneFilter" label="رقم الهاتف" placeholder="ابحث برقم الهاتف" />
     <x-input-field wireModel="addressFilter" label="العنوان" placeholder="ابحث بالعنوان" />
@@ -142,6 +140,16 @@
     />
 
 </div>
+
+<div class="flex justify-end mt-2 mb-6 px-5">
+    <button type="button" wire:click="resetFields"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center gap-2 w-full sm:w-auto">
+        تنظيف الحقول
+    </button>
+</div>
+</div>
+
+
 
     <!-- جدول العملاء -->
     @php

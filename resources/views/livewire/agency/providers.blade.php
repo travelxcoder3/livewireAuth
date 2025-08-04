@@ -16,26 +16,57 @@
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
             إدارة المزودين
         </h2>
+
+           @if($user->can('providers.create'))
+                <x-primary-button wire:click="showAddModal" padding="px-4 py-2">
+                     إضافة مزود جديد
+                </x-primary-button>
+
+            @endif
+            
        <x-toast />
     </div>
 
     <!-- نموذج الإضافة -->
     <div class="bg-white rounded-xl shadow-md p-4">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold" style="color: rgb(var(--primary-700));">قائمة المزودين</h2>
+      
 
-            @if($user->can('providers.create'))
-                <x-primary-button wire:click="showAddModal" padding="px-4 py-2">
-                    + إضافة مزود جديد
-                </x-primary-button>
+        <!-- ✅ فلاتر البحث داخل نفس الكارد -->
+<div class="grid md:grid-cols-4 gap-3 mb-4 text-sm">
+    <x-input-field
+        wireModel="search"
+        label="بحث بالاسم"
+        placeholder="ابحث باسم المزود"
+    />
 
-            @endif
-        </div>
+    <x-input-field
+        wireModel="typeFilter"
+        label="نوع المزود"
+        placeholder="ابحث بنوع المزود"
+    />
+
+    <x-select-field
+        wireModel="serviceFilter"
+        label="نوع الخدمة"
+        :options="$services->pluck('label', 'id')->toArray()"
+        placeholder="الكل"
+    />
+
+    <div class="flex items-end justify-end">
+        <button type="button" wire:click="resetFilters"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm w-full sm:w-auto">
+            تنظيف الفلاتر
+        </button>
+    </div>
+</div>
+
 
         <!-- جدول المزودين -->
+       <!-- جدول المزودين -->
         <div class="overflow-x-auto">
             <x-data-table :rows="$providers" :columns="$columns" />
         </div>
+
     </div>
 
     <!-- النافذة المنبثقة -->
@@ -138,4 +169,6 @@
             transform: translateY(0);
         }
     </style>
+
+
 </div>
