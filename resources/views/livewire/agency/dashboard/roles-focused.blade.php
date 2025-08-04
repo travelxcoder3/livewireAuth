@@ -1,4 +1,6 @@
+
 <!-- لوحة التحكم المخصصة لمدير الأدوار -->
+<div> 
 @php $stats = $this->rolesStats; @endphp
 
 <!-- إحصائيات الأدوار -->
@@ -136,4 +138,5 @@
             <p class="font-semibold">{{ $this->agencyInfo->license_expiry_date->format('Y-m-d') }}</p>
         </div>
     </div>
+</div> 
 </div> 

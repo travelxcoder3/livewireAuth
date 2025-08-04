@@ -213,7 +213,7 @@ class EmployeeIndex extends Component
             })
             ->when($this->department_filter, fn($q) => $q->where('department_id', $this->department_filter))
             ->when($this->position_filter, fn($q) => $q->where('position_id', $this->position_filter))
-            ->latest()
+            ->oldest()
             ->paginate(10);
 
         return view('livewire.hr.employee-index', [

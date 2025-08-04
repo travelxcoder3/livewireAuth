@@ -1,3 +1,4 @@
+<div>
 <div class="bg-white rounded-lg shadow p-6 mb-8">
     <h2 class="text-xl font-semibold text-black mb-4">لوحة تحكم إدارة الموارد البشرية</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -22,4 +23,5 @@
             <a href="{{ route('agency.hr.employees.index') }}#add" class="px-6 py-3 rounded-lg font-bold shadow" style="background: var(--theme-success); color: var(--theme-on-success);">إضافة موظف جديد</a>
         @endcan
     </div>
+</div> 
 </div> 

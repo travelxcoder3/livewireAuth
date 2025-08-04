@@ -174,7 +174,7 @@
                                 <th class="px-3 py-2 whitespace-nowrap" style="width:220px;">البريد الإلكتروني</th>
                                 <th class="px-3 py-2 whitespace-nowrap" style="width:170px;">الهاتف</th>
                                 <th class="px-3 py-2 whitespace-nowrap">العملة</th>
-                                <th class="px-3 py-2 whitespace-nowrap" style="width:200px;">العنوان</th>
+                                <th class="px-3 py-2 whitespace-nowrap">العنوان</th>
                                 <th class="px-3 py-2 whitespace-nowrap">رقم الرخصة</th>
                                 <th class="px-3 py-2 whitespace-nowrap">السجل التجاري</th>
                                 <th class="px-3 py-2 whitespace-nowrap">الرقم الضريبي</th>

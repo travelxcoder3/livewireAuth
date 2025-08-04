@@ -94,15 +94,10 @@
                 </thead>
                 <tbody class="divide-y">
                     @forelse ($customers as $customer)
-                        @php
-                            $netBalance = $customer['net_balance'];
-                            $balanceFor = $netBalance < 0 ? number_format(abs($netBalance), 2) : '0.00';
-                            $balanceOn = $netBalance > 0 ? number_format($netBalance, 2) : '0.00';
-                        @endphp
-                        <tr class="hover:bg-gray-50">
-                            <td class="py-2 px-4 font-medium text-right">{{ $customer['name'] }}</td>
-                            <td class="py-2 px-4 text-green-600 font-mono">{{ $balanceFor }}</td>
-                            <td class="py-2 px-4 text-red-600 font-mono">{{ $balanceOn }}</td>
+                    <tr class="hover:bg-gray-50">
+                    <td class="py-2 px-4 font-medium text-right">{{ $customer['name'] }}</td>
+                    <td class="py-2 px-4 text-green-600 font-mono">{{ number_format($customer['remaining_for_company'], 2) }}</td>
+                    <td class="py-2 px-4 text-red-600 font-mono">{{ number_format($customer['remaining_for_customer'], 2) }}</td>
                             <td class="py-2 px-4 font-mono text-gray-800">{{ number_format($customer['total'], 2) }}
                             </td>
                             <td class="py-2 px-4 text-gray-600">

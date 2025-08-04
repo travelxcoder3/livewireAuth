@@ -15,7 +15,7 @@ class PermissionSeeder extends Seeder
         'roles.view',
         'roles.create',
         'roles.edit',
-        'roles.delete',
+        // 'roles.delete',
         'permissions.view',
         // 'permissions.create',
         // 'permissions.edit',
@@ -65,7 +65,7 @@ class PermissionSeeder extends Seeder
         'accounts.view',
         'accounts.create',
         'accounts.edit',
-        'accounts.delete',
+        // 'accounts.delete',
         // صلاحيات التسلسلات
         'sequences.view',
         'sequences.create',
