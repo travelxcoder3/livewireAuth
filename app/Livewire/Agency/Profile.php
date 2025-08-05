@@ -31,12 +31,14 @@ class Profile extends Component
         // يمكنك هنا تعبئة بيانات النموذج إذا لزم الأمر
     }
 
-    public function cancelEditing()
-    {
-        $this->editing = false;
-        $this->resetErrorBag();
-        // يمكنك هنا إعادة تعيين أي تغييرات لم تحفظ
-    }
+   public function cancelEditing()
+{
+    $this->editing = false;
+    $this->resetErrorBag();
+    $this->logo = null;
+    $this->tempLogoUrl = null; // إخفاء الشعار المؤقت عند الإلغاء
+}
+
 
     // في المكون الخاص بك
 public $showSuccess = false;
@@ -73,30 +75,19 @@ public function showSuccessMessage()
         $this->currentTarget = $target?->target_amount;
     }
 
-    public function updatedLogo()
-    {
-        $this->validate([
-            'logo' => 'nullable|image|max:2048',
-        ]);
+public function updatedLogo()
+{
+    $this->validate([
+        'logo' => 'nullable|image|max:2048',
+    ]);
 
-        // رفع الشعار مباشرة عند اختياره
-        if ($this->logo) {
-            if ($this->agency->logo && Storage::disk('public')->exists($this->agency->logo)) {
-                Storage::disk('public')->delete($this->agency->logo);
-            }
-
-            $logoPath = $this->logo->store('agencies/logos', 'public');
-            $this->agency->logo = $logoPath;
-            $this->agency->save();
-
-            $this->logoPreview = Storage::url($logoPath) . '?v=' . now()->timestamp;
-            $this->logo = null;
-            $this->tempLogoUrl = null;
-
-              session()->flash('message', 'تم رفع الشعار بنجاح!');
-             session()->flash('type', 'success');
-        }
+    // مجرد المعاينة فقط بدون أي تخزين
+    if ($this->logo) {
+        $this->tempLogoUrl = $this->logo->temporaryUrl();
     }
+}
+
+
 
     public function update()
     {
@@ -115,14 +106,16 @@ public function showSuccessMessage()
         $this->agency->address = $this->address;
         $this->agency->description = $this->description;
 
-        if ($this->logo) {
-            if ($this->agency->logo && Storage::disk('public')->exists($this->agency->logo)) {
-                Storage::disk('public')->delete($this->agency->logo);
-            }
+      if ($this->logo) {
+    if ($this->agency->logo && Storage::disk('public')->exists($this->agency->logo)) {
+        Storage::disk('public')->delete($this->agency->logo);
+    }
 
-            $logoPath = $this->logo->store('agencies/logos', 'public');
-            $this->agency->logo = $logoPath;
-        }
+    $logoPath = $this->logo->store('agencies/logos', 'public');
+    $this->agency->logo = $logoPath;
+}
+
+
 
         $this->agency->save();
 

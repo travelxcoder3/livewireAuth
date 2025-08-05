@@ -7,11 +7,9 @@
             <!-- صورة الشعار -->
             <div class="flex justify-center mb-6">
                 <div class="relative">
-                    @if ($tempLogoUrl)
-                        <img src="{{ $tempLogoUrl }}" class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover">
-                    @else
-                        <img src="{{ $logoPreview }}" class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover">
-                    @endif
+                   <img src="{{ $logoPreview }}" class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover">
+
+
 
                     @if($editing)
                         <div class="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-md">

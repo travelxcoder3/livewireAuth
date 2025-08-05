@@ -193,43 +193,47 @@ $this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفي
 
 
     public function resetForm()
-    {
-        $this->reset([
-            'beneficiary_name',
-            'sale_date',
-            'service_type_id',
-            'provider_id',
-            'customer_via',
-            'usd_buy',
-            'usd_sell',
-            'commission',
-            'route',
-            'pnr',
-            'reference',
-            'status',
-            'amount_paid',
-            'depositor_name',
-            'customer_id',
-            'sale_profit',
-            'payment_method',
-            'payment_type',
-            'receipt_number',
-            'phone_number',
-            'service_date',
-            'expected_payment_date',
-        ]);
+{
+    $this->reset([
+        'beneficiary_name',
+        'sale_date',
+        'service_type_id',
+        'provider_id',
+        'customer_via',
+        'usd_buy',
+        'usd_sell',
+        'commission',
+        'route',
+        'pnr',
+        'reference',
+        'status',
+        'amount_paid',
+        'depositor_name',
+        'customer_id',
+        'sale_profit',
+        'payment_method',
+        'payment_type',
+        'receipt_number',
+        'phone_number',
+        'service_date',
+        'expected_payment_date',
+    ]);
 
-        $this->showAmountPaidField = true;
-        $this->disablePaymentMethod = false;
+    $this->showAmountPaidField = true;
+    $this->disablePaymentMethod = false;
 
-        // تنظيف الحقول المحسوبة يدويًا
-        $this->sale_profit = 0;
-        $this->amount_due = 0;
-        $this->showCommission = false;
-        $this->showExpectedDate = false;
-        $this->sale_group_id  = Str::uuid(); // توليد UUID جديد عند تنظيف الحقول
+    // تنظيف الحقول المحسوبة يدويًا
+    $this->sale_profit = 0;
+    $this->amount_due = 0;
+    $this->showCommission = false;
+    $this->showExpectedDate = false;
+    $this->sale_group_id  = Str::uuid();
 
-    }
+    // ✅ الحالة الافتراضية بعد التنظيف
+    $this->status = 'Issued'; // أو 'Applied' حسب ما تفضّل
+    $this->isDuplicated = false;
+    $this->updateStatusOptions(); // ضروري لتحديث القائمة
+}
 
 
     public function resetFields()

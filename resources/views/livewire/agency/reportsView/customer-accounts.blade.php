@@ -81,7 +81,7 @@
                         <th class="py-3 px-4 border-b">اسم العميل</th>
                         <th class="py-3 px-4 border-b">نوع الحساب</th>
                         <th class="py-3 px-4 border-b" colspan="2">الرصيد</th>
-                        <th class="py-3 px-4 border-b">الإجمالي</th>
+                        <th class="py-3 px-4 border-b">أجمالي المبيعات</th>
                         <th class="py-3 px-4 border-b">تاريخ آخر عملية بيع</th>
                         <th class="py-3 px-4 border-b">العملة</th>
                         <th class="py-3 px-4 border-b">الإجراء</th>

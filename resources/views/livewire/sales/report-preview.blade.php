@@ -193,7 +193,8 @@
             >
                 تقرير PDF
             </x-primary-button>
-
+            @endcan
+            @can('sales.export')
             <x-primary-button
                 type="button"
                 onclick="openReportModal('excel')"
@@ -203,7 +204,7 @@
             >
                 تقرير Excel
             </x-primary-button>
-        @endcan
+            @endcan
         </div>
         <!-- صف: عدد السجلات يمين، تاريخ التقرير يسار -->
         <div class="flex items-center justify-between mb-6 text-gray-700">

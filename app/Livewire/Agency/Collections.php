@@ -35,7 +35,6 @@ class Collections extends Component
         'collections.customerRelation'
     ])
         ->where('agency_id', Auth::user()->agency_id)
-        ->where('user_id', Auth::id()) // ✅ عرض فقط عمليات الموظف الحالي
     
         ->when($this->search, fn($q) =>
             $q->whereHas('customer', fn($q2) =>

@@ -43,7 +43,6 @@ class SalesTable
             ['key' => 'pnr', 'label' => 'PNR'],
             ['key' => 'route', 'label' => 'المسار/ التفاصيل'],
             ['key' => 'status', 'label' => 'الحالة', 'format' => 'status'],
-            ['key' => 'user.name', 'label' => 'الموظف'],
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
             ['key' => 'payment_method', 'label' => 'حالة الدفع', 'format' => 'payment_method'],
             ['key' => 'payment_type', 'label' => 'وسيلة الدفع', 'format' => 'payment_type'],
@@ -51,6 +50,8 @@ class SalesTable
             ['key' => 'phone_number', 'label' => 'رقم هاتف المستفيد'],
             ['key' => 'depositor_name', 'label' => 'اسم المودع'],
             ['key' => 'commission', 'label' => 'عمولة العميل', 'format' => 'money'],
+            ['key' => 'user.name', 'label' => 'الموظف'],
+
         ];
 
         // 2) عمود الإجراءات

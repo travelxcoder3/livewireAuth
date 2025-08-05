@@ -26,6 +26,7 @@ class PermissionSeeder extends Seeder
         // 'sales.edit',
         // 'sales.delete',
         'sales.report',
+        'sales.export',
         'sales.reports.view',
         // صلاحيات الموظفين
         'employees.view',

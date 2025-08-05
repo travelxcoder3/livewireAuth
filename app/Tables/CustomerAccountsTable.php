@@ -38,7 +38,7 @@ class CustomerAccountsTable
             ],
             [
                 'key' => 'total',
-                'label' => 'الإجمالي',
+                'label' => 'إجمالي المبيعات',
                 'format' => 'money',
                 'color' => 'primary-600',
                 'sortable' => true,
