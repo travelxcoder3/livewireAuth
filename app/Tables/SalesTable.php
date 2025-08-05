@@ -50,6 +50,7 @@ class SalesTable
             ['key' => 'phone_number', 'label' => 'رقم هاتف المستفيد'],
             ['key' => 'depositor_name', 'label' => 'اسم المودع'],
             ['key' => 'commission', 'label' => 'عمولة العميل', 'format' => 'money'],
+            ['key' => 'duplicatedBy.name', 'label' => 'تم التكرار بواسطة'],
             ['key' => 'user.name', 'label' => 'الموظف'],
 
         ];

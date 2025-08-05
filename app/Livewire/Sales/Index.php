@@ -355,7 +355,7 @@ public function updateStatusOptions()
         $query->where('payment_type', $this->filters['payment_type']);
     });
         $sales = $salesQuery
-            ->with(['user', 'provider', 'service', 'customer', 'account', 'collections' ,'updatedBy'])
+            ->with(['user', 'provider', 'service', 'customer', 'account', 'collections' ,'updatedBy','duplicatedBy'])
             ->withSum('collections', 'amount')
             ->latest()
             ->paginate(10);
@@ -737,6 +737,7 @@ case 'part':
             'phone_number' => $this->phone_number,
             'customer_via' => $this->customer_via,
             'user_id' => $this->original_user_id ?? Auth::id(),
+            'duplicated_by' => $this->isDuplicated ? Auth::id() : null,
             'agency_id' => Auth::user()->agency_id,
             'service_date' => $this->service_date,
             'expected_payment_date' => $this->expected_payment_date,

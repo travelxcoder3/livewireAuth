@@ -157,10 +157,7 @@
     </div>
 @endif
 
-<div class="text-sm text-gray-700 mt-2">
-    الإحالة عن طريق العميل:
-    <strong>{{ $sale->referred_by_customer }}</strong>
-</div>
+
 <!-- جدول السيناريوهات التفصيلية -->
 @if($sale->scenarios && count($sale->scenarios))
     <div class="mb-6 overflow-x-auto rounded-xl shadow-sm bg-white">
@@ -205,7 +202,10 @@
         </table>
     </div>
 @endif
-
+<div class="text-sm text-gray-700 mt-2">
+    الإحالة عن طريق العميل:
+    <strong>{{ $sale->referred_by_customer }}</strong>
+</div>
 
 
 

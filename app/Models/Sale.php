@@ -35,7 +35,8 @@ class Sale extends Model
         'service_date',
         'expected_payment_date',
         'sale_group_id',
-        'updated_by'
+        'updated_by',
+        'duplicated_by'
     ];
 
         protected static function boot()
@@ -115,6 +116,12 @@ class Sale extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    public function duplicatedBy()
+{
+    return $this->belongsTo(User::class, 'duplicated_by');
+}
+
 
 
 }

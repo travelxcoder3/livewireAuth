@@ -67,19 +67,21 @@
             <table class="w-full text-sm border text-center">
                 <thead class="bg-[rgb(var(--primary-500))] text-white text-sm">
                     <tr>
-                        <th class="p-3 border-b">نوع العملية</th>
                         <th class="p-3 border-b">تاريخ العملية</th>
+                        <th class="p-3 border-b">نوع العملية</th>
                         <th class="p-3 border-b">مبلغ العملية</th>
+                        <th class="p-3 border-b">المرجع</th>
                         <th class="p-3 border-b">وصف الحالة</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($sales as $sale)
                         <tr class="hover:bg-gray-50">
-                            <td class="p-2 text-red-600 font-medium">بيع</td>
                             <td class="p-2">{{ $sale->sale_date }}</td>
+                            <td class="p-2 text-red-600 font-medium">بيع</td>
                             <td class="p-2 text-gray-800">{{ number_format($sale->usd_sell, 2) }} {{ $currency }}
                             </td>
+                            <td class="p-2 text-gray-800">{{ $sale->reference ?? '—' }}</td>
                             <td class="p-2 text-gray-600">{{ ucfirst($sale->status) }}</td>
                         </tr>
                     @empty
@@ -90,10 +92,13 @@
 
                     @forelse($collections as $collection)
                         <tr class="hover:bg-gray-50">
-                            <td class="p-2 text-green-600 font-medium">تحصيل</td>
                             <td class="p-2">{{ $collection->payment_date }}</td>
+                            <td class="p-2 text-green-600 font-medium">تحصيل</td>
                             <td class="p-2 text-gray-800">{{ number_format($collection->amount, 2) }}
                                 {{ $currency }}</td>
+                            <td class="p-2 text-gray-800">
+                                {{ $collection->sale->reference ?? '—' }}
+                            </td>
                             <td class="p-2 text-gray-600">{{ $collection->note ?? '—' }}</td>
                         </tr>
                     @empty

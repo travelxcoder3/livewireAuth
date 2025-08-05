@@ -194,19 +194,33 @@ $columns = SalesTable::columns();
                     />
                   
                         <!-- حالة الدفع -->
-                        <x-select-field
-                            wireModel="payment_method"
-                            label="حالة الدفع"
-                            :options="[
-                                'kash' => 'كامل',
-                                'part' => 'جزئي',
-                                'all' => 'لم يدفع'
-                            ]"
-                            placeholder="حالة الدفع"
-                            containerClass="relative mt-1 col-span-3"
-                            errorName="payment_method"
-                            :disabled="$disablePaymentMethod || $showRefundModal"
-                        />
+@if($disablePaymentMethod || $showRefundModal)
+    <div class="relative mt-1 col-span-3">
+        <div class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed">
+            {{ $payment_method ? [
+                'kash' => 'كامل',
+                'part' => 'جزئي',
+                'all' => 'لم يدفع'
+            ][$payment_method] : 'غير محدد' }}
+        </div>
+        <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500">
+            حالة الدفع
+        </label>
+    </div>
+@else
+    <x-select-field
+        wireModel="payment_method"
+        label="حالة الدفع"
+        :options="[
+            'kash' => 'كامل',
+            'part' => 'جزئي',
+            'all' => 'لم يدفع'
+        ]"
+        placeholder="حالة الدفع"
+        containerClass="relative mt-1 col-span-3"
+        errorName="payment_method"
+    />
+@endif
 
                     @if($showDepositorField)
                         <x-input-field
@@ -351,18 +365,28 @@ $columns = SalesTable::columns();
                     @endif
 
                     <!-- العمولة -->
-                    @if($showCommission)
-                    <x-input-field
-                        name="commission"
-                        label="مبلغ عمولة العميل"
-                        wireModel="commission"
-                        placeholder="مبلغ عمولة العميل"
-                        type="number"
-                        step="0.01"
-                        :readonly="$commissionReadOnly"
-                        containerClass="relative mt-1"
-                    />
-                    @endif
+@if($showCommission)
+    @if($commissionReadOnly)
+        <div class="relative mt-1">
+            <div class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed">
+                {{ number_format($commission, 2) }}
+            </div>
+            <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500">
+                مبلغ عمولة العميل
+            </label>
+        </div>
+    @else
+        <x-input-field
+            name="commission"
+            label="مبلغ عمولة العميل"
+            wireModel="commission"
+            placeholder="مبلغ عمولة العميل"
+            type="number"
+            step="0.01"
+            containerClass="relative mt-1"
+        />
+    @endif
+@endif
 
                 </div>
 
@@ -400,19 +424,37 @@ $columns = SalesTable::columns();
         $showAmountPaid = $payment_method !== 'all';
     @endphp
 
-    @if($showAmountPaid && !$showRefundModal && $showAmountPaidField)
-        <x-input-field
-            name="amount_paid"
-            label="المبلغ المدفوع"
-            wireModel="amount_paid"
-            placeholder="المبلغ المدفوع"
-            type="number"
-            step="0.01"
-            wireChange="calculateDue"
-            containerClass="relative mt-1 {{ $showExpectedDate ? 'col-span-3' : 'col-span-6' }}"
-            fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
-        />
-    @endif
+@if($showAmountPaid && !$showRefundModal && $showAmountPaidField)
+<x-input-field
+    name="amount_paid"
+    label="المبلغ المدفوع"
+    wireModel="amount_paid"
+    placeholder="المبلغ المدفوع"
+    type="number"
+    step="0.01"
+    wireChange="calculateDue"
+    :readonly="!($showAmountPaid && !$showRefundModal && $showAmountPaidField)"
+    containerClass="relative mt-1 {{ $showExpectedDate ? 'col-span-3' : 'col-span-6' }}"
+    fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer"
+/>
+
+@else
+    <x-input-field
+        name="amount_paid"
+        label="المبلغ المدفوع"
+        wireModel="amount_paid"
+        placeholder="المبلغ المدفوع"
+        type="number"
+        step="0.01"
+        wireChange="calculateDue"
+        :readonly="true"
+        containerClass="relative mt-1 {{ $showExpectedDate ? 'col-span-3' : 'col-span-6' }}"
+        fieldClass="w-full rounded-lg border border-gray-300 px-3 py-2 ... peer bg-gray-100 cursor-not-allowed"
+    />
+@endif
+
+
+
 
 
     <!-- تاريخ السداد المتوقع -->
@@ -426,24 +468,26 @@ $columns = SalesTable::columns();
         errorName="expected_payment_date"
     />
     @endif
-    <!-- الربح -->
-    <div class="col-span-3 flex items-end text-xs font-semibold text-[rgb(var(--primary-600))]">
-        <div>
-            <span>الربح:</span>
-            <span>{{ number_format($sale_profit, 2) }}</span>
-        </div>
+    
+<!-- الربح -->
+<div class="col-span-3 flex items-center text-xs font-semibold text-[rgb(var(--primary-600))] h-[30px] mt-[6px]">
+    <div>
+        <label class="block text-gray-500 text-xs mb-1">الربح</label>
+        <div>{{ number_format($sale_profit, 2) }}</div>
     </div>
+</div>
 
-    <!-- المتبقي -->
-    <div class="col-span-3 flex items-end text-xs font-semibold text-[rgb(var(--primary-600))]">
-        <div>
-            <span>المتبقي:</span>
-            <span>{{ number_format($amount_due, 2) }}</span>
-        </div>
+<!-- المتبقي -->
+<div class="col-span-3 flex items-center text-xs font-semibold text-[rgb(var(--primary-600))] h-[30px] mt-[6px]">
+    <div>
+        <label class="block text-gray-500 text-xs mb-1">المتبقي</label>
+        <div>{{ number_format($amount_due, 2) }}</div>
     </div>
+</div>
+
 
 <!-- الأزرار -->
-<div class="col-span-12 md:col-span-6 lg:col-span-6 flex items-end justify-end gap-2 lg:gap-3 w-full">
+<div class="col-span-6 flex items-center justify-end gap-2 lg:gap-3 w-full h-[30px] mt-[6px]">
 
 @if($showRefundModal)
     <x-primary-button
