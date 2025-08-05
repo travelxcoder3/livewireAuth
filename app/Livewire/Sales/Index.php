@@ -52,6 +52,7 @@ public $userCommissionDue  = 0;
     public bool $disablePaymentMethod = false;
     public bool $commissionReadOnly = false;
     public array $statusOptions = [];
+    public $original_user_id = null;
 
 
     public $filters = [
@@ -65,8 +66,8 @@ public $userCommissionDue  = 0;
     'customer_via' => '',
     'route' => '',
     'payment_method' => '',
-    'payment_type' => ''
-
+    'payment_type' => '',
+    'reference' => ''
 ];
 
 // بيانات النموذج المؤقت داخل نافذة الفلترة
@@ -81,7 +82,8 @@ public $filterInputs = [
     'customer_via' => '',
     'route' => '',
     'payment_method' => '',
-    'payment_type' => ''
+    'payment_type' => '',
+    'reference' => ''
 ];
 
 public $filterServices = [];
@@ -104,6 +106,7 @@ public $filterCustomers = [];
     {
         $sale = Sale::findOrFail($id);
         $this->isDuplicated = true;
+        $this->original_user_id = $sale->user_id; // حفظ صاحب العملية الأصلية
         $this->updateStatusOptions(); // ✅ توليد قائمة الحالات الجديدة المسموح بها
 
 $this->showAmountPaidField = !in_array($sale->status, ['Refund-Full', 'Refund-Partial', 'Void']);
@@ -233,6 +236,7 @@ $this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفي
     $this->status = 'Issued'; // أو 'Applied' حسب ما تفضّل
     $this->isDuplicated = false;
     $this->updateStatusOptions(); // ضروري لتحديث القائمة
+    $this->editingSale = null;
 }
 
 
@@ -280,29 +284,38 @@ public function updateStatusOptions()
         $user = Auth::user();
         $agency = $user->agency;
 
-        if ($agency->parent_id) {
-            if ($user->hasRole('agency-admin')) {
-                // أدمن الفرع: يرى كل عمليات الفرع
-                $userIds = $agency->users()->pluck('id')->toArray();
-                $salesQuery = Sale::where('agency_id', $agency->id)
-                                  ->whereIn('user_id', $userIds);
-            } else {
-                // مستخدم عادي في الفرع: يرى فقط عملياته
-                $salesQuery = Sale::where('agency_id', $agency->id)
-                                  ->where('user_id', $user->id);
-            }
+       if ($agency->parent_id) {
+    if ($user->hasRole('agency-admin')) {
+        $userIds = $agency->users()->pluck('id')->toArray();
+        $salesQuery = Sale::where('agency_id', $agency->id)
+                          ->whereIn('user_id', $userIds);
+    } else {
+        $salesQuery = Sale::where('agency_id', $agency->id);
+
+        // ✅ حالة استثناء: إذا تم إدخال الرقم المرجعي فقط
+        if (!empty($this->filters['reference']) && $this->onlyReferenceFilter()) {
+            // لا تقيد بـ user_id
         } else {
-            if ($user->hasRole('agency-admin')) {
-                // أدمن الوكالة الرئيسية: يرى كل العمليات (الوكالة + الفروع)
-                $branchIds = $agency->branches()->pluck('id')->toArray();
-                $allAgencyIds = array_merge([$agency->id], $branchIds);
-                $salesQuery = Sale::whereIn('agency_id', $allAgencyIds);
-            } else {
-                // مستخدم عادي في الوكالة الرئيسية: يرى فقط عملياته
-                $salesQuery = Sale::where('agency_id', $agency->id)
-                                  ->where('user_id', $user->id);
-            }
+            $salesQuery->where('user_id', $user->id); // التقييد الطبيعي
         }
+    }
+} else {
+    if ($user->hasRole('agency-admin')) {
+        $branchIds = $agency->branches()->pluck('id')->toArray();
+        $allAgencyIds = array_merge([$agency->id], $branchIds);
+        $salesQuery = Sale::whereIn('agency_id', $allAgencyIds);
+    } else {
+        $salesQuery = Sale::where('agency_id', $agency->id);
+
+        // ✅ حالة استثناء: إذا تم إدخال الرقم المرجعي فقط
+        if (!empty($this->filters['reference']) && $this->onlyReferenceFilter()) {
+            // لا تقيد بـ user_id
+        } else {
+            $salesQuery->where('user_id', $user->id); // التقييد الطبيعي
+        }
+    }
+}
+
     // تطبيق الفلترة
     $salesQuery->when($this->filters['start_date'], function($query) {
         $query->where('sale_date', '>=', $this->filters['start_date']);
@@ -334,6 +347,10 @@ public function updateStatusOptions()
     ->when($this->filters['payment_method'], function($query) {
         $query->where('payment_method', $this->filters['payment_method']);
     })
+    ->when($this->filters['reference'], function($query) {
+        $query->where('reference', 'like', '%'.$this->filters['reference'].'%');
+    })
+
     ->when($this->filters['payment_type'], function($query) {
         $query->where('payment_type', $this->filters['payment_type']);
     });
@@ -718,7 +735,7 @@ case 'part':
             'receipt_number' => $this->receipt_number,
             'phone_number' => $this->phone_number,
             'customer_via' => $this->customer_via,
-            'user_id' => Auth::id(),
+            'user_id' => $this->original_user_id ?? Auth::id(),
             'agency_id' => Auth::user()->agency_id,
             'service_date' => $this->service_date,
             'expected_payment_date' => $this->expected_payment_date,
@@ -735,6 +752,7 @@ if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
         $this->updateStatusOptions(); // ✅ توليد خيارات الحالة الافتراضية
         $this->status = 'Issued'; // ✅ إعادة الحالة الافتراضية تلقائيًا
         $this->successMessage = 'تمت إضافة العملية بنجاح';
+        $this->original_user_id = null;
     }
 
     public function updatedPaymentMethod($value)
@@ -778,7 +796,8 @@ public function applyFilters()
         'customer_via' => $this->filterInputs['customer_via'],
         'route' => $this->filterInputs['route'],
         'payment_method' => $this->filterInputs['payment_method'],
-        'payment_type' => $this->filterInputs['payment_type']
+        'payment_type' => $this->filterInputs['payment_type'],
+        'reference' => $this->filterInputs['reference'],
     ];
     $this->resetPage(); // إعادة تعيين الصفحة عند تطبيق الفلترة
     $this->dispatch('filters-applied');
@@ -798,7 +817,8 @@ public function resetFilters()
         'customer_via' => '',
         'route' => '',
         'payment_method' => '',
-        'payment_type' => ''
+        'payment_type' => '',
+        'reference' => '',
     ];
     
     $this->filterInputs = [
@@ -812,7 +832,8 @@ public function resetFilters()
         'customer_via' => '',
         'route' => '',
         'payment_method' => '',
-        'payment_type' => ''
+        'payment_type' => '',
+        'reference' => '',
     ];
     
     $this->resetPage();
@@ -908,5 +929,99 @@ public function saveRefundValues()
 public function getDisablePaymentMethodProperty()
 {
     return in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']);
+}
+protected function onlyReferenceFilter()
+{
+    $filters = $this->filters;
+
+    // أزل الحقول الفارغة من الفلاتر
+    $activeFilters = array_filter($filters, fn($v) => !empty($v));
+
+    // هل المرجع هو الفلتر الوحيد؟
+    return count($activeFilters) === 1 && isset($activeFilters['reference']);
+}
+
+public function edit($id)
+{
+    $sale = Sale::findOrFail($id);
+    $this->editingSale = $sale->id;
+
+    // نفس الحقول في duplicate()
+    $this->beneficiary_name = $sale->beneficiary_name;
+    $this->sale_date = $sale->sale_date;
+    $this->service_type_id = $sale->service_type_id;
+    $this->provider_id = $sale->provider_id;
+    $this->customer_via = $sale->customer_via;
+    $this->usd_buy = $sale->usd_buy;
+    $this->usd_sell = $sale->usd_sell;
+    $this->commission = $sale->commission;
+    $this->route = $sale->route;
+    $this->pnr = $sale->pnr;
+    $this->reference = $sale->reference;
+    $this->status = $sale->status;
+    $this->amount_paid = $sale->amount_paid;
+    $this->depositor_name = $sale->depositor_name;
+    $this->customer_id = $sale->customer_id;
+    $this->sale_profit = $sale->sale_profit;
+    $this->payment_method = $sale->payment_method;
+    $this->payment_type = $sale->payment_type;
+    $this->receipt_number = $sale->receipt_number;
+    $this->phone_number = $sale->phone_number;
+    $this->service_date = $sale->service_date;
+    $this->expected_payment_date = $sale->expected_payment_date;
+    $this->sale_group_id = $sale->sale_group_id;
+
+    // خصائص مساعدة
+    $this->isDuplicated = false;
+    $this->updateStatusOptions();
+    $this->calculateProfit();
+    $this->calculateDue();
+
+    // عرض الحالة كما هي
+    $this->status = $sale->status;
+
+    // ✅ غير قابل للتعديل إذا مر الوقت
+    $this->dispatch('$refresh');
+}
+public function update()
+{
+    $this->validate();
+
+    $sale = Sale::findOrFail($this->editingSale);
+
+    // تأكد لم تمر 3 ساعات
+    if ($sale->created_at->diffInHours(now()) >= 3) {
+        $this->addError('general', 'لا يمكن تعديل العملية بعد مرور 3 ساعات.');
+        return;
+    }
+
+    $sale->update([
+        'beneficiary_name' => $this->beneficiary_name,
+        'sale_date' => $this->sale_date,
+        'service_type_id' => $this->service_type_id,
+        'provider_id' => $this->provider_id,
+        'customer_via' => $this->customer_via,
+        'usd_buy' => $this->usd_buy,
+        'usd_sell' => $this->usd_sell,
+        'commission' => $this->commission,
+        'route' => $this->route,
+        'pnr' => $this->pnr,
+        'reference' => $this->reference,
+        'status' => $this->status,
+        'amount_paid' => $this->amount_paid,
+        'depositor_name' => $this->depositor_name,
+        'customer_id' => $this->customer_id,
+        'sale_profit' => $this->sale_profit,
+        'payment_method' => $this->payment_method,
+        'payment_type' => $this->payment_type,
+        'receipt_number' => $this->receipt_number,
+        'phone_number' => $this->phone_number,
+        'service_date' => $this->service_date,
+        'expected_payment_date' => $this->expected_payment_date,
+    ]);
+
+    $this->resetForm();
+    $this->editingSale = null;
+    $this->successMessage = 'تم تحديث العملية بنجاح';
 }
 }

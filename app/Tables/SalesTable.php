@@ -67,7 +67,7 @@ class SalesTable
         }
 
         // 4) إذا لم يتم طلب إخفاء زر التكرار
-        if (!$hideDuplicate) {
+       if (!$hideDuplicate) {
             $actionsColumn['actions'] = [
                 [
                     'type' => 'duplicate',
@@ -77,8 +77,20 @@ class SalesTable
                     'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
                     'showIf' => fn($row) => $row->agency_id == auth()->user()->agency_id,
                 ],
+                [
+                    'type' => 'edit',
+                    'label' => 'تعديل',
+                    'icon' => 'fas fa-edit',
+                    'can' => auth()->user()->can('sales.edit'),
+                    'class' => 'text-[rgb(var(--primary-200))] hover:text-[rgb(var(--primary-500))]',
+                    'showIf' => fn($row) => 
+                        $row->agency_id == auth()->user()->agency_id &&
+                        \Carbon\Carbon::parse($row->created_at)->diffInHours(now()) < 3,
+                    'wireClick' => fn($row) => "edit({$row->id})",
+                ],
             ];
-        }
+}
+
 
         $columns[] = $actionsColumn;
 

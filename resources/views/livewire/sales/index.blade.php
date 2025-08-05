@@ -135,7 +135,7 @@ $columns = SalesTable::columns();
         @can('sales.create')
         <!-- نموذج الإضافة -->
         <div class="bg-white rounded-xl shadow-md p-4">
-        <form wire:submit.prevent="save" class="space-y-4 text-sm" id="mainForm">
+        <form wire:submit.prevent="{{ $editingSale ? 'update' : 'save' }}" class="space-y-4 text-sm" id="mainForm">
                 <!-- السطر الأول -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 lg:gap-3">
                 
@@ -422,12 +422,12 @@ $columns = SalesTable::columns();
         تعديل
     </x-primary-button>
 @else
-    <x-primary-button
+<x-primary-button
         type="submit"
         textColor="white"
         width="w-full sm:w-auto"
     >
-        تأكيد
+        {{ $editingSale ? 'تحديث' : 'تأكيد' }}
     </x-primary-button>
 @endif
 
@@ -655,6 +655,14 @@ $columns = SalesTable::columns();
                     placeholder="وسيلة الدفع"
                     containerClass="relative mt-1"
                 />
+                <x-input-field
+                    name="reference"
+                    label="الرقم المرجعي"
+                    wireModel="filterInputs.reference"
+                    placeholder="الرقم المرجعي"
+                    containerClass="relative mt-1"
+                />
+
             </div>
 
             <div class="grid grid-cols-2 gap-4 pt-2">

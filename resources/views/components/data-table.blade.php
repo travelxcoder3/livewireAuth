@@ -169,9 +169,14 @@
                                             @endforeach
                                         @endif
                                     </div>
-                                @else
-                                       {!! $display !== null && $display !== '' ? $display : '-' !!}
-                                @endif
+                                        @else
+                                            @if ($col['key'] === 'customer.name' && empty($display))
+                                                جديد
+                                            @else
+                                                {!! $display !== null && $display !== '' ? $display : '-' !!}
+                                            @endif
+                                        @endif
+
                             </td>
                         @endforeach
                     </tr>
