@@ -24,7 +24,7 @@
         init() {
             this.menuWidth = this.$refs.trigger.offsetWidth;
         },
-        options: @js($options),
+        options: { '': '{{ $placeholder }}', ...@js($options) },
 
 
         // دالة البحث الضبابي
@@ -48,9 +48,14 @@
             });
         },
 
-        get filteredOptions() {
-            return this.fuzzySearch(this.searchQuery, Object.entries(this.options));
-        }
+    get filteredOptions() {
+        const original = this.fuzzySearch(this.searchQuery, Object.entries(this.options));
+        // نضيف خيار فارغ في الأعلى فقط إن لم يكن ضمن النتائج الحالية
+        const firstOption = ['', '{{ $placeholder }}'];
+        const filtered = original.filter(([k, _]) => k !== '');
+        return [firstOption, ...filtered];
+    }
+
     }"
     x-effect="if (open) init()"
 

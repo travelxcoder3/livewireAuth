@@ -12,13 +12,42 @@
 @endphp
 
 <div class="space-y-6">
-    <!-- عنوان التقرير -->
-    <div class="flex justify-between items-center">
+    <!-- عنوان التقرير + ملخص الأرصدة -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <!-- عنوان -->
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
             تقرير حسابات العملاء
         </h2>
+
+        <!-- صناديق الأرصدة -->
+        <div class="flex flex-wrap gap-2">
+            <!-- له (لصالح العملاء) -->
+            <div
+                class="flex items-center gap-2 bg-white border border-green-300 rounded-lg px-3 py-1.5 shadow-sm text-xs whitespace-nowrap">
+                <div class="bg-green-100 text-green-600 rounded-full p-1.5 text-sm">✅</div>
+                <div class="leading-tight">
+                    <div class="text-gray-600">إجمالي الرصيد <strong>لصالح العملاء</strong></div>
+                    <div class="text-green-700 font-bold font-mono text-sm">
+                        {{ number_format($totalRemainingForCompany, 2) }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- عليه (على العملاء) -->
+            <div
+                class="flex items-center gap-2 bg-white border border-red-300 rounded-lg px-3 py-1.5 shadow-sm text-xs whitespace-nowrap">
+                <div class="bg-red-100 text-red-600 rounded-full p-1.5 text-sm">🔴</div>
+                <div class="leading-tight">
+                    <div class="text-gray-600">إجمالي الرصيد <strong>على العملاء</strong></div>
+                    <div class="text-red-700 font-bold font-mono text-sm">
+                        {{ number_format($totalRemainingForCustomer, 2) }}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
     <!-- فلاتر البحث -->
     <div class="bg-white rounded-xl shadow-md p-4">
         <div class="grid md:grid-cols-4 gap-4">
@@ -81,7 +110,7 @@
                         <th class="py-3 px-4 border-b">اسم العميل</th>
                         <th class="py-3 px-4 border-b">نوع الحساب</th>
                         <th class="py-3 px-4 border-b" colspan="2">الرصيد</th>
-                        <th class="py-3 px-4 border-b">أجمالي المبيعات</th>
+                        <th class="py-3 px-4 border-b">الإجمالي</th>
                         <th class="py-3 px-4 border-b">تاريخ آخر عملية بيع</th>
                         <th class="py-3 px-4 border-b">العملة</th>
                         <th class="py-3 px-4 border-b">الإجراء</th>

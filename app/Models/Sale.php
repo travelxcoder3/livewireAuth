@@ -34,7 +34,8 @@ class Sale extends Model
         'customer_via',
         'service_date',
         'expected_payment_date',
-        'sale_group_id'
+        'sale_group_id',
+        'updated_by'
     ];
 
         protected static function boot()
@@ -108,6 +109,11 @@ class Sale extends Model
         public function employee()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
 

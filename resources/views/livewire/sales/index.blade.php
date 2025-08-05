@@ -100,15 +100,48 @@ $columns = SalesTable::columns();
 
 
                     <!-- الحالة -->
-                    <div class="relative mb-3 w-full">
-    <select wire:model="status" id="status"
-        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs">
-        <option value="">اختر الحالة</option>
+<!-- الحالة -->
+<div class="relative mb-3 w-full" x-data="{ open: false }">
+    <!-- حقل الاختيار مع التسمية العائمة -->
+    <div 
+        @click="open = !open"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs cursor-pointer flex justify-between items-center peer"
+    >
+        <span x-text="$wire.status ? $wire.statusOptions[$wire.status] : 'اختر الحالة'" class="truncate"></span>
+        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
+             viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"/>
+        </svg>
+    </div>
+    
+    <!-- التسمية العائمة -->
+    <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
+        الحالة
+    </label>
+
+    <!-- القائمة المنسدلة -->
+    <div
+        x-show="open"
+        x-transition
+        @click.outside="open = false"
+        class="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-md max-h-60 overflow-auto"
+    >
+        <!-- عرض جميع الخيارات -->
         @foreach($statusOptions as $key => $label)
-            <option value="{{ $key }}">{{ $label }}</option>
+            <div
+                @click="$wire.set('status', '{{ $key }}'); open = false"
+                class="px-3 py-2 hover:bg-[rgb(var(--primary-100))] text-sm text-gray-700 cursor-pointer transition"
+                :class="{ 'bg-[rgb(var(--primary-500))] text-white': $wire.status === '{{ $key }}' }"
+            >
+                <span>{{ $label }}</span>
+            </div>
         @endforeach
-    </select>
-    @error('status') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+    </div>
+
+    <!-- رسالة الخطأ -->
+    @error('status')
+        <span class="text-red-600 text-xs mt-1 block">{{ $message }}</span>
+    @enderror
 </div>
 
 

@@ -1,6 +1,6 @@
 @php
-    use App\Tables\CustomerAccountsTable;
-    $columns = CustomerAccountsTable::columns();
+    use App\Tables\CustomerAccountsCpllectionsTable;
+    $columns = CustomerAccountsCpllectionsTable::columns();
 @endphp
 
 <div class="space-y-6">
@@ -13,10 +13,10 @@
         </h2>
         <div class="flex justify-end mb-4">
             <a href="{{ route('agency.collections') }}"
-               class="flex items-center gap-2 px-4 py-2 rounded-lg border transition duration-200 text-sm font-medium
+                class="flex items-center gap-2 px-4 py-2 rounded-lg border transition duration-200 text-sm font-medium
                       bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] hover:shadow-md hover:text-[rgb(var(--primary-700))]">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-180" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
                 <span>رجوع</span>
@@ -26,14 +26,11 @@
 
     <!-- مربع البحث عن العملاء -->
     <div class="flex items-center gap-4 mb-4">
-        <input type="text" 
-            wire:model.live.debounce.500ms="search" 
-            placeholder="بحث باسم العميل..."
+        <input type="text" wire:model.live.debounce.500ms="search" placeholder="بحث باسم العميل..."
             class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring text-sm" />
 
-        @if($search)
-            <button wire:click="$set('search', '')" 
-                    class="text-gray-500 hover:text-gray-700 text-sm">
+        @if ($search)
+            <button wire:click="$set('search', '')" class="text-gray-500 hover:text-gray-700 text-sm">
                 إلغاء البحث
             </button>
         @endif
@@ -63,7 +60,10 @@
                                     } elseif ($key === 'type') {
                                         $display = $value > 0 ? 'على العميل' : ($value < 0 ? 'للعميل' : 'متوازن');
                                     } elseif ($key === 'actions') {
-                                        $display = '<a href="' . url("/agency/customer-accounts/{$row->id}/history") . '" 
+                                        $display =
+                                            '<a href="' .
+                                            url("/agency/customer-accounts/{$row->id}/history") .
+                                            '"
                                             class="transition duration-200 font-semibold"
                                             style="color: rgb(var(--primary-600));"
                                             onmouseover="this.style.color=\'rgb(var(--primary-700))\'"

@@ -5,6 +5,8 @@
 @endphp
 <div>
     <div class="space-y-6">
+
+      
         <!-- العنوان الرئيسي -->
         <div class="flex justify-between items-center">
             <h2 class="text-2xl font-bold"
@@ -115,6 +117,8 @@
         </div>
     </div>
 @endif
+
+  <x-toast />
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
@@ -388,22 +392,7 @@
             </div>
         @endif
 
-        <!-- رسائل النظام -->
-        @if (session()->has('message'))
-            <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition
-                class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm"
-                style="background-color: rgb(var(--primary-500));">
-                {{ session('message') }}
-            </div>
-        @endif
-
-        @if (session()->has('error'))
-            <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition
-                class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm"
-                style="background-color: rgb(239, 68, 68);">
-                {{ session('error') }}
-            </div>
-        @endif
+      
     </div>
 
     <style>

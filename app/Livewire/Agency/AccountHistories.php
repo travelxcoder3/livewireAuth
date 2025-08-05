@@ -43,6 +43,7 @@ class AccountHistories extends Component
                 'id' => $customer->id,
                 'name' => $customer->name,
                 'total_due' => $totalDue,
+                 'account_type' => $customer->account_type,
             ];
         })->filter()->values(); // ⬅ استبعاد الفارغ
     }

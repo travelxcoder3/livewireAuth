@@ -170,6 +170,9 @@
                                         @endif
                                     </div>
                                         @else
+                                        @if ($col['key'] === 'user.name' && $row->updated_by)
+                                            <i class="fas fa-pen text-yellow-600 mr-1" title="تم التعديل بواسطة {{ $row->updatedBy->name }}"></i>
+                                        @endif
                                             @if ($col['key'] === 'customer.name' && empty($display))
                                                 جديد
                                             @else

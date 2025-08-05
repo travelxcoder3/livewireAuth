@@ -100,10 +100,12 @@ class SalesTable
     {
         return [
             ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
+            ['key' => 'phone_number', 'label' => 'رقم هاتف المستفيد'],
             ['key' => 'customer.name', 'label' => 'العميل'],
             ['key' => 'service.label', 'label' => 'الخدمة'],
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'service_date', 'label' => 'تاريخ الخدمة', 'format' => 'date'],
+            ['key' => 'status', 'label' => 'حالة العملية', 'format' => 'status'], // ✅ السطر المضاف
             [
                 'key' => 'actions',
                 'label' => 'الإجراءات',

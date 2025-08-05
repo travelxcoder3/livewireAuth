@@ -104,7 +104,7 @@ class EditAgency extends Component
             'subscription_end_date' => $this->subscription_end_date,
             'description' => $this->description,
             'max_users' => $this->max_users,
-            'parent_agency_id' => $this->parent_agency_id,
+            'parent_id' => $this->parent_agency_id,
         ];
 
         // Handle logo upload

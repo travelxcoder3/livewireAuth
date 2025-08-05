@@ -127,10 +127,14 @@ class CustomerAccounts extends Component
                 'account_type' => $customer->account_type,
             ];
         })->filter()->values();
+        $totalRemainingForCustomer = $customers->sum('remaining_for_customer'); // عليه
+        $totalRemainingForCompany = $customers->sum('remaining_for_company'); // له
 
         return view('livewire.agency.reportsView.customer-accounts', [
             'customers' => $customers,
             'columns' => CustomerAccountsTable::columns(),
+            'totalRemainingForCustomer' => $totalRemainingForCustomer,
+            'totalRemainingForCompany' => $totalRemainingForCompany,
         ]);
     }
 }

@@ -118,6 +118,49 @@
                 <h3 class="text-lg font-bold mb-4 text-[rgb(var(--primary-700))] border-b pb-2">
                     تفاصيل التحصيلات لـ {{ $sale->beneficiary_name }}
                 </h3>
+
+                                <!-- بطاقة ملخص المدفوعات -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                        <div class="text-sm text-blue-600 font-medium">إجمالي الفاتورة</div>
+                        <div class="text-xl font-bold text-blue-800 mt-1">
+                            {{ number_format($sale->usd_sell, 2) }} $
+                        </div>
+                    </div>
+
+                    <div class="bg-green-50/50 p-4 rounded-lg border border-green-100">
+                        <div class="text-sm text-green-600 font-medium">إجمالي المدفوع</div>
+                        <div class="text-xl font-bold text-green-800 mt-1">
+                            {{ number_format($totalPaid, 2) }} $
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50/50 p-4 rounded-lg border border-amber-100">
+                        <div class="text-sm text-amber-600 font-medium">المبلغ المتبقي</div>
+            <div class="text-xl font-bold text-amber-800 mt-1">
+                {{ number_format(max($remainingAmount, 0), 2) }} $
+            </div>
+
+                    </div>
+                </div>
+@if ($sale->remaining_for_company > 0)
+    <div class="bg-green-50 border border-green-200 text-green-700 p-3 rounded">
+        الشركة مدينة للمستفيد بمبلغ: 
+        <strong>${{ number_format($sale->remaining_for_company, 2) }}</strong>
+    </div>
+@endif
+
+@if ($sale->remaining_for_customer > 0)
+    <div class="bg-red-50 border border-red-200 text-red-700 p-3 rounded">
+        على المستفيد دفع المتبقي: 
+        <strong>${{ number_format($sale->remaining_for_customer, 2) }}</strong>
+    </div>
+@endif
+
+<div class="text-sm text-gray-700 mt-2">
+    الإحالة عن طريق العميل:
+    <strong>{{ $sale->referred_by_customer }}</strong>
+</div>
 <!-- جدول السيناريوهات التفصيلية -->
 @if($sale->scenarios && count($sale->scenarios))
     <div class="mb-6 overflow-x-auto rounded-xl shadow-sm bg-white">
@@ -164,48 +207,7 @@
 @endif
 
 
-                <!-- بطاقة ملخص المدفوعات -->
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                        <div class="text-sm text-blue-600 font-medium">إجمالي الفاتورة</div>
-                        <div class="text-xl font-bold text-blue-800 mt-1">
-                            {{ number_format($sale->usd_sell, 2) }} $
-                        </div>
-                    </div>
 
-                    <div class="bg-green-50/50 p-4 rounded-lg border border-green-100">
-                        <div class="text-sm text-green-600 font-medium">إجمالي المدفوع</div>
-                        <div class="text-xl font-bold text-green-800 mt-1">
-                            {{ number_format($totalPaid, 2) }} $
-                        </div>
-                    </div>
-
-                    <div class="bg-amber-50/50 p-4 rounded-lg border border-amber-100">
-                        <div class="text-sm text-amber-600 font-medium">المبلغ المتبقي</div>
-            <div class="text-xl font-bold text-amber-800 mt-1">
-                {{ number_format(max($remainingAmount, 0), 2) }} $
-            </div>
-
-                    </div>
-                </div>
-@if ($sale->remaining_for_company > 0)
-    <div class="bg-green-50 border border-green-200 text-green-700 p-3 rounded">
-        الشركة مدينة للمستفيد بمبلغ: 
-        <strong>${{ number_format($sale->remaining_for_company, 2) }}</strong>
-    </div>
-@endif
-
-@if ($sale->remaining_for_customer > 0)
-    <div class="bg-red-50 border border-red-200 text-red-700 p-3 rounded">
-        على المستفيد دفع المتبقي: 
-        <strong>${{ number_format($sale->remaining_for_customer, 2) }}</strong>
-    </div>
-@endif
-
-<div class="text-sm text-gray-700 mt-2">
-    الإحالة عن طريق العميل:
-    <strong>{{ $sale->referred_by_customer }}</strong>
-</div>
 
 <!-- جدول سجل التحصيلات -->
 <div class="overflow-x-auto rounded-xl shadow-sm bg-white">

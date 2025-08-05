@@ -7,29 +7,49 @@ class ApprovalSequenceTable
     public static function columns()
     {
         return [
-            ['key' => 'name', 'label' => 'اسم التسلسل'],
-            ['key' => 'action_type', 'label' => 'نوع الإجراء'],
+            [
+                'key' => 'name',
+                'label' => 'اسم التسلسل',
+                'format' => fn($value) => "
+                    <div class='flex flex-col items-start'>
+                        <span class='text-[rgb(var(--primary-700))] font-semibold'>$value</span>
+                    </div>
+                ",
+                'html' => true,
+            ],
+
+            [
+                'key' => 'action_type',
+                'label' => 'نوع الإجراء',
+                'format' => fn($value) => "
+                    <div class='flex flex-col items-start'>
+                        <span class='text-gray-800 font-medium'>$value</span>
+                    </div>
+                ",
+                'html' => true,
+            ],
             [
                 'key' => 'actions',
                 'label' => 'الإجراءات',
+                'class' => 'text-center',
                 'actions' => [
                     [
                         'type' => 'view',
                         'label' => 'عرض التسلسل',
                         'icon' => 'fa fa-eye',
                         'method' => 'viewSequence',
-                        'class' => 'text-[rgb(var(--primary-600))] border border-[rgb(var(--primary-600))] hover:bg-[rgba(var(--primary-100),0.5)] px-4 py-1 rounded-md text-xs font-medium transition',
+                        'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold',
                     ],
                     [
                         'type' => 'edit',
                         'label' => 'تعديل',
                         'icon' => 'fa fa-edit',
                         'method' => 'editSequence',
-                        'class' => 'text-amber-600 border border-amber-600 hover:bg-amber-50 px-4 py-1 rounded-md text-xs font-medium transition',
-                        'can' => auth()->user()->can('sequences.edit')
-                    ]
-                ]
-            ]
+                        'can' => auth()->user()->can('sequences.edit'),
+                        'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold',
+                    ],
+                ],
+            ],
         ];
     }
-} 
+}

@@ -355,7 +355,7 @@ public function updateStatusOptions()
         $query->where('payment_type', $this->filters['payment_type']);
     });
         $sales = $salesQuery
-            ->with(['user', 'provider', 'service', 'customer', 'account', 'collections'])
+            ->with(['user', 'provider', 'service', 'customer', 'account', 'collections' ,'updatedBy'])
             ->withSum('collections', 'amount')
             ->latest()
             ->paginate(10);
@@ -503,7 +503,8 @@ $sales->each(function ($sale) {
     public $successMessage;
 
     public function mount()
-    {
+    {logger('FILTER INPUTS INITIAL:', $this->filterInputs);
+
         $this->updateStatusOptions();
 
         $this->currency = auth()->user()->agency->currency ?? 'USD';
@@ -541,8 +542,8 @@ $sales->each(function ($sale) {
             'beneficiary_name' => 'required|string|max:255',
             'sale_date' => ['required', 'date', 'before_or_equal:' . $today],
             'service_type_id' => 'required|exists:dynamic_list_items,id',
-            'provider_id' => 'nullable|exists:providers,id',
-            'customer_via' => 'nullable|in:whatsapp,facebook,instagram,call,office,other',
+            'provider_id' => 'required|exists:providers,id',
+            'customer_via' => 'required|in:whatsapp,facebook,instagram,call,office,other',
 'usd_buy' => [
     'required',
     'numeric',
@@ -595,7 +596,7 @@ $sales->each(function ($sale) {
             'phone_number' => 'nullable|string|max:20',
             'status' => 'required|in:Issued,Re-Issued,Re-Route,Refund-Full,Refund-Partial,Void,Applied,Rejected,Approved',
             'payment_method' => 'required|in:kash,part,all',
-            'payment_type' => $this->payment_method !== 'all' ? 'required|in:cash,transfer,account_deposit,fund,from_account,wallet,other' : 'nullable',            'service_date' => 'nullable|date',
+            'payment_type' => $this->payment_method !== 'all' ? 'required|in:cash,transfer,account_deposit,fund,from_account,wallet,other' : 'nullable',            'service_date' => 'required|date',
             
             
             'expected_payment_date' => 'nullable|date',
@@ -728,7 +729,7 @@ case 'part':
             'status' => $this->status,
             'amount_paid' => $this->amount_paid,
             'depositor_name' => $this->depositor_name,
-            'customer_id' => $this->customer_id,
+            'customer_id' => $this->customer_id ?: null,
             'sale_profit' => $this->sale_profit,
             'payment_method' => $this->payment_method,
             'payment_type' => $this->payment_type,
@@ -970,6 +971,7 @@ public function edit($id)
     $this->service_date = $sale->service_date;
     $this->expected_payment_date = $sale->expected_payment_date;
     $this->sale_group_id = $sale->sale_group_id;
+    
 
     // خصائص مساعدة
     $this->isDuplicated = false;
@@ -1010,7 +1012,7 @@ public function update()
         'status' => $this->status,
         'amount_paid' => $this->amount_paid,
         'depositor_name' => $this->depositor_name,
-        'customer_id' => $this->customer_id,
+        'customer_id' => $this->customer_id ?: null,
         'sale_profit' => $this->sale_profit,
         'payment_method' => $this->payment_method,
         'payment_type' => $this->payment_type,
@@ -1018,6 +1020,7 @@ public function update()
         'phone_number' => $this->phone_number,
         'service_date' => $this->service_date,
         'expected_payment_date' => $this->expected_payment_date,
+        'updated_by' => Auth::id(),
     ]);
 
     $this->resetForm();

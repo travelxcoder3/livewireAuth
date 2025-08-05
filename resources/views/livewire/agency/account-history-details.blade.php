@@ -31,7 +31,8 @@
                 <tr>
                     <th class="px-3 py-2">اسم المستفيد</th>
                     <th class="px-3 py-2">تاريخ البيع</th>
-                    <th class="px-3 py-2">قيمة البيع</th>
+                    <th class="px-3 py-2">الخدمة</th>
+                    <th class="px-3 py-2">سعر الخدمة</th>
                     <th class="px-3 py-2">المحصل</th>
                     <th class="px-3 py-2">المتبقي</th>
                     <th class="px-3 py-2">ملاحظات</th>
@@ -43,6 +44,7 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-3 py-2">{{ $item->beneficiary_name }}</td>
                         <td class="px-3 py-2">{{ $item->sale_date }}</td>
+                        <td class="px-3 py-2">{{ $item->service_label }}</td>
                         <td class="px-3 py-2 text-blue-700">{{ number_format($item->usd_sell, 2) }}</td>
                         <td class="px-3 py-2 text-green-700">
                             {{ number_format($item->total_paid, 2) }}
@@ -53,8 +55,7 @@
                         <td class="px-3 py-2">{{ $item->note }}</td>
                         <td class="px-3 py-2">
                             <button wire:click="showDetails({{ $loop->index }})"
-                                class="transition duration-200 font-semibold"
-                                style="color: rgb(var(--primary-600));"
+                                class="transition duration-200 font-semibold" style="color: rgb(var(--primary-600));"
                                 onmouseover="this.style.color='rgb(var(--primary-700))'"
                                 onmouseout="this.style.color='rgb(var(--primary-600))'">
                                 تفاصيل
@@ -79,7 +80,8 @@
                 <button wire:click="closeModal"
                     class="absolute top-2 left-3 text-gray-500 hover:text-red-600 text-lg">&times;</button>
 
-                <h3 class="text-lg font-bold mb-4 text-[rgb(var(--primary-700))] border-b pb-2" style="border-bottom: 2px solid rgba(var(--primary-200), 0.5);">
+                <h3 class="text-lg font-bold mb-4 text-[rgb(var(--primary-700))] border-b pb-2"
+                    style="border-bottom: 2px solid rgba(var(--primary-200), 0.5);">
                     تفاصيل التحصيلات لـ {{ $activeSale->beneficiary_name }}
                 </h3>
 
@@ -91,17 +93,17 @@
                             <tr>
                                 <th class="px-3 py-2">المرحلة</th>
                                 <th class="px-3 py-2">التاريخ</th>
-                                <th class="px-3 py-2">السعر</th>
+                                <th class="px-3 py-2">سعر الخدمة</th>
                                 <th class="px-3 py-2">المدفوع</th>
                                 <th class="px-3 py-2">الحالة</th>
                                 <th class="px-3 py-2">المرجع</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            @foreach($activeSale->scenarios ?? [] as $index => $s)
+                            @foreach ($activeSale->scenarios ?? [] as $index => $s)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-3 py-2">
-                                        @if($index === 0)
+                                        @if ($index === 0)
                                             الحجز الأول
                                         @else
                                             {{ $s['status'] ?? 'تعديل' }}
@@ -109,7 +111,8 @@
                                     </td>
                                     <td class="px-3 py-2">{{ $s['date'] ?? '-' }}</td>
                                     <td class="px-3 py-2 text-blue-700">${{ number_format($s['usd_sell'], 2) }}</td>
-                                    <td class="px-3 py-2 text-green-700">${{ number_format($s['amount_paid'], 2) }}</td>
+                                    <td class="px-3 py-2 text-green-700">${{ number_format($s['amount_paid'], 2) }}
+                                    </td>
                                     <td class="px-3 py-2">{{ $s['status'] ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $s['note'] ?? '-' }}</td>
                                 </tr>

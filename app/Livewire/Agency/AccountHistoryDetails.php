@@ -15,7 +15,7 @@ class AccountHistoryDetails extends Component
     {
         $this->customer = $customer;
 
-        $sales = $customer->sales()->with('collections')->get();
+        $sales = $customer->sales()->with(['collections', 'service'])->get();
         $grouped = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
 
         $this->collections = $grouped->map(function ($sales) {
@@ -24,9 +24,10 @@ class AccountHistoryDetails extends Component
             $paid = $sales->sum('amount_paid');
             $total = $collected + $paid;
 
-            return (object)[
+            return (object) [
                 'beneficiary_name' => $s->beneficiary_name,
                 'sale_date' => $s->sale_date,
+                'service_label' => $s->service->label ?? '-', 
                 'usd_sell' => $s->usd_sell,
                 'amount_paid' => $paid,
                 'collected' => $collected,

@@ -19,7 +19,6 @@
         init() {
             // تهيئة القيمة إذا كانت فارغة
             if (!this.date) {
-                this.date = new Date().toISOString().split('T')[0];
             }
         },
         formatDate(date) {
