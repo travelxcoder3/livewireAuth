@@ -196,7 +196,10 @@
                                 <td class="px-2 py-1 whitespace-nowrap">{{ $col->payment_date }}</td>
                                 <td class="px-2 py-1" style="color: rgb(var(--primary-600)); font-weight: 600;">
                                     {{ number_format($col->amount, 2) }}</td>
-                                <td class="px-2 py-1">--</td>
+                                <td class="px-2 py-1">
+                                    {{ optional($col->user)->name ?? '-' }}
+                                </td>
+
                                 <td class="px-2 py-1">{{ $col->note ?? '-' }}</td>
                             </tr>
                         @empty
@@ -206,41 +209,6 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-
-            <!-- ملخص الحساب -->
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6 text-sm">
-                <div class="bg-[rgb(var(--primary-50))] p-3 rounded-lg border border-[rgb(var(--primary-100))]">
-                    <strong class="block text-[rgb(var(--primary-700))] mb-1">قيمة الفاتورة:</strong>
-                    <span class="font-bold"
-                        style="color: rgb(var(--primary-600));">{{ number_format($sale->usd_sell, 2) }}</span>
-                </div>
-                <div class="bg-[rgb(var(--primary-50))] p-3 rounded-lg border border-[rgb(var(--primary-100))]">
-                    <strong class="block text-[rgb(var(--primary-700))] mb-1">المدفوع:</strong>
-                    <span class="font-bold"
-                        style="color: rgb(var(--primary-600));">{{ number_format($amountReceived, 2) }}</span>
-                </div>
-                <div class="bg-[rgb(var(--primary-50))] p-3 rounded-lg border border-[rgb(var(--primary-100))]">
-                    <strong class="block text-[rgb(var(--primary-700))] mb-1">المتبقي:</strong>
-                    <span class="font-bold"
-                        style="color: rgb(var(--primary-600));">{{ number_format($remainingAmount, 2) }}</span>
-                </div>
-                <div class="bg-[rgb(var(--primary-50))] p-3 rounded-lg border border-[rgb(var(--primary-100))]">
-                    <strong class="block text-[rgb(var(--primary-700))] mb-1">عمر الدين:</strong>
-                    @php
-                        use Illuminate\Support\Carbon;
-                        $debtAge = round(Carbon::parse($sale->sale_date)->diffInDays(now(), false));
-                    @endphp
-                    <span class="font-bold" style="color: rgb(var(--primary-600));">
-                        @if ($debtAge < 0)
-                            لم يبدأ بعد
-                        @elseif ($debtAge === 0)
-                            اليوم
-                        @else
-                            {{ $debtAge }} يوم
-                        @endif
-                    </span>
-                </div>
             </div>
         </div>
 

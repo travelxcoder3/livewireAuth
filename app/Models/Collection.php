@@ -20,6 +20,7 @@ class Collection extends Model
         'customer_response_id',
         'customer_relation_id',
         'delay_reason_id',
+        'user_id'
     ];
 
     public function sale()
@@ -56,4 +57,10 @@ class Collection extends Model
     {
         return $this->belongsTo(DynamicListItemSub::class, 'delay_reason_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
 }

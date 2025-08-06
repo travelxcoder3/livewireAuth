@@ -35,6 +35,7 @@ public function mount($sale)
         'collections.debtType',
         'collections.customerResponse',
         'collections.customerRelation',
+        'collections.user', 
     ])
     ->where('agency_id', Auth::user()->agency_id)
     ->findOrFail($sale);
@@ -179,6 +180,7 @@ public function saveAmounts()
             'amount' => $totalToPay,
             'payment_date' => now(),
             'note' => 'تسديد من رصيد الشركة للعميل.',
+            'user_id' => Auth::id(),
         ]);
 
         // ثم تمرير المتغير للدالة
@@ -191,6 +193,7 @@ public function saveAmounts()
             'amount' => $totalToPay,
             'payment_date' => now(),
             'note' => 'تحصيل تلقائي لباقي المبلغ.',
+            'user_id' => Auth::id(),
         ]);
     }
 
@@ -230,6 +233,7 @@ protected function updateCustomerSalesList()
             'usd_sell' => $sales->sum('usd_sell'),
             'amount_paid' => $sales->sum('amount_paid'),
             'collections_total' => $sales->flatMap->collections->sum('amount'),
+            'expected_payment_date' => $first->expected_payment_date,
         ];
     })->values();
 }

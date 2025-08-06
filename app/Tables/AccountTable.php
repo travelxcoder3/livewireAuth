@@ -20,6 +20,7 @@ class AccountTable
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'customer.name', 'label' => 'العميل'],
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
+            ['key' => 'duplicatedBy.name', 'label' => 'تم التكرار بواسطة'],
             ['key' => 'user.name', 'label' => 'الموظف'],
             ['key' => 'actions', 'label' => 'الإجراءات', 'format' => 'custom','buttons' => ['pdf']],
         ];
