@@ -232,8 +232,6 @@ $this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفي
     $this->showExpectedDate = false;
     $this->sale_group_id  = Str::uuid();
 
-    // ✅ الحالة الافتراضية بعد التنظيف
-    $this->status = 'Issued'; // أو 'Applied' حسب ما تفضّل
     $this->isDuplicated = false;
     $this->updateStatusOptions(); // ضروري لتحديث القائمة
     $this->editingSale = null;

@@ -140,13 +140,13 @@
             </div>
 
             <!-- نوع الإجراء -->
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-600 mb-1">نوع الإجراء:</label>
-                <input type="text" wire:model="action_type" class="{{ $fieldClass }}" />
-                @error('action_type')
-                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+            <select wire:model="action_type" class="{{ $fieldClass }}">
+    <option value="">-- اختر نوع الإجراء --</option>
+    @foreach($actionTypes as $key => $label)
+        <option value="{{ $key }}">{{ $label }}</option>
+    @endforeach
+</select>
+
 
             <!-- الموظفين المسؤولين -->
             <div class="mb-4">
@@ -231,13 +231,13 @@
             </div>
 
             <!-- نوع الإجراء -->
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-600 mb-1">نوع الإجراء:</label>
-                <input type="text" wire:model="editActionType" class="{{ $fieldClass }}" />
-                @error('editActionType')
-                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+            <select wire:model="editActionType" class="{{ $fieldClass }}">
+    <option value="">-- اختر نوع الإجراء --</option>
+    @foreach($actionTypes as $key => $label)
+        <option value="{{ $key }}">{{ $label }}</option>
+    @endforeach
+</select>
+
 
             <!-- الموظفين المسؤولين -->
             <div class="mb-4">

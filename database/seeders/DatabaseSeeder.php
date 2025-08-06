@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         // $this->call(AgencySeeder::class);
         $this->call(PermissionSeeder::class);
         $this->call(SyncAgencyAdminPermissionsSeeder::class);
-       
+        $this->call(CustomersAthkaSeeder::class);
+        
     }
 }

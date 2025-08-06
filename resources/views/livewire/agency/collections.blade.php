@@ -77,7 +77,7 @@ $rows = $sales->map(function($customer, $i) {
         </div>
 
         <div class="col-span-1 md:col-span-4 flex justify-end gap-2 mt-2">
-
+        @can('collection.details.view')
 <x-primary-button
     href="{{ route('agency.collections.all') }}"
     class="inline-block"
@@ -105,7 +105,7 @@ $rows = $sales->map(function($customer, $i) {
 >
     عرض جميع حسابات العملاء
 </x-primary-button>
-
+@endcan
 
 
             <button wire:click="resetFilters" class="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1.5 rounded shadow">

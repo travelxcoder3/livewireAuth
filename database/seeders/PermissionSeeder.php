@@ -44,8 +44,6 @@ class PermissionSeeder extends Seeder
       
         // صلاحيات الحسابات المالية
         'accounts.view',
-        'accounts.create',
-        'accounts.edit',
         // صلاحيات التسلسلات
         'sequences.view',
         'sequences.create',
@@ -65,6 +63,7 @@ class PermissionSeeder extends Seeder
         'agency.profile.view',
         'collection.view',
         'collection.edit',
+        'collection.payment',
         'collection.details.view',
         // صلاحيات إضافية للحسابات
         'accounts.export',

@@ -40,7 +40,7 @@ class CollectionTable
                     'label' => 'تفاصيل',
                     'url' => fn($row) => route('agency.collection.details', $row->first_sale_id),
 
-
+                    'can' => auth()->user()->can('collection.details.view'),
                     'class' => 'text-white text-xs px-3 py-1 bg-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-600))] rounded-lg shadow',
                 ]
             ]

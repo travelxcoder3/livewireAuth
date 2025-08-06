@@ -71,7 +71,7 @@
                     <span
                         class="font-medium">{{ optional($sale->collections->last()?->customerType)->label ?? '-' }}</span>
                 </div>
-                @can('collection.details.view')
+                
                     <div class="flex items-center">
                         <strong class="min-w-[100px] text-gray-500">نوع المديونية:</strong>
                         <span class="font-medium">{{ optional($sale->collections->last()?->debtType)->label ?? '-' }}</span>
@@ -86,7 +86,6 @@
                         <span
                             class="font-medium">{{ optional($sale->collections->last()?->customerRelation)->label ?? '-' }}</span>
                     </div>
-                @endcan
             </div>
         </div>
 
@@ -104,7 +103,7 @@
                 رصيد العميل لدى الشركة: 
                 <span class="text-green-700">{{ number_format($availableBalanceToPayOthers, 2) }}</span>
             </span>
-
+            @can('collection.payment')
             <x-primary-button
                 wire:click="openPayToOthersModal"
                 padding="px-4 py-2"
@@ -113,7 +112,7 @@
             >
                 تسديد للعملاء
             </x-primary-button>
-
+            @endcan
         </div>
     </div>
 @endif
@@ -156,12 +155,14 @@
 
                                 <td class="px-2 py-1">{{ $s->expected_payment_date ?? '-' }}</td>
                                 <td class="px-2 py-1">{{ optional($s->employee)->name ?? '-' }}</td>
+                                @can('collection.payment')
                                 <td class="px-2 py-1">
                                     <x-primary-button wire:click="openEditAmountModal({{ $s->id }})" padding="px-2 py-1"
                                         class="text-xs">
                                         سداد
                                     </x-primary-button>
                                 </td>
+                                @endcan
                             </tr>
                         @endforeach
                     </tbody>

@@ -17,7 +17,12 @@ class ApprovalSequences extends Component
     public string $name = '';
     public string $action_type = '';
     public array $approvers = [''];
-    public array $actionTypes = ['قبول', 'رفض', 'تعديل', 'حذف'];
+    public $actionTypes = [
+        'manage_provider' => 'طلب إنشاء مزود',
+        'manage_account' => 'طلب إنشاء حساب',
+        'manage_service' => 'طلب إنشاء خدمة',
+    ];
+    
 
     public bool $showEditModal = false;
     public ?int $editingSequenceId = null;
