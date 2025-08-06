@@ -137,11 +137,11 @@
     @endif
 
 
-    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('approvals.view'))
+    @if (Auth::user()->hasRole('agency-admin'))
         {{-- طلبات الموافقة --}}
         <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">
             <x-navbar.buttons.icon-button icon="fas fa-clipboard-check" tooltip="طلبات الموافقة" label="طلبات الموافقة"
-                href="{{ route('agency.approval-requests') }}" :active="false" />
+                href="{{ route('agency.approvals.index') }}" :active="false" />
         </div>
     @endif
 

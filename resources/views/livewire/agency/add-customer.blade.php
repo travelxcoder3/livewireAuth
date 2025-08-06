@@ -61,13 +61,19 @@
                         <label class="block text-sm text-gray-700">صور العميل</label>
 
                         {{-- الصور الموجودة مسبقًا --}}
-                        @foreach ($existingImages as $id => $path)
-                            <div class="flex items-center gap-2">
+                      @foreach ($existingImages as $id => $path)
+                            <div class="flex items-center gap-2 opacity-{{ in_array($id, $deletedImageIds) ? '50' : '100' }}">
                                 <img src="{{ asset('storage/' . $path) }}" class="w-10 h-10 rounded border object-cover" alt="صورة حالية">
-                                <button type="button" wire:click="deleteExistingImage({{ $id }})"
-                                    class="text-red-600 text-xs hover:underline">حذف</button>
+                                
+                                @if (!in_array($id, $deletedImageIds))
+                                    <button type="button" wire:click="deleteExistingImage({{ $id }})"
+                                        class="text-red-600 text-xs hover:underline">حذف</button>
+                                @else
+                                    <span class="text-gray-500 text-xs">بانتظار التأكيد</span>
+                                @endif
                             </div>
                         @endforeach
+
 
                         {{-- الصور الجديدة --}}
                         @foreach ($images as $index => $img)

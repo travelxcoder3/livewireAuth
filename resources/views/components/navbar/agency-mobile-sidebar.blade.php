@@ -173,8 +173,8 @@
             @endif
 
             <!-- طلبات الموافقة -->
-            @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('approvals.view'))
-            <a href="{{ route('agency.approval-requests') }}" @click="mobileSidebarOpen = false"
+            @if(Auth::user()->hasRole('agency-admin'))
+            <a href="{{ route('agency.approvals.index') }}" @click="mobileSidebarOpen = false"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                 <i class="fas fa-clipboard-check"></i>
                 <span>طلبات الموافقة</span>

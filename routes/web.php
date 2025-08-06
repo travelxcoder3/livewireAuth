@@ -180,12 +180,9 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
     });
     Route::get('/policies', AgencyPolicies::class)->name('policies');
     Route::get('/policies/view', \App\Livewire\Agency\PoliciesView::class)->name('policies.view');
-    // رابط الموافقات للوكالة الرئيسية فقط
-    Route::get('/approval-requests', \App\Livewire\Admin\ApprovalRequests::class)
-        ->name('approval-requests')
-        ->middleware('role:agency-admin');
+
     // === رابط الموافقات للوكالة (جديد) ===
-    Route::get('/approvals', \App\Livewire\Agency\ApprovalRequests::class)->name('approvals.index');
+    Route::get('/approval-requests', \App\Livewire\Agency\ApprovalRequests::class)->name('approvals.index');
     // ============================
     // 🧑‍💼 قسم التقارير داخل لوحة الوكالة
     // ============================

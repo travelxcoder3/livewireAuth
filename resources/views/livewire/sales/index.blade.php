@@ -222,16 +222,25 @@ $columns = SalesTable::columns();
     />
 @endif
 
-                    @if($showDepositorField)
-                        <x-input-field
-                            name="depositor_name"
-                            label="اسم المودع"
-                            wireModel="depositor_name"
-                            placeholder="اسم المودع"
-                            containerClass="relative mt-1 col-span-3"
-                            errorName="depositor_name"
-                        />
-                    @endif
+<div class="relative mt-1 col-span-3">
+    @if($showDepositorField)
+        <x-input-field
+            name="depositor_name"
+            label="اسم المودع"
+            wireModel="depositor_name"
+            placeholder="اسم المودع"
+            containerClass="relative"
+            errorName="depositor_name"
+        />
+    @else
+        <div class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed">
+            {{ $depositor_name ?: 'غير محدد' }}
+        </div>
+        <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500">
+            اسم المودع
+        </label>
+    @endif
+</div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-24 gap-2 lg:gap-3">
@@ -277,36 +286,70 @@ $columns = SalesTable::columns();
                         errorName="reference"
                     />
 
-                    @if($showPaymentDetails)
-    <!-- وسيلة الدفع -->
-    <x-select-field
-        wireModel="payment_type"
-        label="وسيلة الدفع"
-        :options="[
-            'cash' => 'كاش',
-            'transfer' => 'حوالة',
-            'account_deposit' => 'إيداع حساب',
-            'fund' => 'صندوق',
-            'from_account' => 'من حساب',
-            'wallet' => 'محفظة',
-            'other' => 'أخرى',
-        ]"
-        placeholder="وسيلة الدفع"
-        containerClass="relative mt-1 col-span-6"
-        errorName="payment_type"
-    />
+      <!-- وسيلة الدفع -->
+<div class="relative mt-1 col-span-6">
+    @if($showPaymentDetails)
+        <x-select-field
+            wireModel="payment_type"
+            label="وسيلة الدفع"
+            :options="[
+                'cash' => 'كاش',
+                'transfer' => 'حوالة',
+                'account_deposit' => 'إيداع حساب',
+                'fund' => 'صندوق',
+                'from_account' => 'من حساب',
+                'wallet' => 'محفظة',
+                'other' => 'أخرى',
+            ]"
+            placeholder="وسيلة الدفع"
+            containerClass="relative"
+            errorName="payment_type"
+        />
+    @else
+        <div class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed">
+            @if($payment_type)
+                @php
+                    $paymentTypes = [
+                        'cash' => 'كاش',
+                        'transfer' => 'حوالة',
+                        'account_deposit' => 'إيداع حساب',
+                        'fund' => 'صندوق',
+                        'from_account' => 'من حساب',
+                        'wallet' => 'محفظة',
+                        'other' => 'أخرى'
+                    ];
+                    echo $paymentTypes[$payment_type] ?? 'غير محدد';
+                @endphp
+            @else
+                غير محدد
+            @endif
+        </div>
+        <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500">
+            وسيلة الدفع
+        </label>
+    @endif
+</div>
 
-
-    <!-- رقم السند -->
-    <x-input-field
-        name="receipt_number"
-        label="رقم السند"
-        wireModel="receipt_number"
-        placeholder="رقم السند"
-        containerClass="relative mt-1 col-span-6"
-        errorName="receipt_number"
-    />
-@endif
+<!-- رقم السند -->
+<div class="relative mt-1 col-span-6">
+    @if($showPaymentDetails)
+        <x-input-field
+            name="receipt_number"
+            label="رقم السند"
+            wireModel="receipt_number"
+            placeholder="رقم السند"
+            containerClass="relative"
+            errorName="receipt_number"
+        />
+    @else
+        <div class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed">
+            {{ $receipt_number ?: 'غير محدد' }}
+        </div>
+        <label class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500">
+            رقم السند
+        </label>
+    @endif
+</div>
                 </div>
 
                 <!-- الصف الثالث -->
@@ -458,16 +501,21 @@ $columns = SalesTable::columns();
 
 
     <!-- تاريخ السداد المتوقع -->
+    @php
+        $expectedDateColSpan = ($showExpectedDate && $payment_method === 'all') ? 'col-span-3' : ($showAmountPaid ? 'col-span-3' : 'col-span-6');
+    @endphp
+
     @if($showExpectedDate)
     <x-date-picker
         name="expected_payment_date"
         label="تاريخ السداد المتوقع"
         wireModel="expected_payment_date"
         placeholder="تاريخ السداد المتوقع"
-        containerClass="relative mt-1 {{ $showAmountPaid ? 'col-span-3' : 'col-span-6' }}"
+        containerClass="relative mt-1 {{ $expectedDateColSpan }}"
         errorName="expected_payment_date"
     />
     @endif
+
     
 <!-- الربح -->
 <div class="col-span-3 flex items-center text-xs font-semibold text-[rgb(var(--primary-600))] h-[30px] mt-[6px]">

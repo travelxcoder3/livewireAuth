@@ -80,21 +80,21 @@ class ApprovalRequests extends Component
 
     public function render()
     {
-        $agency = auth()->user()->agency;
-
-        if ($agency->parent_id) {
-            // المستخدم في فرع: يعرض فقط طلبات الفرع
-            $agencyIds = [$agency->id];
-        } else {
-            // المستخدم في الوكالة الرئيسية: يعرض طلبات الوكالة وكل الفروع التابعة لها
-            $branchIds = $agency->branches()->pluck('id')->toArray();
-            $agencyIds = array_merge([$agency->id], $branchIds);
-        }
-
+        $userId = Auth::id();
+    
+        // احصل على كل التسلسلات التي هذا المستخدم مخول فيها
+        $sequenceIds = \DB::table('approval_sequence_users')
+            ->where('user_id', $userId)
+            ->pluck('approval_sequence_id');
+    
+        // الطلبات التي تنتظر موافقة هذا المستخدم
         $requests = \App\Models\ApprovalRequest::where('status', 'pending')
-            ->whereIn('agency_id', $agencyIds)
-            ->latest()->get();
+            ->whereIn('approval_sequence_id', $sequenceIds)
+            ->latest()
+            ->get();
+    
         return view('livewire.agency.approval-requests', compact('requests'))
             ->layout('layouts.agency');
     }
+    
 } 

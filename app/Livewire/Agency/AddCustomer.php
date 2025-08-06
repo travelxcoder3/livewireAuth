@@ -14,6 +14,13 @@ class AddCustomer extends Component
     use WithFileUploads;
 
     public $images = [];
+    public $deletedImageIds = [];
+
+    public function deleteExistingImage($id)
+    {
+        $this->deletedImageIds[] = $id;
+    }
+
 
 
     public $name, $email, $phone, $address, $has_commission = false;
@@ -38,8 +45,15 @@ class AddCustomer extends Component
 
     public function closeModal()
     {
+        $this->reset([
+    'name', 'email', 'phone', 'address', 'has_commission', 'account_type',
+    'images', 'existingImages', 'editingId', 'deletedImageIds'
+]);
+
+        $this->account_type = 'individual'; // إعادة القيمة الافتراضية
         $this->showModal = false;
     }
+
 
     public function render()
     {
@@ -112,22 +126,32 @@ class AddCustomer extends Component
         'account_type' => $this->account_type,
     ]);
 
-  if (!empty(array_filter($this->images))) {
-    foreach ($customer->images as $img) {
-        \Storage::disk('public')->delete($img->image_path);
-        $img->delete();
-    }
-
-    // حفظ الصور الجديدة
-    foreach ($this->images as $image) {
-        if ($image instanceof \Illuminate\Http\UploadedFile) {
-            $path = $image->store('customers', 'public');
-            $customer->images()->create([
-                'image_path' => $path,
-            ]);
+if (!empty($this->deletedImageIds)) {
+    foreach ($this->deletedImageIds as $id) {
+        $image = \App\Models\CustomerImage::find($id);
+        if ($image && $image->customer_id == $customer->id) {
+            \Storage::disk('public')->delete($image->image_path);
+            $image->delete();
         }
     }
+
+
+
+
+
+    // حفظ الصور الجديدة
+   foreach ($this->images as $image) {
+    if ($image instanceof \Illuminate\Http\UploadedFile) {
+        $path = $image->store('customers', 'public');
+        $customer->images()->create([
+            'image_path' => $path,
+        ]);
+    }
 }
+
+
+}
+$this->existingImages = $customer->images->pluck('image_path', 'id')->toArray();
 
     session()->flash('message', 'تم تحديث بيانات العميل بنجاح');
     session()->flash('type', 'success');
@@ -159,14 +183,18 @@ class AddCustomer extends Component
 
         }
 
-       $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission', 'account_type']);
-
+       $this->reset([
+    'name', 'email', 'phone', 'address', 'has_commission', 'account_type',
+    'images', 'existingImages', 'editingId', 'deletedImageIds'
+]);
         $this->showModal = false;
     }
     public function resetFilters()
     {
-        $this->reset(['name', 'email', 'phone', 'address', 'editingId', 'has_commission', 'account_type']);
-
+        $this->reset([
+    'name', 'email', 'phone', 'address', 'has_commission', 'account_type',
+    'images', 'existingImages', 'editingId', 'deletedImageIds'
+]);
     }
 
 
@@ -193,15 +221,6 @@ public function removeImage($index)
     $this->images = array_values($this->images); // إعادة الفهرسة
 }
 
-public function deleteExistingImage($id)
-{
-    $image = \App\Models\CustomerImage::find($id);
-    if ($image && $image->customer_id == $this->editingId) {
-        \Storage::disk('public')->delete($image->image_path);
-        $image->delete();
-        unset($this->existingImages[$id]); // احذفه من الواجهة
-    }
-}
 
 
 
