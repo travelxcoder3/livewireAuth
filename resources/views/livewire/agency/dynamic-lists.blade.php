@@ -18,6 +18,7 @@
                 <!-- عنوان القائمة -->
                 <div class="flex justify-between items-center border-b pb-4 mb-4">
                     <h3 class="text-lg font-bold text-black">{{ $list->name }}</h3>
+                    
                     <button wire:click="toggleExpand({{ $list->id }})"
                         class="text-gray-500 hover:text-primary-600 transition"
                         aria-label="{{ in_array($list->id, $expandedLists) ? 'طي القائمة' : 'توسيع القائمة' }}">
@@ -36,6 +37,7 @@
                             placeholder="اسم البند الرئيسي"
                             class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white peer"
                             style="border-color: rgb(var(--primary-500)); box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);">
+                            @can('lists.create')
                         <button wire:click="addItem({{ $list->id }})" wire:loading.attr="disabled"
                             class="text-white font-bold px-4 py-2 rounded-md text-xs transition duration-300 hover:shadow-lg whitespace-nowrap"
                             style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
@@ -52,6 +54,8 @@
                                 </svg>
                             </span>
                         </button>
+                        @endcan
+
                     </div>
                     @error("itemLabel.$list->id")
                         <span class="text-red-500 text-xs mb-2 block">{{ $message }}</span>
@@ -83,6 +87,7 @@
 
                                 @if (!$list->is_system || $item->created_by_agency)
                                     <div class="flex gap-2">
+                                    @can('lists.edit')
                                     <button wire:click="startEditItem({{ $item->id }})"
                                             class="px-2 py-1 text-xs rounded border bg-white transition
                                                 border-[rgb(var(--primary-500))]
@@ -91,11 +96,13 @@
                                             >
                                             تعديل
                                         </button>
-
+                                        @endcan
+                                        @can('lists.delete')
                                         <button wire:click="deleteItem({{ $item->id }})"
                                             class="px-2 py-1 text-xs rounded border border-red-500 text-red-600 bg-white hover:bg-red-50 transition">
                                             حذف
                                         </button>
+                                        @endcan
                                     </div>
                                 @endif
                             </div>
@@ -124,6 +131,7 @@
                                     @endif
                                     @if (!$list->is_system || $sub->created_by_agency)
                                         <div class="flex gap-1">
+                                        @can('lists.edit')
                                         <button wire:click="startEditSubItem({{ $sub->id }})"
                                                 class="px-2 py-1 text-xs rounded border bg-white transition
                                                     border-[rgb(var(--primary-500))]
@@ -132,10 +140,13 @@
                                                 >
                                                 تعديل
                                             </button>
+                                            @endcan
+                                            @can('lists.delete')
                                             <button wire:click="deleteSubItem({{ $sub->id }})"
                                                 class="px-2 py-1 text-xs rounded border border-red-500 text-red-600 bg-white hover:bg-red-50 transition">
                                                 حذف
                                             </button>
+                                            @endcan
                                         </div>
                                     @endif
                                 </div>
@@ -148,11 +159,13 @@
                                         placeholder="اسم البند الفرعي"
                                         class="flex-1 rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none bg-white"
                                         style="border-color: rgb(var(--primary-500)); box-shadow: 0 0 0 1px rgba(var(--primary-500), 0.2);">
+                                        @can('lists.create')
                                     <button wire:click="addSubItem({{ $item->id }})" wire:loading.attr="disabled"
                                         class="text-white font-bold px-3 py-1 rounded-md text-xs transition duration-300 hover:shadow"
                                         style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
                                         إضافة بند فرعي
                                     </button>
+                                    @endcan
                                 </div>
                                 @error("subItemLabel.$item->id")
                                     <span class="text-red-500 text-xs ml-6">{{ $message }}</span>

@@ -62,7 +62,6 @@ class PermissionSeeder extends Seeder
         // صلاحيات إضافية مستخدمة في النظام
         'agency.profile.view',
         'collection.view',
-        'collection.edit',
         'collection.payment',
         'collection.details.view',
         // صلاحيات إضافية للحسابات

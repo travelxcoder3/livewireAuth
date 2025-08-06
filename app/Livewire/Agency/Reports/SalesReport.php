@@ -85,10 +85,13 @@ class SalesReport extends Component
     public function exportToExcel()
     {
         $data = $this->prepareReportData();
+        $currency = $data['agency']->currency ?? 'USD'; // تأكد من استخدام عملة الوكالة
 
         return Excel::download(
             new SalesReportExport([
-                'sales' => $data['sales']
+                'sales' => $data['sales'],
+                'currency' => $currency,
+
             ]),
             'sales-' . now()->format('Y-m-d') . '.xlsx'
         );
