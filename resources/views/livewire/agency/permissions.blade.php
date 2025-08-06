@@ -69,9 +69,9 @@
                                         <div class="text-sm font-medium text-gray-900">{{ $permission->name }}</div>
                                         @php
                                             $basicPermissions = [
-                                                'users.view', 'users.create', 'users.edit', 'users.delete',
-                                                'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
-                                                'permissions.view', 'permissions.manage'
+                                                'users.view', 'users.create', 'users.edit',
+                                                'roles.view', 'roles.create', 'roles.edit','roles.delete',
+                                                'permissions.view',
                                             ];
                                         @endphp
                                         @if(in_array($permission->name, $basicPermissions))

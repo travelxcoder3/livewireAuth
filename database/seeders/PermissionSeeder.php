@@ -11,20 +11,15 @@ class PermissionSeeder extends Seeder
     protected $basicPermissions = [
         'users.view',
         'users.edit',
-        // 'users.delete',
         'roles.view',
         'roles.create',
         'roles.edit',
-        // 'roles.delete',
+        'roles.delete',
         'permissions.view',
-        // 'permissions.create',
-        // 'permissions.edit',
-        // 'permissions.delete',
         // صلاحيات المبيعات
         'sales.view',
         'sales.create',
-        // 'sales.edit',
-        // 'sales.delete',
+ 
         'sales.report',
         'sales.export',
         'sales.reports.view',
@@ -32,86 +27,35 @@ class PermissionSeeder extends Seeder
         'employees.view',
         'employees.create',
         'employees.edit',
-        // 'employees.delete',
         // صلاحيات المزودين
         'providers.view',
         'providers.create',
         'providers.edit',
-        // 'providers.delete',
-        // // صلاحيات الوسطاء
-        // 'intermediaries.view',
-        // 'intermediaries.create',
-        // 'intermediaries.edit',
-        // 'intermediaries.delete',
+ 
         // صلاحيات العملاء
         'customers.view',
         'customers.create',
         'customers.edit',
-        // 'customers.delete',
-        // صلاحيات الخدمات
-        // 'service_types.view',
-        // 'service_types.create',
-        // 'service_types.edit',
-        // 'service_types.delete',
-        // 'service_types.archive',
-        // 'service_types.restore',
+       
         // صلاحيات الملفات والمرفقات
         'attachments.view',
         'attachments.upload',
         'attachments.delete',
-        // صلاحيات العملات
-        // 'currency.view',
-        // 'currency.edit',
+      
         // صلاحيات الحسابات المالية
         'accounts.view',
         'accounts.create',
         'accounts.edit',
-        // 'accounts.delete',
         // صلاحيات التسلسلات
         'sequences.view',
         'sequences.create',
         'sequences.edit',
-        // 'sequences.delete',
-        // صلاحيات الأقسام
-        // 'departments.view',
-        // 'departments.create',
-        // 'departments.edit',
-        // 'departments.delete',
-        // صلاحيات الوظائف
-        // 'positions.view',
-        // 'positions.create',
-        // 'positions.edit',
-        // 'positions.delete',
+       
         // صلاحيات الإشعارات
         'notifications.view',
         'notifications.send',
         'notifications.delete',
-        // صلاحيات الموافقات
-        // 'approvals.view',
-        // 'approvals.manage',
-        // إعدادات النظام
-        // 'system.settings.view',
-        // 'system.settings.edit',
-        // 'theme.view',
-        // 'theme.edit',
-        // أرشفة واستعادة
-        // 'users.archive',
-        // 'users.restore',
-        // 'employees.archive',
-        // 'employees.restore',
-        // 'customers.archive',
-        // 'customers.restore',
-        // 'providers.archive',
-        // 'providers.restore',
-        // 'service_types.archive',
-        // 'service_types.restore',
-        // 'sales.archive',
-        // 'sales.restore',
-        // صلاحيات الفروع
-        // 'branches.view',
-        // 'branches.create',
-        // 'branches.edit',
-        // 'branches.delete',
+       
         // صلاحيات القوائم
         'lists.view',
         'lists.create',

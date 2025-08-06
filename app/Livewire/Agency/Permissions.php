@@ -49,7 +49,7 @@ class Permissions extends Component
                 
                 'employees.view', 'employees.create', 'employees.edit',
                 'users.view', 'users.create', 'users.edit',
-                'roles.view', 'roles.create', 'roles.edit',
+                'roles.view', 'roles.create', 'roles.edit','roles.delete',
                 'permissions.view',
                 'lists.view', 'lists.create', 'lists.edit', 'lists.delete',
                 'sequences.view', 'sequences.create', 'sequences.edit', 

@@ -28,7 +28,6 @@ class RoleSeeder extends Seeder
             'employees.create',
             'employees.view',
             'employees.edit',
-            'employees.delete',
         ];
         foreach ($permissions as $permission) {
             \Spatie\Permission\Models\Permission::firstOrCreate([
@@ -46,9 +45,9 @@ class RoleSeeder extends Seeder
 
         // صلاحيات أدمن الوكالة
         $agencyAdminPermissions = [
-            'users.view', 'users.create', 'users.edit', 'users.delete',
+            'users.view', 'users.create', 'users.edit',
             'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
-            'permissions.view', 'permissions.manage',
+            'permissions.view',
             // صلاحيات المبيعات
             'sales.view', 'sales.create', 'sales.edit', 'sales.delete', 'sales.report',
         ];
