@@ -60,14 +60,16 @@
                                     } elseif ($key === 'type') {
                                         $display = $value > 0 ? 'على العميل' : ($value < 0 ? 'للعميل' : 'متوازن');
                                     } elseif ($key === 'actions') {
-                                        $display =
-                                            '<a href="' .
-                                            url("/agency/customer-accounts/{$row->id}/history") .
-                                            '"
-                                            class="transition duration-200 font-semibold"
-                                            style="color: rgb(var(--primary-600));"
-                                            onmouseover="this.style.color=\'rgb(var(--primary-700))\'"
-                                            onmouseout="this.style.color=\'rgb(var(--primary-600))\'">تفاصيل</a>';
+                $display = '
+                    <a href="' . url("/agency/customer-accounts/{$row->id}/history") . '"
+                    class="flex items-center gap-1 font-medium text-xs transition"
+                    style="color: rgb(var(--primary-600));"
+                    onmouseover="this.style.color=\'black\'"
+                    onmouseout="this.style.color=\'rgb(var(--primary-600))\'">
+                        <i class=\'fas fa-eye\'></i>
+                        تفاصيل
+                    </a>';
+
                                     } else {
                                         $display = $value;
                                     }

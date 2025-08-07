@@ -35,14 +35,15 @@ class CollectionTable
             'key' => 'actions',
             'label' => 'الإجراء',
             'actions' => [
-                [
-                    'type' => 'details',
-                    'label' => 'تفاصيل',
-                    'url' => fn($row) => route('agency.collection.details', $row->first_sale_id),
+            [
+                'type' => 'details',
+                'label' => 'تفاصيل',
+                'icon' => 'fas fa-eye', 
+                'url' => fn($row) => route('agency.collection.details', $row->first_sale_id),
+                'can' => auth()->user()->can('collection.details.view'),
+                'class' => 'text-[rgb(var(--primary-600))] hover:text-black font-medium text-xs transition',
+            ]
 
-                    'can' => auth()->user()->can('collection.details.view'),
-                    'class' => 'text-white text-xs px-3 py-1 bg-[rgb(var(--primary-500))] hover:bg-[rgb(var(--primary-600))] rounded-lg shadow',
-                ]
             ]
         ]
     ];

@@ -33,8 +33,7 @@
         <!-- حقل البحث -->
         <div class="mb-4">
             <input type="text" wire:model.live="search" placeholder="ابحث في الالتزامات..." 
-                   class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]">
-        </div>
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]">        </div>
 
         <!-- جدول الالتزامات -->
        @php use App\Tables\ObligationTable; @endphp

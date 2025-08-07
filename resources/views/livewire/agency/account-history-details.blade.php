@@ -58,6 +58,7 @@
                                 class="transition duration-200 font-semibold" style="color: rgb(var(--primary-600));"
                                 onmouseover="this.style.color='rgb(var(--primary-700))'"
                                 onmouseout="this.style.color='rgb(var(--primary-600))'">
+                                <i class="fas fa-eye"></i>
                                 تفاصيل
                             </button>
                         </td>

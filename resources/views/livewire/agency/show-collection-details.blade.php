@@ -157,10 +157,13 @@
                                 <td class="px-2 py-1">{{ optional($s->employee)->name ?? '-' }}</td>
                                 @can('collection.payment')
                                 <td class="px-2 py-1">
-                                    <x-primary-button wire:click="openEditAmountModal({{ $s->id }})" padding="px-2 py-1"
-                                        class="text-xs">
+                                    <button
+                                        wire:click="openEditAmountModal({{ $s->id }})"
+                                        class="text-[rgb(var(--primary-600))] hover:text-black font-medium text-xs flex items-center gap-1 transition"
+                                    >
+                                    <i class="fas fa-sack-dollar"></i> 
                                         سداد
-                                    </x-primary-button>
+                                    </button>
                                 </td>
                                 @endcan
                             </tr>

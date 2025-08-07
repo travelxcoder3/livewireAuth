@@ -68,6 +68,7 @@ class UserTable
                 'actions' => [
                     [
                         'label' => 'تعديل',
+                        'icon' => 'fas fa-edit',
                         'method' => 'editUser',
                         'permission' => 'users.edit',
                         'can' => auth()->user()->can('users.edit'),

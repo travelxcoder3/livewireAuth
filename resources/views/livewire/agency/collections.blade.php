@@ -78,24 +78,24 @@ $rows = $sales->map(function($customer, $i) {
 
         <div class="col-span-1 md:col-span-4 flex justify-end gap-2 mt-2">
         @can('collection.details.view')
-<x-primary-button
-    href="{{ route('agency.collections.all') }}"
-    class="inline-block"
-    gradient
->
-    إظهار جميع التحصيلات
-</x-primary-button>
+        <x-primary-button
+            href="{{ route('agency.collections.all') }}"
+            class="inline-block"
+            gradient
+        >
+            إظهار جميع التحصيلات
+        </x-primary-button>
 
 
 
         
-<x-primary-button
-    href="{{ route('agency.customer-credit-balances') }}"
-    class="inline-block"
-    gradient
->
-    إظهار جميع المديونية
-</x-primary-button>
+        <x-primary-button
+            href="{{ route('agency.customer-credit-balances') }}"
+            class="inline-block"
+            gradient
+        >
+            إظهار جميع المديونية
+        </x-primary-button>
 
 
 <x-primary-button
