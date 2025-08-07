@@ -962,7 +962,12 @@ public function edit($id)
     $this->amount_paid = $sale->amount_paid;
     $this->depositor_name = $sale->depositor_name;
     $this->customer_id = $sale->customer_id;
-    $this->sale_profit = $sale->sale_profit;
+
+    $customer = \App\Models\Customer::find($sale->customer_id);
+    $this->showCommission = $customer && $customer->has_commission;
+    if (!$this->showCommission) {
+        $this->commission = null;
+    }
     $this->payment_method = $sale->payment_method;
     $this->payment_type = $sale->payment_type;
     $this->receipt_number = $sale->receipt_number;

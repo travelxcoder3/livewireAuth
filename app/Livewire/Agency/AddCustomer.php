@@ -136,7 +136,7 @@ if (!empty($this->deletedImageIds)) {
     }
 
 
-
+}
 
 
     // حفظ الصور الجديدة
@@ -150,7 +150,7 @@ if (!empty($this->deletedImageIds)) {
 }
 
 
-}
+
 $this->existingImages = $customer->images->pluck('image_path', 'id')->toArray();
 
     session()->flash('message', 'تم تحديث بيانات العميل بنجاح');

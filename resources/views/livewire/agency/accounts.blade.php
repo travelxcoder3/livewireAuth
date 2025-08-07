@@ -141,15 +141,14 @@
                 <tbody>
                     @foreach ($sales as $sale)
                         <tr>
-                            <td class="p-2 border-b text-center">
+                            <td class="p-2 border-b border-[rgba(0,0,0,0.07)] text-center">
                             <input type="checkbox"
-       value="{{ $sale->id }}"
-       wire:model="selectedSales"
-       class="form-checkbox h-4 w-4 text-green-600">
-
+                                value="{{ $sale->id }}"
+                                wire:model="selectedSales"
+                                class="form-checkbox h-4 w-4 text-green-600">
 
                             </td>
-                            <td class="p-2 border-b text-center">
+                            <td class="p-2 border-b border-[rgba(0,0,0,0.07)] text-center">
                                 {{ ($sales->currentPage() - 1) * $sales->perPage() + $loop->iteration }}
                             </td>
 
@@ -161,7 +160,7 @@
                                     $color = $col['color'] ?? null;
                                 @endphp
 
-                                <td class="p-2 border-b {{ $color ? 'text-' . $color : '' }}">
+                                <td class="p-2 border-b border-[rgba(0,0,0,0.07)] {{ $color ? 'text-' . $color : '' }}">
                                     @switch($format)
                                         @case('date')
                                             {{ \Carbon\Carbon::parse($value)->format('Y-m-d') }}
@@ -180,10 +179,11 @@
 
                                         @case('custom')
                                         @can('accounts.invoice')
-                                            <button wire:click="openInvoiceModal({{ $sale->id }})" class="font-semibold"
-                                                style="color: rgb(var(--primary-600));">
-                                                فاتورة فردية
-                                            </button>
+                                        <button wire:click="openInvoiceModal({{ $sale->id }})"
+                                            class="font-semibold text-[rgb(var(--primary-600))] hover:text-black transition-colors duration-200">
+                                            فاتورة فردية
+                                        </button>
+
                                         @endcan
                                         @break
 

@@ -5,7 +5,8 @@
             ->pluck('id')
             ->search($customer->id) + 1;
     $currency = Auth::user()->agency->currency ?? 'USD';
-    $paid = $sales->sum('amount_paid') + $collections->sum('amount');
+    $paid =
+        $sales->whereNotNull('amount_paid')->sum('amount_paid') + $collections->whereNotNull('amount')->sum('amount');
     $balance = $sales->sum('usd_sell') - $paid;
 @endphp
 
@@ -96,18 +97,18 @@
                             <td class="p-2 text-green-600 font-medium">تحصيل</td>
                             <td class="p-2 text-gray-800">{{ number_format($collection->amount, 2) }}
                                 {{ $currency }}</td>
-                            <td class="p-2 text-gray-800">
-                                {{ $collection->sale->reference ?? '—' }}
-                            </td>
+                            <td class="p-2 text-gray-800">{{ $collection->sale->reference ?? '—' }}</td>
                             <td class="p-2 text-gray-600">{{ $collection->note ?? '—' }}</td>
                         </tr>
                     @empty
                         @if ($sales->sum('amount_paid') > 0)
                             <tr class="hover:bg-gray-50">
-                                <td class="p-2 text-green-600 font-medium">دفع مباشر</td>
                                 <td class="p-2">{{ $sales->first()?->sale_date ?? '—' }}</td>
+                                <td class="p-2 text-green-600 font-medium">دفع مباشر</td>
                                 <td class="p-2 text-gray-800">{{ number_format($sales->sum('amount_paid'), 2) }}
                                     {{ $currency }}</td>
+                                <td class="p-2 text-gray-800">{{ $sales->first()->reference ?? '—' }}</td>
+                                <!-- تعديل هنا لعرض المرجع من البيع -->
                                 <td class="p-2 text-gray-600">تم الدفع ضمن عملية البيع</td>
                             </tr>
                         @else
@@ -116,6 +117,7 @@
                             </tr>
                         @endif
                     @endforelse
+
                 </tbody>
             </table>
         </div>

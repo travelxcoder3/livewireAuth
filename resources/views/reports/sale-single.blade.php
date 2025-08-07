@@ -25,6 +25,7 @@
             Log::error('Logo read error: ' . $e->getMessage());
         }
     }
+      $currency = $sale->agency->currency ?? 'USD';
 @endphp
 
 <!DOCTYPE html>
@@ -124,8 +125,8 @@
                 <td>{{ $sale->provider->name ?? '-' }}</td>
                 <td>{{ $sale->pnr }}</td>
                 <td>{{ $sale->reference }}</td>
-                <td>{{ number_format($sale->usd_sell, 2) }} USD</td>
-                <td>{{ number_format($sale->usd_buy, 2) }} USD</td>
+                <td>{{ number_format($sale->usd_sell, 2) }} {{ $currency }}</td>
+                <td>{{ number_format($sale->usd_buy, 2) }} {{ $currency }}</td>
                 <td>{{ $sale->customer->name ?? '-' }}</td>
                 <td>{{ $sale->status }}</td>
             </tr>

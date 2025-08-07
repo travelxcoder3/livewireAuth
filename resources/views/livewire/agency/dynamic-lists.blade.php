@@ -6,6 +6,7 @@
 @endphp
 
 <div class="p-4">
+      <x-toast />
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold text-black">قوائم الوكالة</h2>

@@ -49,7 +49,7 @@ class RoleSeeder extends Seeder
             'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
             'permissions.view',
             // صلاحيات المبيعات
-            'sales.view', 'sales.create', 'sales.edit', 'sales.delete', 'sales.report',
+            'sales.view', 'sales.create', 'sales.edit', 'sales.report',
         ];
         foreach ($agencyAdminPermissions as $permission) {
             \Spatie\Permission\Models\Permission::firstOrCreate([

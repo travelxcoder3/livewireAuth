@@ -139,16 +139,30 @@ class DynamicLists extends Component
     }
 
     public function deleteItem($itemId)
-    {
-        $item = DynamicListItem::findOrFail($itemId);
+{
+    $item = DynamicListItem::findOrFail($itemId);
 
-        if ($item->created_by_agency !== Auth::user()->agency_id) {
-            throw new AuthorizationException("لا تملك صلاحية الحذف.");
-        }
-
-        $item->delete();
-        $this->dispatch('item-deleted');
+    if ($item->created_by_agency !== Auth::user()->agency_id) {
+        throw new AuthorizationException("لا تملك صلاحية الحذف.");
     }
+
+    try {
+        $item->delete();
+        session()->flash('message', 'تم حذف البند بنجاح.');
+        session()->flash('type', 'success');
+        $this->dispatch('item-deleted');
+    } catch (\Illuminate\Database\QueryException $e) {
+        // تحقق من نوع الخطأ - علاقة خارجية
+        if ($e->getCode() === '23000') {
+            session()->flash('message', 'لا يمكن حذف هذا البند لأنه مرتبط ببيانات أخرى (مثل المبيعات).');
+            session()->flash('type', 'error');
+        } else {
+            session()->flash('message', 'حدث خطأ أثناء الحذف.');
+            session()->flash('type', 'error');
+        }
+    }
+}
+
 
     public function cancelEditItem()
     {
@@ -217,13 +231,20 @@ class DynamicLists extends Component
             throw new AuthorizationException("لا تملك صلاحية الحذف.");
         }
 
-        $subItem->delete();
-        $this->dispatch('subitem-deleted');
+        try {
+            $subItem->delete();
+            session()->flash('message', 'تم حذف البند الفرعي بنجاح.');
+            session()->flash('type', 'success');
+            $this->dispatch('subitem-deleted');
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() === '23000') {
+                session()->flash('message', 'لا يمكن حذف هذا البند الفرعي لأنه مرتبط ببيانات أخرى.');
+                session()->flash('type', 'error');
+            } else {
+                session()->flash('message', 'حدث خطأ أثناء محاولة حذف البند الفرعي.');
+                session()->flash('type', 'error');
+            }
+        }
     }
 
-    public function cancelEditSubItem()
-    {
-        $this->editingSubItemId = null;
-        $this->editingSubItemLabel = '';
-    }
 }

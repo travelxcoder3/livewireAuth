@@ -155,11 +155,10 @@
             <!-- زر التعديل -->
             @can('agency.profile.edit')
             <div class="flex justify-end mt-6 pb-4">
-               <button wire:click="startEditing"
-                        class="text-white font-bold px-6 py-2 rounded-lg shadow-md transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        تعديل البيانات
-                </button>
+               <x-primary-button wire:click="startEditing">
+                    تعديل البيانات
+                </x-primary-button>
+
             </div>
             @endcan
 
@@ -264,11 +263,10 @@
                         class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-lg shadow transition duration-300 text-sm">
                         إلغاء
                     </button>
-                    <button type="submit"
-                        class="text-white font-bold px-6 py-2 rounded-lg shadow-md transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        حفظ التعديلات
-                    </button>
+                  <x-primary-button type="submit" padding="px-6 py-2" rounded="rounded-lg">
+                    حفظ التعديلات
+                </x-primary-button>
+
                 </div>
             </form>
         </div>

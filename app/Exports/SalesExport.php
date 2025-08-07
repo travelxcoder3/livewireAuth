@@ -19,6 +19,8 @@ class SalesExport implements FromCollection, WithHeadings
         $this->fields = $fields;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
+        $this->currency = Auth::user()->agency->currency ?? 'USD';
+
     }
 
 public function collection()
@@ -55,33 +57,33 @@ public function collection()
             'reference' => $sale->reference,
             'pnr' => $sale->pnr,
             'customer' => optional($sale->customer)->name,
-'customer_via' => match ($sale->customer_via) {
-    'facebook' => 'فيسبوك',
-    'call' => 'اتصال',
-    'instagram' => 'إنستغرام',
-    'whatsapp' => 'واتساب',
-    'office' => 'عبر مكتب',
-    'other' => 'أخرى',
-    default => $sale->customer_via,
-},
+            'customer_via' => match ($sale->customer_via) {
+                'facebook' => 'فيسبوك',
+                'call' => 'اتصال',
+                'instagram' => 'إنستغرام',
+                'whatsapp' => 'واتساب',
+                'office' => 'عبر مكتب',
+                'other' => 'أخرى',
+                default => $sale->customer_via,
+            },
 
-'payment_method' => match ($sale->payment_method) {
-    'kash' => 'كامل',
-    'part' => 'جزئي',
-    'all' => 'لم يدفع',
-    default => $sale->payment_method,
-},
+            'payment_method' => match ($sale->payment_method) {
+                'kash' => 'كامل',
+                'part' => 'جزئي',
+                'all' => 'لم يدفع',
+                default => $sale->payment_method,
+            },
 
-'payment_type' => match ($sale->payment_type) {
-    'cash' => 'كاش',
-    'transfer' => 'حوالة',
-    'account_deposit' => 'إيداع حساب',
-    'fund' => 'صندوق',
-    'from_account' => 'من حساب',
-    'wallet' => 'محفظة',
-    'other' => 'أخرى',
-    default => $sale->payment_type,
-},
+            'payment_type' => match ($sale->payment_type) {
+                'cash' => 'كاش',
+                'transfer' => 'حوالة',
+                'account_deposit' => 'إيداع حساب',
+                'fund' => 'صندوق',
+                'from_account' => 'من حساب',
+                'wallet' => 'محفظة',
+                'other' => 'أخرى',
+                default => $sale->payment_type,
+            },
 
             'receipt_number' => $sale->receipt_number,
             'service_date' => $sale->service_date,
@@ -107,8 +109,8 @@ public function collection()
         'phone_number' => 'رقم الهاتف',
         'serviceType' => 'نوع الخدمة',
         'provider' => 'المزود',
-        'usd_buy' => 'USD Buy',
-        'usd_sell' => 'USD Sell',
+        'usd_buy' => 'سعر الشراء (' . $this->currency . ')',
+        'usd_sell' => 'سعر البيع (' . $this->currency . ')',
         'sale_profit' => 'الربح',
         'amount_paid' => 'المبلغ المدفوع',
         'commission' => 'العمولة',
