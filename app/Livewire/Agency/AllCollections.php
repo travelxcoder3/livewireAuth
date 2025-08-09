@@ -25,8 +25,8 @@ class AllCollections extends Component
 
 public function getPaymentStatus($sale)
 {
-    $totalPaid = $sale->collections->sum('amount') + ($sale->amount_paid ?? 0);
-    $totalAmount = $sale->usd_sell;
+    $totalPaid   = $sale->collections->sum('amount') + ($sale->amount_paid ?? 0);
+    $totalAmount = $sale->invoice_total_true ?? $sale->usd_sell; // ← الحقيقي دائماً
 
     if ($totalPaid == 0) {
         return ['status' => 'لم يبدأ التحصيل', 'color' => 'bg-gray-100 text-gray-800'];
@@ -36,6 +36,7 @@ public function getPaymentStatus($sale)
         return ['status' => 'تم التحصيل بالكامل', 'color' => 'bg-green-100 text-green-800'];
     }
 }
+
 
 
 public function showCollectionDetails($saleId)
@@ -59,7 +60,7 @@ public function showCollectionDetails($saleId)
 
 public function loadSales()
 {
-    $rawSales = Sale::with('collections')
+    $rawSales = Sale::with(['collections','customer'])
         ->where('agency_id', auth()->user()->agency_id)
         ->when($this->search, function ($q) {
             $q->where('beneficiary_name', 'like', '%'.$this->search.'%')
@@ -77,24 +78,52 @@ public function loadSales()
 $this->sales = $grouped->map(function ($sales) {
     $first = $sales->sortByDesc('created_at')->first(); // نأخذ الأحدث
 
-    $usdSell = $sales->sum('usd_sell');
-    $amountPaid = $sales->sum('amount_paid');
-    $collections = $sales->flatMap->collections;
-    $collectionsSum = $collections->sum('amount');
-    $totalPaid = $amountPaid + $collectionsSum;
-    $remaining = $usdSell - $totalPaid;
+$refundStatuses = ['refund-full','refund_partial','refund-partial','refunded'];
+
+$amountPaid     = $sales->sum('amount_paid');
+$collections    = $sales->flatMap->collections;
+$collectionsSum = $collections->sum('amount');
+$totalPaid      = $amountPaid + $collectionsSum;
+
+$hasRefund = $sales->contains(function ($s) use ($refundStatuses) {
+    return in_array(strtolower($s->status ?? ''), $refundStatuses);
+});
+
+// إجمالي الفاتورة الحقيقي (القيم الإيجابية فقط: Issued/Re-Issued/... بدون Refund)
+$invoiceTotalTrue = $sales->filter(function ($s) use ($refundStatuses) {
+        $st = strtolower($s->status ?? '');
+        return !in_array($st, $refundStatuses) && ($s->usd_sell ?? 0) > 0;
+    })
+    ->sum(fn($s) => $s->usd_sell);
+
+// إجمالي الاستردادات (قيمة موجبة)
+$refundTotal = $sales->filter(function ($s) use ($refundStatuses) {
+        return in_array(strtolower($s->status ?? ''), $refundStatuses);
+    })
+    ->sum(fn($s) => abs($s->usd_sell));
+
+// الصافي المحاسبي = الأصل − الاستردادات
+$netTotal  = $invoiceTotalTrue - $refundTotal;
+$remaining = $netTotal - $totalPaid;
 
 return (object)[
-    'id' => $first->id,
-    'group_id' => $first->sale_group_id,
-    'beneficiary_name' => $first->beneficiary_name,
-    'usd_sell' => $usdSell,
-    'amount_paid' => $amountPaid,
-    'collections' => $collections,
-    'total_paid' => $totalPaid,
-    'remaining_for_customer' => $remaining > 0 ? $remaining : 0,
-    'remaining_for_company' => $remaining < 0 ? abs($remaining) : 0,
-    'referred_by_customer' => optional($first->customer)->name ?? 'لا يوجد عميل',
+        'id'                   => $first->id,
+    'group_id'             => $first->sale_group_id,
+    'beneficiary_name'     => $first->beneficiary_name ?? optional($first->customer)->name ?? '—',
+    // نُخزّن الصافي هنا ليستمر باقي الحسابات كما هي
+    'usd_sell'             => $netTotal,
+
+    // قيم العرض/التقارير
+    'has_refund'           => $hasRefund,
+    'refund_total'         => $refundTotal,
+    'invoice_total_true'   => $invoiceTotalTrue, // ← 1100
+    'invoice_total_display'=> $invoiceTotalTrue, // نعرض الأصل هنا في هذا التقرير
+
+    'amount_paid'          => $amountPaid,
+    'collections'          => $collections,
+    'total_paid'           => $totalPaid,
+    'remaining_for_customer'=> $remaining > 0 ? $remaining : 0,
+    'remaining_for_company' => $remaining < 0 ? abs($remaining) : 0,    'referred_by_customer' => optional($first->customer)->name ?? 'لا يوجد عميل',
     'created_at' => $first->created_at,
     'scenarios' => $sales->map(function ($sale) {
         return [
@@ -106,6 +135,7 @@ return (object)[
         ];
     }),
 ];
+
 
 })
 

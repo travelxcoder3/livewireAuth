@@ -66,10 +66,11 @@
                     <!-- محتوى البطاقة -->
                     <div class="p-5">
                         <div class="text-sm text-gray-700 space-y-2">
-                            <div class="flex justify-between">
-                                <span class="font-medium">المبلغ الإجمالي:</span>
-                                <span>{{ number_format($sale->usd_sell, 2) }} $</span>
-                            </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">المبلغ الإجمالي:</span>
+                            <span>{{ number_format($sale->invoice_total_true ?? $sale->usd_sell, 2) }} $</span>
+                        </div>
+
                             <div class="flex justify-between">
                                 <span class="font-medium">المبلغ المحصل:</span>
                                 <span>{{ number_format($sale->collections->sum('amount'), 2) }} $</span>
@@ -120,29 +121,35 @@
                 </h3>
 
                                 <!-- بطاقة ملخص المدفوعات -->
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                        <div class="text-sm text-blue-600 font-medium">إجمالي الفاتورة</div>
-                        <div class="text-xl font-bold text-blue-800 mt-1">
-                            {{ number_format($sale->usd_sell, 2) }} $
-                        </div>
-                    </div>
+                <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+        <div class="text-sm text-blue-600 font-medium">إجمالي الفاتورة</div>
+        <div class="text-xl font-bold text-blue-800 mt-1">
+            {{ number_format($sale->invoice_total_true ?? $sale->usd_sell, 2) }} $
+        </div>
+    </div>
 
-                    <div class="bg-green-50/50 p-4 rounded-lg border border-green-100">
-                        <div class="text-sm text-green-600 font-medium">إجمالي المدفوع</div>
-                        <div class="text-xl font-bold text-green-800 mt-1">
-                            {{ number_format($totalPaid, 2) }} $
-                        </div>
-                    </div>
+    <div class="bg-rose-50/50 p-4 rounded-lg border border-rose-100">
+        <div class="text-sm text-rose-600 font-medium">إجمالي الاستردادات</div>
+        <div class="text-xl font-bold text-rose-800 mt-1">
+            {{ number_format($sale->refund_total ?? 0, 2) }} $
+        </div>
+    </div>
 
-                    <div class="bg-amber-50/50 p-4 rounded-lg border border-amber-100">
-                        <div class="text-sm text-amber-600 font-medium">المبلغ المتبقي</div>
-            <div class="text-xl font-bold text-amber-800 mt-1">
-                {{ number_format(max($remainingAmount, 0), 2) }} $
-            </div>
+    <div class="bg-green-50/50 p-4 rounded-lg border border-green-100">
+        <div class="text-sm text-green-600 font-medium">إجمالي المدفوع</div>
+        <div class="text-xl font-bold text-green-800 mt-1">
+            {{ number_format($totalPaid, 2) }} $
+        </div>
+    </div>
 
-                    </div>
-                </div>
+    <div class="bg-amber-50/50 p-4 rounded-lg border border-amber-100">
+        <div class="text-sm text-amber-600 font-medium">المبلغ المتبقي</div>
+        <div class="text-xl font-bold text-amber-800 mt-1">
+            {{ number_format(max($remainingAmount, 0), 2) }} $
+        </div>
+    </div>
+</div>
 @if ($sale->remaining_for_company > 0)
     <div class="bg-green-50 border border-green-200 text-green-700 p-3 rounded">
         الشركة مدينة للمستفيد بمبلغ: 

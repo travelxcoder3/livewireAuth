@@ -17,13 +17,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call(RoleSeeder::class);
         $this->call(CollectionsTableSeeder::class);
-        // $this->call(PermissionSeeder::class); // تم تعطيله لأن الصلاحيات تُنشأ تلقائيًا لكل وكالة
         $this->call(CreatePermissionsForExistingAgenciesSeeder::class);
         $this->call(SystemDynamicListsSeeder::class); // Seeder القوائم
-        // $this->call(AgencySeeder::class);
         $this->call(PermissionSeeder::class);
         $this->call(SyncAgencyAdminPermissionsSeeder::class);
-        $this->call(CustomersAthkaSeeder::class);
-        
     }
 }

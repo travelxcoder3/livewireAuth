@@ -22,8 +22,10 @@
         $showAccountsDropdown =
             Auth::user()->hasRole('agency-admin') ||
             Auth::user()->can('accounts.view') ||
+            Auth::user()->can('invoices.view')||
             Auth::user()->can('providers.view') ||
-            Auth::user()->can('customers.view');
+            Auth::user()->can('customers.view')||
+            Auth::user()->can('quotations.view');
     @endphp
     @if ($showAccountsDropdown)
         <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
@@ -48,8 +50,9 @@
                     <x-navbar.buttons.dropdown-link :href="route('agency.providers')" icon="fas fa-briefcase" label="ملفات المزودين"
                         :show="true" />
                 @endif
-
+                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('quotations.view'))
                 <x-navbar.buttons.dropdown-link :href="route('agency.quotation')" icon="fas fa-briefcase" label="عرض السعر" :show="true" />
+                @endif
 
 
             </div>
@@ -108,7 +111,8 @@
             Auth::user()->can('reportsSales.view') ||
             Auth::user()->can('reportsAccounts.view') ||
             Auth::user()->can('reportCustomers.view') ||
-            Auth::user()->can('reportCustomerAccounts.view');
+            Auth::user()->can('reportCustomerAccounts.view')||
+            Auth::user()->can('reportEmployeeSales.view') ;
     @endphp
 
     @if ($showReportsDropdown)
@@ -131,12 +135,14 @@
                         label="تقرير تتبع العملاء" :show="true" />
                 @endif
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportCustomerAccounts.view'))
-                    <x-navbar.buttons.dropdown-link :href="route('agency.reports.customer-accounts')" icon="fas fa-users" label="حسابات العملاء"
+                    <x-navbar.buttons.dropdown-link :href="route('agency.reports.customer-accounts')" icon="fas fa-users" label="مشتريات العملاء"
                         :show="true" />
                 @endif
+                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
                     <x-navbar.buttons.dropdown-link :href="route('agency.reports.employee-sales')" icon="fas fa-users" label="حسابات الموظفين"
                         :show="true" />
-                
+                @endif
+
             </div>
         </div>
     @endif

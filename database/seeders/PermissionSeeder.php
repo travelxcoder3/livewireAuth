@@ -73,7 +73,13 @@ class PermissionSeeder extends Seeder
         'reportsAccounts.view',
         'reportsSales.view',
         'reportCustomers.view',
-        'reportCustomerAccounts.view'
+        'reportCustomerAccounts.view',
+        'reportEmployeeSales.view',
+        //عرض السعر
+        'quotations.view',
+        // فواتير
+        'invoices.view',
+        'invoicesDeteials.view'
     ];
 
     /**

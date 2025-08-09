@@ -9,8 +9,7 @@
     $activeSales = $sales->whereNotIn('status', ['Void'])->sum('usd_sell');
 
     // حساب إجمالي التحصيلات (من التحصيلات المدفوعة من العميل)
-    $directPayments = $collections->sum('amount');
-
+    $directPayments = $sales->sum('amount_paid');
     // حساب الرصيد الفارق بناءً على إجمالي المبيعات - إجمالي التحصيلات
     $netBalance = $activeSales - $directPayments;
 @endphp
@@ -21,7 +20,7 @@
         <!-- عنوان الصفحة -->
         <h2
             class="text-2xl font-bold text-[rgb(var(--primary-700))] border-b border-[rgba(var(--primary-200),0.5)] pb-2">
-            كشف حساب العميل
+            التقرير المالي لمشتريات العميل
         </h2>
 
         <!-- الزرين: التصدير + الرجوع -->

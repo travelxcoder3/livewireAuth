@@ -17,7 +17,7 @@
         <!-- عنوان -->
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
-            تقرير حسابات العملاء
+            التقرير المالي لمشتريات العملاء
         </h2>
 
         <!-- صناديق الأرصدة -->
@@ -151,7 +151,7 @@
                                     style="--tw-bg-opacity: 1;"
                                     onmouseover="this.style.backgroundColor='rgba(var(--primary-500), 0.08)'"
                                     onmouseout="this.style.backgroundColor='white'">
-                                    كشف الحساب
+                                 تفاصيل
                                 </a>
                             </td>
                         </tr>

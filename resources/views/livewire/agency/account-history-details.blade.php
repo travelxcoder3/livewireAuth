@@ -32,10 +32,11 @@
                     <th class="px-3 py-2">اسم المستفيد</th>
                     <th class="px-3 py-2">تاريخ البيع</th>
                     <th class="px-3 py-2">الخدمة</th>
-                    <th class="px-3 py-2">سعر الخدمة</th>
-                    <th class="px-3 py-2">المحصل</th>
-                    <th class="px-3 py-2">المتبقي</th>
-                    <th class="px-3 py-2">ملاحظات</th>
+                <th class="px-3 py-2">سعر الخدمة (أصل)</th>
+                <th class="px-3 py-2">الاستردادات</th>
+                <th class="px-3 py-2">المحصل (إجمالي)</th>
+                <th class="px-3 py-2">المتبقي / رصيد للعميل</th>
+
                     <th class="px-3 py-2">الإجراء</th>
                 </tr>
             </thead>
@@ -45,14 +46,23 @@
                         <td class="px-3 py-2">{{ $item->beneficiary_name }}</td>
                         <td class="px-3 py-2">{{ $item->sale_date }}</td>
                         <td class="px-3 py-2">{{ $item->service_label }}</td>
-                        <td class="px-3 py-2 text-blue-700">{{ number_format($item->usd_sell, 2) }}</td>
+                        <td class="px-3 py-2 text-blue-700">{{ number_format($item->invoice_total_true, 2) }}</td>
+                        <td class="px-3 py-2 text-rose-700">{{ number_format($item->refund_total, 2) }}</td>
                         <td class="px-3 py-2 text-green-700">
-                            {{ number_format($item->total_paid, 2) }}
+                            {{ number_format($item->total_collected, 2) }}
                         </td>
-                        <td class="px-3 py-2 text-red-600">
-                            {{ $item->remaining > 0 ? number_format($item->remaining, 2) : '-' }}
-                        </td>
-                        <td class="px-3 py-2">{{ $item->note }}</td>
+
+                    <td class="px-3 py-2">
+                        @if ($item->remaining_for_customer > 0)
+                            <span class="text-red-600">مدين: {{ number_format($item->remaining_for_customer, 2) }}</span>
+                        @elseif ($item->remaining_for_company > 0)
+                            <span class="text-green-600">للعميل: {{ number_format($item->remaining_for_company, 2) }}</span>
+                        @else
+                            <span class="text-gray-500">تم السداد بالكامل</span>
+                        @endif
+                    </td>
+
+
                         <td class="px-3 py-2">
                             <button wire:click="showDetails({{ $loop->index }})"
                                 class="transition duration-200 font-semibold" style="color: rgb(var(--primary-600));"
