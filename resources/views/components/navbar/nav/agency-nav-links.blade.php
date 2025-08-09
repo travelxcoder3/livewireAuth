@@ -38,8 +38,7 @@
                         label="مراجعة الحسابات" :show="true" />
                 @endif
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('invoices.view'))
-                    <x-navbar.buttons.dropdown-link href="#" icon="fas fa-file-invoice" label="الفواتير"
-                        :show="true" />
+                <x-navbar.buttons.dropdown-link :href="route('agency.customer-detailed-invoices')" icon="fas fa-file-invoice" label="فواتير العملاء المفصلة" :show="true" />
                 @endif
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers.view'))
                     <x-navbar.buttons.dropdown-link :href="route('agency.customers.add')" icon="fas fa-folder-open" label="ملفات العملاء"
@@ -49,6 +48,9 @@
                     <x-navbar.buttons.dropdown-link :href="route('agency.providers')" icon="fas fa-briefcase" label="ملفات المزودين"
                         :show="true" />
                 @endif
+
+                <x-navbar.buttons.dropdown-link :href="route('agency.quotation')" icon="fas fa-briefcase" label="عرض السعر" :show="true" />
+
 
             </div>
         </div>

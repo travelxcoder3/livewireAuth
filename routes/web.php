@@ -55,6 +55,11 @@ use App\Http\Controllers\CustomerAccountReportController;
 use App\Livewire\Agency\AccountHistories;
 use App\Livewire\Agency\Reports\EmployeeServiceSales;
 
+//customer invoice details
+use App\Livewire\Agency\CustomerDetailedInvoices;
+use App\Livewire\Agency\CustomerInvoiceOverview;
+use App\Http\Controllers\Agency\CustomerInvoicePrintController;
+use App\Livewire\Agency\Quotations\ShowQuotation;
 
 
 // ============================
@@ -118,7 +123,13 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
         Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
         )->name('obligations-view');
     
-    
+    Route::get('/customer-detailed-invoices', CustomerDetailedInvoices::class)
+        ->name('customer-detailed-invoices');
+    Route::get('/customer-invoices/{customer}', CustomerInvoiceOverview::class)
+        ->name('customer-invoice-overview');
+    Route::get('/customer-invoices/{customer}/print', [CustomerInvoicePrintController::class, 'printSelected'])
+        ->name('customer-invoices.print');
+
             Route::get('/customer-accounts/{customer}/history', \App\Livewire\Agency\AccountHistoryDetails::class)
                 ->name('customer-accounts.details');
                 
@@ -182,7 +193,9 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
     });
     Route::get('/policies', AgencyPolicies::class)->name('policies');
     Route::get('/policies/view', \App\Livewire\Agency\PoliciesView::class)->name('policies.view');
-
+    Route::get('/quotation', ShowQuotation::class)->name('quotation');
+    Route::post('/quotation/pdf', [QuotationController::class, 'download'])
+    ->name('quotation.pdf');
     // === رابط الموافقات للوكالة (جديد) ===
     Route::get('/approval-requests', \App\Livewire\Agency\ApprovalRequests::class)->name('approvals.index');
     // ============================

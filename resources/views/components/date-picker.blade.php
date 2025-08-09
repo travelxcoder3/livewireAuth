@@ -15,7 +15,7 @@
 <div 
     x-data="{
         open: false,
-        date: @entangle($wireModel),
+        date: @entangle($wireModel).live,
         init() {
             // تهيئة القيمة إذا كانت فارغة
             if (!this.date) {

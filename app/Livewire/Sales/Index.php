@@ -481,12 +481,20 @@ $sales->each(function ($sale) {
 
     public function calculateDue()
     {
-        if (is_numeric($this->usd_sell) && is_numeric($this->amount_paid)) {
-            $this->amount_due = round($this->usd_sell - $this->amount_paid, 2);
+        // لو "لم يدفع" أو المبلغ المدفوع فاضي، اعتبر المدفوع = 0 واطبع المتبقي = مبلغ البيع
+        if (is_numeric($this->usd_sell)) {
+            if ($this->payment_method === 'all' || $this->amount_paid === null || $this->amount_paid === '') {
+                $this->amount_due = round($this->usd_sell, 2);
+            } elseif (is_numeric($this->amount_paid)) {
+                $this->amount_due = round($this->usd_sell - $this->amount_paid, 2);
+            } else {
+                $this->amount_due = round($this->usd_sell, 2);
+            }
         } else {
             $this->amount_due = 0;
         }
     }
+    
     public function updated($propertyName)
     {
         if (in_array($propertyName, ['usd_buy', 'usd_sell'])) {
