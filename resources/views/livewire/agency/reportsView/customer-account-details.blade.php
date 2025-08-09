@@ -5,11 +5,15 @@
             ->pluck('id')
             ->search($customer->id) + 1;
     $currency = Auth::user()->agency->currency ?? 'USD';
-    $paid =
-        $sales->whereNotNull('amount_paid')->sum('amount_paid') + $collections->whereNotNull('amount')->sum('amount');
-    $balance = $sales->sum('usd_sell') - $paid;
-@endphp
+    // حساب إجمالي المبيعات الفعالة (باستثناء الملغاة)
+    $activeSales = $sales->whereNotIn('status', ['Void'])->sum('usd_sell');
 
+    // حساب إجمالي التحصيلات (من التحصيلات المدفوعة من العميل)
+    $directPayments = $collections->sum('amount');
+
+    // حساب الرصيد الفارق بناءً على إجمالي المبيعات - إجمالي التحصيلات
+    $netBalance = $activeSales - $directPayments;
+@endphp
 <div class="space-y-6">
 
     <!-- 🔵 العنوان العلوي -->
@@ -70,54 +74,95 @@
                     <tr>
                         <th class="p-3 border-b">تاريخ العملية</th>
                         <th class="p-3 border-b">نوع العملية</th>
+                        <th class="p-3 border-b">حالة الدفع</th>
                         <th class="p-3 border-b">مبلغ العملية</th>
                         <th class="p-3 border-b">المرجع</th>
                         <th class="p-3 border-b">وصف الحالة</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($sales as $sale)
+                    @forelse ($sales as $sale)
                         <tr class="hover:bg-gray-50">
-                            <td class="p-2">{{ $sale->sale_date }}</td>
-                            <td class="p-2 text-red-600 font-medium">بيع</td>
+                            <!-- تاريخ العملية -->
+                            <td class="p-2">{{ \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') }}</td>
+
+                            <!-- نوع العملية بناءً على status -->
+                            <td class="p-2 text-red-600 font-medium">
+                                @if ($sale->status == 'Issued')
+                                    بيع - تم الإصدار
+                                @elseif ($sale->status == 'Re-Issued')
+                                    بيع - إعادة الإصدار
+                                @elseif ($sale->status == 'Re-Route')
+                                    بيع - تغيير المسار
+                                @elseif ($sale->status == 'Refund-Full')
+                                    استرداد كلي - Refund Full
+                                @elseif ($sale->status == 'Refund-Partial')
+                                    استرداد جزئي - Refund Partial
+                                @elseif ($sale->status == 'Void')
+                                    ملغي نهائي - Void
+                                @elseif ($sale->status == 'Rejected')
+                                    مرفوض - Rejected
+                                @elseif ($sale->status == 'Approved')
+                                    مقبول - Approved
+                                @endif
+                            </td>
+
+                            <!-- حالة الدفع بناءً على payment_status -->
+                            <td class="p-2 text-green-600 font-medium">
+                                @if ($sale->payment_method == 'kash')
+                                    دفع كامل
+                                @elseif ($sale->payment_method == 'part')
+                                    دفع جزئي
+                                @elseif ($sale->payment_method == 'all')
+                                    لم يدفع
+                                @endif
+                            </td>
+
+                            <!-- مبلغ العملية -->
                             <td class="p-2 text-gray-800">{{ number_format($sale->usd_sell, 2) }} {{ $currency }}
                             </td>
-                            <td class="p-2 text-gray-800">{{ $sale->reference ?? '—' }}</td>
+
+                            <!-- المرجع -->
+                            <td class="p-2 text-gray-600">{{ $sale->reference ?? '—' }}</td>
+
+                            <!-- وصف الحالة -->
                             <td class="p-2 text-gray-600">{{ ucfirst($sale->status) }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-gray-400 p-4">لا توجد عمليات بيع</td>
+                            <td colspan="6" class="text-center text-gray-400 p-4">لا توجد عمليات بيع</td>
                         </tr>
                     @endforelse
 
+                    <!-- عرض العمليات المتعلقة بالتحصيل -->
                     @forelse($collections as $collection)
                         <tr class="hover:bg-gray-50">
-                            <td class="p-2">{{ $collection->payment_date }}</td>
+                            <td class="p-2">{{ \Carbon\Carbon::parse($collection->payment_date)->format('Y-m-d') }}
+                            </td>
                             <td class="p-2 text-green-600 font-medium">تحصيل</td>
+                            <td class="p-2 text-green-600 font-medium">
+                                @if (strpos($collection->note ?? '', 'رصيد الشركة') !== false)
+                                    تم السداد من رصيد الشركة
+                                @else
+                                    تم السداد من العميل
+                                @endif
+                            </td>
                             <td class="p-2 text-gray-800">{{ number_format($collection->amount, 2) }}
                                 {{ $currency }}</td>
-                            <td class="p-2 text-gray-800">{{ $collection->sale->reference ?? '—' }}</td>
-                            <td class="p-2 text-gray-600">{{ $collection->note ?? '—' }}</td>
+                            <td class="p-2 text-gray-600">{{ $collection->sale->reference ?? '—' }}</td>
+                            <td class="p-2 text-gray-600">
+                                @if (strpos($collection->note ?? '', 'رصيد الشركة') !== false)
+                                    تم خصم {{ number_format($collection->amount, 2) }} من رصيد الشركة
+                                @else
+                                    {{ $collection->note ?? '—' }}
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        @if ($sales->sum('amount_paid') > 0)
-                            <tr class="hover:bg-gray-50">
-                                <td class="p-2">{{ $sales->first()?->sale_date ?? '—' }}</td>
-                                <td class="p-2 text-green-600 font-medium">دفع مباشر</td>
-                                <td class="p-2 text-gray-800">{{ number_format($sales->sum('amount_paid'), 2) }}
-                                    {{ $currency }}</td>
-                                <td class="p-2 text-gray-800">{{ $sales->first()->reference ?? '—' }}</td>
-                                <!-- تعديل هنا لعرض المرجع من البيع -->
-                                <td class="p-2 text-gray-600">تم الدفع ضمن عملية البيع</td>
-                            </tr>
-                        @else
-                            <tr>
-                                <td colspan="4" class="text-center text-gray-400 p-4">لا توجد تحصيلات</td>
-                            </tr>
-                        @endif
+                        <tr>
+                            <td colspan="6" class="text-center text-gray-400 p-4">لا توجد تحصيلات</td>
+                        </tr>
                     @endforelse
-
                 </tbody>
             </table>
         </div>
@@ -125,29 +170,33 @@
     <!-- 🟨 الملخص -->
     <div>
         <h3 class="text-lg font-semibold text-[rgb(var(--primary-600))] mb-2">ملخص الحساب</h3>
-        <div class="bg-white rounded-xl shadow-md p-4 flex flex-col md:flex-row justify-between text-sm gap-3">
-            <div>
-                <strong>إجمالي المبيعات:</strong>
-                <span class="text-gray-700">{{ number_format($sales->sum('usd_sell'), 2) }} {{ $currency }}</span>
+        <div class="bg-white rounded-xl shadow-md p-4 grid md:grid-cols-3 gap-4 text-sm">
+            <!-- إجمالي المبيعات -->
+            <div class="border-b pb-2">
+                <strong>إجمالي المبيعات الفعالة:</strong>
+                <span class="text-gray-700 block">{{ number_format($activeSales, 2) }} {{ $currency }}</span>
             </div>
-            <div>
+
+            <!-- إجمالي المدفوعات -->
+            <div class="border-b pb-2">
                 <strong>إجمالي التحصيل:</strong>
-                <span class="text-gray-700">
-                    {{ number_format($paid, 2) }} {{ $currency }}
+                <span class="text-gray-700 block">
+                    {{ number_format($directPayments, 2) }} {{ $currency }} (من العميل)
                 </span>
             </div>
-            <div>
-                <strong>رصيد الفارق:</strong>
-                <span
-                    class="{{ $balance > 0 ? 'text-red-600' : ($balance < 0 ? 'text-green-600' : 'text-gray-600') }} font-semibold">
-                    @if ($balance == 0)
-                        لا يوجد فرق بين المبيعات والتحصيل.
+            <!-- عرض حالة الرصيد الفارق -->
+            <div class="border-b pb-2">
+                <strong>الرصيد الفارق:</strong>
+                <div class="text-gray-700 block">
+                    @if ($netBalance > 0)
+                        <span class="text-red-600">مدين: {{ number_format($netBalance, 2) }}
+                            {{ $currency }}</span>
+                    @elseif ($netBalance < 0)
+                        <span class="text-green-700">تم السداد بالكامل</span>
                     @else
-                        {{ number_format(abs($balance), 2) }} {{ $currency }}
-                        {{ $balance > 0 ? 'على العميل' : 'للعميل' }}
+                        <span class="text-gray-600">لا يوجد رصيد مستحق</span>
                     @endif
-                </span>
+                </div>
             </div>
         </div>
     </div>
-</div>
