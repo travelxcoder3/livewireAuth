@@ -53,6 +53,8 @@ use App\Livewire\Agency\Reports\CustomerAccountDetails;
 use App\Http\Controllers\CustomerAccountReportController;
 
 use App\Livewire\Agency\AccountHistories;
+use App\Livewire\Agency\Reports\EmployeeServiceSales;
+
 
 
 // ============================
@@ -203,6 +205,19 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
             ->name('reports.customer-accounts.details');
         Route::get('customer-accounts/{id}/pdf', [CustomerAccountReportController::class, 'generatePdf'])
             ->name('reports.customer-accounts.pdf');
+        Route::get('employee-sales', \App\Livewire\Agency\Reports\EmployeeSalesReport::class)
+            ->name('reports.employee-sales');
+        
+        Route::get('employee-sales/pdf', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'exportToPdf'])
+            ->name('reports.employee-sales.pdf');
+        
+        Route::get('employee-sales/excel', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'exportToExcel'])
+            ->name('reports.employee-sales.excel');
+
+        Route::get('reports/employee-sales/print/{sale}', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'printPdf'])
+            ->name('.reports.employee-sales.sale-pdf');
+        
+        
 
     });
 });

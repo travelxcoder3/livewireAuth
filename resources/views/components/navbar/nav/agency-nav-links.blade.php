@@ -132,6 +132,9 @@
                     <x-navbar.buttons.dropdown-link :href="route('agency.reports.customer-accounts')" icon="fas fa-users" label="حسابات العملاء"
                         :show="true" />
                 @endif
+                    <x-navbar.buttons.dropdown-link :href="route('agency.reports.employee-sales')" icon="fas fa-users" label="حسابات الموظفين"
+                        :show="true" />
+                
             </div>
         </div>
     @endif
