@@ -169,7 +169,7 @@ class ProvidersAthkaSeeder extends Seeder
 
         foreach ($names as $name) {
             Provider::create([
-                'agency_id' => 1,
+                'agency_id' => 5,
                 'name' => $name,
                 'status' => 'approved',
             ]);

@@ -407,7 +407,7 @@ class EmployeeSalesReport extends Component
         $this->search            = request('search', $this->search);
         $this->drillType         = request('drillType', $this->drillType);
         $this->drillValue        = request('drillValue', $this->drillValue);
-
+    
         // تجهيز الشعار (base64)
         $agency   = auth()->user()->agency;
         $logoData = null; $logoMime = 'image/png';
@@ -418,15 +418,15 @@ class EmployeeSalesReport extends Component
                 $logoMime = mime_content_type($path) ?: 'image/png';
             }
         }
-
+    
         // لو في موظف محدد نطبق الـdrill على التصدير
         $data    = $this->prepareReportData(applyDrill: (bool)$this->employeeId);
         $summary = $this->perEmployeeRows();
-
+    
         $view = $this->employeeId
             ? 'reports.employee-sales-details-pdf'
             : 'reports.employee-sales-summary-pdf';
-
+    
         $html = view($view, [
             'agency'      => $agency,
             'logoData'    => $logoData,
@@ -441,11 +441,14 @@ class EmployeeSalesReport extends Component
             'startDate'   => $data['startDate'],
             'endDate'     => $data['endDate'],
         ])->render();
-
+    
         return response(
             Browsershot::html($html)
-                ->format('A4')->margins(10,10,10,10)
-                ->emulateMedia('screen')->noSandbox()
+                ->format('A4')
+                ->landscape() // ✅ أفقي
+                ->margins(10, 10, 10, 10)
+                ->emulateMedia('screen')
+                ->noSandbox()
                 ->waitUntilNetworkIdle()
                 ->pdf()
         )->withHeaders([
@@ -453,6 +456,7 @@ class EmployeeSalesReport extends Component
             'Content-Disposition' => 'inline; filename="employee-sales-report.pdf"',
         ]);
     }
+    
 
     // ======= تصدير Excel مع احترام الفلاتر + الـdrill =======
     public function exportToExcel()
