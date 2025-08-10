@@ -1,7 +1,9 @@
 @php
-    $dir   = 'rtl';
-    $money = fn($v) => '$' . number_format((float)$v, 2);
+    $dir      = 'rtl';
+    $currency = $agency->currency ?? (Auth::user()->agency->currency ?? 'USD');
+    $money    = fn($v) => number_format((float)$v, 2) . ' ' . $currency;
 @endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="{{ $dir }}">
 <head>
@@ -168,19 +170,39 @@
 
             <table class="totals" style="margin-top:10px;">
                 <thead>
-                    <tr>
-                        <th style="text-align:right;">سعر الخدمة</th>
-                        <th style="text-align:right;">إجمالي المدفوع</th>
-                        <th style="text-align:right;">المتبقي</th>
-                    </tr>
+                <tr>
+                    <th style="text-align:right;">سعر الخدمة (أصل)</th>
+                    <th style="text-align:right;">الاستردادات</th>
+                    <th style="text-align:right;">المحصل (إجمالي)</th>
+                    <th style="text-align:right;">الصافي بعد الاسترداد</th>
+                    <th style="text-align:right;">المتبقي / رصيد للعميل</th>
+                </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="blue">{{ $money($r->usd_sell) }}</td>
-                        <td class="green">{{ $money($r->total_paid) }}</td>
-                        <td class="{{ $r->remaining > 0 ? 'red' : '' }}">{{ $money(max($r->remaining,0)) }}</td>
-                    </tr>
+                <tr>
+                    <td class="blue">{{ $money($r->invoice_total_true) }}</td>
+                    <td class="red">{{ $money($r->refund_total) }}</td>
+                    <td class="green">{{ $money($r->total_collected) }}</td>
+                <td class="blue">{{ $money($r->net_total) }}</td>
+
+                <td>
+                    @php
+                        $remForCust = (float)($r->remaining_for_customer ?? 0); // متبقي على العميل
+                        $remForComp = (float)($r->remaining_for_company ?? 0);  // رصيد للعميل
+                    @endphp
+
+                    @if ($remForCust > 0)
+                        <span class="red">على العميل: {{ $money($remForCust) }}</span>
+                    @elseif ($remForComp > 0)
+                        <span class="green">رصيد للعميل: {{ $money($remForComp) }}</span>
+                    @else
+                        <span class="muted">تم السداد بالكامل</span>
+                    @endif
+                </td>
+
+                </tr>
                 </tbody>
+
             </table>
         </div>
 
@@ -193,22 +215,31 @@
 
     <div class="section">الملخص الإجمالي للمستفيدين المحددين</div>
     <table>
-        <thead>
-            <tr>
-                <th>عدد المستفيدين</th>
-                <th>إجمالي سعر الخدمة</th>
-                <th>إجمالي المدفوع</th>
-                <th>إجمالي المتبقي</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ $totals['count'] }}</td>
-                <td class="blue">{{ $money($totals['usd_sell']) }}</td>
-                <td class="green">{{ $money($totals['total_paid']) }}</td>
-                <td class="{{ $totals['remaining'] > 0 ? 'red' : '' }}">{{ $money($totals['remaining']) }}</td>
-            </tr>
-        </tbody>
+<thead>
+  <tr>
+    <th>عدد المستفيدين</th>
+    <th>إجمالي أصل الفواتير</th>
+    <th>إجمالي الاستردادات</th>
+    <th>إجمالي الصافي بعد الاسترداد</th>
+    <th>إجمالي المحصل</th>
+    <th>إجمالي المتبقي على العملاء</th>
+    <th>إجمالي الرصيد للعملاء</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>{{ $totals['count'] }}</td>
+        <td class="blue">{{ $money($totals['invoice_total_true']) }}</td>
+        <td class="red">{{ $money($totals['refund_total']) }}</td>
+        <td class="blue">{{ $money($totals['net_total']) }}</td>
+        <td class="green">{{ $money($totals['total_collected']) }}</td>
+        <td class="red">{{ $money($totals['remaining_for_customer']) }}</td>
+        <td class="green">{{ $money($totals['remaining_for_company']) }}</td>
+
+
+  </tr>
+</tbody>
+
     </table>
 
     <div class="footer-note">

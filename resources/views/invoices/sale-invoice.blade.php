@@ -9,9 +9,11 @@
 
     use Carbon\Carbon;
 
-    $logoPath = storage_path('app/public/' . $sale->agency->logo);
-    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
-    $mime = file_exists($logoPath) ? mime_content_type($logoPath) : null;
+    $stored   = $sale->agency->logo ?? null;
+    $logoPath = $stored ? storage_path('app/public/' . $stored) : null;
+    $logoData = ($logoPath && file_exists($logoPath)) ? base64_encode(file_get_contents($logoPath)) : null;
+    $mime     = ($logoPath && file_exists($logoPath)) ? mime_content_type($logoPath) : null;
+
 @endphp
 
 <!DOCTYPE html>
@@ -137,11 +139,14 @@
             <strong>Date:</strong> {{ $sale->sale_date }}<br>
             <strong>Invoice No:</strong> INV-{{ str_pad($sale->id, 5, '0', STR_PAD_LEFT) }}
         </div>
-        <div style="text-align: left;">
+       <div style="text-align: left;">
             <strong>{{ strtoupper($sale->agency->name ?? 'AGENCY') }}</strong><br>
             {{ $sale->agency->address ?? 'العنوان غير متوفر' }}<br>
-            {{ $sale->agency->phone ?? '' }}
+            {{ $sale->agency->phone ?? '' }}<br>
+            {{ $sale->agency->email ?? '' }}<br>
+            {{ $sale->agency->tax_number ? 'VAT: '.$sale->agency->tax_number : '' }}
         </div>
+
     </div>
 
     {{-- بيانات العميل --}}
@@ -160,7 +165,6 @@
    <table class="table">
     <thead>
         <tr>
-            <th>اسم الموظف</th>
             <th>اسم العميل</th>
             <th>اسم المستفيد</th>
             <th>الهاتف</th>
@@ -174,12 +178,10 @@
             <th>المدفوع</th>
             <th>المتبقي</th>
             <th>الحدث</th>
-            <th>الوكالة</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td>{{ $sale->user->name ?? '-' }}</td>
             <td>{{ $sale->customer->name ?? '-' }}</td>
             <td>{{ $sale->beneficiary_name }}</td>
             <td>{{ $sale->phone_number }}</td>
@@ -193,11 +195,15 @@
             <td>{{ number_format($sale->paid_total, 2) }}</td>
             <td>{{ number_format($sale->remaining, 2) }}</td>
             <td>{{ strtoupper($sale->status) }}</td>
-            <td>{{ $sale->agency->name ?? '-' }}</td>
         </tr>
     </tbody>
 </table>
 
+
+    <div class="summary">
+        <div><strong>Paid:</strong> {{ number_format($sale->paid_total, 2) }}</div>
+        <div><strong>Remaining:</strong> {{ number_format($sale->remaining, 2) }}</div>
+    </div>
 
     {{-- الملخص --}}
     <div class="summary">
@@ -211,14 +217,26 @@
     {{-- التوقيع --}}
     <div class="signatures">
         <div>
-            Approved by
+            Approved by / توقيع العميل
             <div class="line"></div>
         </div>
         <div>
-            Prepared by
+            Prepared by: {{ $sale->user->name ?? (Auth::user()->name ?? 'Staff') }}
             <div class="line"></div>
         </div>
     </div>
+
+    <div style="margin-top:12px; font-size:11px; color:#555; display:flex; justify-content:space-between;">
+        <div>
+            Printed by: {{ $sale->user->name ?? (Auth::user()->name ?? 'Staff') }}
+            &nbsp;|&nbsp;
+            Role: {{ optional($sale->user)->getRoleNames()->first() ?? '-' }}
+        </div>
+        <div>
+            Printed at: {{ \Carbon\Carbon::now()->format('Y-m-d H:i') }}
+        </div>
+    </div>
+
 
 </body>
 </html>

@@ -45,45 +45,80 @@ class CustomerInvoiceOverview extends Component
         $sales   = $customer->sales()->with(['collections', 'service'])->get();
         $grouped = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
 
-        return $grouped->map(function ($sales) {
-            $s = $sales->first();
-            $collected = $sales->sum(fn($x) => $x->collections->sum('amount'));
-            $paid      = $sales->sum('amount_paid');
-            $total     = $collected + $paid;
+    return $grouped->map(function ($sales) {
+        $s = $sales->sortByDesc('created_at')->first();
 
-            return (object) [
-                'group_key'        => (string) ($s->sale_group_id ?? $s->id),
-                'beneficiary_name' => $s->beneficiary_name,
-                'sale_date'        => $s->sale_date,                 // 'YYYY-MM-DD'
-                'service_label'    => $s->service->label ?? '-',
-                'usd_sell'         => $s->usd_sell,
-                'amount_paid'      => $paid,
-                'collected'        => $collected,
-                'total_paid'       => $total,
-                'remaining'        => $s->usd_sell - $total,
-                'note'             => $s->note,
+    $refundStatuses  = ['refund-full','refund_partial','refund-partial','refunded'];
+    $voidStatuses    = ['void','canceled','cancelled']; // ← جديدة
 
-                // تفاصيل المراحل (السيناريوهات)
-                'scenarios' => $sales->map(function ($sale) {
-                    return [
-                        'date'        => $sale->sale_date,
-                        'usd_sell'    => $sale->usd_sell,
-                        'amount_paid' => $sale->amount_paid,
-                        'status'      => $sale->status,
-                        'note'        => $sale->reference ?? '-',
-                    ];
-                }),
+    // أصل الفواتير: استبعد الاستردادات + الملغاة/المبطلة
+    $invoiceTotalTrue = $sales->reject(function ($x) use ($refundStatuses, $voidStatuses) {
+            $st = strtolower($x->status ?? '');
+            return in_array($st, $refundStatuses) || in_array($st, $voidStatuses);
+        })
+        ->sum('usd_sell');
 
-                // سجل التحصيلات
-                'collections' => $sales->flatMap->collections->map(function ($col) {
-                    return [
-                        'amount'       => $col->amount,
-                        'payment_date' => $col->payment_date,
-                        'note'         => $col->note,
-                    ];
-                }),
-            ];
-        })->values();
+
+        // إجمالي الاستردادات (كموجب)
+        $refundTotal = $sales->filter(function ($x) use ($refundStatuses) {
+                return in_array(strtolower($x->status ?? ''), $refundStatuses);
+            })
+            ->sum(fn($x) => abs($x->usd_sell));
+
+        // الصافي بعد الاستردادات
+        $netTotal = $invoiceTotalTrue - $refundTotal;
+
+        // التحصيلات + amount_paid
+        $collected = $sales->sum(fn($x) => $x->collections->sum('amount'));
+        $paid      = $sales->sum('amount_paid');
+        $totalCollected = $collected + $paid;
+
+        // أرصدة
+        $remainingForCustomer = max(0, $netTotal - $totalCollected);
+        $remainingForCompany  = max(0, $totalCollected - $netTotal);
+
+        return (object) [
+            'group_key'        => (string) ($s->sale_group_id ?? $s->id),
+            'beneficiary_name' => $s->beneficiary_name ?? optional($s->customer)->name ?? '—',
+            'sale_date'        => $s->sale_date,
+            'service_label'    => $s->service->label ?? '-',
+
+            // الحقول الجديدة التي سنعرضها
+            'invoice_total_true'   => $invoiceTotalTrue,   // أصل الفاتورة
+            'refund_total'         => $refundTotal,        // اجمالي الاستردادات
+            'net_total'            => $netTotal,           // الصافي = الأصل - الاسترداد
+            'total_collected'      => $totalCollected,     // إجمالي المحصّل (تحصيلات + amount_paid)
+
+            'remaining_for_customer' => $remainingForCustomer, // متبقي على العميل
+            'remaining_for_company'  => $remainingForCompany,  // للشركة للعميل
+
+            // توافق خلفي إن لزم
+            'amount_paid'  => $paid,
+            'collected'    => $collected,
+            'total_paid'   => $totalCollected,
+            'usd_sell'     => $netTotal,    // كان يُستخدم سابقاً كصافي
+            'remaining'    => $remainingForCustomer,
+
+            'note' => $s->note,
+            'scenarios' => $sales->map(function ($sale) {
+                return [
+                    'date'        => $sale->sale_date,
+                    'usd_sell'    => $sale->usd_sell,
+                    'amount_paid' => $sale->amount_paid,
+                    'status'      => $sale->status,
+                    'note'        => $sale->reference ?? '-',
+                ];
+            }),
+            'collections' => $sales->flatMap->collections->map(function ($col) {
+                return [
+                    'amount'       => $col->amount,
+                    'payment_date' => $col->payment_date,
+                    'note'         => $col->note,
+                ];
+            }),
+        ];
+    })->values();
+
     }
 
     /** يطبّق الفلاتر على allCollections ويحدّث collections */

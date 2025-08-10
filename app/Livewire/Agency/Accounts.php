@@ -43,6 +43,24 @@ class Accounts extends Component
     public $selectedSales = [];
     public array $visibleSaleIds = [];
 
+
+public function toggleSelectAll(): void
+{
+    // ids للصفحة الحالية فقط (من نفس فلترة الصفحة الحالية)
+    $currentPage = $this->getCurrentSales()->getCollection(); // <= المهم
+    $idsOnPage = $currentPage->pluck('id')->map(fn($id) => (string) $id)->all();
+
+    if (count($this->selectedSales) === count($idsOnPage)) {
+        // إلغاء تحديد صفوف الصفحة الحالية
+        $this->selectedSales = array_values(array_diff($this->selectedSales, $idsOnPage));
+    } else {
+        // تحديد صفوف الصفحة الحالية (بدون تكرار)
+        $this->selectedSales = array_values(array_unique(array_merge($this->selectedSales, $idsOnPage)));
+    }
+}
+
+
+
     public function updatedSelectedSales()
     {
         $sales = $this->getCurrentSales();
@@ -76,7 +94,7 @@ class Accounts extends Component
     protected $listeners = ['openInvoiceModal'];
     public function openInvoiceModal($saleId)
     {
-        $this->selectedSale = \App\Models\Sale::with(['customer', 'provider', 'account'])->findOrFail($saleId);
+        $this->selectedSale = \App\Models\Sale::with(['customer','provider','account','agency','user'])->findOrFail($saleId);
         $this->showInvoiceModal = true;
     }
 
@@ -84,9 +102,15 @@ class Accounts extends Component
 
     public function downloadInvoicePdf($saleId)
     {
-        $sale = \App\Models\Sale::with(['service', 'provider', 'account', 'customer'])->findOrFail($saleId);
+        $sale = \App\Models\Sale::with(['service', 'provider', 'account', 'customer', 'agency', 'user', 'collections'])
+            ->findOrFail($saleId);
+
+        // نفس طريقة الحساب في الصفحات الأخرى
+        $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+        $sale->remaining  = $sale->usd_sell - $sale->paid_total;
 
         $html = view('invoices.sale-invoice', ['sale' => $sale])->render();
+
 
         $pdfPath = 'pdfs/invoice-' . $sale->id . '.pdf';
         Browsershot::html($html)
@@ -319,7 +343,8 @@ class Accounts extends Component
     // في ملف App\Livewire\Agency\Accounts.php
     public function downloadBulkInvoicePdf($invoiceId)
     {
-        $invoice = \App\Models\Invoice::with(['sales', 'agency'])->findOrFail($invoiceId);
+        $invoice = \App\Models\Invoice::with(['sales', 'agency', 'user'])->findOrFail($invoiceId);
+
 
         $html = view('invoices.bulk-invoice', ['invoice' => $invoice])->render();
 
@@ -367,11 +392,7 @@ class Accounts extends Component
     }
 
 
-    public function toggleSelectAll()
-    {
-        $sales = $this->getCurrentSales();
-        $this->selectedSales = $this->selectAll ? $sales->pluck('id')->toArray() : [];
-    }
+ 
 
 
 

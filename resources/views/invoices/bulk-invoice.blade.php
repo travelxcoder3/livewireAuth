@@ -95,8 +95,8 @@ $mime = $logoPath && file_exists($logoPath) ? mime_content_type($logoPath) : nul
             alt="شعار الوكالة"
             style="width: 140px; height: 70px; object-fit: contain;"
         >
-    </div>
-@endif
+        </div>
+    @endif
 
     <div class="top-info">
         <div>
@@ -104,11 +104,14 @@ $mime = $logoPath && file_exists($logoPath) ? mime_content_type($logoPath) : nul
             <strong>Date:</strong> {{ $invoice->date }}<br>
             <strong>Client:</strong> {{ $invoice->entity_name }}
         </div>
-        <div style="text-align: left;">
+       <div style="text-align: left;">
             <strong>{{ strtoupper($invoice->agency->name ?? 'AGENCY') }}</strong><br>
             {{ $invoice->agency->address ?? 'العنوان غير متوفر' }}<br>
-            {{ $invoice->agency->phone ?? '' }}
+            {{ $invoice->agency->phone ?? '' }}<br>
+            {{ $invoice->agency->email ?? '' }}<br>
+            {{ $invoice->agency->tax_number ? 'VAT: '.$invoice->agency->tax_number : '' }}
         </div>
+
     </div>
 
     <table class="table">
@@ -152,14 +155,26 @@ $mime = $logoPath && file_exists($logoPath) ? mime_content_type($logoPath) : nul
 
     <div class="signatures">
         <div>
-            Approved by
+            Approved by / توقيع العميل
             <div class="line"></div>
         </div>
         <div>
-            Prepared by
+            Prepared by: {{ $invoice->user->name ?? (Auth::user()->name ?? 'Staff') }}
             <div class="line"></div>
         </div>
     </div>
+
+
+    <div style="margin-top:12px; font-size:11px; color:#555; display:flex; justify-content:space-between;">
+    <div>
+        Printed by: {{ $invoice->user->name ?? (Auth::user()->name ?? 'Staff') }}
+        &nbsp;|&nbsp;
+    </div>
+    <div>
+        Printed at: {{ \Carbon\Carbon::now()->format('Y-m-d H:i') }}
+    </div>
+</div>
+
 
 </body>
 </html>

@@ -118,15 +118,34 @@
         <!-- جدول العمليات -->
         <div class="h-6"></div>
 
-        <div class="overflow-x-auto">
+       <div
+    x-data="{
+        selected: @entangle('selectedSales'),
+        total: {{ $sales->count() }},
+    }"
+    x-init="
+        const h = $refs.selectAll;
+        const sync = () => {
+            const len = Array.isArray(selected) ? selected.length : (selected?.length ?? 0);
+            h.checked       = (len > 0 && len === total);
+            h.indeterminate = (len > 0 && len < total);
+        };
+        sync();
+        $watch('selected', sync);
+    "
+    class="overflow-x-auto"
+>
+
             <table class="min-w-full border border-gray-200 rounded-xl overflow-hidden text-xs">
                 <thead class="bg-gray-100">
                     <tr>
                         <th class="p-2 border-b text-center">
-                        <input type="checkbox"
-       wire:model="selectAll"
-       wire:change="toggleSelectAll"
-       class="form-checkbox h-4 w-4 text-green-600">
+             <input type="checkbox"
+       x-ref="selectAll"
+       @click.prevent="$wire.toggleSelectAll()"
+       class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
+       style="accent-color: rgb(var(--primary-500));"
+       title="تحديد/إلغاء تحديد الكل">
 
 
                         </th>
@@ -142,10 +161,12 @@
                     @foreach ($sales as $sale)
                         <tr>
                             <td class="p-2 border-b border-[rgba(0,0,0,0.07)] text-center">
-                            <input type="checkbox"
-                                value="{{ $sale->id }}"
-                                wire:model="selectedSales"
-                                class="form-checkbox h-4 w-4 text-green-600">
+                           <input type="checkbox"
+       wire:key="cb-{{ $sale->id }}"
+       wire:model.live="selectedSales"
+       value="{{ (string) $sale->id }}"
+       class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
+       style="accent-color: rgb(var(--primary-500));">
 
                             </td>
                             <td class="p-2 border-b border-[rgba(0,0,0,0.07)] text-center">
@@ -333,11 +354,16 @@
 
                 <!-- رأس الفاتورة -->
                 <div class="flex justify-between text-sm border-b pb-3 mb-3">
-                    <div class="text-right">
-                        <div class="font-bold text-base">ATHKA HOLIDAYS</div>
-                        <div>صنعاء، شارع الجزائر تقاطع الستين</div>
-                        <div>+967-1-206166</div>
+                   <div class="text-right">
+                        <div class="font-bold text-base">{{ $selectedSale->agency->name ?? 'AGENCY' }}</div>
+                        <div>{{ $selectedSale->agency->address ?? 'العنوان غير متوفر' }}</div>
+                        <div>{{ $selectedSale->agency->phone ?? '' }}</div>
+                        <div>{{ $selectedSale->agency->email ?? '' }}</div>
+                        @if(!empty($selectedSale->agency->tax_number))
+                            <div>VAT: {{ $selectedSale->agency->tax_number }}</div>
+                        @endif
                     </div>
+
                     <div class="text-left text-sm">
                         <p><strong>Order No:</strong> {{ $selectedSale->id }} / {{ now()->format('y') }}</p>
                         <p><strong>Date:</strong> {{ $selectedSale->sale_date }}</p>
@@ -347,12 +373,13 @@
                 </div>
 
                 <!-- بيانات العميل -->
-                <div class="mb-4 text-sm">
+                <div class="mb-4 text-sm grid grid-cols-2 gap-y-1">
                     <p><strong>الاسم:</strong> {{ $selectedSale->beneficiary_name }}</p>
                     <p><strong>الهاتف:</strong> {{ $selectedSale->phone_number }}</p>
                     <p><strong>PNR:</strong> {{ $selectedSale->pnr ?? '-' }}</p>
                     <p><strong>المرجع:</strong> {{ $selectedSale->reference ?? '-' }}</p>
                 </div>
+
 
                 <!-- تفاصيل العملية -->
                 <table class="w-full text-sm border border-collapse border-gray-300 mb-4">
@@ -379,25 +406,30 @@
 
                 <!-- الإجمالي -->
                 <div class="text-sm text-right mb-3">
-                    <p><strong>Currency:</strong> {{ $agencyCurrency }}</p>
+                    @php $currency = $selectedSale->agency->currency ?? $agencyCurrency; @endphp
+                    <p><strong>Currency:</strong> {{ $currency }}</p>
                     <p><strong>TAX:</strong> 0.00</p>
                     <p><strong>Net:</strong> {{ number_format($selectedSale->usd_sell, 2) }}</p>
                     <p><strong>Gross:</strong> {{ number_format($selectedSale->usd_sell, 2) }}</p>
-                    <p class="mt-2">Only {{ ucwords(\App\Helpers\NumberToWords::convert($selectedSale->usd_sell)) }}
-                    {{ $agencyCurrency }}</p>
+                    <p class="mt-2">Only {{ ucwords(\App\Helpers\NumberToWords::convert($selectedSale->usd_sell)) }} {{ $currency }}</p>
                 </div>
 
                 <!-- التواقيع -->
-                <div class="flex justify-between text-sm mt-6">
+              <div class="flex justify-between text-sm mt-6">
                     <div class="text-center w-1/2">
-                        <p>Prepared by</p>
+                        <p>Approved by / توقيع العميل</p>
                         <div class="border-t mt-8 border-gray-400 w-3/4 mx-auto"></div>
                     </div>
                     <div class="text-center w-1/2">
-                        <p>Approved by</p>
+                        <p>Prepared by: {{ $selectedSale->user->name ?? (Auth::user()->name ?? 'Staff') }}</p>
                         <div class="border-t mt-8 border-gray-400 w-3/4 mx-auto"></div>
                     </div>
                 </div>
+                <div class="text-xs text-gray-500 mt-4 print:hidden flex justify-between">
+                    <span>Printed by: {{ $selectedSale->user->name ?? (Auth::user()->name ?? 'Staff') }}</span>
+                    <span>Printed at: {{ now()->format('Y-m-d H:i') }}</span>
+                </div>
+
 
                 <!-- زر الطباعة -->
                 <div class="mt-6 text-center print:hidden">

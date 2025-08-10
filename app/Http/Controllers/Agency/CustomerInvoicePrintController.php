@@ -39,43 +39,86 @@ class CustomerInvoicePrintController extends Controller
         foreach ($selectedKeys as $key) {
             if (!$grouped->has($key)) continue;
 
-            $salesOfGroup = $grouped->get($key);
-            $s         = $salesOfGroup->first();
-            $collected = $salesOfGroup->sum(fn ($x) => $x->collections->sum('amount'));
-            $paid      = $salesOfGroup->sum('amount_paid');
-            $total     = $collected + $paid;
+                $salesOfGroup = $grouped->get($key);
+                $s = $salesOfGroup->sortByDesc('created_at')->first();
 
-            $reports->push((object) [
-                'group_key'        => $key,
-                'beneficiary_name' => $s->beneficiary_name,
-                'sale_date'        => $s->sale_date,
-                'service_label'    => $s->service->label ?? '-',
-                'usd_sell'         => $s->usd_sell,
-                'total_paid'       => $total,
-                'remaining'        => $s->usd_sell - $total,
-                'scenarios'        => $salesOfGroup->map(fn ($sale) => [
-                    'date'        => $sale->sale_date,
-                    'usd_sell'    => $sale->usd_sell,
-                    'amount_paid' => $sale->amount_paid,
-                    'status'      => $sale->status,
-                    'note'        => $sale->reference ?? '-',
-                ]),
-                'collections'      => $salesOfGroup->flatMap->collections->map(fn ($col) => [
-                    'amount'       => $col->amount,
-                    'payment_date' => $col->payment_date,
-                    'note'         => $col->note,
-                ]),
-            ]);
+            $refundStatuses = ['refund-full','refund_full','refund_partial','refund-partial','refunded'];
+            $voidStatuses   = ['void','canceled','cancelled']; // ← جديدة
+
+            // أصل الفاتورة: استبعد الاستردادات + الملغاة/المبطلة
+            $invoiceTotalTrue = $salesOfGroup->reject(function ($x) use ($refundStatuses, $voidStatuses) {
+                    $st = strtolower($x->status ?? '');
+                    return in_array($st, $refundStatuses) || in_array($st, $voidStatuses);
+                })
+                ->sum('usd_sell');
+
+
+                // إجمالي الاستردادات كموجب
+                $refundTotal = $salesOfGroup->filter(function ($x) use ($refundStatuses) {
+                        return in_array(strtolower($x->status ?? ''), $refundStatuses);
+                    })
+                    ->sum(fn($x) => abs($x->usd_sell));
+
+                // الصافي بعد الاسترداد
+                $netTotal = $invoiceTotalTrue - $refundTotal;
+
+                // إجمالي المحصّل (تحصيلات + amount_paid)
+                $collected       = $salesOfGroup->sum(fn ($x) => $x->collections->sum('amount'));
+                $paid            = $salesOfGroup->sum('amount_paid');
+                $totalCollected  = $collected + $paid;
+
+                // أرصدة
+                $remainingForCustomer = max(0, $netTotal - $totalCollected);
+                $remainingForCompany  = max(0, $totalCollected - $netTotal);
+
+                $reports->push((object) [
+                    'group_key'        => $key,
+                    'beneficiary_name' => $s->beneficiary_name ?? optional($s->customer)->name ?? '—',
+                    'sale_date'        => $s->sale_date,
+                    'service_label'    => $s->service->label ?? '-',
+
+                    // الحقول الجديدة (المستخدمة في الـ PDF والواجهات)
+                    'invoice_total_true'    => $invoiceTotalTrue,
+                    'refund_total'          => $refundTotal,
+                    'net_total'             => $netTotal,
+                    'total_collected'       => $totalCollected,
+                    'remaining_for_customer'=> $remainingForCustomer,
+                    'remaining_for_company' => $remainingForCompany,
+
+                    // aliases للتوافق مع أي قوالب قديمة
+                    'usd_sell'    => $netTotal,
+                    'total_paid'  => $totalCollected,
+                    'remaining'   => $remainingForCustomer,
+
+                    // التفاصيل
+                    'scenarios' => $salesOfGroup->map(fn ($sale) => [
+                        'date'        => $sale->sale_date,
+                        'usd_sell'    => $sale->usd_sell,
+                        'amount_paid' => $sale->amount_paid,
+                        'status'      => $sale->status,
+                        'note'        => $sale->reference ?? '-',
+                    ]),
+                    'collections' => $salesOfGroup->flatMap->collections->map(fn ($col) => [
+                        'amount'       => $col->amount,
+                        'payment_date' => $col->payment_date,
+                        'note'         => $col->note,
+                    ]),
+                ]);
+
         }
 
         abort_if($reports->isEmpty(), 404, 'لا توجد بيانات للطباعة.');
 
         $totals = [
-            'count'      => $reports->count(),
-            'usd_sell'   => $reports->sum('usd_sell'),
-            'total_paid' => $reports->sum('total_paid'),
-            'remaining'  => $reports->sum(fn ($r) => max($r->remaining, 0)),
+            'count'                   => $reports->count(),
+            'invoice_total_true'      => $reports->sum('invoice_total_true'),        // إجمالي أصل الفواتير
+            'refund_total'            => $reports->sum('refund_total'),              // إجمالي الاستردادات
+            'net_total'               => $reports->sum('net_total'),                 // إجمالي الصافي بعد الاسترداد
+            'total_collected'         => $reports->sum('total_collected'),           // إجمالي المحصل (تحصيلات + amount_paid)
+            'remaining_for_customer'  => $reports->sum('remaining_for_customer'),    // إجمالي المتبقي على العملاء
+            'remaining_for_company'   => $reports->sum('remaining_for_company'),     // إجمالي الرصيد للعملاء
         ];
+
 
         // بيانات الوكالة + الشعار
         $agency = Auth::user()->agency;
