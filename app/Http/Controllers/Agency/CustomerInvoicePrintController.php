@@ -42,22 +42,25 @@ class CustomerInvoicePrintController extends Controller
                 $salesOfGroup = $grouped->get($key);
                 $s = $salesOfGroup->sortByDesc('created_at')->first();
 
-            $refundStatuses = ['refund-full','refund_full','refund_partial','refund-partial','refunded'];
-            $voidStatuses   = ['void','canceled','cancelled']; // ← جديدة
+$refundStatuses = [
+    'refund-full','refund_full',
+    'refund-partial','refund_partial',
+    'refunded','refund'
+];
+$voidStatuses   = ['void','cancel','canceled','cancelled'];
 
-            // أصل الفاتورة: استبعد الاستردادات + الملغاة/المبطلة
-            $invoiceTotalTrue = $salesOfGroup->reject(function ($x) use ($refundStatuses, $voidStatuses) {
-                    $st = strtolower($x->status ?? '');
-                    return in_array($st, $refundStatuses) || in_array($st, $voidStatuses);
-                })
-                ->sum('usd_sell');
+$invoiceTotalTrue = $salesOfGroup->reject(function ($x) use ($refundStatuses, $voidStatuses) {
+        $st = mb_strtolower(trim($x->status ?? ''));
+        return in_array($st, $refundStatuses, true) || in_array($st, $voidStatuses, true);
+    })
+    ->sum('usd_sell');
 
+$refundTotal = $salesOfGroup->filter(function ($x) use ($refundStatuses, $voidStatuses) {
+        $st = mb_strtolower(trim($x->status ?? ''));
+        return in_array($st, $refundStatuses, true) || in_array($st, $voidStatuses, true);
+    })
+    ->sum(fn($x) => abs($x->usd_sell));
 
-                // إجمالي الاستردادات كموجب
-                $refundTotal = $salesOfGroup->filter(function ($x) use ($refundStatuses) {
-                        return in_array(strtolower($x->status ?? ''), $refundStatuses);
-                    })
-                    ->sum(fn($x) => abs($x->usd_sell));
 
                 // الصافي بعد الاسترداد
                 $netTotal = $invoiceTotalTrue - $refundTotal;

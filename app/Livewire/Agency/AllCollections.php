@@ -78,7 +78,7 @@ public function loadSales()
 $this->sales = $grouped->map(function ($sales) {
     $first = $sales->sortByDesc('created_at')->first(); // نأخذ الأحدث
 
-$refundStatuses = ['refund-full','refund_partial','refund-partial','refunded'];
+$refundStatuses = ['refund-full','refund_partial','refund-partial','refunded','void','cancel','canceled','cancelled'];
 
 $amountPaid     = $sales->sum('amount_paid');
 $collections    = $sales->flatMap->collections;
@@ -150,6 +150,4 @@ return (object)[
     {
         $this->loadSales();
     }
-
-    // ... باقي الدوال الموجودة سابقاً ...
 }

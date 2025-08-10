@@ -229,6 +229,8 @@ $this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفي
     $this->sale_profit = 0;
     $this->amount_due = 0;
     $this->showCommission = false;
+    $this->commission = null;            // ✅ صَفّر قيمة العمولة
+    $this->commissionReadOnly = false;   // ✅ افتح الحقل صراحةً
     $this->showExpectedDate = false;
     $this->sale_group_id  = Str::uuid();
 
@@ -692,6 +694,7 @@ case 'part':
         // إذا لم يكن للعميل عمولة، نفرغ حقل العمولة
         if (!$this->showCommission) {
             $this->commission = null;
+            $this->commissionReadOnly = false;
         }
     }
 
@@ -788,7 +791,9 @@ if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
 } else {
     $this->showCustomerField = true;
 }
-
+    if (!$this->isDuplicated) {
+        $this->commissionReadOnly = false;
+    }
 }
 
 public function applyFilters()
@@ -881,6 +886,10 @@ public function updatedStatus($value)
             $this->commissionReadOnly = false;
         }
     }
+    else {
+    // ✅ في الوضع العادي (مش تكرار) افتح الحقل
+    $this->commissionReadOnly = false;
+}
 
 }
 

@@ -95,7 +95,10 @@
                         <th class="p-2 text-right">إجمالي البيع</th>
                         <th class="p-2 text-right">إجمالي الشراء</th>
                         <th class="p-2 text-right">الربح</th>
-                        <th class="p-2 text-right">العمولة</th>
+                        <!-- 🔸 عمولة الموظف -->
+                        <th class="p-2 text-right">عمولة الموظف (متوقعة)</th>
+                        <th class="p-2 text-right">عمولة الموظف (مستحقة)</th>
+                        <!-- المتبقي كما كان -->
                         <th class="p-2 text-right">إجمالي المستحق</th>
                         <th class="p-2 text-right">العملة</th>
                         <th class="p-2 text-right"></th> {{-- تفصيلي --}}
@@ -109,7 +112,10 @@
                             <td class="p-2">{{ number_format($row['sell'], 2) }}</td>
                             <td class="p-2">{{ number_format($row['buy'], 2) }}</td>
                             <td class="p-2">{{ number_format($row['profit'], 2) }}</td>
-                            <td class="p-2">{{ number_format($row['commission'], 2) }}</td>
+                            <!-- 🔸 جديدة -->
+                            <td class="p-2">{{ number_format($row['employee_commission_expected'] ?? 0, 2) }}</td>
+                            <td class="p-2">{{ number_format($row['employee_commission_due'] ?? 0, 2) }}</td>
+                            <!-- المتبقي كما هو -->
                             <td class="p-2">{{ number_format($row['remaining'], 2) }}</td>
                             <td class="p-2">{{ $currency }}</td>
                             <td class="p-2">
@@ -121,7 +127,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="p-4 text-center text-gray-500">لا توجد بيانات</td></tr>
+                        <tr><td colspan="10" class="p-4 text-center text-gray-500">لا توجد بيانات</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -158,7 +164,10 @@
                         <th class="p-2 text-right">البيع</th>
                         <th class="p-2 text-right">الشراء</th>
                         <th class="p-2 text-right">الربح</th>
-                        <th class="p-2 text-right">العمولة</th>
+                        <!-- 🔸 عمولة الموظف -->
+                        <th class="p-2 text-right">عمولة الموظف (متوقعة)</th>
+                        <th class="p-2 text-right">عمولة الموظف (مستحقة)</th>
+                        <!-- المتبقي -->
                         <th class="p-2 text-right">المستحق</th>
                         <th class="p-2 text-right"></th> {{-- تفصيلي --}}
                     </tr>
@@ -171,7 +180,10 @@
                             <td class="p-2">{{ number_format($row['sell'],2) }}</td>
                             <td class="p-2">{{ number_format($row['buy'],2) }}</td>
                             <td class="p-2">{{ number_format($row['profit'],2) }}</td>
-                            <td class="p-2">{{ number_format($row['commission'],2) }}</td>
+                            <!-- 🔸 جديدة -->
+                            <td class="p-2">{{ number_format($row['employee_commission_expected'] ?? 0,2) }}</td>
+                            <td class="p-2">{{ number_format($row['employee_commission_due'] ?? 0,2) }}</td>
+                            <!-- المتبقي كما هو -->
                             <td class="p-2">{{ number_format($row['remaining'],2) }}</td>
                             <td class="p-2">
                                 <a href="#"
@@ -182,7 +194,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td class="p-3 text-center text-gray-500" colspan="8">لا توجد بيانات</td></tr>
+                        <tr><td class="p-3 text-center text-gray-500" colspan="9">لا توجد بيانات</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -199,7 +211,10 @@
                         <th class="p-2 text-right">البيع</th>
                         <th class="p-2 text-right">الشراء</th>
                         <th class="p-2 text-right">الربح</th>
-                        <th class="p-2 text-right">العمولة</th>
+                        <!-- 🔸 عمولة الموظف -->
+                        <th class="p-2 text-right">عمولة الموظف (متوقعة)</th>
+                        <th class="p-2 text-right">عمولة الموظف (مستحقة)</th>
+                        <!-- المتبقي -->
                         <th class="p-2 text-right">المستحق</th>
                         <th class="p-2 text-right"></th> {{-- تفصيلي --}}
                     </tr>
@@ -212,7 +227,10 @@
                             <td class="p-2">{{ number_format($row['sell'],2) }}</td>
                             <td class="p-2">{{ number_format($row['buy'],2) }}</td>
                             <td class="p-2">{{ number_format($row['profit'],2) }}</td>
-                            <td class="p-2">{{ number_format($row['commission'],2) }}</td>
+                            <!-- 🔸 جديدة -->
+                            <td class="p-2">{{ number_format($row['employee_commission_expected'] ?? 0,2) }}</td>
+                            <td class="p-2">{{ number_format($row['employee_commission_due'] ?? 0,2) }}</td>
+                            <!-- المتبقي كما هو -->
                             <td class="p-2">{{ number_format($row['remaining'],2) }}</td>
                             <td class="p-2">
                                 <a href="#"
@@ -223,7 +241,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td class="p-3 text-center text-gray-500" colspan="8">لا توجد بيانات</td></tr>
+                        <tr><td class="p-3 text-center text-gray-500" colspan="9">لا توجد بيانات</td></tr>
                     @endforelse
                 </tbody>
             </table>

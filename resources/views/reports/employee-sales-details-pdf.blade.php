@@ -1,7 +1,6 @@
 @php
     use Carbon\Carbon;
 
-    // شعار الوكالة الحالية
     $agency     = Auth::user()?->agency;
     $logoPath   = $agency && $agency->logo ? storage_path('app/public/'.$agency->logo) : null;
     $logoData   = ($logoPath && file_exists($logoPath)) ? base64_encode(file_get_contents($logoPath)) : null;
@@ -9,31 +8,46 @@
 
     $from = $startDate ? Carbon::parse($startDate)->format('Y-m-d') : '—';
     $to   = $endDate   ? Carbon::parse($endDate)->format('Y-m-d')   : '—';
+
+    // دالة قصيرة لتنسيق الأرقام بنفس الطريقة دائماً
+    function nf($v) { return number_format((float)$v, 2, '.', ','); }
 @endphp
+<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
     <title>كشف عمليات الموظف - {{ $employee?->name }}</title>
     <style>
         @page { margin: 30px; }
+        html,body { -webkit-print-color-adjust: exact; }
         body { font-family: 'DejaVu Sans', sans-serif; direction: rtl; font-size: 13px; }
-        .header {
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; position: relative;
+
+        /* ===== Header ===== */
+        .header{
+            display:grid;
+            grid-template-columns:140px 1fr 140px;
+            align-items:center;
+            gap:12px;
+            border-bottom:1px solid #ccc;
+            padding-bottom:10px; margin-bottom:18px;
         }
-        .logo { width: 140px; height: 80px; object-fit: contain; }
-        .title {
-            font-size: 20px; font-weight: bold; text-align: center;
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            white-space: nowrap;
-        }
-        .sub { font-size: 12px; color: #555; text-align: center; margin-top: 6px; }
-        .chip { display:inline-block; padding: 3px 8px; border: 1px solid #ddd; border-radius: 6px; margin: 0 4px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #aaa; padding: 6px; text-align: center; }
-        th { background-color: #eee; font-weight: bold; }
-        .section { margin-top: 18px; font-weight: 700; }
-        .footer { text-align: center; margin-top: 18px; font-size: 11px; color: #666; }
+        .logo{ width:140px; height:80px; object-fit:contain; }
+        .title{ text-align:center; font-size:20px; font-weight:700; }
+
+        .sub{ font-size:12px; color:#555; text-align:center; margin-top:6px; }
+        .chip{ display:inline-block; padding:3px 8px; border:1px solid #ddd; border-radius:6px; margin:0 4px; }
+
+        /* ===== Tables ===== */
+        table{ width:100%; border-collapse:collapse; margin-top:12px; table-layout:fixed; }
+        th,td{ border:1px solid #aaa; padding:6px 8px; text-align:center; white-space:nowrap; vertical-align:middle; }
+        th{ background:#eee; font-weight:700; }
+        tr{ page-break-inside: avoid; }
+
+        /* أرقام LTR كي لا تنعكس الفواصل */
+        .num{ direction:ltr; unicode-bidi:embed; }
+
+        .section{ margin-top:16px; font-weight:700; }
+        .footer{ text-align:center; margin-top:16px; font-size:11px; color:#666; }
     </style>
 </head>
 <body>
@@ -44,9 +58,9 @@
             <img src="data:{{ $logoMime }};base64,{{ $logoData }}" class="logo" alt="logo">
         @else
             <div class="logo"></div>
-        @endif
-        <div style="width:140px;"></div>
+        @endif>
         <div class="title">كشف عمليات الموظف</div>
+        <div></div>
     </div>
 
     {{-- معلومات عامة --}}
@@ -59,30 +73,37 @@
     {{-- تفصيلي حسب الخدمة --}}
     <div class="section">تفصيلي حسب الخدمة</div>
     <table>
+        <colgroup>
+            <col style="width:18%"><col style="width:8%"><col style="width:12%">
+            <col style="width:12%"><col style="width:12%">
+            <col style="width:14%"><col style="width:14%"><col style="width:10%">
+        </colgroup>
         <thead>
-            <tr>
-                <th>الخدمة</th>
-                <th>عدد</th>
-                <th>البيع</th>
-                <th>الشراء</th>
-                <th>الربح</th>
-                <th>العمولة</th>
-                <th>المستحق</th>
-            </tr>
+        <tr>
+            <th>الخدمة</th>
+            <th>عدد</th>
+            <th>البيع</th>
+            <th>الشراء</th>
+            <th>الربح</th>
+            <th>عمولةالمتوقعة</th>
+            <th>عمولةالمستحقة</th>
+            <th>المستحق</th>
+        </tr>
         </thead>
         <tbody>
         @forelse ($byService as $serviceId => $row)
             <tr>
                 <td>{{ $row['firstRow']?->service?->label ?? '—' }}</td>
-                <td>{{ $row['count'] }}</td>
-                <td>{{ number_format($row['sell'],2) }}</td>
-                <td>{{ number_format($row['buy'],2) }}</td>
-                <td>{{ number_format($row['profit'],2) }}</td>
-                <td>{{ number_format($row['commission'],2) }}</td>
-                <td>{{ number_format($row['remaining'],2) }}</td>
+                <td class="num">{{ nf($row['count']) }}</td>
+                <td class="num">{{ nf($row['sell']) }}</td>
+                <td class="num">{{ nf($row['buy']) }}</td>
+                <td class="num">{{ nf($row['profit']) }}</td>
+                <td class="num">{{ nf($row['employee_commission_expected'] ?? 0) }}</td>
+                <td class="num">{{ nf($row['employee_commission_due'] ?? 0) }}</td>
+                <td class="num">{{ nf($row['remaining']) }}</td>
             </tr>
         @empty
-            <tr><td colspan="7">لا توجد بيانات</td></tr>
+            <tr><td colspan="8">لا توجد بيانات</td></tr>
         @endforelse
         </tbody>
     </table>
@@ -90,30 +111,37 @@
     {{-- تفصيلي حسب الشهر --}}
     <div class="section">تفصيلي حسب الشهر</div>
     <table>
+        <colgroup>
+            <col style="width:12%"><col style="width:8%"><col style="width:14%">
+            <col style="width:14%"><col style="width:14%">
+            <col style="width:14%"><col style="width:14%"><col style="width:10%">
+        </colgroup>
         <thead>
-            <tr>
-                <th>الشهر</th>
-                <th>عدد</th>
-                <th>البيع</th>
-                <th>الشراء</th>
-                <th>الربح</th>
-                <th>العمولة</th>
-                <th>المستحق</th>
-            </tr>
+        <tr>
+            <th>الشهر</th>
+            <th>عدد</th>
+            <th>البيع</th>
+            <th>الشراء</th>
+            <th>الربح</th>
+            <th>عمولةالمتوقعة</th>
+            <th>عمولةالمستحقة</th>
+            <th>المستحق</th>
+        </tr>
         </thead>
         <tbody>
         @forelse ($byMonth as $ym => $row)
             <tr>
                 <td>{{ $ym }}</td>
-                <td>{{ $row['count'] }}</td>
-                <td>{{ number_format($row['sell'],2) }}</td>
-                <td>{{ number_format($row['buy'],2) }}</td>
-                <td>{{ number_format($row['profit'],2) }}</td>
-                <td>{{ number_format($row['commission'],2) }}</td>
-                <td>{{ number_format($row['remaining'],2) }}</td>
+                <td class="num">{{ nf($row['count']) }}</td>
+                <td class="num">{{ nf($row['sell']) }}</td>
+                <td class="num">{{ nf($row['buy']) }}</td>
+                <td class="num">{{ nf($row['profit']) }}</td>
+                <td class="num">{{ nf($row['employee_commission_expected'] ?? 0) }}</td>
+                <td class="num">{{ nf($row['employee_commission_due'] ?? 0) }}</td>
+                <td class="num">{{ nf($row['remaining']) }}</td>
             </tr>
         @empty
-            <tr><td colspan="7">لا توجد بيانات</td></tr>
+            <tr><td colspan="8">لا توجد بيانات</td></tr>
         @endforelse
         </tbody>
     </table>
@@ -121,21 +149,26 @@
     {{-- جدول العمليات التفصيلي --}}
     <div class="section">العمليات</div>
     <table>
+        <colgroup>
+            <col style="width:4%"><col style="width:10%"><col style="width:12%"><col style="width:12%">
+            <col style="width:12%"><col style="width:8%"><col style="width:10%">
+            <col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:8%">
+        </colgroup>
         <thead>
-            <tr>
-                <th>#</th>
-                <th>تاريخ البيع</th>
-                <th>الخدمة</th>
-                <th>المزوّد</th>
-                <th>المستفيد</th>
-                <th>PNR</th>
-                <th>المرجع</th>
-                <th>البيع</th>
-                <th>الشراء</th>
-                <th>الربح</th>
-                <th>المدفوع</th>
-                <th>المتبقي</th>
-            </tr>
+        <tr>
+            <th>#</th>
+            <th>تاريخ البيع</th>
+            <th>الخدمة</th>
+            <th>المزوّد</th>
+            <th>المستفيد</th>
+            <th>PNR</th>
+            <th>المرجع</th>
+            <th>البيع</th>
+            <th>الشراء</th>
+            <th>الربح</th>
+            <th>المدفوع</th>
+            <th>المتبقي</th>
+        </tr>
         </thead>
         <tbody>
         @php $i = 1; @endphp
@@ -149,18 +182,18 @@
                 $remain = $sell - $paid;
             @endphp
             <tr>
-                <td>{{ $i++ }}</td>
+                <td class="num">{{ nf($i++) }}</td>
                 <td>{{ $s->sale_date ? Carbon::parse($s->sale_date)->format('Y-m-d') : '—' }}</td>
                 <td>{{ $s->service?->label ?? '—' }}</td>
                 <td>{{ $s->provider?->name ?? '—' }}</td>
                 <td>{{ $s->beneficiary_name ?? '—' }}</td>
                 <td>{{ $s->pnr ?? '—' }}</td>
                 <td>{{ $s->reference ?? '—' }}</td>
-                <td>{{ number_format($sell,2) }}</td>
-                <td>{{ number_format($buy,2) }}</td>
-                <td>{{ number_format($sell - $buy,2) }}</td>
-                <td>{{ number_format($paid,2) }}</td>
-                <td>{{ number_format($remain,2) }}</td>
+                <td class="num">{{ nf($sell) }}</td>
+                <td class="num">{{ nf($buy) }}</td>
+                <td class="num">{{ nf($sell - $buy) }}</td>
+                <td class="num">{{ nf($paid) }}</td>
+                <td class="num">{{ nf($remain) }}</td>
             </tr>
         @empty
             <tr><td colspan="12">لا توجد عمليات</td></tr>

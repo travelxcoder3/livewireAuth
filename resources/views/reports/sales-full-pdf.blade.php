@@ -2,160 +2,215 @@
     use Carbon\Carbon;
     use Illuminate\Support\Facades\Log;
 
-    // الحصول على الوكالة من أول عملية بيع
+    // اتجاه + الوكالة الأولى
+    $dir    = 'rtl';
     $agency = $sales->first()?->agency;
 
-    // بناء مسار الشعار إذا توفر
-    $logoPath = null;
+    // ألوان الثيم (افتراضي عند غياب $colors)
+    $colors = isset($colors) && is_array($colors) ? $colors : [
+        'primary-100' => '209,250,229',
+        'primary-500' => '16,185,129',
+        'primary-600' => '5,150,105',
+    ];
+
+    // العملة و دالة تنسيق
+    $currency = $agency?->currency ?? 'USD';
+    $money    = fn($v) => number_format((float)$v, 2) . ' ' . $currency;
+
+    // الشعار → data URL
+    $logoDataUrl = null;
     if ($agency && !empty($agency->logo)) {
         $logoPath = storage_path('app/public/' . ltrim($agency->logo, '/'));
-        if (!file_exists($logoPath)) {
-            Log::error('Logo file not found: ' . $logoPath);
-            $logoPath = null;
+        if (file_exists($logoPath)) {
+            try {
+                $mime = mime_content_type($logoPath) ?: 'image/png';
+                $logoDataUrl = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+            } catch (\Throwable $e) {
+                Log::error('Error reading logo: '.$e->getMessage());
+            }
+        } else {
+            Log::error('Logo file not found: '.$logoPath);
         }
     }
 
-    // تحويل الشعار إلى base64
-    $logoData = null;
-    $mime = 'image/png';
-    if ($logoPath) {
-        try {
-            $logoData = base64_encode(file_get_contents($logoPath));
-            $mime = mime_content_type($logoPath);
-        } catch (Exception $e) {
-            Log::error('Error reading logo: ' . $e->getMessage());
-        }
-    }
+    // إجماليات بسيطة
+    $totalSalesAmount = (float) $sales->sum('usd_sell');
+    $rowsCount        = (int) $sales->count();
+
+    // محولات نصوص بسيطة
+    $pretty = function($v) {
+        if ($v === null || $v === '') return '-';
+        $v = str_replace(['_', '-'], ' ', (string)$v);
+        return mb_convert_case($v, MB_CASE_TITLE, "UTF-8");
+    };
 @endphp
 
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="{{ $dir }}">
 <head>
     <meta charset="UTF-8">
     <title>تقرير المبيعات</title>
     <style>
-        body {
-            font-family: 'DejaVu Sans', sans-serif;
-            direction: rtl;
-            font-size: 12px;
-            margin: 20px;
+        :root{
+            --primary-100: {{ $colors['primary-100'] ?? '209,250,229' }}; /* rgb */
+            --primary-500: {{ $colors['primary-500'] ?? '16,185,129'  }}; /* rgb */
+            --primary-600: {{ $colors['primary-600'] ?? '5,150,105'   }}; /* rgb */
+
+            --border: #e5e7eb;
+            --muted: #6b7280;
+            --heading: #111827;
         }
 
-        .header {
+        @page { size: A4; margin: 14mm 10mm; }
+        * { box-sizing: border-box; }
+        body { font-family: DejaVu Sans, Tahoma, Arial, sans-serif; color:#111827; line-height: 1.55; font-size: 13px; }
+        h1,h2,h3 { margin:0 0 10px; color: var(--heading); font-weight: 800; }
+        .muted { color: var(--muted); font-size: 12px; }
+        .hr { border:0; border-top: 2px solid var(--border); margin: 10px 0; }
+
+        /* الهيدر: شعار + اسم الوكالة */
+        .invoice-head {
+            text-align: center;
+            padding: 10px 0 12px;
+            border-bottom: 3px solid rgb(var(--primary-600));
+            margin-bottom: 14px;
+        }
+        .brand { display:flex; align-items:center; justify-content:center; gap:12px; }
+        .brand img { height: 48px; width:auto; }
+        .brand .name { font-size: 20px; font-weight:800; color: #111827; }
+
+        .title { text-align:center; margin-top: 6px; }
+        .title h2 { margin:0; font-size: 20px; color: #111827; }
+        .title .muted { margin-top: 2px; }
+
+        table { width:100%; border-collapse:collapse; margin-top:8px; }
+        th,td { border:1px solid var(--border); padding:6px 8px; font-size:12px; text-align:right; }
+        th {
+            background: rgba(var(--primary-100), .1);
+            color: #111827;
+            font-weight: 700;
+        }
+
+        .blue { color:#2563eb; }
+        .green{ color:#16a34a; }
+        .red  { color:#dc2626; }
+
+        .section {
+            margin: 14px 0 8px;
+            padding: 6px 10px;
+            border-inline-start: 4px solid rgb(var(--primary-600));
+            background: rgba(var(--primary-100), .1);
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .card {
             position: relative;
-            height: 120px;
-            margin-bottom: 30px;
+            border:1px solid var(--border);
+            border-radius:8px;
+            padding:10px;
+            margin-bottom:12px;
+            background: #fff;
+        }
+        .card:before{
+            content:"";
+            position:absolute;
+            inset-inline-start:0; top:0; bottom:0;
+            width:4px;
+            background: rgb(var(--primary-600));
+            border-radius:8px 0 0 8px;
         }
 
-        .logo {
-            position: absolute;
-            top: 0;
-            right: 0;
-            max-width: 150px;
-            max-height: 100px;
-            object-fit: contain;
-        }
-
-        .title {
-            position: absolute;
-            top: 50%;
-            right: 50%;
-            transform: translate(50%, -50%);
-            font-size: 28px;
-            font-weight: bold;
-            margin: 0;
-            text-align: center;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 25px;
-        }
-
-        table th, table td {
-            border: 1px solid #aaa;
-            padding: 6px;
-            text-align: center;
-        }
-
-        table th {
-            background-color: #eee;
-        }
-
-        .total {
-            text-align: right;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-
-        .total p {
-            margin: 0;
-            line-height: 1.2;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 10px;
-            color: #666;
-        }
+        .footer-note { margin-top: 10px; text-align: center; font-size: 11px; color: var(--muted); }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        @if($logoData)
-            <img src="data:{{ $mime }};base64,{{ $logoData }}" alt="شعار الوكالة" class="logo">
-        @endif
-        <h2 class="title">تقرير المبيعات</h2>
+    {{-- شعار + اسم الوكالة --}}
+    <div class="invoice-head">
+        <div class="brand">
+            @if(!empty($logoDataUrl))
+                <img src="{{ $logoDataUrl }}" alt="Logo">
+            @endif
+            <div class="name">{{ $agency->name ?? 'اسم الوكالة' }}</div>
+        </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>التاريخ</th>
-                <th>الموظف المسؤول</th>
-                <th>نوع الخدمة</th>
-                <th>المزود</th>
-                <th>حساب العميل</th>
-                <th>المبلغ ({{ $agency?->currency ?? 'USD' }})</th>
-                <th>المرجع</th>
-                <th>PNR</th>
-                <th>العميل عبر</th>
-                <th>حالة الدفع</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($sales as $sale)
-                <tr>
-                    <td>{{ $sale->created_at->format('Y-m-d') }}</td>
-                    <td>{{ optional($sale->user)->name ?? '-' }}</td>
-                    <td>{{ optional($sale->service)->label ?? '-' }}</td>
-                    <td>{{ optional($sale->provider)->name ?? '-' }}</td>
-                    <td>{{ optional($sale->customer)->name ?? '-' }}</td>
-                    <td style="text-align: right;">{{ number_format($sale->usd_sell, 2) }}</td>
-                    <td>{{ $sale->reference }}</td>
-                    <td>{{ $sale->pnr }}</td>
-                    <td>{{ ucfirst(str_replace('_', ' ', $sale->customer_via)) }}</td>
-                    <td>{{ ucfirst(str_replace('_', ' ', $sale->payment_method)) }}</td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="10">لا توجد بيانات</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-
-    <div class="total">
-       <p>الإجمالي: {{ number_format($totalSales, 2) }} {{ $agency?->currency ?? 'USD' }}</p>
-        <p>المستخدم: {{ auth()->user()->name }}</p>
-        <p>بتاريخ: {{ Carbon::now()->translatedFormat('j-n-Y') }}</p>
+    {{-- عنوان التقرير --}}
+    <div class="title">
+        <h2>تقرير المبيعات</h2>
+        <div class="muted">تاريخ التوليد: {{ now()->format('Y-m-d') }}</div>
     </div>
 
-    <div class="footer">
-        تم إنشاء التقرير في {{ Carbon::now()->translatedFormat('Y-m-d H:i:s') }}
+    <hr class="hr"/>
+
+    {{-- جدول المبيعات --}}
+    <div class="card">
+        <div class="section">قائمة العمليات</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>الموظف</th>
+                    <th>نوع الخدمة</th>
+                    <th>المزود</th>
+                    <th>حساب العميل</th>
+                    <th>المرجع</th>
+                    <th>PNR</th>
+                    <th>العميل عبر</th>
+                    <th>طريقة/حالة الدفع</th>
+                    <th>المبلغ ({{ $currency }})</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($sales as $sale)
+                    <tr>
+                        <td>{{ optional($sale->created_at)->format('Y-m-d') ?? '-' }}</td>
+                        <td>{{ $sale->user->name ?? '-' }}</td>
+                        <td>{{ $sale->service->label ?? '-' }}</td>
+                        <td>{{ $sale->provider->name ?? '-' }}</td>
+                        <td>{{ $sale->customer->name ?? '-' }}</td>
+                        <td>{{ $sale->reference ?? '-' }}</td>
+                        <td>{{ $sale->pnr ?? '-' }}</td>
+                        <td>{{ $pretty($sale->customer_via) }}</td>
+                        <td>{{ $pretty($sale->payment_method) }}</td>
+                        <td class="green" style="text-align:left;">{{ number_format((float)$sale->usd_sell, 2) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="10" class="muted" style="text-align:center;">لا توجد بيانات</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- الملخص الإجمالي --}}
+    <div class="card">
+        <div class="section">الملخص الإجمالي</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>عدد العمليات</th>
+                    <th>إجمالي المبيعات</th>
+                    <th>المستخدم المُصدِّر</th>
+                    <th>بتاريخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ $rowsCount }}</td>
+                    <td class="blue">{{ $money($totalSalesAmount) }}</td>
+                    <td>{{ auth()->user()->name }}</td>
+                    <td>{{ Carbon::now()->translatedFormat('j-n-Y') }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer-note">
+        تم إنشاء هذا التقرير بواسطة نظام إدارة وكالات السفر – {{ $agency->name ?? '' }}<br>
+        {{ Carbon::now()->translatedFormat('Y-m-d H:i:s') }}
     </div>
 
 </body>

@@ -48,22 +48,27 @@ class CustomerInvoiceOverview extends Component
     return $grouped->map(function ($sales) {
         $s = $sales->sortByDesc('created_at')->first();
 
-    $refundStatuses  = ['refund-full','refund_partial','refund-partial','refunded'];
-    $voidStatuses    = ['void','canceled','cancelled']; // ← جديدة
+$refundStatuses = [
+    'refund-full','refund_full',
+    'refund-partial','refund_partial',
+    'refunded','refund'
+];
+$voidStatuses   = ['void','cancel','canceled','cancelled'];
 
-    // أصل الفواتير: استبعد الاستردادات + الملغاة/المبطلة
-    $invoiceTotalTrue = $sales->reject(function ($x) use ($refundStatuses, $voidStatuses) {
-            $st = strtolower($x->status ?? '');
-            return in_array($st, $refundStatuses) || in_array($st, $voidStatuses);
-        })
-        ->sum('usd_sell');
+// أصل الفواتير = كل الإصدارات الفعلية فقط
+$invoiceTotalTrue = $sales->reject(function ($x) use ($refundStatuses, $voidStatuses) {
+        $st = mb_strtolower(trim($x->status ?? ''));
+        return in_array($st, $refundStatuses, true) || in_array($st, $voidStatuses, true);
+    })
+    ->sum('usd_sell');
 
+// إجمالي الاستردادات (يشمل الإلغاء) كموجب
+$refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses) {
+        $st = mb_strtolower(trim($x->status ?? ''));
+        return in_array($st, $refundStatuses, true) || in_array($st, $voidStatuses, true);
+    })
+    ->sum(fn($x) => abs($x->usd_sell));
 
-        // إجمالي الاستردادات (كموجب)
-        $refundTotal = $sales->filter(function ($x) use ($refundStatuses) {
-                return in_array(strtolower($x->status ?? ''), $refundStatuses);
-            })
-            ->sum(fn($x) => abs($x->usd_sell));
 
         // الصافي بعد الاستردادات
         $netTotal = $invoiceTotalTrue - $refundTotal;
