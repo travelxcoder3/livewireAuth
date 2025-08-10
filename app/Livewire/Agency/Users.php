@@ -131,6 +131,10 @@ class Users extends Component
         if ($user->agency_id != Auth::user()->agency_id) {
             abort(403, 'غير مصرح لك بتحديث مستخدمي الفروع');
         }
+
+          if ($this->sales_target === '') $this->sales_target = null;
+          if ($this->main_target  === '') $this->main_target  = null;
+    
         $this->validate([
             'edit_name' => 'required|string|max:255',
             'edit_email' => 'required|email|unique:users,email,' . $user->id,
