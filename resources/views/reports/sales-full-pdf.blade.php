@@ -61,8 +61,10 @@
             --heading: #111827;
         }
 
-        @page { size: A4; margin: 14mm 10mm; }
+        @page { size: A4; margin: 14mm 10mm; }        /* نعتمد الهامش من CSS فقط */
         * { box-sizing: border-box; }
+
+        html, body { margin:0; padding:0; }           /* ألغِ أي هوامش افتراضية */
         body { font-family: DejaVu Sans, Tahoma, Arial, sans-serif; color:#111827; line-height: 1.55; font-size: 13px; }
         h1,h2,h3 { margin:0 0 10px; color: var(--heading); font-weight: 800; }
         .muted { color: var(--muted); font-size: 12px; }
@@ -82,13 +84,17 @@
         .title { text-align:center; margin-top: 6px; }
         .title h2 { margin:0; font-size: 20px; color: #111827; }
         .title .muted { margin-top: 2px; }
+        /* غلاف يضمن ألا يتجاوز المحتوى عرض الصفحة بعد الهوامش: 210mm - 10 - 10 = 190mm */
+        .page { max-width: 190mm; margin: 0 auto; }
 
-        table { width:100%; border-collapse:collapse; margin-top:8px; }
-        th,td { border:1px solid var(--border); padding:6px 8px; font-size:12px; text-align:right; }
-        th {
-            background: rgba(var(--primary-100), .1);
-            color: #111827;
-            font-weight: 700;
+        table { width:100%; border-collapse:collapse; margin-top:8px; table-layout: fixed; } /* يمنع تمدد الأعمدة */
+        th,td {
+            border:1px solid var(--border);
+            padding:6px 8px;
+            font-size:12px;
+            text-align:right;
+            word-break: break-word;     /* يكسر النصوص الطويلة */
+            overflow-wrap: anywhere;    /* يكسر الأرقام/الروابط */
         }
 
         .blue { color:#2563eb; }
@@ -111,6 +117,7 @@
             padding:10px;
             margin-bottom:12px;
             background: #fff;
+            overflow: hidden;           /* امنع أي تجاوز عرضي من العناصر الداخلية */
         }
         .card:before{
             content:"";

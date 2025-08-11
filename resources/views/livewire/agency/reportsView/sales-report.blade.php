@@ -63,7 +63,7 @@
     <!-- فلاتر التقرير -->
     <div class="bg-white rounded-xl shadow-md p-4">
         <div class="grid md:grid-cols-4 gap-4">
-            <x-input-field name="search" label="بحث عام" wireModel="search" placeholder="ابحث في جميع الحقول..."
+            <x-input-field name="search" label="بحث بالموظف" wireModel="search" placeholder="اكتب اسم الموظف..."
                 fieldClass="{{ $fieldClass }}" />
 
             <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter" :options="$serviceTypes->pluck('label', 'id')->toArray()"
@@ -102,13 +102,6 @@
     <div class="bg-white rounded-xl shadow-md overflow-hidden">
         <x-data-table :columns="$columns" :rows="$sales" />
     </div>
-
-    <!-- Pagination -->
-    @if ($sales->hasPages())
-        <div class="px-4 py-2 bg-white rounded-b-xl shadow-md border-t border-gray-200">
-            {{ $sales->links() }}
-        </div>
-    @endif
 
     <!-- رسائل النظام -->
     @if (session()->has('message'))

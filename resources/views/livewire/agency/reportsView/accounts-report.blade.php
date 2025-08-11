@@ -65,7 +65,7 @@
     <!-- فلاتر التقرير -->
     <div class="bg-white rounded-xl shadow-md p-4">
         <div class="grid md:grid-cols-4 gap-4">
-            <x-input-field name="search" label="بحث عام" wireModel="search" placeholder="ابحث في جميع الحقول..."
+            <x-input-field name="search" label="بحث بالموظف" wireModel="search" placeholder="اكتب اسم الموظف..."
                 containerClass="relative" fieldClass="{{ $fieldClass }}" />
 
             <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter" :options="$serviceTypes->pluck('label', 'id')->toArray()"

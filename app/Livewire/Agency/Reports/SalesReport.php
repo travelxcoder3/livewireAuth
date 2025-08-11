@@ -106,19 +106,18 @@ class SalesReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $sales = Sale::with(['service', 'provider', 'account', 'customer'])
+        $sales = Sale::with(['user', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
             ->when(! $user->hasAnyRole(['agency-admin']), function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })
-            ->when($this->search, function ($query) {
-                $term = '%' . $this->search . '%';
-                $query->where(function ($q) use ($term) {
-                    $q->where('beneficiary_name', 'like', $term)
-                        ->orWhere('reference', 'like', $term)
-                        ->orWhere('pnr', 'like', $term);
-                });
-            })
+                ->when($this->search, function ($query) {
+                    $term = '%' . $this->search . '%';
+                    $query->whereHas('user', function ($uq) use ($term) {
+                        $uq->where('name', 'like', $term);
+                    });
+                })
+
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
@@ -199,11 +198,12 @@ public function render()
         ->when(! $user->hasAnyRole(['agency-admin']), function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })
-        ->when($this->search, fn($q) => $q->where(function ($q2) {
-            $q2->where('beneficiary_name', 'like', "%{$this->search}%")
-                ->orWhere('reference', 'like', "%{$this->search}%")
-                ->orWhere('pnr', 'like', "%{$this->search}%");
-        }))
+            ->when($this->search, fn($q) =>
+                $q->whereHas('user', fn($uq) =>
+                    $uq->where('name', 'like', "%{$this->search}%")
+                )
+            )
+
         ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
         ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
         ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))

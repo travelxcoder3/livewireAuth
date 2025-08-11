@@ -88,17 +88,14 @@ class AccountsReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $sales = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
+        $sales = Sale::with(['user','collections', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
             ->when(!$user->hasRole('agency-admin'), fn($q) => $q->where('user_id', $user->id))
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
-                $query->where(function ($q) use ($term) {
-                    $q->where('beneficiary_name', 'like', $term)
-                        ->orWhere('reference', 'like', $term)
-                        ->orWhere('pnr', 'like', $term);
-                });
+                $query->whereHas('user', fn($u) => $u->where('name', 'like', $term));
             })
+
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
@@ -180,17 +177,14 @@ class AccountsReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $salesQuery = Sale::with(['collections', 'service', 'provider', 'account', 'customer'])
+        $salesQuery = Sale::with(['user','collections', 'service', 'provider', 'account', 'customer'])
             ->whereIn('agency_id', $agencyIds)
             ->when(!$user->hasRole('agency-admin'), fn($q) => $q->where('user_id', $user->id))
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
-                $query->where(function ($q) use ($term) {
-                    $q->where('beneficiary_name', 'like', $term)
-                        ->orWhere('reference', 'like', $term)
-                        ->orWhere('pnr', 'like', $term);
-                });
+                $query->whereHas('user', fn($u) => $u->where('name', 'like', $term));
             })
+
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
@@ -220,13 +214,12 @@ class AccountsReport extends Component
 
     public function filteredSales()
     {
-        return Sale::with(['customer', 'provider', 'serviceType'])
+        return Sale::with(['user','customer', 'provider', 'serviceType'])
             ->where('agency_id', Auth::user()->agency_id)
-            ->when($this->search, fn($q) => $q->where(function ($query) {
-                $query->where('reference', 'like', "%{$this->search}%")
-                    ->orWhere('pnr', 'like', "%{$this->search}%")
-                    ->orWhere('route', 'like', "%{$this->search}%");
-            }))
+            ->when($this->search, fn($q) =>
+                $q->whereHas('user', fn($u) => $u->where('name', 'like', "%{$this->search}%"))
+            )
+
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
