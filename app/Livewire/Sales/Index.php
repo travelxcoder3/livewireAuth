@@ -258,11 +258,21 @@ if ($sale->payment_method === 'all') {
     $this->amount_paid = null;
 }
 
+if ($sale->customer_id) {
+    $c = \App\Models\Customer::find($sale->customer_id);
+    $this->customerLabel = $c->name ?? '';
+}
+if ($sale->provider_id) {
+    $p = \App\Models\Provider::find($sale->provider_id);
+    $this->providerLabel = $p->name ?? '';
+}
+/** ↑↑↑ نهاية الإضافات ↑↑↑ */
+
+/** (اختياري لكن مُستحسن لإعادة تهيئة الـ dropdowns) */
+$this->formKey++;
+
 $this->status = null; // لتفريغ الحقل وإعادة توليد القائمة
 $this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفيذ getStatusOptionsProperty
-
-
-
     }
 
 
@@ -1082,7 +1092,19 @@ public function edit($id)
     $this->amount_paid = $sale->amount_paid;
     $this->depositor_name = $sale->depositor_name;
     $this->customer_id = $sale->customer_id;
+/** ↓↓↓ إضافات لضبط اللّيبل عند كون الـ id خارج أول 20 نتيجة ↓↓↓ */
+if ($sale->customer_id) {
+    $c = \App\Models\Customer::find($sale->customer_id);
+    $this->customerLabel = $c->name ?? '';
+}
+if ($sale->provider_id) {
+    $p = \App\Models\Provider::find($sale->provider_id);
+    $this->providerLabel = $p->name ?? '';
+}
+/** ↑↑↑ نهاية الإضافات ↑↑↑ */
 
+/** (اختياري لكن مُستحسن) */
+$this->formKey++;
     $customer = \App\Models\Customer::find($sale->customer_id);
     $this->showCommission = $customer && $customer->has_commission;
     if (!$this->showCommission) {

@@ -42,7 +42,7 @@ $rows = $sales->map(function($customer, $i) {
     <!-- الفلاتر -->
     <div class="bg-white rounded-xl shadow-md p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="{{ $containerClass }}">
-            <input type="text" wire:model.live="search" class="{{ $fieldClass }}" placeholder="اسم العميل أو المستفيد">
+            <input type="text" wire:model.live="search" class="{{ $fieldClass }}" placeholder="اسم العميل ">
             <label class="{{ $labelClass }}">بحث</label>
         </div>
 
