@@ -375,14 +375,19 @@ $columns = SalesTable::columns();
                     <!-- المزود + تاريخ الخدمة -->
                     <div class="grid grid-cols-2 gap-3">
                         <!-- المزود -->
-                        <x-select-field
-                            wireModel="provider_id"
-                            label="المزود"
-                            :options="$providers->pluck('name', 'id')->toArray()"
-                            placeholder=" المزود"
-                            containerClass="relative mt-1"
-                            errorName="provider_id"
-                        />
+<x-select-field
+    wireModel="provider_id"
+    label="المزود"
+    :options="$providerOptions"
+    optionsWire="providerOptions"
+    selectedLabelWire="providerLabel"
+    searchKey="providerSearch"
+    placeholder="المزود"
+    errorName="provider_id"
+/>
+
+
+
 
                         <!-- تاريخ الخدمة -->
                         <x-date-picker
@@ -397,14 +402,19 @@ $columns = SalesTable::columns();
 
                     @if($showCustomerField)
                     <!-- العميل -->
-                    <x-select-field
-                        wireModel="customer_id"
-                        label="حساب العميل"
-                        :options="$customers->pluck('name', 'id')->toArray()"
-                        placeholder="حساب العميل"
-                        containerClass="relative mt-1"
-                        errorName="customer_id"
-                    />
+<x-select-field
+    wireModel="customer_id"
+    label="حساب العميل"
+    :options="$customerOptions"
+    optionsWire="customerOptions"
+    selectedLabelWire="customerLabel"
+    searchKey="customerSearch"
+    placeholder="حساب العميل"
+    errorName="customer_id"
+/>
+
+
+
                     @endif
 
                     <!-- العمولة -->
@@ -673,14 +683,14 @@ $columns = SalesTable::columns();
                         containerClass="relative mt-1"
                     />
                 </div>
+<x-select-field
+    wireModel="filterInputs.service_type_id"
+    label="نوع الخدمة"
+    :options="$services->pluck('label', 'id')->toArray()"
+    placeholder="اختر الخدمة"
+    containerClass="relative mt-1"
+/>
 
-                <x-select-field
-                    wireModel="filterInputs.service_type_id"
-                    label="نوع الخدمة"
-                    :options="$services->pluck('label', 'id')->toArray()"
-                    placeholder="اختر الخدمة"
-                    containerClass="relative mt-1"
-                />
 
                 <x-select-field
                     wireModel="filterInputs.status"
@@ -701,21 +711,33 @@ $columns = SalesTable::columns();
                     containerClass="relative mt-1"
                 />
 
-                <x-select-field
-                    wireModel="filterInputs.customer_id"
-                    label="العميل"
-                    :options="$customers->pluck('name', 'id')->toArray()"
-                    placeholder="اختر العميل"
-                    containerClass="relative mt-1"
-                />
+<x-select-field
+    wireModel="filterInputs.customer_id"
+    label="العميل"
+    :options="$customerOptions"
+    optionsWire="customerOptions"
+    searchKey="customerSearch"
+    selectedLabelWire="customerLabel"   {{-- مهم --}}
+    placeholder="اختر العميل"
+    containerClass="relative mt-1"
+/>
 
-                <x-select-field
-                    wireModel="filterInputs.provider_id"
-                    label="المزود"
-                    :options="$providers->pluck('name', 'id')->toArray()"
-                    placeholder="اختر المزود"
-                    containerClass="relative mt-1"
-                />
+
+
+
+<x-select-field
+    wireModel="filterInputs.provider_id"
+    label="المزود"
+    :options="$providerOptions"
+    optionsWire="providerOptions"
+    searchKey="providerSearch"
+    selectedLabelWire="providerLabel"  {{-- مهم --}}
+    placeholder="اختر المزود"
+    containerClass="relative mt-1"
+/>
+
+
+
 
                 <x-date-picker
                     name="service_date"

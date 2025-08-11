@@ -88,6 +88,63 @@ public $filterInputs = [
 
 public $filterServices = [];
 public $filterCustomers = [];
+// ابحث عن مكان الخصائص وضع التالي
+public string $customerSearch = '';
+public array  $customerOptions = [];
+
+public string $providerSearch = '';
+public array  $providerOptions = [];
+public string $customerLabel = '';
+public string $providerLabel = '';
+
+// اجلب أول 20 نتيجة حسب البحث
+public function refreshCustomerOptions()
+{
+    $term = trim($this->customerSearch);
+
+    $this->customerOptions = \App\Models\Customer::query()
+        ->where('agency_id', auth()->user()->agency_id)
+        ->when($term !== '', fn($q) =>
+            $q->where('name', 'like', $term.'%') // prefix
+        )
+        ->orderBy('name')
+        ->limit(20)
+        ->pluck('name', 'id')
+        ->toArray();
+}
+
+
+
+public function refreshProviderOptions()
+{
+    $term = trim($this->providerSearch);
+
+    $this->providerOptions = \App\Models\Provider::query()
+        ->where('agency_id', auth()->user()->agency_id)
+        ->where('status', 'approved')            // مطابق لـ getFilteredProviders()
+        ->when($term !== '', fn($q) =>
+            $q->where('name', 'like', $term.'%') // prefix للاستفادة من الفهرس
+        )
+        ->orderBy('name')
+        ->limit(20)
+        ->pluck('name', 'id')
+        ->toArray();
+}
+
+
+
+// تحدّث عند الكتابة في صندوق البحث
+public function updatedCustomerSearch()
+{
+    $this->refreshCustomerOptions();
+    $this->skipRender(); // ← لا تعيد render كامل
+}
+
+public function updatedProviderSearch()
+{
+    $this->refreshProviderOptions();
+    $this->skipRender(); // ← لا تعيد render كامل
+}
 
     // في دالة mount أو مكان مناسب
     public function fetchServices()
@@ -237,8 +294,22 @@ $this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفي
     $this->isDuplicated = false;
     $this->updateStatusOptions(); // ضروري لتحديث القائمة
     $this->editingSale = null;
+    $this->customerLabel = '';
+$this->providerLabel = '';
+
 }
 
+public function updatedFilterInputsCustomerId($value)
+{
+    $c = Customer::find($value);
+    $this->customerLabel = $c->name ?? '';
+}
+
+public function updatedFilterInputsProviderId($value)
+{
+    $p = Provider::find($value);
+    $this->providerLabel = $p->name ?? '';
+}
 
     public function resetFields()
     {
@@ -279,146 +350,181 @@ public function updateStatusOptions()
 
 
 
-   public function render()
-{
-    $user   = Auth::user();
-    $agency = $user->agency;
+    public function render()
+    {
+        $user = Auth::user();
+        $agency = $user->agency;
 
-    // بناء الاستعلام الأساسي حسب الدور وهيكل الوكالة
-    if ($agency->parent_id) {
-        if ($user->hasRole('agency-admin')) {
-            $userIds    = $agency->users()->pluck('id')->toArray();
-            $salesQuery = Sale::where('agency_id', $agency->id)
-                              ->whereIn('user_id', $userIds);
-        } else {
-            $salesQuery = Sale::where('agency_id', $agency->id);
-
-            // ✅ استثناء: إذا كان فقط مرشح "reference" متوفر، لا نقيّد بـ user_id
-            if (!empty($this->filters['reference']) && $this->onlyReferenceFilter()) {
-                // بدون تقييد
-            } else {
-                $salesQuery->where('user_id', $user->id);
-            }
-        }
+       if ($agency->parent_id) {
+    if ($user->hasRole('agency-admin')) {
+        $userIds = $agency->users()->pluck('id')->toArray();
+        $salesQuery = Sale::where('agency_id', $agency->id)
+                          ->whereIn('user_id', $userIds);
     } else {
-        if ($user->hasRole('agency-admin')) {
-            $branchIds     = $agency->branches()->pluck('id')->toArray();
-            $allAgencyIds  = array_merge([$agency->id], $branchIds);
-            $salesQuery    = Sale::whereIn('agency_id', $allAgencyIds);
+        $salesQuery = Sale::where('agency_id', $agency->id);
+
+        // ✅ حالة استثناء: إذا تم إدخال الرقم المرجعي فقط
+        if (!empty($this->filters['reference']) && $this->onlyReferenceFilter()) {
+            // لا تقيد بـ user_id
         } else {
-            $salesQuery = Sale::where('agency_id', $agency->id);
-
-            if (!empty($this->filters['reference']) && $this->onlyReferenceFilter()) {
-                // بدون تقييد
-            } else {
-                $salesQuery->where('user_id', $user->id);
-            }
+            $salesQuery->where('user_id', $user->id); // التقييد الطبيعي
         }
     }
+} else {
+    if ($user->hasRole('agency-admin')) {
+        $branchIds = $agency->branches()->pluck('id')->toArray();
+        $allAgencyIds = array_merge([$agency->id], $branchIds);
+        $salesQuery = Sale::whereIn('agency_id', $allAgencyIds);
+    } else {
+        $salesQuery = Sale::where('agency_id', $agency->id);
 
-    // تطبيق الفلاتر بأمان
-    $filters = $this->filters ?? [];
-
-    $salesQuery
-        ->when(!empty($filters['start_date']), fn($q) => $q->where('sale_date', '>=', $filters['start_date']))
-        ->when(!empty($filters['end_date']), fn($q) => $q->where('sale_date', '<=', $filters['end_date']))
-        ->when(!empty($filters['service_type_id']), fn($q) => $q->where('service_type_id', $filters['service_type_id']))
-        ->when(!empty($filters['status']), fn($q) => $q->where('status', $filters['status']))
-        ->when(!empty($filters['customer_id']), fn($q) => $q->where('customer_id', $filters['customer_id']))
-        ->when(!empty($filters['provider_id']), fn($q) => $q->where('provider_id', $filters['provider_id']))
-        ->when(!empty($filters['service_date']), fn($q) => $q->where('service_date', $filters['service_date']))
-        ->when(!empty($filters['customer_via']), fn($q) => $q->where('customer_via', $filters['customer_via']))
-        ->when(!empty($filters['route']), fn($q) => $q->where('route', 'like', '%'.$filters['route'].'%'))
-        ->when(!empty($filters['payment_method']), fn($q) => $q->where('payment_method', $filters['payment_method']))
-        ->when(!empty($filters['reference']), fn($q) => $q->where('reference', 'like', '%'.$filters['reference'].'%'))
-        ->when(!empty($filters['payment_type']), fn($q) => $q->where('payment_type', $filters['payment_type']));
-
-    // بيانات الجدول (مع العلاقات) + الجمع التراكمي لتحصيل المبالغ
-    $sales = (clone $salesQuery)
-        ->with(['user','provider','service','customer','account','collections','updatedBy','duplicatedBy'])
-        ->withSum('collections', 'amount') // => collections_sum_amount
-        ->latest()
-        ->paginate(10);
-
-    // خصائص محسوبة لكل صف للعرض
-    $sales->each(function ($sale) {
-        $colSum                 = $sale->collections_sum_amount ?? 0;
-        $paid                   = $sale->amount_paid ?? 0;
-        $sale->total_paid       = $paid + $colSum;
-        $sale->remaining_payment= max(($sale->usd_sell ?? 0) - $sale->total_paid, 0);
-    });
-
-    // القوائم المساعدة
-    $services       = \App\Models\DynamicListItem::whereHas('list', fn($q) => $q->where('name', 'قائمة الخدمات'))->get();
-    $providers      = $this->getFilteredProviders();
-    $intermediaries = Intermediary::all();
-    $customers      = Customer::where('agency_id', Auth::user()->agency_id)->get();
-    $accounts       = Account::all();
-
-    // ====== إجماليات الموظف المسجّل دخول (على مستوى الجدول كامل) ======
-    // استخدام نفس الفلاتر، تقييد بـ Auth::id()، واستثناء الملغى
-    $employeeRows = (clone $salesQuery)
-        ->where('user_id', Auth::id())
-        ->where('status', '!=', 'Void')
-        ->with('collections')
-        ->get();
-
-    // التجميع حسب المجموعة (أو id إن لم توجد مجموعة)
-    $grouped = $employeeRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
-
-    $totalAmount          = 0.0; // صافي المبيعات بعد الاستردادات داخل المجموعة
-    $totalReceived        = 0.0; // المحصل (مقيد بألا يتجاوز الصافي)
-    $totalPending         = 0.0; // غير المحصل
-    $totalProfit          = 0.0; // الربح الإجمالي
-    $totalCollectedProfit = 0.0; // الربح المُحقق (تحصيل كامل للمجموعة)
-
-    foreach ($grouped as $group) {
-        $netSell = (float) $group->sum('usd_sell');
-        if ($netSell <= 0) {
-            continue;
-        }
-
-        $netCollected = (float) $group->sum('amount_paid')
-            + (float) $group->pluck('collections')->flatten()->sum('amount');
-
-        $groupProfit = (float) $group->sum('sale_profit');
-
-        $totalAmount   += $netSell;
-        $totalReceived += min($netCollected, $netSell);
-        $totalProfit   += $groupProfit;
-
-        // يعتبر مُحققًا عند التحصيل الكامل (سماحية سنت)
-        if ($netCollected + 0.01 >= $netSell) {
-            $totalCollectedProfit += $groupProfit;
+        // ✅ حالة استثناء: إذا تم إدخال الرقم المرجعي فقط
+        if (!empty($this->filters['reference']) && $this->onlyReferenceFilter()) {
+            // لا تقيد بـ user_id
+        } else {
+            $salesQuery->where('user_id', $user->id); // التقييد الطبيعي
         }
     }
-
-    $totalPending = max($totalAmount - $totalReceived, 0);
-
-    // تمرير للإستعمال في الواجهة
-    $this->totalAmount   = $totalAmount;
-    $this->totalReceived = $totalReceived;
-    $this->totalPending  = $totalPending;
-    $this->totalProfit   = $totalProfit;
-
-    // العمولات: المقدّرة على كامل الربح، والمستحقة على الربح المُحقق فقط
-    $target = (float) (Auth::user()->main_target ?? 0);
-    $rate   = 0.17;
-    $this->userCommission    = max(($totalProfit - $target) * $rate, 0);            // عمولة مقدّرة
-    $this->userCommissionDue = max(($totalCollectedProfit - $target) * $rate, 0);   // عمولة مستحقة
-
-    return view('livewire.sales.index', [
-        'sales'           => $sales,
-        'services'        => $services,
-        'providers'       => $providers,
-        'intermediaries'  => $intermediaries,
-        'customers'       => $customers,
-        'accounts'        => $accounts,
-        'filterServices'  => $this->filterServices,
-        'filterCustomers' => $this->filterCustomers,
-        'columns'         => SalesTable::columns(false, false),
-    ])->layout('layouts.agency');
 }
+
+    // تطبيق الفلترة
+    $salesQuery->when($this->filters['start_date'], function($query) {
+        $query->where('sale_date', '>=', $this->filters['start_date']);
+    })
+    ->when($this->filters['end_date'], function($query) {
+        $query->where('sale_date', '<=', $this->filters['end_date']);
+    })
+    ->when($this->filters['service_type_id'], function($query) {
+        $query->where('service_type_id', $this->filters['service_type_id']);
+    })
+    ->when($this->filters['status'], function($query) {
+        $query->where('status', $this->filters['status']);
+    })
+    ->when($this->filters['customer_id'], function($query) {
+        $query->where('customer_id', $this->filters['customer_id']);
+    })
+    ->when($this->filters['provider_id'], function($query) {
+        $query->where('provider_id', $this->filters['provider_id']);
+    })
+    ->when($this->filters['service_date'], function($query) {
+        $query->where('service_date', $this->filters['service_date']);
+    })
+    ->when($this->filters['customer_via'], function($query) {
+        $query->where('customer_via', $this->filters['customer_via']);
+    })
+    ->when($this->filters['route'], function($query) {
+        $query->where('route', 'like', '%'.$this->filters['route'].'%');
+    })
+    ->when($this->filters['payment_method'], function($query) {
+        $query->where('payment_method', $this->filters['payment_method']);
+    })
+    ->when($this->filters['reference'], function($query) {
+        $query->where('reference', 'like', '%'.$this->filters['reference'].'%');
+    })
+
+    ->when($this->filters['payment_type'], function($query) {
+        $query->where('payment_type', $this->filters['payment_type']);
+    });
+        $sales = $salesQuery
+            ->with(['user', 'provider', 'service', 'customer', 'account', 'collections' ,'updatedBy','duplicatedBy'])
+            ->withSum('collections', 'amount')
+            ->latest()
+            ->paginate(10);
+
+        $sales->each(function ($sale) {
+            $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum ?? 0);
+        });
+        $sales->each(function ($sale) {
+    $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum_amount ?? 0);
+    $sale->remaining_payment = ($sale->usd_sell ?? 0) - $sale->total_paid;
+});
+
+
+
+        $services = \App\Models\DynamicListItem::whereHas('list', function ($query) {
+            $query->where('name', 'قائمة الخدمات');
+        })->get();
+
+        $intermediaries = Intermediary::all();
+        $accounts = Account::all();
+
+        $salesWithCollections = $salesQuery->with(['collections'])->get();
+
+        // نجمع حسب مجموعة البيع
+        $groupedSales = $salesWithCollections->groupBy('sale_group_id');
+        
+        $this->totalAmount = 0;
+        $this->totalReceived = 0;
+        
+        foreach ($groupedSales as $group) {
+            $groupUsdSell = $group->sum('usd_sell');
+            $groupAmountPaid = $group->sum('amount_paid');
+            $groupCollections = $group->pluck('collections')->flatten()->sum('amount');
+        
+            // لو البيع = 0 بعد الاسترداد، تجاهله
+            if (round($groupUsdSell, 2) === 0.00) {
+                continue;
+            }
+        
+            $netSell = $groupUsdSell;
+            $netCollected = $groupAmountPaid + $groupCollections;
+            $netRemaining = $netSell - $netCollected;
+            
+            // تجاهل المجموعات التي ليس لها قيمة بيع (تم استردادها بالكامل)
+            if (round($netSell, 2) === 0.00) {
+                continue;
+            }
+            
+            // إذا كان المحصل النهائي للمجموعة > 0 نضيفه إلى المحصل، وإلا نعتبره غير محصل
+            if ($netRemaining <= 0) {
+                $this->totalReceived += $netSell;  // تم تحصيل كامل المبلغ
+            } else {
+                $this->totalReceived += $netCollected; // المحصل الحقيقي
+            }
+            
+            $this->totalAmount += $netSell;
+        }
+        
+        $this->totalPending = $this->totalAmount - $this->totalReceived;
+
+
+        // الربح الإجمالي
+        $this->totalProfit = $salesQuery->sum('sale_profit');
+
+        $userSales = (clone $salesQuery)
+            ->where('user_id', Auth::id())
+            ->get();
+
+        $totalProfit = $userSales->sum('sale_profit');
+
+        // العمليات التي تم سدادها بالكامل
+        $collectedProfit = $userSales->filter(function ($sale) {
+            $collected = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+            return $collected >= ($sale->usd_sell ?? 0);
+        })->sum('sale_profit');
+
+        $target = Auth::user()->main_target ?? 0;
+        $rate = 0.17;
+
+        $this->userCommission = max(($totalProfit - $target) * $rate, 0);
+        $this->userCommissionDue = max(($collectedProfit - $target) * $rate, 0);
+
+return view('livewire.sales.index', [
+    'sales'           => $sales,
+    'services'        => $services,
+    'intermediaries'  => $intermediaries,
+    'accounts'        => $accounts,
+
+    // خيارات خفيفة تُبنى حسب البحث
+    'providerOptions' => $this->providerOptions,
+    'customerOptions' => $this->customerOptions,
+
+    'filterServices'  => $this->filterServices,
+    'filterCustomers' => $this->filterCustomers, // ممكن نحذفها لاحقًا لو ما عادت تُستخدم
+    'columns'         => SalesTable::columns(false, false),
+])->layout('layouts.agency');
+
+    }
 
 
 
@@ -468,28 +574,42 @@ public function updateStatusOptions()
     }
     public $successMessage;
 
-    public function mount()
-    {logger('FILTER INPUTS INITIAL:', $this->filterInputs);
+public function mount()
+{
+    logger('FILTER INPUTS INITIAL:', $this->filterInputs);
+    $this->updateStatusOptions();
 
-        $this->updateStatusOptions();
+    $this->currency = auth()->user()->agency->currency ?? 'USD';
+    $this->sale_date = now()->format('Y-m-d');
+    $this->fetchServices();
+    $this->showExpectedDate = false;
 
-        $this->currency = auth()->user()->agency->currency ?? 'USD';
-        $this->sale_date = now()->format('Y-m-d');
-        $this->fetchServices();
-        $this->showExpectedDate = false;
-        // ✅ توليد UUID جديد فقط إذا لم يتم تحديده مسبقًا
-        if (!$this->sale_group_id) {
-            $this->sale_group_id = (string) Str::uuid();
-        }
-        // تحميل البيانات للفلترة
-        $this->filterServices = \App\Models\DynamicListItem::whereHas('list', function($query) {
-            $query->where('name', 'قائمة الخدمات');
-        })->pluck('label', 'id')->toArray();
-        
-        $this->filterCustomers = Customer::where('agency_id', auth()->user()->agency_id)
-            ->pluck('name', 'id')
-            ->toArray();
+    if (!$this->sale_group_id) {
+        $this->sale_group_id = (string) Str::uuid();
     }
+
+    // فلاتر الخدمات فقط (كما هي)
+    $this->filterServices = \App\Models\DynamicListItem::whereHas('list', function($query) {
+        $query->where('name', 'قائمة الخدمات');
+    })->pluck('label', 'id')->toArray();
+
+    // تهيئة خيارات العملاء والمزودين (خفيفة)
+    $this->refreshCustomerOptions();
+    $this->refreshProviderOptions();
+
+    // لم نعد نحتاج تحميل كل العملاء هنا
+    $this->filterCustomers = []; // اختياري: اتركه فارغ
+    if ($this->customer_id) {
+    $c = Customer::find($this->customer_id);
+    $this->customerLabel = $c->name ?? '';
+}
+if ($this->provider_id) {
+    $p = Provider::find($this->provider_id);
+    $this->providerLabel = $p->name ?? '';
+}
+
+}
+
     protected function getListeners()
     {
         return [
@@ -645,16 +765,22 @@ case 'part':
     }
     
 
-    public function updatedCustomerId($value)
-    {
-        $customer = Customer::find($value);
-        $this->showCommission = $customer && $customer->has_commission;
-        // إذا لم يكن للعميل عمولة، نفرغ حقل العمولة
-        if (!$this->showCommission) {
-            $this->commission = null;
-            $this->commissionReadOnly = false;
-        }
+public function updatedCustomerId($value)
+{
+    $customer = Customer::find($value);
+    $this->customerLabel = $customer->name ?? '';
+    $this->showCommission = $customer && $customer->has_commission;
+    if (!$this->showCommission) {
+        $this->commission = null;
+        $this->commissionReadOnly = false;
     }
+}
+public function updatedProviderId($value)
+{
+    $p = Provider::find($value);
+    $this->providerLabel = $p->name ?? '';
+}
+
 
     public function save()
     {
