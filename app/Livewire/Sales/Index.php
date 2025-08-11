@@ -96,6 +96,7 @@ public string $providerSearch = '';
 public array  $providerOptions = [];
 public string $customerLabel = '';
 public string $providerLabel = '';
+public int $formKey = 0;
 
 // اجلب أول 20 نتيجة حسب البحث
 public function refreshCustomerOptions()
@@ -104,9 +105,12 @@ public function refreshCustomerOptions()
 
     $this->customerOptions = \App\Models\Customer::query()
         ->where('agency_id', auth()->user()->agency_id)
-        ->when($term !== '', fn($q) =>
-            $q->where('name', 'like', $term.'%') // prefix
-        )
+        ->when($term !== '', function ($q) use ($term) {
+            $len  = mb_strlen($term);
+            $like = $len >= 3 ? "%{$term}%" : "{$term}%";   // contains من 3 أحرف
+            $q->where('name', 'like', $like);
+        })
+        ->select('id','name')                                // حمولة أخف
         ->orderBy('name')
         ->limit(20)
         ->pluck('name', 'id')
@@ -121,10 +125,13 @@ public function refreshProviderOptions()
 
     $this->providerOptions = \App\Models\Provider::query()
         ->where('agency_id', auth()->user()->agency_id)
-        ->where('status', 'approved')            // مطابق لـ getFilteredProviders()
-        ->when($term !== '', fn($q) =>
-            $q->where('name', 'like', $term.'%') // prefix للاستفادة من الفهرس
-        )
+        ->where('status', 'approved')
+        ->when($term !== '', function ($q) use ($term) {
+            $len  = mb_strlen($term);
+            $like = $len >= 3 ? "%{$term}%" : "{$term}%";   // contains من 3 أحرف
+            $q->where('name', 'like', $like);
+        })
+        ->select('id','name')                                // حمولة أخف
         ->orderBy('name')
         ->limit(20)
         ->pluck('name', 'id')
@@ -133,17 +140,24 @@ public function refreshProviderOptions()
 
 
 
+
 // تحدّث عند الكتابة في صندوق البحث
 public function updatedCustomerSearch()
 {
-    $this->refreshCustomerOptions();
-    $this->skipRender(); // ← لا تعيد render كامل
+    $len = mb_strlen($this->customerSearch);
+    if ($len === 0 || $len >= 2) {      // تقدر تخليها 3 لو تبغى أهدى
+        $this->refreshCustomerOptions();
+    }
+    $this->skipRender();
 }
 
 public function updatedProviderSearch()
 {
-    $this->refreshProviderOptions();
-    $this->skipRender(); // ← لا تعيد render كامل
+    $len = mb_strlen($this->providerSearch);
+    if ($len === 0 || $len >= 2) {      // أو 3
+        $this->refreshProviderOptions();
+    }
+    $this->skipRender();
 }
 
     // في دالة mount أو مكان مناسب
@@ -252,7 +266,7 @@ $this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفي
     }
 
 
-    public function resetForm()
+public function resetForm()
 {
     $this->reset([
         'beneficiary_name',
@@ -286,18 +300,28 @@ $this->dispatch('$refresh'); // لإجبار Livewire على إعادة تنفي
     $this->sale_profit = 0;
     $this->amount_due = 0;
     $this->showCommission = false;
-    $this->commission = null;            // ✅ صَفّر قيمة العمولة
-    $this->commissionReadOnly = false;   // ✅ افتح الحقل صراحةً
+    $this->commission = null;
+    $this->commissionReadOnly = false;
     $this->showExpectedDate = false;
     $this->sale_group_id  = Str::uuid();
 
     $this->isDuplicated = false;
-    $this->updateStatusOptions(); // ضروري لتحديث القائمة
+    $this->updateStatusOptions();
     $this->editingSale = null;
-    $this->customerLabel = '';
-$this->providerLabel = '';
 
+    // ✅ امسح اللّيبلز تمامًا
+    $this->customerLabel = '';
+    $this->providerLabel = '';
+
+    // ✅ امسح كلمات البحث وأعد تحميل أول 20 خيار
+    $this->customerSearch = '';
+    $this->providerSearch = '';
+    $this->refreshCustomerOptions();
+    $this->refreshProviderOptions();
+$this->formKey++;
+$this->dispatch('lw-dropdowns-cleared');
 }
+
 
 public function updatedFilterInputsCustomerId($value)
 {
@@ -425,11 +449,13 @@ public function updateStatusOptions()
     ->when($this->filters['payment_type'], function($query) {
         $query->where('payment_type', $this->filters['payment_type']);
     });
-        $sales = $salesQuery
-            ->with(['user', 'provider', 'service', 'customer', 'account', 'collections' ,'updatedBy','duplicatedBy'])
-            ->withSum('collections', 'amount')
-            ->latest()
-            ->paginate(10);
+$totalsQuery = (clone $salesQuery); // ← أساس الحسابات بدون ترقيم صفحات
+
+    $sales = (clone $salesQuery)
+    ->with(['user','provider','service','customer','account','collections','updatedBy','duplicatedBy'])
+    ->withSum('collections', 'amount')
+    ->latest()
+    ->paginate(10);
 
         $sales->each(function ($sale) {
             $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum ?? 0);
@@ -448,67 +474,61 @@ public function updateStatusOptions()
         $intermediaries = Intermediary::all();
         $accounts = Account::all();
 
-        $salesWithCollections = $salesQuery->with(['collections'])->get();
+// ====== إجماليات الموظف المسجّل دخول (على مستوى الجدول كامل) ======
+// استخدام نفس الفلاتر، تقييد بـ Auth::id()، واستثناء الملغى
+$employeeRows = (clone $salesQuery)
+    ->where('user_id', Auth::id())
+    ->where('status', '!=', 'Void')
+    ->with('collections')
+    ->get();
 
-        // نجمع حسب مجموعة البيع
-        $groupedSales = $salesWithCollections->groupBy('sale_group_id');
-        
-        $this->totalAmount = 0;
-        $this->totalReceived = 0;
-        
-        foreach ($groupedSales as $group) {
-            $groupUsdSell = $group->sum('usd_sell');
-            $groupAmountPaid = $group->sum('amount_paid');
-            $groupCollections = $group->pluck('collections')->flatten()->sum('amount');
-        
-            // لو البيع = 0 بعد الاسترداد، تجاهله
-            if (round($groupUsdSell, 2) === 0.00) {
-                continue;
-            }
-        
-            $netSell = $groupUsdSell;
-            $netCollected = $groupAmountPaid + $groupCollections;
-            $netRemaining = $netSell - $netCollected;
-            
-            // تجاهل المجموعات التي ليس لها قيمة بيع (تم استردادها بالكامل)
-            if (round($netSell, 2) === 0.00) {
-                continue;
-            }
-            
-            // إذا كان المحصل النهائي للمجموعة > 0 نضيفه إلى المحصل، وإلا نعتبره غير محصل
-            if ($netRemaining <= 0) {
-                $this->totalReceived += $netSell;  // تم تحصيل كامل المبلغ
-            } else {
-                $this->totalReceived += $netCollected; // المحصل الحقيقي
-            }
-            
-            $this->totalAmount += $netSell;
-        }
-        
-        $this->totalPending = $this->totalAmount - $this->totalReceived;
+// التجميع حسب المجموعة (أو id إن لم توجد مجموعة)
+$grouped = $employeeRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+
+$totalAmount          = 0.0; // صافي المبيعات بعد الاستردادات داخل المجموعة
+$totalReceived        = 0.0; // المحصل (مقيد بألا يتجاوز الصافي)
+$totalPending         = 0.0; // غير المحصل
+$totalProfit          = 0.0; // الربح الإجمالي
+$totalCollectedProfit = 0.0; // الربح المُحقق (تحصيل كامل للمجموعة)
+
+foreach ($grouped as $group) {
+    $netSell = (float) $group->sum('usd_sell');
+    if ($netSell <= 0) {
+        continue;
+    }
+
+    $netCollected = (float) $group->sum('amount_paid')
+        + (float) $group->pluck('collections')->flatten()->sum('amount');
+
+    $groupProfit = (float) $group->sum('sale_profit');
+
+    $totalAmount   += $netSell;
+    $totalReceived += min($netCollected, $netSell);
+    $totalProfit   += $groupProfit;
+
+    // يعتبر مُحققًا عند التحصيل الكامل (سماحية سنت)
+    if ($netCollected + 0.01 >= $netSell) {
+        $totalCollectedProfit += $groupProfit;
+    }
+}
+
+$totalPending = max($totalAmount - $totalReceived, 0);
+
+// تمرير للإستعمال في الواجهة
+$this->totalAmount   = $totalAmount;
+$this->totalReceived = $totalReceived;
+$this->totalPending  = $totalPending;
+$this->totalProfit   = $totalProfit;
+
 
 
         // الربح الإجمالي
-        $this->totalProfit = $salesQuery->sum('sale_profit');
+  // العمولات: المقدّرة على كامل الربح، والمستحقة على الربح المُحقق فقط
+$target = (float) (Auth::user()->main_target ?? 0);
+$rate   = 0.17;
 
-        $userSales = (clone $salesQuery)
-            ->where('user_id', Auth::id())
-            ->get();
-
-        $totalProfit = $userSales->sum('sale_profit');
-
-        // العمليات التي تم سدادها بالكامل
-        $collectedProfit = $userSales->filter(function ($sale) {
-            $collected = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
-            return $collected >= ($sale->usd_sell ?? 0);
-        })->sum('sale_profit');
-
-        $target = Auth::user()->main_target ?? 0;
-        $rate = 0.17;
-
-        $this->userCommission = max(($totalProfit - $target) * $rate, 0);
-        $this->userCommissionDue = max(($collectedProfit - $target) * $rate, 0);
-
+$this->userCommission    = max(($totalProfit - $target) * $rate, 0);            // عمولة مقدّرة
+$this->userCommissionDue = max(($totalCollectedProfit - $target) * $rate, 0);   // عمولة مستحقة
 return view('livewire.sales.index', [
     'sales'           => $sales,
     'services'        => $services,
@@ -842,7 +862,6 @@ if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
 }
 
         $this->resetForm();
-        $this->resetForm();
         $this->isDuplicated = false; // ✅ العودة للوضع الطبيعي بعد الحفظ
         $this->updateStatusOptions(); // ✅ توليد خيارات الحالة الافتراضية
         $this->status = 'Issued'; // ✅ إعادة الحالة الافتراضية تلقائيًا
@@ -1077,6 +1096,14 @@ public function edit($id)
     $this->expected_payment_date = $sale->expected_payment_date;
     $this->sale_group_id = $sale->sale_group_id;
     
+    /**  توحيد حالة الواجهة كما نفعل عند تغيير الـ payment_method */
+    $this->updatedPaymentMethod($this->payment_method);
+
+    /**  عند "لم يدفع" لا نعرض قيمة 0.0 إطلاقًا */
+    if ($this->payment_method === 'all') {
+        $this->amount_paid         = null;   // لا تُظهر 0.0
+        $this->showAmountPaidField = false;  // أخفِ الحقل كليًا
+    }
 
     // خصائص مساعدة
     $this->isDuplicated = false;

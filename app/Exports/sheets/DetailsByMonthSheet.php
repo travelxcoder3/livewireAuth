@@ -12,7 +12,7 @@ class DetailsByMonthSheet implements FromArray, WithHeadings, ShouldAutoSize
 
     public function headings(): array
     {
-        return ['الشهر','عدد','البيع','الشراء','الربح','العمولة','المستحق','العملة'];
+        return ['الشهر','عدد','البيع','الشراء','الربح','العموله المستحقة','المستحق','العملة'];
     }
 
     public function array(): array
@@ -24,7 +24,7 @@ class DetailsByMonthSheet implements FromArray, WithHeadings, ShouldAutoSize
                 round($row['sell'], 2),
                 round($row['buy'], 2),
                 round($row['profit'], 2),
-                round($row['commission'], 2),
+                 round((float)($row['employee_commission_due'] ?? 0), 2),
                 round($row['remaining'], 2),
                 $this->currency,
             ];

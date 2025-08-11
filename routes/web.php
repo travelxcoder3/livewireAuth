@@ -60,7 +60,7 @@ use App\Livewire\Agency\CustomerDetailedInvoices;
 use App\Livewire\Agency\CustomerInvoiceOverview;
 use App\Http\Controllers\Agency\CustomerInvoicePrintController;
 use App\Livewire\Agency\Quotations\ShowQuotation;
-
+use App\Http\Controllers\Agency\QuotationController;
 
 // ============================
 // 🌐 المسارات العامة والمصادقة

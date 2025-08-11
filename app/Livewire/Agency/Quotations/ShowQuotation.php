@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Agency\Quotations;
 
+
+use App\Http\Controllers\Agency\QuotationController;
 use Livewire\Component;
 
 class ShowQuotation extends Component

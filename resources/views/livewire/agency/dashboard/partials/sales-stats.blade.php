@@ -36,29 +36,104 @@ $isAdmin = Auth::user()->hasRole('agency-admin');
     </div>
 
     @if($statsViewType === 'monthly')
-        <!-- عرض الإحصائيات الشهرية -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @foreach($salesByMonth as $month)
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <h4 class="font-semibold text-gray-800 mb-2">
-                        {{ DateTime::createFromFormat('!m', $month['month'])->format('F') }} {{ $month['year'] }}
-                    </h4>
-                    <p class="text-sm text-gray-600">المبيعات: <span class="font-bold text-green-600">${{ number_format($month['total_sales'], 2) }}</span></p>
-                    <p class="text-sm text-gray-600">العمليات: <span class="font-bold">{{ $month['operations_count'] }}</span></p>
+    <!-- عرض الإحصائيات الشهرية (محصّلة / غير محصّلة / إجمالي) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @foreach($salesByMonth as $month)
+            @php
+                $collected = (float)($month['collected_sales'] ?? 0);
+                $pending   = (float)($month['pending_sales'] ?? 0);
+                $total     = (float)($month['total_sales'] ?? 0);
+                $ops       = (int)($month['operations_count'] ?? 0);
+                $rate      = $total > 0 ? ($collected / $total) * 100 : 0;
+            @endphp
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="font-semibold text-gray-800 mb-2">
+                    {{ DateTime::createFromFormat('!m', $month['month'])->format('F') }} {{ $month['year'] }}
+                </h4>
+
+                <div class="space-y-1 text-sm">
+                    <p class="text-gray-700">
+                        المحصّلة:
+                        <span class="font-bold text-green-600">${{ number_format($collected, 2) }}</span>
+                    </p>
+                    <p class="text-gray-700">
+                        غير المُحصّلة:
+                        <span class="font-bold text-amber-600">${{ number_format($pending, 2) }}</span>
+                    </p>
+                    <p class="text-gray-700">
+                        إجمالي المبيعات:
+                        <span class="font-bold" style="color: rgb(var(--primary-700));">
+                            ${{ number_format($total, 2) }}
+                        </span>
+                    </p>
+                    <p class="text-gray-600">
+                        العمليات: <span class="font-bold">{{ $ops }}</span>
+                    </p>
                 </div>
-            @endforeach
-        </div>
-    @elseif($statsViewType === 'service')
-        <!-- عرض الإحصائيات حسب الخدمة -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @foreach($salesByService as $service)
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <h4 class="font-semibold text-gray-800 mb-2">{{ $service['service_type'] }}</h4>
-                    <p class="text-sm text-gray-600">المبيعات: <span class="font-bold text-green-600">${{ number_format($service['total_sales'], 2) }}</span></p>
-                    <p class="text-sm text-gray-600">العمليات: <span class="font-bold">{{ $service['operations_count'] }}</span></p>
+
+                <!-- نسبة التحصيل -->
+                <div class="mt-3">
+                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>نسبة التحصيل</span>
+                        <span>{{ number_format($rate, 1) }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div class="h-2 rounded-full"
+                             style="width: {{ min(max($rate,0),100) }}%; background-color: rgb(var(--primary-500));"></div>
+                    </div>
                 </div>
-            @endforeach
-        </div>
+            </div>
+        @endforeach
+    </div>
+
+@elseif($statsViewType === 'service')
+    <!-- عرض الإحصائيات حسب الخدمة (محصّلة / غير محصّلة / إجمالي) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @foreach($salesByService as $service)
+            @php
+                $collected = (float)($service['collected_sales'] ?? 0);
+                $pending   = (float)($service['pending_sales'] ?? 0);
+                $total     = (float)($service['total_sales'] ?? 0);
+                $ops       = (int)($service['operations_count'] ?? 0);
+                $rate      = $total > 0 ? ($collected / $total) * 100 : 0;
+            @endphp
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="font-semibold text-gray-800 mb-2">{{ $service['service_type'] }}</h4>
+
+                <div class="space-y-1 text-sm">
+                    <p class="text-gray-700">
+                        المحصّلة:
+                        <span class="font-bold text-green-600">${{ number_format($collected, 2) }}</span>
+                    </p>
+                    <p class="text-gray-700">
+                        غير المُحصّلة:
+                        <span class="font-bold text-amber-600">${{ number_format($pending, 2) }}</span>
+                    </p>
+                    <p class="text-gray-700">
+                        إجمالي المبيعات:
+                        <span class="font-bold" style="color: rgb(var(--primary-700));">
+                            ${{ number_format($total, 2) }}
+                        </span>
+                    </p>
+                    <p class="text-gray-600">
+                        العمليات: <span class="font-bold">{{ $ops }}</span>
+                    </p>
+                </div>
+
+                <!-- نسبة التحصيل -->
+                <div class="mt-3">
+                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>نسبة التحصيل</span>
+                        <span>{{ number_format($rate, 1) }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div class="h-2 rounded-full"
+                             style="width: {{ min(max($rate,0),100) }}%; background-color: rgb(var(--primary-500));"></div>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
     @elseif($statsViewType === 'employee' && $isAdmin)
         <!-- عرض الإحصائيات حسب الموظف (للأدمن فقط) -->
         <div class="overflow-x-auto">

@@ -18,9 +18,10 @@
 @endphp
 
 <div
+{{ $attributes->merge(['class' => $containerClass.' w-full']) }}
     x-data="{
         open: false,
-        selected: @entangle($wireModel),
+        selected: @entangle($wireModel).live,
         selectedLabel: '',    // ← نخزن نص الخيار المختار
         menuWidth: 0,
         searchQuery: '',
@@ -30,7 +31,6 @@
 
 init() {
     this.menuWidth = this.$refs.trigger?.offsetWidth || 0;
-
 
     if (this.selected && this.options[this.selected] === undefined) {
         try {
@@ -44,8 +44,20 @@ init() {
         this.selectedLabel = this.options[this.selected];
     }
 
+    if (!this.selected) {
+        this.selectedLabel = '';
+    }
 
+    // 👈 إضافة مهمّة: راقب selected دائماً
+    this.$watch('selected', (val) => {
+        if (!val) {
+            this.selectedLabel = '';
+        } else if (this.options && this.options[val] !== undefined) {
+            this.selectedLabel = this.options[val];
+        }
+    });
 },
+
 
 
         // بحث ضبابي بسيط
@@ -73,33 +85,40 @@ init() {
     }"
 
     {{-- حدّث قائمة الخيارات من خاصية Livewire لكن لا تمسح selected --}}
+    x-on:lw-dropdowns-cleared.window="selected=''; selectedLabel=''; searchQuery='';"
+
+
 x-effect="
     @if($optionsWire)
         (function(){
             const liveOpts = $wire.{{ $optionsWire }} ?? {};
-const prevLabel = selectedLabel; // احفظ القديم
+            options = Object.assign({ '': '{{ $placeholder }}' }, liveOpts);
 
-options = Object.assign({ '': '{{ $placeholder }}' }, liveOpts);
+            // ✅ لو مافي selected (null/''), نظّف اللِّـيبل
+            if (!selected) {
+                selectedLabel = '';
+                return;
+            }
 
-if (selected && options[selected] !== undefined) {
-    selectedLabel = options[selected];
-} 
-else if (selected && {{ $selectedLabelWire ? "\$wire.{$selectedLabelWire} != null" : 'false' }}) {
-    const lbl = $wire.{{ $selectedLabelWire }};
-    if (lbl) {
-        options[selected] = lbl;
-        selectedLabel = lbl;
-    } else {
-        selectedLabel = prevLabel; // لا تضيّع القديم
-    }
-} else {
-    selectedLabel = prevLabel; // لا تضيّع القديم
-}
-
+            if (options[selected] !== undefined) {
+                selectedLabel = options[selected];
+            } 
+            else if ({{ $selectedLabelWire ? "\$wire.{$selectedLabelWire} != null" : 'false' }}) {
+                const lbl = $wire.{{ $selectedLabelWire }};
+                if (lbl) {
+                    options[selected] = lbl;
+                    selectedLabel = lbl;
+                } else {
+                    selectedLabel = '';
+                }
+            } else {
+                selectedLabel = '';
+            }
         })();
     @endif
-    menuWidth = $refs.trigger.offsetWidth;
+    menuWidth = $refs.trigger.offsetWidth || 0;
 "
+
 
     class="{{ $containerClass }} w-full"
 >

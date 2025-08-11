@@ -268,14 +268,11 @@
         @endif
 
         {{-- جدول العمليات التفصيلي للموظف --}}
-        <div class="bg-white rounded-xl shadow-md overflow-hidden mt-3">
+       <div class="bg-white rounded-xl shadow-md overflow-hidden mt-3">
             <x-data-table :columns="App\Tables\SalesTable::columns(true,true)" :rows="$sales" />
         </div>
 
-        @if ($sales->hasPages())
-            <div class="px-4 py-2 bg-white rounded-b-xl shadow-md border-t border-gray-200">
-                {{ $sales->links() }}
-            </div>
-        @endif
+
+      
     @endif
 </div>

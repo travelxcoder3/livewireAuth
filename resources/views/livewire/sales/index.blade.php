@@ -91,6 +91,7 @@ $columns = SalesTable::columns();
                     <!-- نوع الخدمة -->
                         <x-select-field
                             wireModel="service_type_id"
+                            :wire:key="'svc-'.$formKey"
                             label="نوع الخدمة"
                             :options="$services->pluck('label', 'id')->toArray()"
                             placeholder="اسم الخدمة"
@@ -210,6 +211,7 @@ $columns = SalesTable::columns();
 @else
     <x-select-field
         wireModel="payment_method"
+        :wire:key="'pmethod-'.$formKey"
         label="حالة الدفع"
         :options="[
             'kash' => 'كامل',
@@ -291,6 +293,7 @@ $columns = SalesTable::columns();
     @if($showPaymentDetails)
         <x-select-field
             wireModel="payment_type"
+            :wire:key="'ptype-'.$formKey"
             label="وسيلة الدفع"
             :options="[
                 'cash' => 'كاش',
@@ -357,6 +360,7 @@ $columns = SalesTable::columns();
                     <!-- العميل عبر -->
             <x-select-field
                 wireModel="customer_via"
+                :wire:key="'via-'.$formKey"
                 label="العميل عبر"
                 :options="[
                     'facebook' => 'فيسبوك',
@@ -378,6 +382,7 @@ $columns = SalesTable::columns();
 <x-select-field
     wireModel="provider_id"
     label="المزود"
+    :wire:key="'provider-'.$formKey"
     :options="$providerOptions"
     optionsWire="providerOptions"
     selectedLabelWire="providerLabel"
@@ -405,6 +410,7 @@ $columns = SalesTable::columns();
 <x-select-field
     wireModel="customer_id"
     label="حساب العميل"
+    :wire:key="'customer-'.$formKey"
     :options="$customerOptions"
     optionsWire="customerOptions"
     selectedLabelWire="customerLabel"

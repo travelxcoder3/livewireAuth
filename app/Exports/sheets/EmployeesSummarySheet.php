@@ -12,7 +12,8 @@ class EmployeesSummarySheet implements FromArray, WithHeadings, ShouldAutoSize
 
     public function headings(): array
     {
-        return ['اسم الموظف','عدد العمليات','إجمالي البيع','إجمالي الشراء','الربح','العمولة','إجمالي المستحق','العملة'];
+        return ['اسم الموظف','عدد العمليات','إجمالي البيع','إجمالي الشراء','الربح',   'عمولة الموظف (متوقعة)',
+        'عمولة الموظف (مستحقة)','إجمالي المستحق','العملة'];
     }
 
     public function array(): array
@@ -24,7 +25,8 @@ class EmployeesSummarySheet implements FromArray, WithHeadings, ShouldAutoSize
                 round($row['sell'], 2),
                 round($row['buy'], 2),
                 round($row['profit'], 2),
-                round($row['commission'], 2),
+                    round((float)($row['employee_commission_expected'] ?? 0), 2),
+            round((float)($row['employee_commission_due'] ?? 0), 2),
                 round($row['remaining'], 2),
                 $this->currency,
             ];

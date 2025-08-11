@@ -23,34 +23,34 @@
 
             <!-- شبكة الأيقونات السريعة في المنتصف -->
             @php
-        $showCompanyInfo = Auth::user()->hasRole('agency-admin');
-    @endphp
-    @if($showCompanyInfo)
+                $showCompanyInfo = Auth::user()->hasRole('agency-admin');
+            @endphp
+            @if($showCompanyInfo)
             <div class="md:order-2 order-1 flex justify-center w-full md:w-auto my-4 md:my-0">
                 <div class="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-4 w-full max-w-xs sm:max-w-none mx-auto">
-                        @php
-                            $quickLinks = [
-                                ['route' => 'agency.users', 'icon' => 'users', 'title' => 'المستخدمين', 'desc' => 'إدارة مستخدمي الوكالة'],
-                                ['route' => 'agency.roles', 'icon' => 'user-tag', 'title' => 'الأدوار', 'desc' => 'إدارة أدوار المستخدمين'],
-                                ['route' => 'agency.accounts', 'icon' => 'money-bill', 'title' => 'الحسابات', 'desc' => 'إدارة الحسابات '],
-                                ['route' => 'agency.providers', 'icon' => 'briefcase', 'title' => 'المزودين', 'desc' => 'إدارة مزودي الخدمات'],
-                                ['route' => 'agency.customers.add', 'icon' => 'user-plus', 'title' => 'إضافة عميل', 'desc' => 'إضافة عميل جديد'],
-                                ['route' => 'agency.hr.employees.index', 'icon' => 'user-tie', 'title' => 'الموظفين', 'desc' => 'إدارة موظفي الوكالة'],
-                                ['route' => 'agency.sales.index', 'icon' => 'chart-line', 'title' => 'المبيعات', 'desc' => 'تقارير وإحصائيات المبيعات'],
-                                ['route' => 'agency.profile', 'icon' => 'user-circle', 'title' => 'الملف الشخصي', 'desc' => 'إدارة ملفك الشخصي'],
-                            ];
-                        @endphp
-                        @foreach($quickLinks as $link)
+                    @php
+                        $quickLinks = [
+                            ['route' => 'agency.users', 'icon' => 'users', 'title' => 'المستخدمين', 'desc' => 'إدارة مستخدمي الوكالة'],
+                            ['route' => 'agency.roles', 'icon' => 'user-tag', 'title' => 'الأدوار', 'desc' => 'إدارة أدوار المستخدمين'],
+                            ['route' => 'agency.accounts', 'icon' => 'money-bill', 'title' => 'الحسابات', 'desc' => 'إدارة الحسابات '],
+                            ['route' => 'agency.providers', 'icon' => 'briefcase', 'title' => 'المزودين', 'desc' => 'إدارة مزودي الخدمات'],
+                            ['route' => 'agency.customers.add', 'icon' => 'user-plus', 'title' => 'إضافة عميل', 'desc' => 'إضافة عميل جديد'],
+                            ['route' => 'agency.hr.employees.index', 'icon' => 'user-tie', 'title' => 'الموظفين', 'desc' => 'إدارة موظفي الوكالة'],
+                            ['route' => 'agency.sales.index', 'icon' => 'chart-line', 'title' => 'المبيعات', 'desc' => 'تقارير وإحصائيات المبيعات'],
+                            ['route' => 'agency.profile', 'icon' => 'user-circle', 'title' => 'الملف الشخصي', 'desc' => 'إدارة ملفك الشخصي'],
+                        ];
+                    @endphp
+                    @foreach($quickLinks as $link)
                         <a href="{{ route($link['route']) }}"
-   class="relative flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-xl shadow transition group border border-gray-100 bg-[rgb(var(--primary-500))] hover:bg-white"
-   style="font-size: 1.5rem;">
-    <i class="fas fa-{{ $link['icon'] }} text-white group-hover:text-[rgb(var(--primary-500))] transition-colors"></i>
-                                <span class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full px-3 py-1 rounded-lg bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition whitespace-nowrap z-50">
-                                    {{ $link['title'] }}
-                                </span>
-                            </a>
-                        @endforeach
-                    </div>
+                           class="relative flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-xl shadow transition group border border-gray-100 bg-[rgb(var(--primary-500))] hover:bg-white"
+                           style="font-size: 1.5rem;">
+                            <i class="fas fa-{{ $link['icon'] }} text-white group-hover:text-[rgb(var(--primary-500))] transition-colors"></i>
+                            <span class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full px-3 py-1 rounded-lg bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition whitespace-nowrap z-50">
+                                {{ $link['title'] }}
+                            </span>
+                        </a>
+                    @endforeach
+                </div>
             </div>
 
             <!-- معلومات الترخيص في اليمين -->
@@ -91,9 +91,9 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
     </div>
-    @endif
 
     <!-- Personal Sales Target Card for All Users -->
     @php
@@ -182,167 +182,219 @@
                 <h2 class="text-3xl font-extrabold text-primary-700 tracking-tight drop-shadow-lg">إحصائيات المبيعات</h2>
             </div>
             <!-- أزرار التبديل -->
-    <div class="flex justify-center gap-2 sm:gap-4 my-4 flex-wrap">
-        <button wire:click="updateStatsViewType('monthly')"
-                class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
-                @if($statsViewType === 'monthly') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
-            شهرياً
-        </button>
-        <button wire:click="updateStatsViewType('service')"
-                class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
-                @if($statsViewType === 'service') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
-            حسب الخدمة
-        </button>
-        <button wire:click="updateStatsViewType('employee')"
-                class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
-                @if($statsViewType === 'employee') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
-            الموظف
-        </button>
-        <button wire:click="updateStatsViewType('branch')"
-                class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
-                @if($statsViewType === 'branch') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
-            الفرع
-        </button>
-    </div>
+            <div class="flex justify-center gap-2 sm:gap-4 my-4 flex-wrap">
+                <button wire:click="updateStatsViewType('monthly')"
+                        class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
+                        @if($statsViewType === 'monthly') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
+                    شهرياً
+                </button>
+                <button wire:click="updateStatsViewType('service')"
+                        class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
+                        @if($statsViewType === 'service') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
+                    حسب الخدمة
+                </button>
+                <button wire:click="updateStatsViewType('employee')"
+                        class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
+                        @if($statsViewType === 'employee') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
+                    الموظف
+                </button>
+                <button wire:click="updateStatsViewType('branch')"
+                        class="px-3 py-2 rounded-lg border focus:outline-none transition font-bold w-full sm:w-auto text-xs sm:text-base mb-2 sm:mb-0"
+                        @if($statsViewType === 'branch') style="background: rgb(var(--primary-500)); color: white;" @else style="background: white; color: rgb(var(--primary-500)); border: 1px solid rgb(var(--primary-500));" @endif>
+                    الفرع
+                </button>
+            </div>
+
             <!-- الجداول -->
             <div class="flex flex-col md:flex-row gap-8 md:gap-10">
                 <div class="flex-1 overflow-x-auto bg-white/80 rounded-2xl shadow-lg p-4" style="min-height: 350px; max-height: 400px; overflow-y: auto;">
-    @if($statsViewType === 'monthly')
+@if($statsViewType === 'monthly')
                     <table class="min-w-full text-center border-separate border-spacing-y-2">
                         <thead>
                             <tr class="bg-gradient-to-r from-primary-100 to-primary-50 text-primary-700">
                                 <th class="px-4 py-2 rounded-r-xl">السنة</th>
                                 <th class="px-4 py-2">الشهر</th>
                                 <th class="px-4 py-2">عدد العمليات</th>
+                                <th class="px-4 py-2">المبيعات المُحصّلة</th>
+                                <th class="px-4 py-2">المبيعات غير المُحصّلة</th>
                                 <th class="px-4 py-2 rounded-l-xl">إجمالي المبيعات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @php $totalOperations = 0; $totalSales = 0; @endphp
+                            @php $sumOps=0; $sumCollected=0; $sumPending=0; $sumTotal=0; @endphp
                             @forelse($salesByMonth as $row)
-                                @php $totalOperations += $row['operations_count'] ?? 0; $totalSales += $row['total_sales'] ?? 0; @endphp
+                                @php
+                                    $ops = (int)($row['operations_count'] ?? 0);
+                                    $col = (float)($row['collected_sales'] ?? 0);
+                                    $pen = (float)($row['pending_sales'] ?? 0);
+                                    $tot = (float)($row['total_sales'] ?? 0);
+                                    $sumOps += $ops; $sumCollected += $col; $sumPending += $pen; $sumTotal += $tot;
+                                @endphp
                                 <tr class="bg-white hover:bg-primary-50 transition rounded-xl shadow-sm border border-gray-100">
                                     <td class="px-4 py-2 font-semibold text-gray-700">{{ $row['year'] }}</td>
                                     <td class="px-4 py-2 text-gray-600">{{ $row['month'] }}</td>
-                                    <td class="px-4 py-2 text-gray-600">{{ $row['operations_count'] ?? '-' }}</td>
-                                    <td class="px-4 py-2 font-bold text-primary-600">{{ number_format($row['total_sales'], 2) }}</td>
+                                    <td class="px-4 py-2 text-gray-600">{{ $ops }}</td>
+                                    <td class="px-4 py-2 font-bold text-green-700">{{ number_format($col, 2) }}</td>
+                                    <td class="px-4 py-2 font-bold text-amber-700">{{ number_format($pen, 2) }}</td>
+                                    <td class="px-4 py-2 font-bold text-primary-600">{{ number_format($tot, 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-gray-400 py-4">لا توجد بيانات مبيعات متاحة</td>
+                                    <td colspan="6" class="text-gray-400 py-4">لا توجد بيانات مبيعات متاحة</td>
                                 </tr>
                             @endforelse
                         </tbody>
                         <tfoot>
                             <tr class="bg-primary-50 text-primary-800 font-bold">
                                 <td class="px-4 py-2 rounded-b-xl" colspan="2">الإجمالي</td>
-                                <td class="px-4 py-2">{{ $totalOperations }}</td>
-                                <td class="px-4 py-2">{{ number_format($totalSales, 2) }}</td>
+                                <td class="px-4 py-2">{{ $sumOps }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumCollected, 2) }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumPending, 2) }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumTotal, 2) }}</td>
                             </tr>
                         </tfoot>
                     </table>
-    @elseif($statsViewType === 'service')
+
+@elseif($statsViewType === 'service')
                     <table class="min-w-full text-center border-separate border-spacing-y-2">
                         <thead>
                             <tr class="bg-gradient-to-r from-primary-100 to-primary-50 text-primary-700">
                                 <th class="px-4 py-2 rounded-r-xl">الخدمة</th>
                                 <th class="px-4 py-2">عدد العمليات</th>
+                                <th class="px-4 py-2">المبيعات المُحصّلة</th>
+                                <th class="px-4 py-2">المبيعات غير المُحصّلة</th>
                                 <th class="px-4 py-2 rounded-l-xl">إجمالي المبيعات</th>
                             </tr>
                         </thead>
                         <tbody>
-                                @php $totalOperations = 0; $totalSales = 0; @endphp
-                                @forelse($salesByService as $row)
-                                    @php $totalOperations += $row['operations_count'] ?? 0; $totalSales += $row['total_sales'] ?? 0; @endphp
+                            @php $sumOps=0; $sumCollected=0; $sumPending=0; $sumTotal=0; @endphp
+                            @forelse($salesByService as $row)
+                                @php
+                                    $ops = (int)($row['operations_count'] ?? 0);
+                                    $col = (float)($row['collected_sales'] ?? 0);
+                                    $pen = (float)($row['pending_sales'] ?? 0);
+                                    $tot = (float)($row['total_sales'] ?? 0);
+                                    $sumOps += $ops; $sumCollected += $col; $sumPending += $pen; $sumTotal += $tot;
+                                @endphp
                                 <tr class="bg-white hover:bg-primary-50 transition rounded-xl shadow-sm border border-gray-100">
-                                        <td class="px-4 py-2 font-semibold text-gray-700">{{ $row['service_type'] }}</td>
-                                    <td class="px-4 py-2 text-gray-600">{{ $row['operations_count'] ?? '-' }}</td>
-                                    <td class="px-4 py-2 font-bold text-primary-600">{{ number_format($row['total_sales'], 2) }}</td>
+                                    <td class="px-4 py-2 font-semibold text-gray-700">{{ $row['service_type'] }}</td>
+                                    <td class="px-4 py-2 text-gray-600">{{ $ops }}</td>
+                                    <td class="px-4 py-2 font-bold text-green-700">{{ number_format($col, 2) }}</td>
+                                    <td class="px-4 py-2 font-bold text-amber-700">{{ number_format($pen, 2) }}</td>
+                                    <td class="px-4 py-2 font-bold text-primary-600">{{ number_format($tot, 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-gray-400 py-4">لا توجد بيانات مبيعات متاحة</td>
+                                    <td colspan="5" class="text-gray-400 py-4">لا توجد بيانات مبيعات متاحة</td>
                                 </tr>
                             @endforelse
                         </tbody>
                         <tfoot>
                             <tr class="bg-primary-50 text-primary-800 font-bold">
                                 <td class="px-4 py-2 rounded-b-xl">الإجمالي</td>
-                                <td class="px-4 py-2">{{ $totalOperations }}</td>
-                                <td class="px-4 py-2">{{ number_format($totalSales, 2) }}</td>
+                                <td class="px-4 py-2">{{ $sumOps }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumCollected, 2) }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumPending, 2) }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumTotal, 2) }}</td>
                             </tr>
                         </tfoot>
                     </table>
-    @elseif($statsViewType === 'employee')
+
+@elseif($statsViewType === 'employee')
                     <table class="min-w-full text-center border-separate border-spacing-y-2">
                         <thead>
                             <tr class="bg-gradient-to-r from-primary-100 to-primary-50 text-primary-700">
                                 <th class="px-4 py-2 rounded-r-xl">الموظف</th>
                                 <th class="px-4 py-2">عدد العمليات</th>
+                                <th class="px-4 py-2">المبيعات المُحصّلة</th>
+                                <th class="px-4 py-2">المبيعات غير المُحصّلة</th>
                                 <th class="px-4 py-2 rounded-l-xl">إجمالي المبيعات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @php $totalSales = 0; $totalOperations = 0; @endphp
+                            @php $sumOps=0; $sumCollected=0; $sumPending=0; $sumTotal=0; @endphp
                             @forelse($salesByMonth as $row)
-                                @php $totalSales += $row['total_sales'] ?? 0; $totalOperations += $row['operations_count'] ?? 0; @endphp
+                                @php
+                                    $ops = (int)($row['operations_count'] ?? 0);
+                                    $col = (float)($row['collected_sales'] ?? 0);
+                                    $pen = (float)($row['pending_sales'] ?? 0);
+                                    $tot = (float)($row['total_sales'] ?? 0);
+                                    $sumOps += $ops; $sumCollected += $col; $sumPending += $pen; $sumTotal += $tot;
+                                @endphp
                                 <tr class="bg-white hover:bg-primary-50 transition rounded-xl shadow-sm border border-gray-100">
                                     <td class="px-4 py-2 text-gray-700">{{ $row['employee'] }}</td>
-                                    <td class="px-4 py-2 text-gray-600">{{ $row['operations_count'] ?? '-' }}</td>
-                                    <td class="px-4 py-2 font-bold text-primary-600">{{ number_format($row['total_sales'], 2) }}</td>
+                                    <td class="px-4 py-2 text-gray-600">{{ $ops }}</td>
+                                    <td class="px-4 py-2 font-bold text-green-700">{{ number_format($col, 2) }}</td>
+                                    <td class="px-4 py-2 font-bold text-amber-700">{{ number_format($pen, 2) }}</td>
+                                    <td class="px-4 py-2 font-bold text-primary-600">{{ number_format($tot, 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-gray-400 py-4">لا توجد بيانات مبيعات متاحة</td>
+                                    <td colspan="5" class="text-gray-400 py-4">لا توجد بيانات مبيعات متاحة</td>
                                 </tr>
                             @endforelse
                         </tbody>
                         <tfoot>
                             <tr class="bg-primary-50 text-primary-800 font-bold">
                                 <td class="px-4 py-2 rounded-b-xl">الإجمالي</td>
-                                <td class="px-4 py-2">{{ $totalOperations }}</td>
-                                <td class="px-4 py-2">{{ number_format($totalSales, 2) }}</td>
+                                <td class="px-4 py-2">{{ $sumOps }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumCollected, 2) }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumPending, 2) }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumTotal, 2) }}</td>
                             </tr>
                         </tfoot>
                     </table>
-    @elseif($statsViewType === 'branch')
+
+@elseif($statsViewType === 'branch')
                     <table class="min-w-full text-center border-separate border-spacing-y-2">
                         <thead>
                             <tr class="bg-gradient-to-r from-primary-100 to-primary-50 text-primary-700">
                                 <th class="px-4 py-2 rounded-r-xl">الفرع</th>
                                 <th class="px-4 py-2">عدد العمليات</th>
+                                <th class="px-4 py-2">المبيعات المُحصّلة</th>
+                                <th class="px-4 py-2">المبيعات غير المُحصّلة</th>
                                 <th class="px-4 py-2 rounded-l-xl">إجمالي المبيعات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @php $totalSales = 0; $totalOperations = 0; @endphp
+                            @php $sumOps=0; $sumCollected=0; $sumPending=0; $sumTotal=0; @endphp
                             @forelse($salesByMonth as $row)
-                                @php $totalSales += $row['total_sales'] ?? 0; $totalOperations += $row['operations_count'] ?? 0; @endphp
+                                @php
+                                    $ops = (int)($row['operations_count'] ?? 0);
+                                    $col = (float)($row['collected_sales'] ?? 0);
+                                    $pen = (float)($row['pending_sales'] ?? 0);
+                                    $tot = (float)($row['total_sales'] ?? 0);
+                                    $sumOps += $ops; $sumCollected += $col; $sumPending += $pen; $sumTotal += $tot;
+                                @endphp
                                 <tr class="bg-white hover:bg-primary-50 transition rounded-xl shadow-sm border border-gray-100">
                                     <td class="px-4 py-2 text-gray-700">{{ $row['branch'] }}</td>
-                                    <td class="px-4 py-2 text-gray-600">{{ $row['operations_count'] ?? '-' }}</td>
-                                    <td class="px-4 py-2 font-bold text-primary-600">{{ number_format($row['total_sales'], 2) }}</td>
+                                    <td class="px-4 py-2 text-gray-600">{{ $ops }}</td>
+                                    <td class="px-4 py-2 font-bold text-green-700">{{ number_format($col, 2) }}</td>
+                                    <td class="px-4 py-2 font-bold text-amber-700">{{ number_format($pen, 2) }}</td>
+                                    <td class="px-4 py-2 font-bold text-primary-600">{{ number_format($tot, 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-gray-400 py-4">لا توجد بيانات مبيعات متاحة</td>
+                                    <td colspan="5" class="text-gray-400 py-4">لا توجد بيانات مبيعات متاحة</td>
                                 </tr>
                             @endforelse
                         </tbody>
                         <tfoot>
                             <tr class="bg-primary-50 text-primary-800 font-bold">
                                 <td class="px-4 py-2 rounded-b-xl">الإجمالي</td>
-                                <td class="px-4 py-2">{{ $totalOperations }}</td>
-                                <td class="px-4 py-2">{{ number_format($totalSales, 2) }}</td>
+                                <td class="px-4 py-2">{{ $sumOps }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumCollected, 2) }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumPending, 2) }}</td>
+                                <td class="px-4 py-2">{{ number_format($sumTotal, 2) }}</td>
                             </tr>
                         </tfoot>
                     </table>
-                    @endif
+@endif
                 </div>
+
                 <!-- كروت المبيعات المحققة والأرباح والتكاليف -->
                 <div class="w-full md:w-80 flex flex-col gap-4 md:gap-2 ">
                     <!-- المبيعات المحققة / الهدف -->
-                     
                     <div class="bg-primary-50 rounded-xl p-3 md:p-5 shadow-sm border border-primary-200 text-center w-full">
                         <div class="flex items-center justify-center gap-2 mb-1">
                             <i class="fas fa-bullseye text-primary-600"></i>
@@ -351,38 +403,39 @@
                         <div class="text-2xl font-extrabold text-primary-700">
                             {{ number_format($monthlyAchieved, 2) }} / {{ number_format($monthlyTarget, 2) }}
                         </div>
-                               <!-- كروت صغيرة أسفل الهدف -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
-    <!-- المدفوع -->
-    <div class="rounded-xl bg-green-50 px-3 py-2 text-center shadow-sm border border-green-100">
-        <div class="text-xs text-green-700 font-semibold flex justify-center items-center gap-1 mb-1">
-            <i class="fas fa-hand-holding-usd"></i> المدفوع مباشرة
-        </div>
-        <div class="text-base font-bold text-green-800">
-            {{ number_format($monthlyPaid, 2) }}
-        </div>
-    </div>
 
-    <!-- المحصل -->
-    <div class="rounded-xl bg-blue-50 px-3 py-2 text-center shadow-sm border border-blue-100">
-        <div class="text-xs text-blue-700 font-semibold flex justify-center items-center gap-1 mb-1">
-            <i class="fas fa-wallet"></i> المبالغ المحصلة
-        </div>
-        <div class="text-base font-bold text-blue-800">
-            {{ number_format($monthlyCollected, 2) }}
-        </div>
-    </div>
+                        <!-- كروت صغيرة أسفل الهدف -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+                            <!-- المدفوع -->
+                            <div class="rounded-xl bg-green-50 px-3 py-2 text-center shadow-sm border border-green-100">
+                                <div class="text-xs text-green-700 font-semibold flex justify-center items-center gap-1 mb-1">
+                                    <i class="fas fa-hand-holding-usd"></i> المدفوع مباشرة
+                                </div>
+                                <div class="text-base font-bold text-green-800">
+                                    {{ number_format($monthlyPaid, 2) }}
+                                </div>
+                            </div>
 
-    <!-- المؤجل -->
-    <div class="rounded-xl bg-gray-50 px-3 py-2 text-center shadow-sm border border-gray-100">
-        <div class="text-xs text-gray-700 font-semibold flex justify-center items-center gap-1 mb-1">
-            <i class="fas fa-clock"></i> المبالغ المؤجلة
-        </div>
-        <div class="text-base font-bold text-gray-800">
-            {{ number_format($monthlyRemaining, 2) }}
-        </div>
-    </div>
-</div>
+                            <!-- المحصل -->
+                            <div class="rounded-xl bg-blue-50 px-3 py-2 text-center shadow-sm border border-blue-100">
+                                <div class="text-xs text-blue-700 font-semibold flex justify-center items-center gap-1 mb-1">
+                                    <i class="fas fa-wallet"></i> المبالغ المحصلة
+                                </div>
+                                <div class="text-base font-bold text-blue-800">
+                                    {{ number_format($monthlyCollected, 2) }}
+                                </div>
+                            </div>
+
+                            <!-- المؤجل -->
+                            <div class="rounded-xl bg-gray-50 px-3 py-2 text-center shadow-sm border border-gray-100">
+                                <div class="text-xs text-gray-700 font-semibold flex justify-center items-center gap-1 mb-1">
+                                    <i class="fas fa-clock"></i> المبالغ المؤجلة
+                                </div>
+                                <div class="text-base font-bold text-gray-800">
+                                    {{ number_format($monthlyRemaining, 2) }}
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- الأرباح -->
@@ -411,6 +464,7 @@
 
         </div>
     </div>
+
     @php
         $showUsersState = Auth::user()->hasRole('agency-admin') || Auth::user()->can('employees.view') || Auth::user()->can('users.view');
     @endphp
@@ -434,11 +488,10 @@
     </div>
     @endif
 
-
     <!-- تم حذف كروت وعدد الأدوار وعدد الصلاحيات من الإحصائيات العلوية -->
-
     <!-- تم حذف أقسام آخر المستخدمين، آخر الأدوار، وآخر الصلاحيات من لوحة التحكم -->
 </div>
+
 @push('scripts')
     @if(isset($this->monthlyChart))
         {!! $this->monthlyChart->script() !!}

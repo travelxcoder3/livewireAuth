@@ -266,113 +266,88 @@ class EmployeeSalesReport extends Component
     }
 
     // ملخص لكل موظف
-    protected function perEmployeeRows()
-    {
-        $sales = $this->baseQuery()->withSum('collections','amount')->get();
+   protected function perEmployeeRows()
+{
+    $sales = $this->baseQuery()->with(['collections'])->withSum('collections','amount')->get();
 
-        $grouped = $sales->groupBy('user_id')->map(function ($rows) {
-            $sell = (float) $rows->sum('usd_sell');
-            $buy  = (float) $rows->sum('usd_buy');
-
-            // الربح الكلي
-            $profit = $sell - $buy;
-
-            // عمولة العميل (قديمة) لكن بعد معالجة الاسترداد
-            $customerCommission = (float) $rows->sum(fn($s) => $this->effectiveCustomerCommission($s));
-
-            // نسبة عمولة الموظف
-            $user = $rows->first()?->user;
-            $rate = $this->employeeCommissionRate($user) / 100.0;
-
-            // الربح الصافي بعد الاسترداد + المُحصّل (مجموع على مستوى الصفوف)
-            $netProfit = 0.0;
-            $collectedProfit = 0.0;
-            foreach ($rows as $s) {
-                $pp = $this->profitParts($s);
-                $netProfit       += $pp['net_profit'];
-                $collectedProfit += $pp['collected_profit'];
-            }
-
-            // عمولات الموظف
-            $empExpected = round($netProfit * $rate, 2);
-            $empDue      = round($collectedProfit * $rate, 2);
-
-            // المدفوع لاحتساب المتبقي كما كان
-            $paid = (float) $rows->map(function ($s) {
-                if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
-                return (float) ($s->amount_paid ?? 0) + (float) $s->collections_sum_amount;
-            })->sum();
-
-            return [
-                'user'       => $user,
-                'count'      => $rows->count(),
-                'sell'       => $sell,
-                'buy'        => $buy,
-                'profit'     => $profit,
-                'commission' => $customerCommission, // عمولة العميل (قديمة)
-                'remaining'  => $sell - $paid,
-
-                // الحقول الجديدة
-                'employee_commission_expected' => $empExpected,
-                'employee_commission_due'      => $empDue,
-            ];
-        });
-
-        return $grouped->sortBy(fn($r) => $r['user']?->name ?? '');
-    }
-
-    protected function computeTotals($sales)
-    {
-        $sell = (float) $sales->sum('usd_sell');
-        $buy  = (float) $sales->sum('usd_buy');
+    $grouped = $sales->groupBy('user_id')->map(function ($rows) {
+        $sell = (float) $rows->sum('usd_sell');
+        $buy  = (float) $rows->sum('usd_buy');
         $profit = $sell - $buy;
 
-        // عمولة العميل (قديمة)
-        $customerCommission = (float) $sales->sum(fn($s) => $this->effectiveCustomerCommission($s));
+        // عمولة العميل (قديمة) مع مراعاة الاسترداد
+        $customerCommission = (float) $rows->sum(fn($s) => $this->effectiveCustomerCommission($s));
 
-        // تجميع ربح الموظف الصافي/المحصّل ثم تحويله لعمولة
-        $netProfit = 0.0;
-        $collectedProfit = 0.0;
-        foreach ($sales as $s) {
-            $pp = $this->profitParts($s);
-            $netProfit       += $pp['net_profit'];
-            $collectedProfit += $pp['collected_profit'];
-        }
+        $user = $rows->first()?->user;
 
-        // نسبة الموظف (لو عامل فلترة موظف نأخذ نسبته؛ لو ملخص عام نأخذ 0 لتجنّب الخلط بين نسب مختلفة)
-        $rate = 0.0;
-        if ($this->employeeId) {
-            $user = User::find($this->employeeId);
-            $rate = $this->employeeCommissionRate($user) / 100.0;
-        }
+        // نفس منطق Sales\Index:
+        $agg = $this->aggCommissionLikeIndex($rows, $user);
 
-        $empExpected = round($netProfit * $rate, 2);
-        $empDue      = round($collectedProfit * $rate, 2);
-
-        $totalPaid = $sales->map(function ($sale) {
-            if (in_array($sale->status, ['Refund-Full','Refund-Partial'])) {
-                return 0;
-            }
-            $paid = (float) ($sale->amount_paid ?? 0);
-            $paid += (float) $sale->collections->sum('amount');
-            return $paid;
+        // المتبقي كما كان
+        $paid = (float) $rows->map(function ($s) {
+            if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
+            return (float) ($s->amount_paid ?? 0) + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
         })->sum();
 
-        $remaining = $sell - $totalPaid;
-
         return [
-            'count'      => $sales->count(),
+            'user'       => $user,
+            'count'      => $rows->count(),
             'sell'       => $sell,
             'buy'        => $buy,
             'profit'     => $profit,
-            'commission' => $customerCommission, // عمولة العميل (قديمة)
-            'remaining'  => $remaining,
+            'commission' => $customerCommission,
+            'remaining'  => $sell - $paid,
 
-            // الجديدة
-            'employee_commission_expected' => $empExpected,
-            'employee_commission_due'      => $empDue,
+            // مطابقة تامة لمنطق الصفحة
+            'employee_commission_expected' => $agg['expected'],
+            'employee_commission_due'      => $agg['due'],
         ];
+    });
+
+    return $grouped->sortBy(fn($r) => $r['user']?->name ?? '');
+}
+
+
+   protected function computeTotals($sales)
+{
+    $sell = (float) $sales->sum('usd_sell');
+    $buy  = (float) $sales->sum('usd_buy');
+    $profit = $sell - $buy;
+
+    $customerCommission = (float) $sales->sum(fn($s) => $this->effectiveCustomerCommission($s));
+
+    // احتساب المتبقي كما كان
+    $totalPaid = $sales->map(function ($sale) {
+        if (in_array($sale->status, ['Refund-Full','Refund-Partial'])) {
+            return 0;
+        }
+        return (float) ($sale->amount_paid ?? 0)
+             + (float) ($sale->collections_sum_amount ?? $sale->collections->sum('amount'));
+    })->sum();
+    $remaining = $sell - $totalPaid;
+
+    // لو في موظف محدد: طبّق منطق Sales\Index حرفيًا (تجميع على مستوى المجموعات + هدف الموظف + 17%)
+    $empExpected = 0.0;
+    $empDue      = 0.0;
+
+    if ($this->employeeId) {
+        $user = User::find($this->employeeId);
+        $agg  = $this->aggCommissionLikeIndex($sales, $user);
+        $empExpected = $agg['expected'];
+        $empDue      = $agg['due'];
     }
+
+    return [
+        'count'      => $sales->count(),
+        'sell'       => $sell,
+        'buy'        => $buy,
+        'profit'     => $profit,
+        'commission' => $customerCommission,
+        'remaining'  => $remaining,
+        'employee_commission_expected' => $empExpected,
+        'employee_commission_due'      => $empDue,
+    ];
+}
 
     public function resetFilters()
     {
@@ -488,44 +463,80 @@ class EmployeeSalesReport extends Component
     }
 
     // إعداد البيانات للتقارير والجداول
-    protected function prepareReportData(bool $applyDrill = false)
-    {
-        $user   = Auth::user();
-        $agency = $user->agency;
+protected function prepareReportData(bool $applyDrill = false)
+{
+    $user     = Auth::user();
+    $agency   = $user->agency;
+    $employee = $this->employeeId ? User::find($this->employeeId) : null;
 
-        // لو نُريد التصدير وفق التفصيلي نستخدم operationsQuery()
-        $query = ($applyDrill && $this->employeeId) ? $this->operationsQuery() : $this->baseQuery();
+    // لو نُريد التصدير وفق التفصيلي نستخدم operationsQuery()
+    $query = ($applyDrill && $this->employeeId) ? $this->operationsQuery() : $this->baseQuery();
 
-        $sales = $query->orderBy($this->sortField, $this->sortDirection)->withSum('collections','amount')->get();
+    $sales = $query
+        ->orderBy($this->sortField, $this->sortDirection)
+        ->withSum('collections','amount')
+        ->get();
 
-        $totals = $this->computeTotals($sales);
+    $totals = $this->computeTotals($sales);
 
-        $byService = $sales->groupBy('service_type_id')->map(function ($group) {
-            $sell = (float) $group->sum('usd_sell');
-            $buy  = (float) $group->sum('usd_buy');
+    // تفصيلي حسب الخدمة
+    $byService = $sales->groupBy('service_type_id')->map(function ($group) use ($employee) {
+        $sell   = (float) $group->sum('usd_sell');
+        $buy    = (float) $group->sum('usd_buy');
+        $profit = $sell - $buy;
+
+        // عمولة العميل (قديمة) مع مراعاة الاسترداد
+        $customerCommission = (float) $group->sum(function ($s) {
+            return $this->effectiveCustomerCommission($s);
+        });
+
+        // نفس منطق صفحة المبيعات (تجميع على مستوى المجموعات + طرح الهدف + 17%)
+        $agg         = $this->aggCommissionLikeIndex($group, $employee);
+        $empExpected = $agg['expected'];
+        $empDue      = $agg['due'];
+
+        // المدفوع لاستخدامه في المتبقي كما كان
+        $paid = (float) $group->map(function ($s) {
+            if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
+            return (float) ($s->amount_paid ?? 0)
+                 + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
+        })->sum();
+
+        return [
+            'count'      => $group->count(),
+            'sell'       => $sell,
+            'buy'        => $buy,
+            'profit'     => $profit,
+            'commission' => $customerCommission,
+            'remaining'  => $sell - $paid,
+            'firstRow'   => $group->first(),
+
+            // الجديدة
+            'employee_commission_expected' => $empExpected,
+            'employee_commission_due'      => $empDue,
+        ];
+    });
+
+    // تفصيلي حسب الشهر
+    $byMonth = $sales->groupBy(fn($s) => Carbon::parse($s->sale_date)->format('Y-m'))
+        ->map(function ($group) use ($employee) {
+            $sell   = (float) $group->sum('usd_sell');
+            $buy    = (float) $group->sum('usd_buy');
             $profit = $sell - $buy;
 
-            $customerCommission = (float) $group->sum(fn($s) => $this->effectiveCustomerCommission($s));
+            $customerCommission = (float) $group->sum(function ($s) {
+                return $this->effectiveCustomerCommission($s);
+            });
 
-            // اجمع أرباح الموظف الصافية والمحصلة ثم حوّلها لعمولة حسب نسبة أول موظف في المجموعة (نفس الموظف أصلًا عند drill/filters)
-            $firstUser = $group->first()?->user;
-            $rate = $this->employeeCommissionRate($firstUser) / 100.0;
+            // نفس منطق صفحة المبيعات
+            $agg         = $this->aggCommissionLikeIndex($group, $employee);
+            $empExpected = $agg['expected'];
+            $empDue      = $agg['due'];
 
-            $netProfit = 0.0;
-            $collectedProfit = 0.0;
-            foreach ($group as $s) {
-                $pp = $this->profitParts($s);
-                $netProfit       += $pp['net_profit'];
-                $collectedProfit += $pp['collected_profit'];
-            }
-
-            $empExpected = round($netProfit * $rate, 2);
-            $empDue      = round($collectedProfit * $rate, 2);
-
-            // المدفوع (لاستخدامه في المتبقي كما سابقًا)
             $paid = (float) $group->map(function ($s) {
                 if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
-                return (float) ($s->amount_paid ?? 0) + (float) $s->collections_sum_amount;
+                return (float) ($s->amount_paid ?? 0)
+                     + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
             })->sum();
 
             return [
@@ -533,70 +544,30 @@ class EmployeeSalesReport extends Component
                 'sell'       => $sell,
                 'buy'        => $buy,
                 'profit'     => $profit,
-                'commission' => $customerCommission, // عمولة العميل (قديمة)
+                'commission' => $customerCommission,
                 'remaining'  => $sell - $paid,
-                'firstRow'   => $group->first(),
 
                 // الجديدة
                 'employee_commission_expected' => $empExpected,
                 'employee_commission_due'      => $empDue,
             ];
-        });
+        })
+        ->sortKeysDesc();
 
-        $byMonth = $sales->groupBy(fn($s) => Carbon::parse($s->sale_date)->format('Y-m'))
-            ->map(function ($group) {
-                $sell = (float) $group->sum('usd_sell');
-                $buy  = (float) $group->sum('usd_buy');
-                $profit = $sell - $buy;
+    return [
+        'agency'    => $agency,
+        'sales'     => $sales,
+        'totals'    => $totals,
+        'byService' => $byService,
+        'byMonth'   => $byMonth,
+        'startDate' => $this->startDate,
+        'endDate'   => $this->endDate,
+        'employee'  => $this->employeeId ? User::find($this->employeeId) : null,
+        'viewType'  => $this->viewType,
+    ];
+}
 
-                $customerCommission = (float) $group->sum(fn($s) => $this->effectiveCustomerCommission($s));
-
-                $firstUser = $group->first()?->user;
-                $rate = $this->employeeCommissionRate($firstUser) / 100.0;
-
-                $netProfit = 0.0;
-                $collectedProfit = 0.0;
-                foreach ($group as $s) {
-                    $pp = $this->profitParts($s);
-                    $netProfit       += $pp['net_profit'];
-                    $collectedProfit += $pp['collected_profit'];
-                }
-
-                $empExpected = round($netProfit * $rate, 2);
-                $empDue      = round($collectedProfit * $rate, 2);
-
-                $paid = (float) $group->map(function ($s) {
-                    if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
-                    return (float) ($s->amount_paid ?? 0) + (float) $s->collections_sum_amount;
-                })->sum();
-
-                return [
-                    'count'      => $group->count(),
-                    'sell'       => $sell,
-                    'buy'        => $buy,
-                    'profit'     => $profit,
-                    'commission' => $customerCommission, // عمولة العميل (قديمة)
-                    'remaining'  => $sell - $paid,
-
-                    // الجديدة
-                    'employee_commission_expected' => $empExpected,
-                    'employee_commission_due'      => $empDue,
-                ];
-            })->sortKeysDesc();
-
-        return [
-            'agency'    => $agency,
-            'sales'     => $sales,
-            'totals'    => $totals,
-            'byService' => $byService,
-            'byMonth'   => $byMonth,
-            'startDate' => $this->startDate,
-            'endDate'   => $this->endDate,
-            'employee'  => $this->employeeId ? User::find($this->employeeId) : null,
-            'viewType'  => $this->viewType,
-        ];
-    }
-
+    
     public function render()
     {
         // جدول العمليات (يُطبق عليه الـdrill)
@@ -613,11 +584,15 @@ class EmployeeSalesReport extends Component
             $sale->remaining_payment = (float)($sale->usd_sell ?? 0) - $paid;
 
             // 🔸 عمولة الموظف للعرض في الجدول
-            $rate = $this->employeeCommissionRate($sale->user) / 100.0;
-            $pp   = $this->profitParts($sale);
+     // عند عرض تفصيلي لموظف محدد استخدم نفس منطق الصفحة: 17%
+        $rate = $this->employeeId
+            ? 0.17
+            : ($this->employeeCommissionRate($sale->user) / 100.0);
 
-            $sale->employee_commission_expected = round($pp['net_profit'] * $rate, 2);
-            $sale->employee_commission_due      = round($pp['collected_profit'] * $rate, 2);
+        $pp   = $this->profitParts($sale);
+        $sale->employee_commission_expected = round($pp['net_profit'] * $rate, 2);
+        $sale->employee_commission_due      = round($pp['collected_profit'] * $rate, 2);
+
 
             // لو تحتاج أيضًا عمولة العميل بعد الاسترداد:
             $sale->effective_customer_commission = $this->effectiveCustomerCommission($sale);
@@ -659,4 +634,56 @@ class EmployeeSalesReport extends Component
             'sale-details-' . $sale->id . '.pdf'
         );
     }
+
+
+    // === مثل Sales\Index بالضبط: تجميع الربح والتحصيل على مستوى المجموعات ثم حساب العمولات ===
+protected function aggCommissionLikeIndex($rows, ?User $employee = null): array
+{
+    $groups = $rows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+
+    $totalProfit = 0.0;
+    $totalCollectedProfit = 0.0;
+
+    foreach ($groups as $group) {
+        $netSell = (float) $group->sum('usd_sell');
+        if ($netSell <= 0) {
+            continue;
+        }
+
+        // amount_paid + collections (يدعم withSum أو العلاقة)
+        $collectionsSum = (float) $group->sum(function ($s) {
+            return (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
+        });
+        $netCollected = (float) $group->sum('amount_paid') + $collectionsSum;
+
+        $groupProfit = (float) $group->sum('sale_profit');
+
+        $totalProfit += $groupProfit;
+
+        // سماحية سنت واحد
+        if ($netCollected + 0.01 >= $netSell) {
+            $totalCollectedProfit += $groupProfit;
+        }
+    }
+
+    // نفس الصفحة: طرح هدف الموظف ثم 17%
+    $target = (float) ($employee?->main_target ?? 0);
+
+    // لجعلها مطابقة تمامًا لصفحة المبيعات نخليها ثابتة 17%
+    $rate = 0.17;
+
+    // لو حبيت ترجع للنسبة من بيانات الموظف بدلاً من الثابت:
+    // $rate = ($this->employeeCommissionRate($employee) / 100.0);
+
+    $expected = max(($totalProfit - $target) * $rate, 0);
+    $due      = max(($totalCollectedProfit - $target) * $rate, 0);
+
+    return [
+        'expected' => round($expected, 2),
+        'due'      => round($due, 2),
+        'totalProfit' => round($totalProfit, 2),
+        'totalCollectedProfit' => round($totalCollectedProfit, 2),
+    ];
+}
+
 }

@@ -5,25 +5,34 @@
             ->pluck('id')
             ->search($customer->id) + 1;
     $currency = Auth::user()->agency->currency ?? 'USD';
-
-    // حساب إجمالي المبيعات (جميع عمليات البيع الفعالة)
+    // 1. إجمالي المبيعات (باستثناء الملغاة)
     $activeSales = $sales->whereNotIn('status', ['Void'])->sum('usd_sell');
-
-    // حساب المدفوعات
+    // 2. المدفوعات المباشرة (التحصيلات)
     $directPayments = $collections->sum('amount');
-    $partialPayments = $sales->where('payment_method', 'part')->sum('amount_paid');
 
-    // حساب المبالغ المستردة
-    $refundPayments = $sales->where('status', 'Refund-Full')->sum('usd_sell');
+    // 3. المدفوعات الكاملة (kash) التي لم يتم استردادها
+    $fullPayments = $sales
+        ->where('payment_method', 'kash')
+        ->whereNotIn('status', ['Refund-Full', 'Refund-Partial'])
+        ->sum('usd_sell');
 
-    // حساب التحصيل الصافي (المدفوعات - المستردات)
-    $netPayments = $directPayments + $partialPayments - $refundPayments;
+    // 4. المدفوعات الجزئية التي لم يتم استردادها (يجب إضافتها إلى التحصيل)
+    $partialPayments = $sales
+        ->where('payment_method', 'part')
+        ->whereNotIn('status', ['Refund-Full', 'Refund-Partial'])
+        ->sum('amount_paid');
 
-    // التأكد من أن التحصيل لا يتجاوز إجمالي المبيعات
-    $totalPayments = min($activeSales, max(0, $netPayments));
+    // 5. المبالغ المستردة (يجب خصمها من إجمالي التحصيل)
+    $refundedAmount = $sales->whereIn('status', ['Refund-Full', 'Refund-Partial'])->sum('usd_sell');
 
-    // حساب الرصيد الفارق
-    $netBalance = $activeSales - $totalPayments;
+    // 6. إجمالي التحصيل
+    $netPayments = $directPayments + $fullPayments + $partialPayments - abs($refundedAmount);
+    \Log::debug('Refunded Amount (After Check): ', [$refundedAmount]);
+    \Log::debug('Net Payments (Before Refund): ', [$directPayments + $fullPayments + $partialPayments]);
+    \Log::debug('Net Payments (After Refund): ', [$netPayments]);
+
+    // 7. الرصيد النهائي
+    $netBalance = $activeSales - $netPayments;
 
     // تحضير بيانات العمليات بدون ترتيب حسب التاريخ
     $transactions = collect();
@@ -232,7 +241,7 @@
                 </div>
                 <div class="border-b pb-2">
                     <strong>إجمالي التحصيل:</strong>
-                    <span class="text-gray-700 block">{{ number_format($totalPayments, 2) }} {{ $currency }}</span>
+                    <span class="text-gray-700 block">{{ number_format($netPayments, 2) }} {{ $currency }}</span>
                     <small class="text-xs text-gray-500">(المبالغ التي دفعها العميل فعلياً)</small>
                 </div>
 

@@ -3414,7 +3414,7 @@ class CustomersAthkaSeeder extends Seeder
 
         foreach ($names as $name) {
             Customer::create([
-                'agency_id' => 5,
+                'agency_id' => 3,
                 'name' => $name,
                 'email' => null,
                 'phone' => null,
