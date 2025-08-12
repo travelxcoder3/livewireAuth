@@ -303,16 +303,21 @@ public function resetForm()
         'expected_payment_date',
     ]);
 
+    // الحالة الافتراضية لعناصر واجهة الدفع
+    $this->showPaymentDetails = true;   // ← مهم
+    $this->showDepositorField = true;   // ← مهم
     $this->showAmountPaidField = true;
+    $this->showExpectedDate   = false;
+    $this->showRefundModal    = false;  // ← مهم
     $this->disablePaymentMethod = false;
 
     // تنظيف الحقول المحسوبة يدويًا
     $this->sale_profit = 0;
-    $this->amount_due = 0;
+    $this->amount_due  = 0;
     $this->showCommission = false;
     $this->commission = null;
     $this->commissionReadOnly = false;
-    $this->showExpectedDate = false;
+
     $this->sale_group_id  = Str::uuid();
 
     $this->isDuplicated = false;
@@ -328,9 +333,11 @@ public function resetForm()
     $this->providerSearch = '';
     $this->refreshCustomerOptions();
     $this->refreshProviderOptions();
-$this->formKey++;
-$this->dispatch('lw-dropdowns-cleared');
+
+    $this->formKey++;
+    $this->dispatch('lw-dropdowns-cleared');
 }
+
 
 
 public function updatedFilterInputsCustomerId($value)
@@ -452,44 +459,46 @@ public function updateStatusOptions()
     ->when($this->filters['payment_method'], function($query) {
         $query->where('payment_method', $this->filters['payment_method']);
     })
-    ->when($this->filters['reference'], function($query) {
-        $query->where('reference', 'like', '%'.$this->filters['reference'].'%');
+    ->when($this->filters['reference'], function($q){
+        $t = trim($this->filters['reference']);
+        $like = mb_strlen($t) >= 3 ? "%$t%" : "$t%"; // prefix يستفيد من الفهرس
+        $q->where('reference', 'like', $like);
     })
-
     ->when($this->filters['payment_type'], function($query) {
         $query->where('payment_type', $this->filters['payment_type']);
     });
-$totalsQuery = (clone $salesQuery); // ← أساس الحسابات بدون ترقيم صفحات
 
-    $sales = (clone $salesQuery)
-    ->with(['user','provider','service','customer','account','collections','updatedBy','duplicatedBy'])
-    ->withSum('collections', 'amount')
-    ->latest()
-    ->paginate(10);
+$sales = (clone $salesQuery)
+    ->with([
+        'user:id,name','provider:id,name','service:id,label',
+        'customer:id,name','updatedBy:id,name','duplicatedBy:id,name',
+    ])
+    ->withSum('collections','amount')
+    ->orderByDesc('sale_date')->orderByDesc('id')
+    ->simplePaginate(10);
 
-        $sales->each(function ($sale) {
-            $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum ?? 0);
-        });
-        $sales->each(function ($sale) {
+
+
+
+
+$sales->each(function ($sale) {
     $sale->total_paid = ($sale->amount_paid ?? 0) + ($sale->collections_sum_amount ?? 0);
-    $sale->remaining_payment = ($sale->usd_sell ?? 0) - $sale->total_paid;
+    $sale->remaining_payment = max(0, ($sale->usd_sell ?? 0) - $sale->total_paid);
 });
 
 
 
-        $services = \App\Models\DynamicListItem::whereHas('list', function ($query) {
-            $query->where('name', 'قائمة الخدمات');
-        })->get();
+$intermediaries = Intermediary::select('id','name')->orderBy('name')->get();
+$accounts = Account::select('id','name')->orderBy('name')->get();
 
-        $intermediaries = Intermediary::all();
-        $accounts = Account::all();
 
 // ====== إجماليات الموظف المسجّل دخول (على مستوى الجدول كامل) ======
 // استخدام نفس الفلاتر، تقييد بـ Auth::id()، واستثناء الملغى
 $employeeRows = (clone $salesQuery)
     ->where('user_id', Auth::id())
-    ->where('status', '!=', 'Void')
-    ->with('collections')
+    ->where('status','!=','Void')
+    ->withSum('collections','amount')
+    ->select('id','usd_sell','amount_paid','sale_profit','sale_group_id')
     ->get();
 
 // التجميع حسب المجموعة (أو id إن لم توجد مجموعة)
@@ -508,7 +517,7 @@ foreach ($grouped as $group) {
     }
 
     $netCollected = (float) $group->sum('amount_paid')
-        + (float) $group->pluck('collections')->flatten()->sum('amount');
+        + (float) $group->sum('collections_sum_amount');
 
     $groupProfit = (float) $group->sum('sale_profit');
 
@@ -541,7 +550,7 @@ $this->userCommission    = max(($totalProfit - $target) * $rate, 0);            
 $this->userCommissionDue = max(($totalCollectedProfit - $target) * $rate, 0);   // عمولة مستحقة
 return view('livewire.sales.index', [
     'sales'           => $sales,
-    'services'        => $services,
+    'services' => $this->services,
     'intermediaries'  => $intermediaries,
     'accounts'        => $accounts,
 
@@ -646,10 +655,12 @@ if ($this->provider_id) {
             'payment-collected' => 'refreshSales',
         ];
     }
-    public function refreshSales()
-    {
-        $this->render(); // إعادة تحميل البيانات عند استلام حدث تحصيل جديد
-    }
+public function refreshSales()
+{
+    $this->resetPage();     // لو تبغى ترجع للصفحة 1
+    $this->dispatch('$refresh');  // يكفي لتحديث البيانات
+}
+
     protected function rules()
     {
         $today = now()->format('Y-m-d');
