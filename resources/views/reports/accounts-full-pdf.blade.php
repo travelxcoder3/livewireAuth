@@ -6,7 +6,6 @@
 
     // اتجاه + الوكالة
     $dir    = 'rtl';
-    $agency = $sales->first()?->agency;
 
     // ألوان الثيم (افتراضي عند غياب $colors)
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
@@ -68,7 +67,7 @@
             --heading: #111827;
         }
 
-        @page { size: A4; margin: 14mm 10mm; }
+        @page { size: A4 landscape; margin: 10mm; }  
         * { box-sizing: border-box; }
         body { font-family: DejaVu Sans, Tahoma, Arial, sans-serif; color:#111827; line-height: 1.55; font-size: 13px; }
         h1,h2,h3 { margin:0 0 10px; color: var(--heading); font-weight: 800; }
@@ -90,13 +89,25 @@
         .title h2 { margin:0; font-size: 20px; color: #111827; }
         .title .muted { margin-top: 2px; }
 
-        table { width:100%; border-collapse:collapse; margin-top:8px; }
-        th,td { border:1px solid var(--border); padding:6px 8px; font-size:12px; text-align:right; }
-        th {
-            background: rgba(var(--primary-100), .1);
-            color: #111827;
-            font-weight: 700;
-        }
+:root{ --grid:#111; }                     /* لون حدود داكن */
+@page { size: A4 landscape; margin: 10mm; }
+*{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+table{
+  table-layout:fixed; width:100%; border-collapse:collapse;
+  border:0.6pt solid var(--grid);         /* إطار الجدول */
+}
+th,td{
+  font-size:10px; padding:4px 6px; line-height:1.4;
+  white-space:normal; word-break: normal; overflow-wrap: break-word;
+  vertical-align:top; text-align:right;
+  border:0.5pt solid var(--grid);         /* حدود الأعمدة والصفوف */
+}
+thead th{
+  font-size:11px; border-top:0.6pt solid var(--grid); border-bottom:0.6pt solid var(--grid);
+}
+tbody tr:nth-child(even){ background:#fcfcfc; } /* اختياري للتباين */
+
 
         .blue { color:#2563eb; }
         .green{ color:#16a34a; }
@@ -154,38 +165,42 @@
     {{-- جدول العمليات --}}
     <div class="card">
         <div class="section">قائمة العمليات</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>التاريخ</th>
-                    <th>العميل</th>
-                    <th>نوع الخدمة</th>
-                    <th>المزود</th>
-                    <th>المرجع</th>
-                    <th>PNR</th>
-                    <th>الحالة</th>
-                    <th>المبلغ ({{ $currency }})</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($sales as $sale)
-                    <tr>
-                        <td>{{ $sale->created_at?->format('Y-m-d') ?? '-' }}</td>
-                        <td>{{ $sale->customer?->name ?? '-' }}</td>
-                        <td>{{ $sale->service?->label ?? '-' }}</td>
-                        <td>{{ $sale->provider?->name ?? '-' }}</td>
-                        <td>{{ $sale->reference ?? '-' }}</td>
-                        <td>{{ $sale->pnr ?? '-' }}</td>
-                        <td>{{ $sale->status ?? '-' }}</td>
-                        <td class="green" style="text-align:left;">{{ number_format((float)$sale->usd_sell, 2) }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="8" class="muted" style="text-align:center;">لا توجد بيانات</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+        @php
+  $statusMap = [
+    'paid'=>'مدفوع','unpaid'=>'غير مدفوع','issued'=>'تم الإصدار','reissued'=>'أعيد إصداره',
+    'refunded'=>'تم الاسترداد','canceled'=>'ملغي','pending'=>'قيد الانتظار','void'=>'ملغي نهائي',
+    'Refund-Full'=>'Refund-Full','Refund-Partial'=>'Refund-Partial','Issued'=>'Issued'
+  ];
+  $nf = fn($v)=>number_format((float)$v,2,'.',',');
+@endphp
+
+<table>
+  <thead>
+    <tr>
+      @foreach($fields as $f)
+        <th>{{ $headers[$f] ?? $f }}</th>
+      @endforeach
+    </tr>
+  </thead>
+  <tbody>
+    @foreach($sales as $sale)
+      <tr>
+        @foreach($fields as $f)
+          @php $val = data_get($sale, $f); @endphp
+          <td class="text-right">
+            @switch($formats[$f] ?? null)
+              @case('money')  {{ $nf($val) }} {{ $currency }} @break
+              @case('date')   {{ $val ? \Carbon\Carbon::parse($val)->format('Y-m-d H:i') : '—' }} @break
+              @case('status') {{ $statusMap[$val] ?? ($val ?? '—') }} @break
+              @default        {{ $val ?? '—' }}
+            @endswitch
+          </td>
+        @endforeach
+      </tr>
+    @endforeach
+  </tbody>
+</table>
+
     </div>
 
     {{-- الملخص الإجمالي --}}

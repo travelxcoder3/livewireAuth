@@ -131,8 +131,8 @@ class EmployeeIndex extends Component
             'form_position_id' => 'required|exists:dynamic_list_items,id',
             'phone' => 'nullable|string|max:20',
             'user_name' => 'nullable|string|max:255',
-              'password' => 'required|string|min:6',
-            'password_confirmation' => 'required|string|min:6|same:password',
+              'password' => 'string|min:6',
+            'password_confirmation' => 'string|min:6|same:password',
         ]);
 
         $data = [

@@ -6,6 +6,7 @@ use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Browsershot\Browsershot;
+use App\Tables\AccountTable;
 
 class AccountsReportController extends Controller
 {
@@ -25,48 +26,63 @@ class AccountsReportController extends Controller
         $user = Auth::user();
         $isAdmin = $user->hasRole('agency-admin');
 
-        $query = Sale::with(['account', 'customer', 'service', 'provider'])
-            ->whereIn('agency_id', $agencyIds)
-            ->when(!$isAdmin, fn($q) => $q->where('user_id', $user->id)) // ✅ فلترة حسب المستخدم
+$query = Sale::with([
+    'user:id,name',
+    'provider:id,name',
+    'service:id,label',      
+    'customer:id,name',
+    'agency:id,name',
+    'duplicatedBy:id,name',
+])
+    ->whereIn('agency_id',$agencyIds)
+    ->when(!$isAdmin, fn($q)=>$q->where('user_id',$user->id))
+    ->when($request->serviceTypeFilter, fn($q)=>$q->where('service_type_id',$request->serviceTypeFilter))
+    ->when($request->providerFilter, fn($q)=>$q->where('provider_id',$request->providerFilter))
+    ->when($request->accountFilter, fn($q)=>$q->where('customer_id',$request->accountFilter))
+    ->when($request->startDate, fn($q)=>$q->whereDate('sale_date','>=',$request->startDate))
+    ->when($request->endDate,   fn($q)=>$q->whereDate('sale_date','<=',$request->endDate))
+    ->orderBy($request->sortField ?? 'created_at', $request->sortDirection ?? 'desc');
 
-            // فلترة حسب نوع الخدمة
-            ->when($request->serviceTypeFilter, function ($q) use ($request) {
-                $q->where('service_type_id', $request->serviceTypeFilter);
-            })
-            // فلترة حسب المزود
-            ->when($request->providerFilter, function ($q) use ($request) {
-                $q->where('provider_id', $request->providerFilter);
-            })
-            // فلترة حسب الحساب (عميل الحسابات)
-            ->when($request->accountFilter, function ($q) use ($request) {
-                $q->where('customer_id', $request->accountFilter);
-            })
-            // فلترة حسب تاريخ البداية
-            ->when($request->startDate, function ($q) use ($request) {
-                $q->whereDate('created_at', '>=', $request->startDate);
-            })
-            // فلترة حسب تاريخ النهاية
-            ->when($request->endDate, function ($q) use ($request) {
-                $q->whereDate('created_at', '<=', $request->endDate);
-            })
-            // تستطيع إضافة فلترات أخرى بنفس المنهج إن احتجت
-            ->orderBy(
-                $request->sortField ?? 'created_at',
-                $request->sortDirection ?? 'desc'
-            );
+$sales = $query->get();
+$totalSales = $sales->sum('usd_sell');
 
-        // اجلب النتائج و احسب المجموع
-        $sales = $query->get();
-        $totalSales = $sales->sum('usd_sell');
+// استخراج ترتيب الأعمدة وعناوينها من جدول الواجهة
+$columns = array_values(
+    array_filter(AccountTable::columns(), fn($c) => ($c['key'] ?? '') !== 'actions')
+);
 
-        // خذ الـ HTML من Blade مخصص للطباعة
-        $html = view('reports.accounts-full-pdf', [
-            'sales' => $sales,
-            'totalSales' => $totalSales,
-            'agency' => $agency,
-            'startDate' => $request->startDate,
-            'endDate' => $request->endDate,
-        ])->render();
+$fields  = array_map(fn($c) => $c['key'], $columns);
+$headers = [];
+$formats = [];
+foreach ($columns as $c) {
+    $headers[$c['key']] = $c['label'] ?? $c['key'];
+    if (isset($c['format'])) $formats[$c['key']] = $c['format'];
+}
+
+
+// استخرج الأعمدة بنفس ترتيب جدول العرض واستبعد actions
+$columns = array_values(
+    array_filter(AccountTable::columns(), fn($c) => ($c['key'] ?? '') !== 'actions')
+);
+$fields  = array_map(fn($c) => $c['key'], $columns);
+$headers = [];
+$formats = [];
+foreach ($columns as $c) {
+    $headers[$c['key']] = $c['label'] ?? $c['key'];
+    if (isset($c['format'])) $formats[$c['key']] = $c['format'];
+}
+
+$html = view('reports.accounts-full-pdf', [
+    'sales'      => $sales,
+    'totalSales' => $totalSales,
+    'agency'     => $agency,
+    'startDate'  => $request->startDate,
+    'endDate'    => $request->endDate,
+    'fields'     => $fields,
+    'headers'    => $headers,
+    'formats'    => $formats, // ⬅️ ضروري
+])->render();
+
 
         // أنشئ PDF وردّه
         return response(

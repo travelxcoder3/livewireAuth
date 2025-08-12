@@ -31,10 +31,16 @@ class AccountsReport extends Component
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
 
-    // بيانات إضافية
     public $serviceTypes = [];
-    public $providers = [];
-    public $customers = [];
+
+    // قوائم ديناميكية خفيفة
+    public string $providerSearch = '';
+    public array  $providerOptions = [];
+    public string $customerSearch = '';
+    public array  $customerOptions = [];
+    public string $providerLabel = '';
+    public string $customerLabel = '';
+
     public $totalSales = 0;
     public $columns = [];
 
@@ -51,33 +57,71 @@ class AccountsReport extends Component
         'sortDirection' => ['except' => 'desc'],
     ];
 
-    public function mount()
-    {
-        $this->loadInitialData();
-        $this->columns = AccountTable::columns();
-    }
+    public function refreshProviderOptions(){
+    $t = trim($this->providerSearch);
+    $this->providerOptions = Provider::query()
+        ->where('agency_id', auth()->user()->agency_id)
+        ->when($t !== '', function($q) use ($t){
+            $like = mb_strlen($t) >= 3 ? "%$t%" : "$t%";
+            $q->where('name','like',$like);
+        })
+        ->select('id','name')->orderBy('name')->limit(20)
+        ->pluck('name','id')->toArray();
+}
+public function refreshCustomerOptions(){
+    $t = trim($this->customerSearch);
+    $this->customerOptions = Customer::query()
+        ->where('agency_id', auth()->user()->agency_id)
+        ->when($t !== '', function($q) use ($t){
+            $like = mb_strlen($t) >= 3 ? "%$t%" : "$t%";
+            $q->where('name','like',$like);
+        })
+        ->select('id','name')->orderBy('name')->limit(20)
+        ->pluck('name','id')->toArray();
+}
+public function updatedProviderSearch(){ $this->refreshProviderOptions(); $this->skipRender(); }
+public function updatedCustomerSearch(){ $this->refreshCustomerOptions(); $this->skipRender(); }
 
-    public function exportToExcel()
-    {
-        $data = $this->prepareReportData();
-        $currency = $data['agency']->currency ?? 'USD';
+public function mount()
+{
+    $this->loadInitialData(); // تبقى لأن فيها serviceTypes
+    $this->refreshProviderOptions();
+    $this->refreshCustomerOptions();
+    $this->columns = AccountTable::columns();
+}
 
-        $user = auth()->user();
-        $filters = $data['filters'];
 
-        if (!$user->hasRole('agency-admin')) {
-            $filters['user_id'] = $user->id;
-        }
+public function exportToExcel()
+{
+    $user = auth()->user();
+    $agency = $user->agency;
+    $agencyIds = $agency->parent_id ? [$agency->id] : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        return Excel::download(
-            new AccountsReportExport([
-                'sales' => $data['sales'],
-                'currency' => $currency,
-                'filters' => $filters,
-            ]),
-            'accounts-' . now()->format('Y-m-d') . '.xlsx'
-        );
-    }
+    $query = Sale::query()
+        ->select('id','user_id','provider_id','service_type_id','customer_id',
+                 'amount_paid','usd_sell','sale_date','pnr','reference','agency_id')
+        ->withSum('collections','amount')
+        ->whereIn('agency_id',$agencyIds)
+        ->when(!$user->hasRole('agency-admin'), fn($q)=>$q->where('user_id',$user->id))
+        ->when($this->search, function ($q) {
+            $t = '%'.$this->search.'%';
+            $q->whereHas('user', fn($u)=>$u->where('name','like',$t));
+        })
+        ->when($this->serviceTypeFilter, fn($q)=>$q->where('service_type_id',$this->serviceTypeFilter))
+        ->when($this->providerFilter, fn($q)=>$q->where('provider_id',$this->providerFilter))
+        ->when($this->accountFilter, fn($q)=>$q->where('customer_id',$this->accountFilter))
+        ->when($this->pnrFilter, function($q){ $t=trim($this->pnrFilter); $q->where('pnr','like', mb_strlen($t)>=3?"%$t%":"$t%"); })
+        ->when($this->referenceFilter, function($q){ $t=trim($this->referenceFilter); $q->where('reference','like', mb_strlen($t)>=3?"%$t%":"$t%"); })
+        ->when($this->startDate && $this->endDate,
+            fn($q)=>$q->whereBetween('sale_date', [$this->startDate, $this->endDate]))
+        ->when($this->startDate && !$this->endDate,
+            fn($q)=>$q->where('sale_date','>=',$this->startDate))
+        ->when(!$this->startDate && $this->endDate,
+            fn($q)=>$q->where('sale_date','<=',$this->endDate));
+
+    return Excel::download(new \App\Exports\AccountsReportStreamExport($query), 'accounts-'.now()->format('Y-m-d').'.xlsx');
+}
+
 
     protected function prepareReportData()
     {
@@ -101,8 +145,13 @@ class AccountsReport extends Component
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
             ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
             ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
+            ->when($this->startDate && $this->endDate,
+                fn($q)=>$q->whereBetween('sale_date', [$this->startDate, $this->endDate]))
+            ->when($this->startDate && !$this->endDate,
+                fn($q)=>$q->where('sale_date','>=',$this->startDate))
+            ->when(!$this->startDate && $this->endDate,
+                fn($q)=>$q->where('sale_date','<=',$this->endDate))
+
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
 
@@ -139,8 +188,6 @@ class AccountsReport extends Component
                 });
         })->orderBy('order')->get();
 
-        $this->providers = Provider::where('agency_id', auth()->user()->agency_id)->get();
-        $this->customers = Customer::where('agency_id', auth()->user()->agency_id)->latest()->get();
     }
 
     public function sortBy($field)
@@ -177,9 +224,21 @@ class AccountsReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        $salesQuery = Sale::with(['user','collections', 'service', 'provider', 'account', 'customer'])
+$salesQuery = Sale::query()
+    ->select([
+        'id','agency_id','user_id','provider_id','service_type_id','customer_id',
+        'beneficiary_name','route','status','duplicated_by','sale_group_id',
+        'amount_paid','usd_sell','sale_date','service_date','pnr','reference','created_at',
+    ])
+    ->with([
+        'user:id,name',
+        'provider:id,name',
+        'service:id,label',
+        'customer:id,name',
+        'duplicatedBy:id,name',   
+    ])
+    ->withSum('collections','amount')
             ->whereIn('agency_id', $agencyIds)
-            ->when(!$user->hasRole('agency-admin'), fn($q) => $q->where('user_id', $user->id))
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
                 $query->whereHas('user', fn($u) => $u->where('name', 'like', $term));
@@ -188,14 +247,27 @@ class AccountsReport extends Component
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
-            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
+      ->when($this->pnrFilter, function($q){
+    $t = trim($this->pnrFilter);
+    $like = mb_strlen($t) >= 3 ? "%$t%" : "$t%";
+    $q->where('pnr','like',$like);
+})
+->when($this->referenceFilter, function($q){
+    $t = trim($this->referenceFilter);
+    $like = mb_strlen($t) >= 3 ? "%$t%" : "$t%";
+    $q->where('reference','like',$like);
+})
+
+->when($this->startDate && $this->endDate,
+    fn($q)=>$q->whereBetween('sale_date', [$this->startDate, $this->endDate]))
+->when($this->startDate && !$this->endDate,
+    fn($q)=>$q->where('sale_date','>=',$this->startDate))
+->when(!$this->startDate && $this->endDate,
+    fn($q)=>$q->where('sale_date','<=',$this->endDate));
 
         $this->totalSales = $salesQuery->clone()->sum('usd_sell');
 
-        $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+        $sales = $salesQuery->orderBy($this->sortField, $this->sortDirection)->simplePaginate(10);
 
         foreach ($sales as $sale) {
             $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
@@ -207,9 +279,10 @@ class AccountsReport extends Component
             'totalSales' => $this->totalSales,
             'columns' => $this->columns,
             'serviceTypes' => $this->serviceTypes,
-            'providers' => $this->providers,
-            'customers' => $this->customers
+            'providerOptions' => $this->providerOptions,
+            'customerOptions' => $this->customerOptions,
         ]);
+
     }
 
     public function filteredSales()
@@ -223,8 +296,13 @@ class AccountsReport extends Component
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
             ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
             ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
+->when($this->startDate && $this->endDate,
+    fn($q)=>$q->whereBetween('sale_date', [$this->startDate, $this->endDate]))
+->when($this->startDate && !$this->endDate,
+    fn($q)=>$q->where('sale_date','>=',$this->startDate))
+->when(!$this->startDate && $this->endDate,
+    fn($q)=>$q->where('sale_date','<=',$this->endDate))
+
             ->orderBy($this->sortField, $this->sortDirection)
             ->get();
     }

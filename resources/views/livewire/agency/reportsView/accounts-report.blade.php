@@ -23,11 +23,11 @@
             {{-- زر مختصر للجوال --}}
             <div class="sm:hidden">
                 <div x-data="{ open:false }" class="relative">
-                    <button type="button" @click="open=!open"
-                        class="text-white font-bold px-3 py-2 rounded-xl shadow-md !text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                        <i class="fas fa-file-export"></i>
-                    </button>
+                    <x-primary-button type="button" @click="open=!open"
+                        padding="px-3 py-2" fontSize="!text-sm"
+                        icon="<i class='fas fa-file-export'></i>">
+                    </x-primary-button>
+
                     <div x-show="open" @click.away="open=false" x-transition
                          class="absolute left-0 mt-2 w-40 bg-white rounded-md shadow-lg z-20 border border-gray-200">
                         <button wire:click="exportToExcel"
@@ -51,14 +51,14 @@
             </div>
 
             <div wire:ignore.self x-data="{ open:false }" class="relative hidden sm:block">
-                <button type="button" @click="open=!open"
-                    class="flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition text-sm hover:shadow-lg"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                    <i class="fas fa-file-export"></i>
+                <x-primary-button type="button" @click="open=!open"
+                    padding="px-4 py-2" fontSize="text-sm" class="hover:shadow-lg"
+                    icon="<i class='fas fa-file-export'></i>">
                     <span class="hidden md:inline">تصدير التقرير</span>
                     <i class="fas fa-chevron-down text-xs transition-transform duration-200"
-                       :class="{ 'rotate-180': open }"></i>
-                </button>
+                    :class="{ 'rotate-180': open }"></i>
+                </x-primary-button>
+
                 <div x-show="open" @click.away="open=false" x-transition
                      class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
                     <button wire:click="exportToExcel"
@@ -79,27 +79,32 @@
             <x-input-field name="search" label="بحث بالموظف" wireModel="search" placeholder="اكتب اسم الموظف..."
                 containerClass="relative" fieldClass="{{ $fieldClass }}" />
 
-            <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter"
+            <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter"   
                 :options="$serviceTypes->pluck('label','id')->toArray()" placeholder="جميع أنواع الخدمات"
                 containerClass="relative" />
 
-            <x-select-field label="المزود" name="provider" wireModel="providerFilter"
-                :options="$providers->pluck('name','id')->toArray()" placeholder="جميع المزودين"
-                containerClass="relative" />
+<x-select-field
+    label="المزود" wireModel="providerFilter"
+    :options="$providerOptions" optionsWire="providerOptions"
+    searchKey="providerSearch" selectedLabelWire="providerLabel"
+    placeholder="جميع المزودين" />
 
-            <x-select-field label="الحساب" name="account" wireModel="accountFilter"
-                :options="$customers->pluck('name','id')->toArray()" placeholder="جميع الحسابات"
-                containerClass="relative" />
+<x-select-field
+    label="حساب العميل" wireModel="accountFilter"
+    :options="$customerOptions" optionsWire="customerOptions"
+    searchKey="customerSearch" selectedLabelWire="customerLabel"
+    placeholder="حساب العميل" />
+
 
             <div class="flex flex-col gap-1">
                 <label for="start_date" class="text-sm font-semibold text-gray-600">من تاريخ</label>
-                <input type="date" id="start_date" name="start_date" wire:change="$refresh" wire:model="startDate"
+                <input type="date" id="start_date" name="start_date" wire:change="$refresh" wire:model.defer="startDate"
                     class="{{ $fieldClass }}" />
             </div>
 
             <div class="flex flex-col gap-1">
                 <label for="end_date" class="text-sm font-semibold text-gray-600">إلى تاريخ</label>
-                <input type="date" id="end_date" name="end_date" wire:change="$refresh" wire:model="endDate"
+                <input type="date" id="end_date" name="end_date" wire:change="$refresh" wire:model.defer="endDate"
                     class="{{ $fieldClass }}" />
             </div>
         </div>

@@ -1,73 +1,49 @@
 <?php
-
 namespace App\Http\Controllers\Agency;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Quotation;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Browsershot\Browsershot;
 
 class QuotationController extends Controller
 {
-    public function download(Request $request)
+    public function view(Quotation $quotation)
     {
-        $user   = Auth::user();
-        $agency = $user->agency;
-
-        $lang = $request->input('lang', 'en'); // أو 'ar' حسب ما تريد كافتراضي
-
-        $rawServices = json_decode($request->input('services_json', '[]'), true) ?: [];
-$rawTerms    = json_decode($request->input('terms_json', '[]'), true) ?: [];
-
-$services = collect($rawServices)->filter(function ($s) {
-    return trim((string)($s['airline'] ?? '')) !== '' ||
-           trim((string)($s['details'] ?? '')) !== '' ||
-           (float)($s['price'] ?? 0) > 0;
-})->values();
-
-
-$terms = collect($rawTerms)->map(function ($t) {
-    // دعم صيغ متعددة: "نص مباشر" أو { value: "..." } أو مصفوفة
-    if (is_array($t)) {
-        if (array_key_exists('value', $t)) return (string) $t['value'];
-        return trim(implode(' ', array_map('strval', array_values($t))));
+      
+        $data = [
+            'agency'          => $quotation->agency,
+            'quotationDate'   => $quotation->quotation_date,
+            'quotationNumber' => $quotation->quotation_number,
+            'toClient'        => $quotation->to_client,
+            'taxName'         => $quotation->tax_name,
+            'taxRate'         => (float)$quotation->tax_rate,
+            'notes'           => (string)($quotation->notes ?? ''),
+            'services'        => $quotation->items->map(fn($i)=>[
+                                    'service_name'=>$i->service_name,'description'=>$i->description,'route'=>$i->route,
+                                    'service_date'=>$i->service_date,'conditions'=>$i->conditions,'price'=>$i->price,
+                                ]),
+            'terms' => $quotation->terms->pluck('value')->unique()->values()->all(),
+            'currency'        => $quotation->currency ?? ($quotation->agency->currency ?? 'USD'),
+            'lang'            => $quotation->lang,
+            'total'           => (float)$quotation->subtotal,
+            'taxAmount'       => (float)$quotation->tax_amount,
+            'grandTotal'      => (float)$quotation->grand_total,
+        ];
+        return view('reports.quotation-pdf', $data); // يصلح للعرض والطباعة
     }
-    return (string) $t;
-})->map(fn($s) => trim($s))
-  ->filter(fn($s) => $s !== '')
-  ->values();
 
-$data = [
-    'agency'          => $agency,
-    'quotationDate'   => $request->input('quotation_date'),
-    'quotationNumber' => $request->input('quotation_number'),
-    'toClient'        => $request->input('to_client'),
-    'taxName'         => $request->input('tax_name'),
-    'taxRate'         => (float) $request->input('tax_rate', 0),
-    'notes'           => (string) $request->input('notes', ''),
-    'services'        => $services,
-    'terms'           => $terms,
-    'currency'        => $agency->currency ?? 'USD',
-    'lang'            => $lang,
-];
+    public function pdf(Quotation $quotation)
+    {
+      
+        $html = $this->view($quotation)->render();
 
-
-        $total = $data['services']->sum(fn($s) => (float) ($s['price'] ?? 0));
-        $taxAmount  = $total * ($data['taxRate'] / 100);
-        $grandTotal = $total + $taxAmount;
-
-        $data['total']      = $total;
-        $data['taxAmount']  = $taxAmount;
-        $data['grandTotal'] = $grandTotal;
-
-        $html = view('reports.quotation-pdf', $data)->render();
-
-        $file = storage_path('app/public/quotation_' . now()->format('Ymd_His') . '.pdf');
+        $file = storage_path('app/public/quotation_' . $quotation->quotation_number . '.pdf');
 
         Browsershot::html($html)
             ->setChromePath('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe')
             ->format('A4')
-            ->margins(10, 10, 10, 10)
+            ->margins(10,10,10,10)
             ->emulateMedia('screen')
             ->waitUntilNetworkIdle()
             ->timeout(60)
@@ -75,5 +51,4 @@ $data = [
 
         return response()->download($file)->deleteFileAfterSend();
     }
-
 }

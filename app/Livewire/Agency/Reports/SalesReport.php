@@ -195,9 +195,7 @@ public function render()
 
     $query = Sale::with(['user', 'service', 'provider', 'account', 'customer', 'collections'])
         ->whereIn('agency_id', $agencyIds)
-        ->when(! $user->hasAnyRole(['agency-admin']), function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })
+
             ->when($this->search, fn($q) =>
                 $q->whereHas('user', fn($uq) =>
                     $uq->where('name', 'like', "%{$this->search}%")

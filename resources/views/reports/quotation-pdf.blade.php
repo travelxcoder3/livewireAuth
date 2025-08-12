@@ -31,7 +31,7 @@
     /* معلومات أعلى الصفحة */
     .info{ width:100%; border-collapse:collapse; margin:10px 0 14px; }
     .info td{ padding:6px 8px; border:1px solid #ddd; vertical-align:middle; }
-    .info .to{ font-weight:600; }
+    .info .to{ font-route:600; }
 
     /* جدول الخدمات */
     table.services{
@@ -48,7 +48,7 @@
     }
     .services th{
       background:#eef1f5;
-      font-weight:700;
+      font-route:700;
       text-align:{{ $lang==='ar' ? 'center' : 'left' }};
     }
     /* عرض أعمدة متوازن */
@@ -72,14 +72,14 @@
     .rtl { direction:rtl; unicode-bidi:bidi-override; }
 
     /* الإجماليات والملاحظات */
-    .totals{ margin-top:12px; font-size:13px; font-weight:700; }
+    .totals{ margin-top:12px; font-size:13px; font-route:700; }
     .totals div{ margin:2px 0; }
     .notes{ margin-top:12px; }
     .notes strong{ display:block; margin-bottom:6px; }
     .notes ul{ margin:6px 0 0 18px; padding:0; }
 
     /* التوقيع */
-    .signature{ margin-top:26px; font-weight:700; text-align: {{ $lang==='ar' ? 'left' : 'right' }}; }
+    .signature{ margin-top:26px; font-route:700; text-align: {{ $lang==='ar' ? 'left' : 'right' }}; }
 
   /* أضف داخل <style> لديك إن لم تكن موجودة */
   .notes li, .notes div { white-space: pre-wrap; word-break: normal; overflow-wrap: anywhere; }
@@ -126,27 +126,27 @@
     <thead>
       <tr>
         <th class="col-idx">#</th>
-        <th class="col-air">{{ $lang==='ar' ? 'شركة الطيران' : 'Airline' }}</th>
-        <th class="col-det">{{ $lang==='ar' ? 'تفاصيل الرحلة' : 'Trip Details' }}</th>
-        <th class="col-wt">{{ $lang==='ar' ? 'الوزن' : 'Weight' }}</th>
-        <th class="col-cls">{{ $lang==='ar' ? 'الدرجة' : 'Class' }}</th>
+        <th class="col-air">{{ $lang==='ar' ? 'الخدمة' : 'Service' }}</th>
+        <th class="col-wt">{{ $lang==='ar' ? 'المسار' : 'Route' }}</th>
+        <th class="col-cls">{{ $lang==='ar' ? 'التاريخ' : 'Date' }}</th>
+        <th class="col-det">{{ $lang==='ar' ? 'الوصف' : 'Description' }}</th>
         <th class="col-terms">{{ $lang==='ar' ? 'الشروط والأحكام' : 'Terms & Conditions' }}</th>
-        <th class="col-price">{{ $lang==='ar' ? 'السعر للشخص' : 'Price per Person' }}</th>
+        <th class="col-det">{{ $lang==='ar' ? 'السعر' : 'Description' }}</th>
       </tr>
     </thead>
     <tbody>
       @forelse($services as $i => $s)
         <tr>
           <td class="col-idx">{{ $i+1 }}</td>
-          <td class="col-air">{{ $s['airline'] ?? '' }}</td>
-          <td class="col-det">{{ $s['details'] ?? '' }}</td>
-          <td class="col-wt ltr">{{ $s['weight'] ?? '' }}</td>
-          <td class="col-cls ltr">{{ $s['class'] ?? '' }}</td>
-          <td class="col-terms">{{ $s['conditions'] ?? '' }}</td>
-          <td class="col-price">
+        <td class="col-air">{{ $s['service_name'] ?? '' }}</td>      
+        <td class="col-wt">{{ $s['route'] ?? '' }}</td>       
+        <td class="col-cls ltr">{{ $s['service_date'] ?? '' }}</td>     
+        <td class="col-det">{{ $s['description'] ?? '' }}</td>     
+        <td class="col-terms">{{ $s['conditions'] ?? '' }}</td>
+        <td class="col-price">
             <span class="ltr">{{ number_format((float)($s['price'] ?? 0), 2) }}</span>
             {{ $currency }}
-          </td>
+        </td>
         </tr>
       @empty
         <tr>
@@ -174,28 +174,28 @@
   <!-- الشروط والملاحظات -->
 
 
-@if($terms && count($terms))
-  <div class="notes">
-    <strong>{{ $lang==='ar' ? 'الشروط:' : 'Terms:' }}</strong>
-    <ul>
-      @foreach($terms as $t)
-        <li>{{ $t }}</li>
-      @endforeach
-    </ul>
-  </div>
-@endif
+    @if($terms && count($terms))
+      <div class="notes">
+        <strong>{{ $lang==='ar' ? 'الشروط:' : 'Terms:' }}</strong>
+        <ul>
+          @foreach($terms as $t)
+            <li>{{ $t }}</li>
+          @endforeach
+        </ul>
+      </div>
+    @endif
 
-@if(strlen(trim($notes ?? '')) > 0)
-  <div class="notes">
-    <strong>{{ $lang==='ar' ? 'ملاحظات:' : 'Notes:' }}</strong>
-    <div>{!! nl2br(e($notes)) !!}</div>
-  </div>
-@endif
+    @if(strlen(trim($notes ?? '')) > 0)
+      <div class="notes">
+        <strong>{{ $lang==='ar' ? 'ملاحظات:' : 'Notes:' }}</strong>
+        <div>{!! nl2br(e($notes)) !!}</div>
+      </div>
+    @endif
 
 
-  <div class="signature">
-    {{ $lang==='ar' ? 'مع تحيات إدارة المبيعات' : 'Sales Department' }}
-  </div>
+    <div class="signature">
+      {{ $lang==='ar' ? 'مع تحيات إدارة المبيعات' : 'Sales Department' }}
+    </div>
 
 </div>
 </body>

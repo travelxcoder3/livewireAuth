@@ -1,17 +1,19 @@
 <?php
+
 namespace App\Livewire\Agency;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Customer;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Models\Customer;
 use App\Models\Sale;
-use App\Models\ServiceType;
 use App\Models\Provider;
 use App\Models\DynamicListItem;
-
+use App\Models\Account;
+use App\Models\Invoice;
 use Spatie\Browsershot\Browsershot;
-use Illuminate\Support\Facades\Storage;
+
 class Accounts extends Component
 {
     use WithPagination;
@@ -27,7 +29,6 @@ class Accounts extends Component
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
 
-    // خصائص الفلاتر
     public $serviceTypeFilter = '';
     public $providerFilter = '';
     public $accountFilter = '';
@@ -36,37 +37,73 @@ class Accounts extends Component
     public $pnrFilter = '';
     public $referenceFilter = '';
 
-    // وهكذا ...
-    public $showInvoiceModal = false;
+    // فاتورة فردية
+    public bool $showInvoiceModal = false;
     public $selectedSale;
+    public float $taxAmount = 0.0;        // 5 تعني 5% إذا taxIsPercent=true
+    public bool  $taxIsPercent = true;    // true نسبة، false مبلغ
+    public string $invoiceStep = 'tax';
+    public ?int $currentInvoiceId = null;
+
+    public array $invoiceTotals = ['base' => 0.0, 'tax' => 0.0, 'net' => 0.0];
+
+    // فاتورة مجمّعة
     public $selectAll = false;
     public $selectedSales = [];
     public array $visibleSaleIds = [];
+    public $invoiceEntityName, $invoiceDate;
+    public $showBulkInvoiceModal = false;
 
+    // ضريبة المجمّعة
+    public float $bulkTaxAmount = 0.0;
+    public bool  $bulkTaxIsPercent = true;
+    public float $bulkSubtotal = 0.0;
 
-public function toggleSelectAll(): void
-{
-    // ids للصفحة الحالية فقط (من نفس فلترة الصفحة الحالية)
-    $currentPage = $this->getCurrentSales()->getCollection(); // <= المهم
-    $idsOnPage = $currentPage->pluck('id')->map(fn($id) => (string) $id)->all();
+    protected $listeners = ['openInvoiceModal'];
 
-    if (count($this->selectedSales) === count($idsOnPage)) {
-        // إلغاء تحديد صفوف الصفحة الحالية
-        $this->selectedSales = array_values(array_diff($this->selectedSales, $idsOnPage));
-    } else {
-        // تحديد صفوف الصفحة الحالية (بدون تكرار)
-        $this->selectedSales = array_values(array_unique(array_merge($this->selectedSales, $idsOnPage)));
+    /* ================= Helpers ================= */
+
+    private function recalcInvoiceTotals(): void
+    {
+        $base = (float) ($this->selectedSale->usd_sell ?? 0);
+        if (in_array($this->selectedSale->status ?? '', ['Refund-Full', 'Refund-Partial'])) {
+            $base = -abs($base);
+        }
+
+        $tax = $this->taxIsPercent
+            ? round($base * ((float) $this->taxAmount / 100), 2)
+            : (float) $this->taxAmount;
+
+        $net = $base + $tax;
+        $this->invoiceTotals = compact('base', 'tax', 'net');
     }
-}
 
+    private function latestInvoiceIdForSale(int $saleId): ?int
+    {
+        $inv = Invoice::whereHas('sales', fn ($q) => $q->where('sale_id', $saleId))
+            ->latest('id')->first();
+        return $inv?->id;
+    }
 
+    /* ================= Selection ================= */
+
+    public function toggleSelectAll(): void
+    {
+        $currentPage = $this->getCurrentSales()->getCollection();
+        $idsOnPage = $currentPage->pluck('id')->map(fn ($id) => (string) $id)->all();
+
+        if (count($this->selectedSales) === count($idsOnPage)) {
+            $this->selectedSales = array_values(array_diff($this->selectedSales, $idsOnPage));
+        } else {
+            $this->selectedSales = array_values(array_unique(array_merge($this->selectedSales, $idsOnPage)));
+        }
+    }
 
     public function updatedSelectedSales()
     {
         $sales = $this->getCurrentSales();
         $this->selectAll = count($this->selectedSales) === $sales->count();
     }
-
 
     public function getCurrentSales()
     {
@@ -77,42 +114,103 @@ public function toggleSelectAll(): void
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
         return Sale::whereIn('agency_id', $agencyIds)
-            ->when($this->search, fn($q) => $q->where('beneficiary_name', 'like', '%' . $this->search . '%'))
-            ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
-            ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
-            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
+            ->when($this->search, fn ($q) => $q->where('beneficiary_name', 'like', '%' . $this->search . '%'))
+            ->when($this->serviceTypeFilter, fn ($q) => $q->where('service_type_id', $this->serviceTypeFilter))
+            ->when($this->providerFilter, fn ($q) => $q->where('provider_id', $this->providerFilter))
+            ->when($this->accountFilter, fn ($q) => $q->where('customer_id', $this->accountFilter))
+            ->when($this->pnrFilter, fn ($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
+            ->when($this->referenceFilter, fn ($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
+            ->when($this->startDate, fn ($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn ($q) => $q->whereDate('sale_date', '<=', $this->endDate))
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
     }
 
+    /* ================= Invoice Modal (Single) ================= */
 
-
-    protected $listeners = ['openInvoiceModal'];
     public function openInvoiceModal($saleId)
     {
-        $this->selectedSale = \App\Models\Sale::with(['customer','provider','account','agency','user'])->findOrFail($saleId);
+        $this->selectedSale = Sale::with(['customer', 'provider', 'account', 'agency', 'user', 'collections'])
+            ->findOrFail($saleId);
+
+        $this->selectedSale->paid_total = ($this->selectedSale->amount_paid ?? 0) + $this->selectedSale->collections->sum('amount');
+        $this->selectedSale->remaining  = $this->selectedSale->usd_sell - $this->selectedSale->paid_total;
+
+        $this->taxIsPercent      = true;
+        $this->taxAmount         = 0.0;
+        $this->currentInvoiceId  = $this->latestInvoiceIdForSale((int) $saleId);
+
+        $this->invoiceStep = 'tax';
+        $this->recalcInvoiceTotals();
         $this->showInvoiceModal = true;
     }
 
-
-
-    public function downloadInvoicePdf($saleId)
+    // إنشاء/تحديث فاتورة فردية وربط سطرها
+    public function addTax(): void
     {
-        $sale = \App\Models\Sale::with(['service', 'provider', 'account', 'customer', 'agency', 'user', 'collections'])
-            ->findOrFail($saleId);
+        $this->taxAmount = max(0, (float) $this->taxAmount);
+        $this->recalcInvoiceTotals();
 
-        // نفس طريقة الحساب في الصفحات الأخرى
-        $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
-        $sale->remaining  = $sale->usd_sell - $sale->paid_total;
+        $sale  = $this->selectedSale;
+        $invNo = 'INV-' . str_pad($sale->id, 5, '0', STR_PAD_LEFT);
 
-        $html = view('invoices.sale-invoice', ['sale' => $sale])->render();
+        $invoice = Invoice::updateOrCreate(
+            ['invoice_number' => $invNo],
+            [
+                'date'        => now()->toDateString(),
+                'user_id'     => auth()->id(),
+                'agency_id'   => $sale->agency_id,
+                'entity_name' => $sale->customer->name ?? '—',
+                'subtotal'    => $this->invoiceTotals['base'],
+                'tax_total'   => $this->invoiceTotals['tax'],
+                'grand_total' => $this->invoiceTotals['net'],
+            ]
+        );
 
+        $pivot = [
+            'base_amount'    => $this->invoiceTotals['base'],
+            'tax_is_percent' => $this->taxIsPercent,
+            'tax_input'      => (float) $this->taxAmount,
+            'tax_amount'     => $this->invoiceTotals['tax'],
+            'line_total'     => $this->invoiceTotals['net'],
+        ];
 
-        $pdfPath = 'pdfs/invoice-' . $sale->id . '.pdf';
+        if ($invoice->sales()->where('sales.id', $sale->id)->exists()) {
+            $invoice->sales()->updateExistingPivot($sale->id, $pivot);
+        } else {
+            $invoice->sales()->attach($sale->id, $pivot);
+        }
+
+        $this->invoiceStep = 'preview';
+    }
+
+    public function editTax(): void
+    {
+        $this->invoiceStep = 'tax';
+    }
+
+    public function downloadSingleInvoicePdf(int $invoiceId)
+    {
+        $invoice = Invoice::with([
+            'sales.customer', 'sales.provider', 'sales.account', 'sales.agency', 'sales.user', 'sales.collections',
+            'agency', 'user'
+        ])->findOrFail($invoiceId);
+
+        $sale = $invoice->sales->first();
+        abort_if(!$sale, 404, 'No sale line found for invoice');
+
+        $base = (float) ($invoice->subtotal ?? 0);
+        $tax  = (float) ($invoice->tax_total ?? 0);
+        $net  = (float) ($invoice->grand_total ?? ($base + $tax));
+
+        $html = view('invoices.sale-invoice', [
+            'sale' => $sale,
+            'base' => $base,
+            'tax'  => $tax,
+            'net'  => $net,
+        ])->render();
+
+        $pdfPath = 'pdfs/invoice-' . $invoice->id . '.pdf';
         Browsershot::html($html)
             ->format('A4')
             ->margins(10, 10, 10, 10)
@@ -122,6 +220,14 @@ public function toggleSelectAll(): void
         return response()->download(storage_path('app/public/' . $pdfPath));
     }
 
+    public function downloadInvoicePdf($saleId)
+    {
+        $invoiceId = $this->currentInvoiceId ?: $this->latestInvoiceIdForSale((int) $saleId);
+        abort_if(!$invoiceId, 404, 'Invoice not found for this sale');
+        return $this->downloadSingleInvoicePdf($invoiceId);
+    }
+
+    /* ================= CRUD Accounts ================= */
 
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -148,7 +254,6 @@ public function toggleSelectAll(): void
     {
         $this->currency = auth()->user()->agency->currency ?? 'USD';
 
-
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
             $q->where('name', 'قائمة الخدمات')
                 ->where(function ($query) {
@@ -167,14 +272,12 @@ public function toggleSelectAll(): void
         } else {
             $this->sortDirection = 'asc';
         }
-
         $this->sortField = $field;
     }
 
     public function save()
     {
         $this->validate();
-
         Account::create([
             'name' => $this->name,
             'account_number' => $this->account_number,
@@ -183,7 +286,6 @@ public function toggleSelectAll(): void
             'note' => $this->note,
             'agency_id' => Auth::user()->agency_id,
         ]);
-
         $this->resetForm();
         session()->flash('message', 'تم إضافة الحساب بنجاح');
     }
@@ -202,7 +304,6 @@ public function toggleSelectAll(): void
     public function update()
     {
         $this->validate();
-
         $account = Account::findOrFail($this->editingId);
         $account->update([
             'name' => $this->name,
@@ -211,7 +312,6 @@ public function toggleSelectAll(): void
             'balance' => $this->balance,
             'note' => $this->note,
         ]);
-
         $this->resetForm();
         session()->flash('message', 'تم تحديث الحساب بنجاح');
     }
@@ -221,7 +321,7 @@ public function toggleSelectAll(): void
         $this->accountToDelete = $id;
         $this->dispatch('showConfirmationModal', [
             'title' => 'تأكيد الحذف',
-            'message' => 'هل أنت متأكد من رغبتك في حذف هذا الحساب؟ لا يمكن التراجع عن هذه العملية.',
+            'message' => 'هل أنت متأكد من رغبتك في حذف هذا الحساب؟',
             'action' => 'performDelete',
             'confirmText' => 'حذف',
             'cancelText' => 'إلغاء'
@@ -258,10 +358,8 @@ public function toggleSelectAll(): void
         ]);
     }
 
-    public $invoiceEntityName, $invoiceDate;
-    public $showBulkInvoiceModal = false;
+    /* ================= Bulk Invoice ================= */
 
-    // اختيار/إلغاء اختيار عملية بيع
     public function toggleSaleSelection($saleId)
     {
         if (($key = array_search($saleId, $this->selectedSales)) !== false) {
@@ -271,13 +369,27 @@ public function toggleSelectAll(): void
         }
     }
 
-    // فتح نافذة الفاتورة المجمعة
     public function openBulkInvoiceModal()
     {
         if (empty($this->selectedSales)) {
             session()->flash('message', 'يرجى اختيار عمليات بيع أولاً');
             return;
         }
+
+        // تهيئة الضريبة المجمّعة + حساب Subtotal للمعاينة
+        $this->bulkTaxAmount = 0.0;
+        $this->bulkTaxIsPercent = true;
+
+        $sales = Sale::whereIn('id', $this->selectedSales)->get();
+        $this->bulkSubtotal = 0.0;
+        foreach ($sales as $s) {
+            $b = (float) $s->usd_sell;
+            if (in_array($s->status ?? '', ['Refund-Full', 'Refund-Partial'])) {
+                $b = -abs($b);
+            }
+            $this->bulkSubtotal += $b;
+        }
+
         $this->invoiceEntityName = '';
         $this->invoiceDate = now()->toDateString();
         $this->showBulkInvoiceModal = true;
@@ -288,41 +400,31 @@ public function toggleSelectAll(): void
         $user = Auth::user();
         $agency = $user->agency;
 
-        // جلب الحسابات الخاصة بوكالة المستخدم الحالي فقط (كما هو)
-        $customers = Customer::where('agency_id', $agency->id)
-            ->latest()
-            ->get();
+        $customers = Customer::where('agency_id', $agency->id)->latest()->get();
 
-        // تحديد الوكالات المطلوبة في العمليات
         if ($agency->parent_id) {
-            // فرع: يعرض فقط عملياته
             $agencyIds = [$agency->id];
         } else {
-            // وكالة رئيسية: يعرض عمليات الوكالة وكل الفروع التابعة لها
             $branchIds = $agency->branches()->pluck('id')->toArray();
             $agencyIds = array_merge([$agency->id], $branchIds);
         }
 
         $filteredSalesQuery = Sale::with(['service', 'provider', 'account', 'customer', 'collections'])
             ->whereIn('agency_id', $agencyIds)
-            ->when(!$user->hasRole('agency-admin'), function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
             ->when($this->search, function ($query) {
-                $searchTerm = '%' . $this->search . '%';
-                $query->where(function ($q) use ($searchTerm) {
-                    $q->where('beneficiary_name', 'like', $searchTerm)
-                        ->orWhere('reference', 'like', $searchTerm)
-                        ->orWhere('pnr', 'like', $searchTerm);
-                });
+                $s = '%' . $this->search . '%';
+                $query->where(fn ($q) => $q
+                    ->where('beneficiary_name', 'like', $s)
+                    ->orWhere('reference', 'like', $s)
+                    ->orWhere('pnr', 'like', $s));
             })
-            ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
-            ->when($this->providerFilter, fn($q) => $q->where('provider_id', $this->providerFilter))
-            ->when($this->accountFilter, fn($q) => $q->where('customer_id', $this->accountFilter))
-            ->when($this->pnrFilter, fn($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
-            ->when($this->referenceFilter, fn($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
-            ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
-            ->when($this->endDate, fn($q) => $q->whereDate('sale_date', '<=', $this->endDate));
+            ->when($this->serviceTypeFilter, fn ($q) => $q->where('service_type_id', $this->serviceTypeFilter))
+            ->when($this->providerFilter, fn ($q) => $q->where('provider_id', $this->providerFilter))
+            ->when($this->accountFilter, fn ($q) => $q->where('customer_id', $this->accountFilter))
+            ->when($this->pnrFilter, fn ($q) => $q->where('pnr', 'like', '%' . $this->pnrFilter . '%'))
+            ->when($this->referenceFilter, fn ($q) => $q->where('reference', 'like', '%' . $this->referenceFilter . '%'))
+            ->when($this->startDate, fn ($q) => $q->whereDate('sale_date', '>=', $this->startDate))
+            ->when($this->endDate, fn ($q) => $q->whereDate('sale_date', '<=', $this->endDate));
 
         $totalSales = $filteredSalesQuery->clone()->sum('usd_sell');
         $this->sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
@@ -332,7 +434,9 @@ public function toggleSelectAll(): void
             $sale->paid_total = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
             $sale->remaining = $sale->usd_sell - $sale->paid_total;
         }
+
         $this->visibleSaleIds = $this->exportSales->pluck('id')->toArray();
+
         return view('livewire.agency.accounts', [
             'customers' => $customers,
             'sales' => $this->sales,
@@ -340,11 +444,9 @@ public function toggleSelectAll(): void
         ])->layout('layouts.agency');
     }
 
-    // في ملف App\Livewire\Agency\Accounts.php
     public function downloadBulkInvoicePdf($invoiceId)
     {
-        $invoice = \App\Models\Invoice::with(['sales', 'agency', 'user'])->findOrFail($invoiceId);
-
+        $invoice = Invoice::with(['sales', 'agency', 'user'])->findOrFail($invoiceId);
 
         $html = view('invoices.bulk-invoice', ['invoice' => $invoice])->render();
 
@@ -358,7 +460,6 @@ public function toggleSelectAll(): void
         return response()->download(storage_path('app/public/' . $pdfPath));
     }
 
-    // تحديث دالة createBulkInvoice لإرجاع معرف الفاتورة
     public function createBulkInvoice()
     {
         $this->validate([
@@ -371,29 +472,83 @@ public function toggleSelectAll(): void
             return;
         }
 
-        $user = auth()->user();
-        $agency = $user->agency;
-        $invoiceNumber = 'INV-' . now()->format('YmdHis') . '-' . rand(100, 999);
+        return DB::transaction(function () {
+            $user   = auth()->user();
+            $agency = $user->agency;
 
-        $invoice = \App\Models\Invoice::create([
-            'invoice_number' => $invoiceNumber,
-            'entity_name' => $this->invoiceEntityName,
-            'date' => $this->invoiceDate,
-            'user_id' => $user->id,
-            'agency_id' => $agency->id,
-        ]);
+            // اجمع الأساسيات
+            $sales = Sale::whereIn('id', $this->selectedSales)->get();
+            $subtotal = 0.0;
+            foreach ($sales as $s) {
+                $b = (float) $s->usd_sell;
+                if (in_array($s->status ?? '', ['Refund-Full', 'Refund-Partial'])) {
+                    $b = -abs($b);
+                }
+                $subtotal += $b;
+            }
 
-        $invoice->sales()->attach($this->selectedSales);
+            // احسب الضريبة والإجمالي بحسب إعداد المودال
+            $tax  = $this->bulkTaxIsPercent
+                ? round($subtotal * ($this->bulkTaxAmount / 100), 2)
+                : round((float) $this->bulkTaxAmount, 2);
 
-        $this->showBulkInvoiceModal = false;
+            $grand = $subtotal + $tax;
 
-        // تحميل الفاتورة مباشرة بعد الإنشاء
-        return $this->downloadBulkInvoicePdf($invoice->id);
+            // رأس الفاتورة
+            $invoice = Invoice::create([
+                'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . rand(100, 999),
+                'entity_name'    => $this->invoiceEntityName,
+                'date'           => $this->invoiceDate,
+                'user_id'        => $user->id,
+                'agency_id'      => $agency->id,
+                'subtotal'       => $subtotal,
+                'tax_total'      => $tax,
+                'grand_total'    => $grand,
+            ]);
+
+            // سطور الفاتورة: توزيع الضريبة على كل سطر
+            $attachData = [];
+            $sumSoFar = 0.0;
+            $count = $sales->count();
+            $i = 0;
+
+            $percent = $this->bulkTaxIsPercent ? ($this->bulkTaxAmount / 100) : null;
+
+            foreach ($sales as $s) {
+                $i++;
+                $base = (float) $s->usd_sell;
+                if (in_array($s->status ?? '', ['Refund-Full', 'Refund-Partial'])) {
+                    $base = -abs($base);
+                }
+
+                if ($this->bulkTaxIsPercent) {
+                    $lineTax = round($base * $percent, 2);
+                } else {
+                    $weight  = $subtotal != 0.0 ? ($base / $subtotal) : 0.0;
+                    $lineTax = round($tax * $weight, 2);
+                }
+
+                // اضبط آخر سطر ليطابق مجموع الضريبة بدقة
+                if ($i === $count) {
+                    $lineTax = round($tax - $sumSoFar, 2);
+                }
+                $sumSoFar += $lineTax;
+
+                $attachData[$s->id] = [
+                    'base_amount'    => $base,
+                    'tax_is_percent' => $this->bulkTaxIsPercent,
+                    'tax_input'      => $this->bulkTaxIsPercent ? (float) $this->bulkTaxAmount : $lineTax,
+                    'tax_amount'     => $lineTax,
+                    'line_total'     => $base + $lineTax,
+                ];
+            }
+
+            $invoice->sales()->syncWithoutDetaching($attachData);
+
+            $this->showBulkInvoiceModal = false;
+            $this->selectedSales = [];
+
+            return $this->downloadBulkInvoicePdf($invoice->id);
+        });
     }
-
-
- 
-
-
-
 }

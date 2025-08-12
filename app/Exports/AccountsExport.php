@@ -22,7 +22,7 @@ class AccountsExport implements FromCollection, WithHeadings
     public function collection()
     {
         $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account', 'user'])
-            ->where('agency_id', Auth::user()->agency_id);
+            ;
 
         // تطبيق الفلاتر
         if (!empty($this->filters)) {

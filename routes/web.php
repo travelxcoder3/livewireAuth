@@ -167,6 +167,10 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
         Route::get('/report/excel', [\App\Http\Controllers\Agency\AccountController::class, 'generateExcelReport'])
             ->name('accounts.report.excel');
     });
+      Route::get('/quotations/{quotation}/view', [\App\Http\Controllers\Agency\QuotationController::class,'view'])
+        ->name('quotations.view');
+    Route::get('/quotations/{quotation}/pdf',  [\App\Http\Controllers\Agency\QuotationController::class,'pdf'])
+        ->name('quotations.pdf');
 
     Route::get('/accounts', Accounts::class)->name('accounts');
     // ============================

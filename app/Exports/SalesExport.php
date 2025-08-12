@@ -27,11 +27,7 @@ public function collection()
 {
     $user = Auth::user();
     $query = Sale::with(['customer', 'serviceType', 'provider', 'user', 'account'])
-        ->where('agency_id', $user->agency_id);
-
-    if (!$user->hasRole('agency-admin')) {
-        $query->where('user_id', $user->id);
-    }
+        ->where('agency_id');
 
     if ($this->startDate && $this->endDate) {
         $query->whereBetween('sale_date', [$this->startDate, $this->endDate]);
