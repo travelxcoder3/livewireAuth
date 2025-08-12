@@ -27,21 +27,39 @@ class AccountsReportController extends Controller
         $isAdmin = $user->hasRole('agency-admin');
 
 $query = Sale::with([
-    'user:id,name',
-    'provider:id,name',
-    'service:id,label',      
-    'customer:id,name',
-    'agency:id,name',
-    'duplicatedBy:id,name',
+    'user:id,name','provider:id,name','service:id,label','customer:id,name',
+    'agency:id,name,logo,currency','duplicatedBy:id,name',
 ])
-    ->whereIn('agency_id',$agencyIds)
-    ->when(!$isAdmin, fn($q)=>$q->where('user_id',$user->id))
-    ->when($request->serviceTypeFilter, fn($q)=>$q->where('service_type_id',$request->serviceTypeFilter))
-    ->when($request->providerFilter, fn($q)=>$q->where('provider_id',$request->providerFilter))
-    ->when($request->accountFilter, fn($q)=>$q->where('customer_id',$request->accountFilter))
-    ->when($request->startDate, fn($q)=>$q->whereDate('sale_date','>=',$request->startDate))
-    ->when($request->endDate,   fn($q)=>$q->whereDate('sale_date','<=',$request->endDate))
-    ->orderBy($request->sortField ?? 'created_at', $request->sortDirection ?? 'desc');
+->whereIn('agency_id',$agencyIds)
+
+/* فلترة باسم الموظف عند وجود search */
+->when($request->search, function($q) use ($request){
+    $t = '%'.$request->search.'%';
+    $q->whereHas('user', fn($u)=>$u->where('name','like',$t));
+})
+
+->when($request->serviceTypeFilter, fn($q)=>$q->where('service_type_id',$request->serviceTypeFilter))
+->when($request->providerFilter, fn($q)=>$q->where('provider_id',$request->providerFilter))
+->when($request->accountFilter, fn($q)=>$q->where('customer_id',$request->accountFilter))
+
+/* فلترة PNR */
+->when($request->pnrFilter, function($q) use ($request){
+    $t = trim($request->pnrFilter);
+    $like = mb_strlen($t) >= 3 ? "%$t%" : "$t%";
+    $q->where('pnr','like',$like);
+})
+/* فلترة المرجع */
+->when($request->referenceFilter, function($q) use ($request){
+    $t = trim($request->referenceFilter);
+    $like = mb_strlen($t) >= 3 ? "%$t%" : "$t%";
+    $q->where('reference','like',$like);
+})
+
+->when($request->startDate, fn($q)=>$q->whereDate('sale_date','>=',$request->startDate))
+->when($request->endDate,   fn($q)=>$q->whereDate('sale_date','<=',$request->endDate))
+->orderBy($request->sortField ?? 'created_at', $request->sortDirection ?? 'desc');
+
+
 
 $sales = $query->get();
 $totalSales = $sales->sum('usd_sell');

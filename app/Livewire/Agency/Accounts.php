@@ -39,7 +39,7 @@ class Accounts extends Component
 
     // فاتورة فردية
     public bool $showInvoiceModal = false;
-    public $selectedSale;
+    public $selectedSale; // سيتم تخزينه كـ StdClass (ليس موديل)
     public float $taxAmount = 0.0;        // 5 تعني 5% إذا taxIsPercent=true
     public bool  $taxIsPercent = true;    // true نسبة، false مبلغ
     public string $invoiceStep = 'tax';
@@ -66,7 +66,8 @@ class Accounts extends Component
     private function recalcInvoiceTotals(): void
     {
         $base = (float) ($this->selectedSale->usd_sell ?? 0);
-        if (in_array($this->selectedSale->status ?? '', ['Refund-Full', 'Refund-Partial'])) {
+        $status = $this->selectedSale->status ?? '';
+        if (in_array($status, ['Refund-Full', 'Refund-Partial'])) {
             $base = -abs($base);
         }
 
@@ -130,11 +131,18 @@ class Accounts extends Component
 
     public function openInvoiceModal($saleId)
     {
-        $this->selectedSale = Sale::with(['customer', 'provider', 'account', 'agency', 'user', 'collections'])
+        $sale = Sale::with(['customer', 'provider', 'account', 'agency', 'user', 'collections'])
             ->findOrFail($saleId);
 
-        $this->selectedSale->paid_total = ($this->selectedSale->amount_paid ?? 0) + $this->selectedSale->collections->sum('amount');
-        $this->selectedSale->remaining  = $this->selectedSale->usd_sell - $this->selectedSale->paid_total;
+        $paid  = ($sale->amount_paid ?? 0) + $sale->collections->sum('amount');
+        $rem   = $sale->usd_sell - $paid;
+
+        // تحويل إلى كائن خفيف لمنع مشاكل Livewire hydrate
+        $data = $sale->toArray();
+        $data['paid_total'] = (float) $paid;
+        $data['remaining']  = (float) $rem;
+
+        $this->selectedSale = (object) $data;
 
         $this->taxIsPercent      = true;
         $this->taxAmount         = 0.0;
@@ -147,42 +155,53 @@ class Accounts extends Component
 
     // إنشاء/تحديث فاتورة فردية وربط سطرها
     public function addTax(): void
-    {
-        $this->taxAmount = max(0, (float) $this->taxAmount);
-        $this->recalcInvoiceTotals();
+{
+    // تأكد من وجود العملية
+    $saleId = (int) data_get($this->selectedSale, 'id', 0);
+    if ($saleId <= 0) return;
 
-        $sale  = $this->selectedSale;
-        $invNo = 'INV-' . str_pad($sale->id, 5, '0', STR_PAD_LEFT);
+    // حسابات الضريبة
+    $this->taxAmount = max(0, (float) $this->taxAmount);
+    $this->recalcInvoiceTotals();
 
-        $invoice = Invoice::updateOrCreate(
-            ['invoice_number' => $invNo],
-            [
-                'date'        => now()->toDateString(),
-                'user_id'     => auth()->id(),
-                'agency_id'   => $sale->agency_id,
-                'entity_name' => $sale->customer->name ?? '—',
-                'subtotal'    => $this->invoiceTotals['base'],
-                'tax_total'   => $this->invoiceTotals['tax'],
-                'grand_total' => $this->invoiceTotals['net'],
-            ]
-        );
+    // اجلب السطر الحقيقي (لتفادي أي Snapshot قديم)
+    $sale = Sale::with('customer')->findOrFail($saleId);
 
-        $pivot = [
-            'base_amount'    => $this->invoiceTotals['base'],
-            'tax_is_percent' => $this->taxIsPercent,
-            'tax_input'      => (float) $this->taxAmount,
-            'tax_amount'     => $this->invoiceTotals['tax'],
-            'line_total'     => $this->invoiceTotals['net'],
-        ];
+    // تقريبات نظيفة
+    $base = round((float) $this->invoiceTotals['base'], 2);
+    $tax  = round((float) $this->invoiceTotals['tax'],  2);
+    $net  = round((float) $this->invoiceTotals['net'],  2);
 
-        if ($invoice->sales()->where('sales.id', $sale->id)->exists()) {
-            $invoice->sales()->updateExistingPivot($sale->id, $pivot);
-        } else {
-            $invoice->sales()->attach($sale->id, $pivot);
-        }
+    // رأس الفاتورة (إنشاء/تحديث)
+    $invoice = Invoice::updateOrCreate(
+        ['invoice_number' => 'INV-' . str_pad($sale->id, 5, '0', STR_PAD_LEFT)],
+        [
+            'date'        => now()->toDateString(),
+            'user_id'     => auth()->id(),
+            'agency_id'   => $sale->agency_id,
+            'entity_name' => $sale->customer->name ?? '—',
+            'subtotal'    => $base,
+            'tax_total'   => $tax,
+            'grand_total' => $net,
+        ]
+    );
 
-        $this->invoiceStep = 'preview';
-    }
+    // Pivot (upsert)
+    $pivot = [
+        'base_amount'    => $base,
+        'tax_is_percent' => $this->taxIsPercent ? 1 : 0,
+        'tax_input'      => round((float) $this->taxAmount, 2), // إن كانت نسبة: 5 تعني 5%
+        'tax_amount'     => $tax,
+        'line_total'     => $net,
+    ];
+    $invoice->sales()->syncWithoutDetaching([$sale->id => $pivot]);
+
+    // جهّز زر التحميل ومعاينة الفاتورة
+    $this->currentInvoiceId = $invoice->id;
+    $this->selectedSale = Sale::with(['customer','provider','account','agency','user','collections'])->find($saleId);
+    $this->invoiceStep = 'preview';
+}
+
 
     public function editTax(): void
     {
@@ -213,6 +232,7 @@ class Accounts extends Component
         $pdfPath = 'pdfs/invoice-' . $invoice->id . '.pdf';
         Browsershot::html($html)
             ->format('A4')
+            ->landscape()
             ->margins(10, 10, 10, 10)
             ->waitUntilNetworkIdle()
             ->save(storage_path('app/public/' . $pdfPath));
@@ -426,7 +446,7 @@ class Accounts extends Component
             ->when($this->startDate, fn ($q) => $q->whereDate('sale_date', '>=', $this->startDate))
             ->when($this->endDate, fn ($q) => $q->whereDate('sale_date', '<=', $this->endDate));
 
-        $totalSales = $filteredSalesQuery->clone()->sum('usd_sell');
+        $totalSales = (clone $filteredSalesQuery)->sum('usd_sell');
         $this->sales = $filteredSalesQuery->orderBy($this->sortField, $this->sortDirection)->paginate(10);
         $this->exportSales = $this->sales->getCollection();
 
@@ -453,6 +473,7 @@ class Accounts extends Component
         $pdfPath = 'pdfs/bulk-invoice-' . $invoice->id . '.pdf';
         Browsershot::html($html)
             ->format('A4')
+            ->landscape()
             ->margins(10, 10, 10, 10)
             ->waitUntilNetworkIdle()
             ->save(storage_path('app/public/' . $pdfPath));
@@ -528,7 +549,6 @@ class Accounts extends Component
                     $lineTax = round($tax * $weight, 2);
                 }
 
-                // اضبط آخر سطر ليطابق مجموع الضريبة بدقة
                 if ($i === $count) {
                     $lineTax = round($tax - $sumSoFar, 2);
                 }
@@ -537,6 +557,7 @@ class Accounts extends Component
                 $attachData[$s->id] = [
                     'base_amount'    => $base,
                     'tax_is_percent' => $this->bulkTaxIsPercent,
+                    // إذا كانت نسبة: نخزن نسبة الإدخال، وإن كانت مبلغ: نخزن نصيب هذا السطر كمبلغ مُدخل
                     'tax_input'      => $this->bulkTaxIsPercent ? (float) $this->bulkTaxAmount : $lineTax,
                     'tax_amount'     => $lineTax,
                     'line_total'     => $base + $lineTax,
