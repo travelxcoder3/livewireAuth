@@ -9,7 +9,6 @@
     $from = $startDate ? Carbon::parse($startDate)->format('Y-m-d') : '—';
     $to   = $endDate   ? Carbon::parse($endDate)->format('Y-m-d')   : '—';
 
-    // دالة قصيرة لتنسيق الأرقام بنفس الطريقة دائماً
     function nf($v) { return number_format((float)$v, 2, '.', ','); }
 @endphp
 <!DOCTYPE html>
@@ -39,12 +38,24 @@
 
         /* ===== Tables ===== */
         table{ width:100%; border-collapse:collapse; margin-top:12px; table-layout:fixed; }
-        th,td{ border:1px solid #aaa; padding:6px 8px; text-align:center; white-space:nowrap; vertical-align:middle; }
+        th,td{
+            border:1px solid #aaa; padding:6px 8px; text-align:center;
+            white-space:normal;             /* يسمح بالنزول لسطر */
+            word-break:break-word;          /* يكسر الكلمات الطويلة */
+            overflow-wrap:anywhere;         /* يكسر أي نص ملاصق */
+            vertical-align:top;
+            line-height:1.35;
+        }
         th{ background:#eee; font-weight:700; }
         tr{ page-break-inside: avoid; }
 
         /* أرقام LTR كي لا تنعكس الفواصل */
         .num{ direction:ltr; unicode-bidi:embed; }
+
+        /* ضبط أعمدة النصوص الطويلة */
+        .col-beneficiary{ width:180px; max-width:180px; }
+        .col-provider{ width:140px; max-width:140px; }
+        .wrapfix{ display:block; unicode-bidi:plaintext; }
 
         .section{ margin-top:16px; font-weight:700; }
         .footer{ text-align:center; margin-top:16px; font-size:11px; color:#666; }
@@ -58,7 +69,7 @@
             <img src="data:{{ $logoMime }};base64,{{ $logoData }}" class="logo" alt="logo">
         @else
             <div class="logo"></div>
-        @endif>
+        @endif
         <div class="title">كشف عمليات الموظف</div>
         <div></div>
     </div>
@@ -150,8 +161,8 @@
     <div class="section">العمليات</div>
     <table>
         <colgroup>
-            <col style="width:4%"><col style="width:10%"><col style="width:12%"><col style="width:12%">
-            <col style="width:12%"><col style="width:8%"><col style="width:10%">
+            <col style="width:4%"><col style="width:10%"><col style="width:12%"><col class="col-provider">
+            <col class="col-beneficiary"><col style="width:10%"><col style="width:10%">
             <col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:8%">
         </colgroup>
         <thead>
@@ -185,10 +196,10 @@
                 <td class="num">{{ nf($i++) }}</td>
                 <td>{{ $s->sale_date ? Carbon::parse($s->sale_date)->format('Y-m-d') : '—' }}</td>
                 <td>{{ $s->service?->label ?? '—' }}</td>
-                <td>{{ $s->provider?->name ?? '—' }}</td>
-                <td>{{ $s->beneficiary_name ?? '—' }}</td>
-                <td>{{ $s->pnr ?? '—' }}</td>
-                <td>{{ $s->reference ?? '—' }}</td>
+                <td class="col-provider"><span class="wrapfix">{{ $s->provider?->name ?? '—' }}</span></td>
+                <td class="col-beneficiary"><span class="wrapfix">{{ $s->beneficiary_name ?? '—' }}</span></td>
+                <td><span class="wrapfix">{{ $s->pnr ?? '—' }}</span></td>
+                <td><span class="wrapfix">{{ $s->reference ?? '—' }}</span></td>
                 <td class="num">{{ nf($sell) }}</td>
                 <td class="num">{{ nf($buy) }}</td>
                 <td class="num">{{ nf($sell - $buy) }}</td>

@@ -162,7 +162,6 @@
             Auth::user()->hasRole('agency-admin') ||
             Auth::user()->can('agency.profile.view') ||
             Auth::user()->can('lists.view') ||
-            Auth::user()->can('invoice-setup.view') ||
             Auth::user()->can('sequences.view') ||
             Auth::user()->can('commissions-setup.view');
     @endphp
@@ -182,10 +181,6 @@
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('lists.view'))
                     <x-navbar.buttons.dropdown-link :href="route('agency.dynamic-lists')" icon="fas fa-list-alt" label="تهيئة القوائم"
                         :show="true" />
-                @endif
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('invoice-setup.view'))
-                    <x-navbar.buttons.dropdown-link href="#" icon="fas fa-file-invoice-dollar"
-                        label="تهيئة الفواتير" :show="true" />
                 @endif
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('sequences.view'))
                     <x-navbar.buttons.dropdown-link :href="route('agency.approval-sequences')" icon="fas fa-random" label="تسلسل الموافقات"
