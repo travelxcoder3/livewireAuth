@@ -44,10 +44,8 @@
       <th>#</th>
       <th>تاريخ الخدمة</th>
       <th>الوصف</th>
-      <th>الحالة</th>
       <th>عليه</th>
       <th>له</th>
-      <th>الرصيد</th>
     </tr>
   </thead>
   <tbody>
@@ -56,10 +54,8 @@
         <td>{{ $r['no'] }}</td>
         <td>{{ $r['date'] }}</td>
         <td>{{ $r['desc'] }}</td>
-        <td>{{ $r['status'] }}</td>
         <td class="blue">{{ $money($r['debit']) }}</td>
         <td class="green">{{ $money($r['credit']) }}</td>
-        <td style="font-weight:700">{{ $money($r['balance']) }}</td>
       </tr>
     @empty
       <tr><td colspan="7" class="muted" style="text-align:center;">لا توجد بيانات.</td></tr>
@@ -74,7 +70,6 @@
       <th>عدد الصفوف</th>
       <th>إجمالي عليه</th>
       <th>إجمالي له</th>
-      <th>آخر رصيد</th>
     </tr>
   </thead>
   <tbody>
@@ -82,7 +77,6 @@
       <td>{{ $totals['count'] }}</td>
       <td class="blue">{{ $money($totals['debit']) }}</td>
       <td class="green">{{ $money($totals['credit']) }}</td>
-      <td style="font-weight:700">{{ $money($totals['last_balance']) }}</td>
     </tr>
   </tbody>
 </table>

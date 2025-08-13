@@ -51,115 +51,137 @@ class CustomerStatement extends Component
             $this->rebuild();
         }
     }
-
+    private function fmtDate($dt): string
+    {
+        if (!$dt) return '';
+        try { return \Carbon\Carbon::parse($dt)->format('Y-m-d H:i:s'); }
+        catch (\Throwable $e) { return (string)$dt; }
+    }
+    
     private function rebuild(): void
     {
         $from = $this->fromDate ?: '0001-01-01';
         $to   = $this->toDate   ?: '9999-12-31';
         $bn   = $this->normalize($this->beneficiary);
     
-
         $sales = $this->customer->sales()
             ->with(['collections','service','customer'])
             ->whereBetween('sale_date', [$from, $to])
+            ->orderBy('created_at') // مبدئيًا
             ->get();
-
+    
         if ($bn !== '') {
             $sales = $sales->filter(function($s) use($bn){
                 $name = $this->normalize((string)($s->beneficiary_name ?? $s->customer->name ?? ''));
                 return mb_strpos($name, $bn) !== false;
             });
         }
-
-        $rows = [];
+    
         $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
         $void   = ['void','cancel','canceled','cancelled'];
-
-        foreach ($sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id) as $group) {
+    
+        $rows = [];
+    
+        // نجمع الأحداث لكل عملية
+        foreach ($sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id) as $groupId => $group) {
+            // عنوان العملية (اختياري: سطر فاصل)
+            $rows[] = [
+                'no'      => 0,
+                'date'    => $this->fmtDate(optional($group->first())->created_at),
+                'desc'    => "عملية #{$groupId}",
+                'status'  => '—',
+                'debit'   => 0.0,
+                'credit'  => 0.0,
+                'balance' => 0.0,
+                '_sort'   => $this->fmtDate(optional($group->first())->created_at) . '::0'
+            ];
+    
+            // أحداث العملية
             foreach ($group as $sale) {
                 $st = mb_strtolower(trim($sale->status ?? ''));
                 $serviceName     = (string)($sale->service->label ?? '-');
                 $beneficiaryName = (string)($sale->beneficiary_name ?? $this->customer->name);
-
-                // 3-أ: بيع لأول مرة "تم الإصدار" → "شراء (الخدمة) لـ(المستفيد)"
-                if (($st === 'issued' || str_contains($st, 'reissued')) 
-                    && !in_array($st, $refund, true) && !in_array($st, $void, true)) {
+    
+                // إصدار/قيد التقديم/نشط آخر: تاريخ الإنشاء الفعلي
+                if (!in_array($st, $refund, true) && !in_array($st, $void, true)) {
+                    $label = ($st === 'pending' || str_contains($st, 'submit'))
+                        ? "قيد التقديم {$serviceName} لـ{$beneficiaryName}"
+                        : "شراء {$serviceName} لـ{$beneficiaryName}";
                     $rows[] = [
-                        'date'   => (string)$sale->sale_date,
-                        'desc'   => "شراء {$serviceName} لـ{$beneficiaryName}",
-                        'status' => $this->statusArabicLabel($st),
-                        'debit'  => (float)$sale->usd_sell,
-                        'credit' => 0.0,
+                        'date'    => $this->fmtDate($sale->created_at), // هنا created_at
+                        'desc'    => $label,
+                        'status'  => $this->statusArabicLabel($st),
+                        'debit'   => (float)$sale->usd_sell,
+                        'credit'  => 0.0,
+                        '_sort'   => $this->fmtDate($sale->created_at) . '::1',
                     ];
                 }
-                // 3-ب: بيع "قيد التقديم" → "قيد التقديم (الخدمة) لـ(المستفيد)"
-                elseif (($st === 'pending' || str_contains($st, 'submit')) 
-                    && !in_array($st, $refund, true) && !in_array($st, $void, true)) {
+    
+                // استرداد/إلغاء: بتاريخ إنشائه الفعلي
+                if (in_array($st, $refund, true) || in_array($st, $void, true)) {
+                    $label = $this->statusArabicLabel($st);
                     $rows[] = [
-                        'date'   => (string)$sale->sale_date,
-                        'desc'   => "قيد التقديم {$serviceName} لـ{$beneficiaryName}",
-                        'status' => $this->statusArabicLabel($st),
-                        'debit'  => (float)$sale->usd_sell,
-                        'credit' => 0.0,
+                        'date'    => $this->fmtDate($sale->created_at),
+                        'desc'    => "{$label} لـ{$serviceName} لـ{$beneficiaryName}",
+                        'status'  => $label,
+                        'debit'   => 0.0,
+                        'credit'  => abs((float)$sale->usd_sell),
+                        '_sort'   => $this->fmtDate($sale->created_at) . '::2',
                     ];
                 }
-            // 3-ج: أي بيع آخر نشط غير مُسترد وغير ملغى → نعامله كشراء افتراضي
-            elseif (!in_array($st, $refund, true) && !in_array($st, $void, true)) {
-                $rows[] = [
-                    'date'   => (string)$sale->sale_date,
-                    'desc'   => "شراء {$serviceName} لـ{$beneficiaryName}",
-                    'status' => $this->statusArabicLabel($st),
-                    'debit'  => (float)$sale->usd_sell,
-                    'credit' => 0.0,
-                ];
-            }
-
-            // 3-د: استرداد/إلغاء → "(استرداد جزئي|استرداد كلي|إلغاء) لـ(الخدمة) لـ(المستفيد)"
-            if (in_array($st, $refund, true) || in_array($st, $void, true)) {
-                $label = $this->statusArabicLabel($st);
-                $rows[] = [
-                    'date'   => (string)$sale->sale_date,
-                    'desc'   => "{$label} لـ{$serviceName} لـ{$beneficiaryName}",
-                    'status' => $label,
-                    'debit'  => 0.0,
-                    'credit' => abs((float)$sale->usd_sell),
-                ];
-            }
-
-            // 3-هـ: سداد من التحصيلات → "سداد (الخدمة) لـ(المستفيد)"
-            foreach ($sale->collections as $col) {
-                $rows[] = [
-                    'date'   => (string)$col->payment_date,
-                    'desc'   => "سداد {$serviceName} لـ{$beneficiaryName}",
-                    'status' => 'سداد',
-                    'debit'  => 0.0,
-                    'credit' => (float)$col->amount,
-                ];
-            }
-
-            // 3-و: دفعة جزئية مرتبطة بالعملية (إن وُجدت) → احتفظ بها كتوضيح منفصل
-            if ((float)$sale->amount_paid > 0) {
-                $rows[] = [
-                    'date'   => (string)$sale->sale_date,
-                    'desc'   => "سداد جزئي {$serviceName} لـ{$beneficiaryName}",
-                    'status' => 'سداد جزئي',
-                    'debit'  => 0.0,
-                    'credit' => (float)$sale->amount_paid,
-                ];
+    
+                // دفعة جزئية مرتبطة بالسجل
+                if ((float)$sale->amount_paid > 0) {
+                    $rows[] = [
+                        'date'    => $this->fmtDate($sale->created_at),
+                        'desc'    => "سداد جزئي {$serviceName} لـ{$beneficiaryName}",
+                        'status'  => 'سداد جزئي',
+                        'debit'   => 0.0,
+                        'credit'  => (float)$sale->amount_paid,
+                        '_sort'   => $this->fmtDate($sale->created_at) . '::3',
+                    ];
+                }
+    
+                // التحصيلات: بتاريخ إنشاء التحصيل الفعلي
+                foreach ($sale->collections as $col) {
+                    $rows[] = [
+                        'date'    => $this->fmtDate($col->created_at ?? $col->payment_date),
+                        'desc'    => "سداد {$serviceName} لـ{$beneficiaryName}",
+                        'status'  => 'سداد',
+                        'debit'   => 0.0,
+                        'credit'  => (float)$col->amount,
+                        '_sort'   => $this->fmtDate($col->created_at ?? $col->payment_date) . '::4',
+                    ];
+                }
             }
         }
-        }
-
-
-        usort($rows, fn($a,$b) => [$a['date'],$a['desc']] <=> [$b['date'],$b['desc']]);
-
+    
+        // فرز زمني داخل كل العملية ثم عام
+        usort($rows, function ($a, $b) {
+            return strcmp($a['_sort'] ?? $a['date'], $b['_sort'] ?? $b['date'])
+                ?: strcmp($a['desc'], $b['desc']);
+        });
+    
+        // أرقام وبالنس تراكمي
         $bal = 0.0; $i = 1;
-        foreach ($rows as &$r) { $bal += ($r['debit'] - $r['credit']); $r['no'] = $i++; $r['balance'] = $bal; }
+        foreach ($rows as &$r) {
+            if (($r['debit'] ?? 0) !== 0.0 || ($r['credit'] ?? 0) !== 0.0) {
+                $bal += (($r['debit'] ?? 0) - ($r['credit'] ?? 0));
+                $r['balance'] = $bal;
+                $r['no'] = $i++;
+            } else {
+                // سطر عنوان العملية لا يؤثر على الرصيد
+                $r['balance'] = $bal;
+                $r['no'] = null;
+            }
+            unset($r['_sort']);
+        }
         unset($r);
-
+    
         $this->statement    = $rows;
-        $this->selectedRows = []; // يمسح التحديد فقط عندما تتغير الفلاتر
+        $this->selectedRows = [];
     }
+    
 
 
     public function render()
