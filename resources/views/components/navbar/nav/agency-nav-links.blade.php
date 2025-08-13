@@ -53,6 +53,15 @@
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('quotations.view'))
                 <x-navbar.buttons.dropdown-link :href="route('agency.quotation')" icon="fas fa-briefcase" label="عرض السعر" :show="true" />
                 @endif
+                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('statements.view'))
+   <x-navbar.buttons.dropdown-link
+    :href="route('agency.statements.customers')"
+    icon="fas fa-briefcase"
+    label="كشف حساب"
+    :show="true"
+/>
+@endif
+
 
 
             </div>

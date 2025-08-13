@@ -79,7 +79,8 @@ class PermissionSeeder extends Seeder
         'quotations.view',
         // فواتير
         'invoices.view',
-        'invoicesDeteials.view'
+        'invoicesDeteials.view',
+        'statements.view'
     ];
 
     /**

@@ -66,6 +66,10 @@ use App\Http\Controllers\Agency\QuotationController;
 // 🌐 المسارات العامة والمصادقة
 // ============================
 
+// routes/web.php
+use App\Livewire\Agency\Statements\CustomersList;
+use App\Livewire\Agency\Statements\CustomerStatement; 
+use App\Http\Controllers\Agency\StatementPdfController;
 Route::get('/', fn() => view('welcome'));
 
 Route::get('/login', Login::class)->name('login');
@@ -171,7 +175,12 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
         ->name('quotations.view');
     Route::get('/quotations/{quotation}/pdf',  [\App\Http\Controllers\Agency\QuotationController::class,'pdf'])
         ->name('quotations.pdf');
-
+ Route::get('/statements/customers', CustomersList::class)
+        ->name('statements.customers');
+Route::get('/statements/customers/{customer}/pdf', [StatementPdfController::class, 'download'])
+    ->name('statements.customer.pdf');
+    Route::get('/statements/customers/{customer}', CustomerStatement::class)
+        ->name('statements.customer');
     Route::get('/accounts', Accounts::class)->name('accounts');
     // ============================
     // 🧑‍💼 قسم التحصيلات داخل لوحة الوكالة
@@ -249,3 +258,7 @@ Route::get('/commissions', Commissions::class)->name('agency.commissions');
 Route::get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice) {
     return (new App\Livewire\Agency\Accounts())->downloadBulkInvoicePdf($invoice->id);
 })->name('invoices.download');
+
+
+
+

@@ -91,6 +91,13 @@
                         <span>عرض سعر</span>
                     </a>
                 @endif
+                @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('statements.view'))
+                    <a href="{{ route('agency.statements.customers') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-briefcase"></i>
+                        <span>كشف حساب</span>
+                    </a>
+                @endif
                 </div>
             </div>
             @endif

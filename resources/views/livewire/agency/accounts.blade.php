@@ -15,6 +15,8 @@
 @endphp
 
 <div class="space-y-6">
+    <style>[x-cloak]{display:none!important}</style>
+
     <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
@@ -50,13 +52,13 @@
                 placeholder="جميع الحسابات" containerClass="relative" />
 
             <div class="relative mt-1">
-                <input type="date" name="start_date" id="start_date" wire:model="startDate" wire:change="$refresh"
+                <input type="date" name="start_date" id="start_date" wire:model.live="startDate" wire:change="$refresh"
                     placeholder=" " class="peer {{ $fieldClass }}" />
                 <label for="start_date" class="{{ $labelClass }}">من تاريخ</label>
             </div>
 
             <div class="relative mt-1">
-                <input type="date" name="end_date" id="end_date" wire:model="endDate" wire:change="$refresh"
+                <input type="date" name="end_date" id="end_date" wire:model.live="endDate" wire:change="$refresh"
                     placeholder=" " class="peer {{ $fieldClass }}" />
                 <label for="end_date" class="{{ $labelClass }}">إلى تاريخ</label>
             </div>
@@ -123,7 +125,7 @@
 
                 <tbody>
                     @foreach ($sales as $sale)
-                        <tr>
+                        <tr wire:key="row-{{ $sale->id }}">
                             <td class="p-2 border-b border-[rgba(0,0,0,0.07)] text-center">
                                 <input type="checkbox"
                                     wire:key="cb-{{ $sale->id }}"
@@ -138,18 +140,18 @@
 
                             @foreach ($columns as $col)
                                 @php
-                                    $value = data_get($sale, $col['key']);
+                                    $value  = data_get($sale, $col['key']);
                                     $format = $col['format'] ?? null;
-                                    $color = $col['color'] ?? null;
+                                    $color  = $col['color'] ?? null;
                                 @endphp
                                 <td class="p-2 border-b border-[rgba(0,0,0,0.07)] {{ $color ? 'text-' . $color : '' }}">
                                     @switch($format)
                                         @case('date')
-                                            {{ \Carbon\Carbon::parse($value)->format('Y-m-d') }}
+                                            {{ $value ? \Carbon\Carbon::parse($value)->format('Y-m-d') : '-' }}
                                         @break
 
                                         @case('money')
-                                            {{ number_format($value, 2) }}
+                                            {{ is_null($value) ? '-' : number_format($value, 2) }}
                                         @break
 
                                         @case('status')
@@ -196,7 +198,7 @@
 
     {{-- ======= فاتورة فردية ======= --}}
     @if ($showInvoiceModal && $selectedSale)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 print:bg-white print:static print:overflow-visible">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 print:bg-white print:static print:overflow-visible" x-cloak>
             <div class="bg-white w-full max-w-2xl rounded-xl shadow-xl p-6 relative overflow-y-auto max-h-[90vh] print:shadow-none print:max-w-full print:p-0 print:overflow-visible">
                 <button wire:click="$set('showInvoiceModal', false)"
                     class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold print:hidden">&times;</button>
@@ -223,7 +225,7 @@
                             </div>
                         </div>
                         <div class="flex items-end">
-                            <x-primary-button wire:click="addTax" class="w-full">إضافة</x-primary-button>
+                            <x-primary-button wire:click="addTax" class="w-full" wire:loading.attr="disabled">إضافة</x-primary-button>
                         </div>
                     </div>
 
@@ -318,7 +320,7 @@
 
     {{-- ======= فاتورة مجمّعة ======= --}}
     @if ($showBulkInvoiceModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" x-cloak>
             <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
                 <button wire:click="$set('showBulkInvoiceModal', false)"
                     class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
@@ -377,14 +379,14 @@
                             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">
                             إلغاء
                         </button>
-                        <x-primary-button type="submit">تأكيد وإنشاء الفاتورة</x-primary-button>
+                        <x-primary-button type="submit" wire:loading.attr="disabled">تأكيد وإنشاء الفاتورة</x-primary-button>
                     </div>
                 </form>
             </div>
         </div>
     @endif
 
-    {{-- ======= نوافذ التقارير (موجودة لنداءات السكربت) ======= --}}
+    {{-- ======= نوافذ التقارير ======= --}}
     <div id="reportModal"
          class="fixed inset-0 z-40 bg-black/10 flex items-center justify-center hidden backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
