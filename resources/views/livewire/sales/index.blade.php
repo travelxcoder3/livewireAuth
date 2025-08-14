@@ -689,6 +689,16 @@ $columns = SalesTable::columns();
                         containerClass="relative mt-1"
                     />
                 </div>
+                <x-select-field
+    wireModel="filterInputs.scope"
+    label="النطاق"
+    :options="[
+        'mine' => 'عملي فقط',
+        'team' => 'الفريق كامل'
+    ]"
+    placeholder="اختر النطاق"
+    containerClass="relative mt-1"
+/>
 <x-select-field
     wireModel="filterInputs.service_type_id"
     label="نوع الخدمة"
@@ -815,9 +825,8 @@ $columns = SalesTable::columns();
                     placeholder="الرقم المرجعي"
                     containerClass="relative mt-1"
                 />
-
             </div>
-
+           
             <div class="grid grid-cols-2 gap-4 pt-2">
                 <button type="button" onclick="closeFilterModal()"
                     class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm w-full">

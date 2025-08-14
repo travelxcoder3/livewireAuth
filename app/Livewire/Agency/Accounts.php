@@ -49,6 +49,7 @@ class Accounts extends Component
     public string $invoiceStep = 'tax';
     public ?int $currentInvoiceId = null;
     public array $invoiceTotals = ['base' => 0.0, 'tax' => 0.0, 'net' => 0.0];
+    public bool $isCreditNote = false; // NEW
 
     /** فاتورة مجمّعة */
     public $selectAll = false;
@@ -112,15 +113,23 @@ class Accounts extends Component
 
     private function recalcInvoiceTotals(): void
     {
-        $base = (float) data_get($this->selectedSale, 'usd_sell', 0);
+        $base   = (float) data_get($this->selectedSale, 'usd_sell', 0);
         $status = (string) data_get($this->selectedSale, 'status', '');
-        if (in_array($status, ['Refund-Full','Refund-Partial'])) {
+
+        // عمليات مستردة = إشعار دائن وقيم سالبة
+        $this->isCreditNote = in_array($status, ['Refund-Full','Refund-Partial'], true);
+        if ($this->isCreditNote) {
             $base = -abs($base);
         }
 
-        $tax = $this->taxIsPercent
-            ? round($base * ((float)$this->taxAmount / 100), 2)
-            : round((float)$this->taxAmount, 2);
+        $taxInput = round((float)$this->taxAmount, 2);
+
+        if ($this->taxIsPercent) {
+            $tax = round($base * ($taxInput / 100), 2); // يتبع إشارة الأساس تلقائياً
+        } else {
+            // مبلغ ثابت: حدد الإشارة حسب النوع
+            $tax = $this->isCreditNote ? -abs($taxInput) : abs($taxInput);
+        }
 
         $net = $base + $tax;
         $this->invoiceTotals = compact('base','tax','net');
@@ -180,7 +189,7 @@ class Accounts extends Component
         $this->currentInvoiceId = $this->latestInvoiceIdForSale((int)$saleId);
 
         $this->invoiceStep = 'tax';
-        $this->recalcInvoiceTotals();
+        $this->recalcInvoiceTotals(); // يحدد $isCreditNote
         $this->showInvoiceModal = true;
     }
 
@@ -198,8 +207,11 @@ class Accounts extends Component
         $tax  = round((float)$this->invoiceTotals['tax'],  2);
         $net  = round((float)$this->invoiceTotals['net'],  2);
 
+        // نوع المستند حسب الحالة
+        $prefix = $this->isCreditNote ? 'CN-' : 'INV-';
+
         $invoice = Invoice::updateOrCreate(
-            ['invoice_number' => 'INV-' . str_pad($sale->id, 5, '0', STR_PAD_LEFT)],
+            ['invoice_number' => $prefix . str_pad($sale->id, 5, '0', STR_PAD_LEFT)],
             [
                 'date'        => now()->toDateString(),
                 'user_id'     => auth()->id(),
@@ -215,7 +227,9 @@ class Accounts extends Component
             $sale->id => [
                 'base_amount'    => $base,
                 'tax_is_percent' => $this->taxIsPercent ? 1 : 0,
-                'tax_input'      => round((float)$this->taxAmount, 2),
+                'tax_input'      => $this->taxIsPercent
+                    ? round((float)$this->taxAmount, 2)
+                    : ($this->isCreditNote ? -abs(round((float)$this->taxAmount, 2)) : abs(round((float)$this->taxAmount, 2))),
                 'tax_amount'     => $tax,
                 'line_total'     => $net,
             ],
@@ -223,7 +237,7 @@ class Accounts extends Component
 
         $this->currentInvoiceId = $invoice->id;
         $this->invoiceStep = 'preview';
-        // لا نعيد selectedSale لموديل؛ نبقيه ككائن بسيط لتجنّب مشاكل Livewire
+        // نُبقي selectedSale ككائن بسيط
     }
 
     public function editTax(): void
@@ -246,10 +260,10 @@ class Accounts extends Component
         $net  = (float)($invoice->grand_total ?? ($base + $tax));
 
         $html = view('invoices.sale-invoice', [
-            'sale' => $sale,
-            'base' => $base,
-            'tax'  => $tax,
-            'net'  => $net,
+            'sale'    => $sale,
+            'base'    => $base,
+            'tax'     => $tax,
+            'net'     => $net,
             'invoice' => $invoice,
         ])->render();
 

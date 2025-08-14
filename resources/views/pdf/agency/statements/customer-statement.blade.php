@@ -2,6 +2,20 @@
     $currency = Auth::user()->agency->currency ?? 'USD';
     $money = fn($v) => number_format((float)$v, 2).' '.$currency;
 @endphp
+
+@php
+  // التقاط الإجماليات إن لم تكن محسوبة
+  $sumDebit  = $totals['debit']  ?? collect($rows)->sum('debit');
+  $sumCredit = $totals['credit'] ?? collect($rows)->sum('credit');
+
+  // صافي الرصيد = عليه - له
+  $net = (float)$sumDebit - (float)$sumCredit;
+
+  // المتبقي على العميل إن كان موجبًا، وعلى الشركة إن كان سالبًا
+  $dueOnCustomer = $net > 0 ? $net : 0;          // العميل مُدان
+  $dueOnAgency   = $net < 0 ? abs($net) : 0;     // الشركة مُدانة
+@endphp
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -70,16 +84,21 @@
       <th>عدد الصفوف</th>
       <th>إجمالي عليه</th>
       <th>إجمالي له</th>
+      <th>المتبقي على العميل</th>
+      <th>المتبقي على الشركة</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>{{ $totals['count'] }}</td>
-      <td class="blue">{{ $money($totals['debit']) }}</td>
-      <td class="green">{{ $money($totals['credit']) }}</td>
+      <td class="blue">{{ $money($sumDebit) }}</td>
+      <td class="green">{{ $money($sumCredit) }}</td>
+      <td class="{{ $dueOnCustomer>0?'red':'' }}">{{ $money($dueOnCustomer) }}</td>
+      <td class="{{ $dueOnAgency>0?'blue':'' }}">{{ $money($dueOnAgency) }}</td>
     </tr>
   </tbody>
 </table>
+
 
 </body>
 </html>

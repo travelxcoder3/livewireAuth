@@ -125,6 +125,7 @@
 
                 <tbody>
                     @foreach ($sales as $sale)
+                        @php $isRefund = in_array($sale->status ?? '', ['Refund-Full','Refund-Partial'], true); @endphp
                         <tr wire:key="row-{{ $sale->id }}">
                             <td class="p-2 border-b border-[rgba(0,0,0,0.07)] text-center">
                                 <input type="checkbox"
@@ -155,17 +156,26 @@
                                         @break
 
                                         @case('status')
-                                            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 {{ $isRefund ? 'text-red-600' : 'text-gray-600' }}">
                                                 {{ strtoupper($value) }}
                                             </span>
                                         @break
 
                                         @case('custom')
                                             @can('accounts.invoice')
-                                                <button wire:click="openInvoiceModal({{ $sale->id }})"
-                                                    class="font-semibold text-[rgb(var(--primary-600))] hover:text-black transition-colors duration-200">
-                                                    فاتورة فردية
-                                                </button>
+                                                @if($isRefund)
+                                                    {{-- زر غير قابل للنقر: لا wire:click --}}
+                                                    <span
+                                                        class="font-semibold text-red-400 cursor-not-allowed select-none"
+                                                        title="إشعار دائن للعرض فقط">
+                                                        إشعار دائن
+                                                    </span>
+                                                @else
+                                                    <button wire:click="openInvoiceModal({{ $sale->id }})"
+                                                        class="font-semibold text-[rgb(var(--primary-600))] hover:text-black transition-colors duration-200">
+                                                        فاتورة فردية
+                                                    </button>
+                                                @endif
                                             @endcan
                                         @break
 
@@ -196,7 +206,7 @@
         </div>
     @endif
 
-    {{-- ======= فاتورة فردية ======= --}}
+    {{-- ======= فاتورة فردية / إشعار دائن ======= --}}
     @if ($showInvoiceModal && $selectedSale)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 print:bg-white print:static print:overflow-visible" x-cloak>
             <div class="bg-white w-full max-w-2xl rounded-xl shadow-xl p-6 relative overflow-y-auto max-h-[90vh] print:shadow-none print:max-w-full print:p-0 print:overflow-visible">
@@ -238,7 +248,9 @@
                         </div>
                     </div>
                 @else
-                    <h2 class="text-2xl font-bold text-center mb-4" style="color: rgb(var(--primary-700));">فاتورة العملية</h2>
+                    <h2 class="text-2xl font-bold text-center mb-4" style="color: rgb(var(--primary-700));">
+                        {{ $isCreditNote ? 'إشعار دائن' : 'فاتورة العملية' }}
+                    </h2>
 
                     <div class="flex justify-between text-sm border-b pb-3 mb-3">
                         <div class="text-right">
@@ -253,7 +265,9 @@
                         <div class="text-left text-sm">
                             <p><strong>Order No:</strong> {{ $selectedSale->id }} / {{ now()->format('y') }}</p>
                             <p><strong>Date:</strong> {{ $selectedSale->sale_date }}</p>
-                            <p><strong>Invoice No:</strong> {{ 'INV-' . str_pad($selectedSale->id, 5, '0', STR_PAD_LEFT) }}</p>
+                            <p><strong>Invoice No:</strong>
+                                {{ ($isCreditNote ? 'CN-' : 'INV-') . str_pad($selectedSale->id, 5, '0', STR_PAD_LEFT) }}
+                            </p>
                         </div>
                     </div>
 
