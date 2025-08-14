@@ -57,6 +57,18 @@
     .btn-green{background:#27ae60;color:#fff}
     .btn-orange{background:#f39c12;color:#fff}
     .no-print{user-select:none}
+    textarea.autogrow{
+        width:100%;
+        min-height:38px;
+        border:1px solid #ccc;
+        padding:6px;
+        border-radius:4px;
+        background:transparent;
+        line-height:1.4;
+        resize:none;          /* ممنوع السحب اليدوي */
+        overflow:hidden;      /* بدون سكرول */
+      }
+
     @media print{ .no-print{display:none !important;} }
     #print-guard{ display:none; }
       @media print{
@@ -158,10 +170,18 @@
         </select>
 
         </td>
-        <td><input type="text" wire:model="services.{{ $index }}.route"></td>
+       <td>
+          <textarea class="autogrow"
+                    rows="1"
+                    wire:model.defer="services.{{ $index }}.route"></textarea>
+        </td>
         <td><input type="date" wire:model="services.{{ $index }}.date"></td>
-        <td><input type="text" wire:model="services.{{ $index }}.description"></td>
         <td>
+            <textarea class="autogrow"
+                      rows="1"
+                      wire:model.defer="services.{{ $index }}.description"></textarea>
+          </td>
+          <td>
           <select wire:model="services.{{ $index }}.conditions">
             @foreach($conditionsList as $c)
               <option value="{{ $c }}">{{ $c }}</option>
@@ -358,6 +378,26 @@
           }
         }
         window.addEventListener('keydown', block, true); // capture=true
+      })();
+
+
+      (function(){
+        function fit(el){
+          el.style.height = 'auto';
+          el.style.height = el.scrollHeight + 'px';
+        }
+        function init(){
+          document.querySelectorAll('textarea.autogrow').forEach(fit);
+        }
+        document.addEventListener('input', e => {
+          if(e.target.matches('textarea.autogrow')) fit(e.target);
+        });
+        // أول تحميل
+        document.addEventListener('DOMContentLoaded', init);
+        // بعد أي تحديث من Livewire
+        document.addEventListener('livewire:load', () => {
+          Livewire.hook('message.processed', init);
+        });
       })();
 </script>
 

@@ -13,7 +13,7 @@ use App\Tables\AccountTable;
 use App\Exports\AccountsReportExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
-
+use App\Exports\AccountsReportStreamExport;
 #[Layout('layouts.agency')]
 class AccountsReport extends Component
 {
@@ -91,35 +91,24 @@ public function mount()
 }
 
 
+
+
 public function exportToExcel()
 {
-    $user = auth()->user();
-    $agency = $user->agency;
-    $agencyIds = $agency->parent_id ? [$agency->id] : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
+    return (new AccountsReportStreamExport($this->filters()))
+        ->download('accounts-report.xlsx');
+}
 
-    $query = Sale::query()
-        ->select('id','user_id','provider_id','service_type_id','customer_id',
-                 'amount_paid','usd_sell','sale_date','pnr','reference','agency_id')
-        ->withSum('collections','amount')
-        ->whereIn('agency_id',$agencyIds)
-        ->when(!$user->hasRole('agency-admin'), fn($q)=>$q->where('user_id',$user->id))
-        ->when($this->search, function ($q) {
-            $t = '%'.$this->search.'%';
-            $q->whereHas('user', fn($u)=>$u->where('name','like',$t));
-        })
-        ->when($this->serviceTypeFilter, fn($q)=>$q->where('service_type_id',$this->serviceTypeFilter))
-        ->when($this->providerFilter, fn($q)=>$q->where('provider_id',$this->providerFilter))
-        ->when($this->accountFilter, fn($q)=>$q->where('customer_id',$this->accountFilter))
-        ->when($this->pnrFilter, function($q){ $t=trim($this->pnrFilter); $q->where('pnr','like', mb_strlen($t)>=3?"%$t%":"$t%"); })
-        ->when($this->referenceFilter, function($q){ $t=trim($this->referenceFilter); $q->where('reference','like', mb_strlen($t)>=3?"%$t%":"$t%"); })
-        ->when($this->startDate && $this->endDate,
-            fn($q)=>$q->whereBetween('sale_date', [$this->startDate, $this->endDate]))
-        ->when($this->startDate && !$this->endDate,
-            fn($q)=>$q->where('sale_date','>=',$this->startDate))
-        ->when(!$this->startDate && $this->endDate,
-            fn($q)=>$q->where('sale_date','<=',$this->endDate));
-
-    return Excel::download(new \App\Exports\AccountsReportStreamExport($query), 'accounts-'.now()->format('Y-m-d').'.xlsx');
+protected function filters(): array
+{
+    return [
+        'search'        => $this->search ?: null,
+        'service_type'  => $this->serviceTypeFilter ?: null,
+        'provider'      => $this->providerFilter ?: null,
+        'account'       => $this->accountFilter ?: null,
+        'start'         => $this->startDate ?: null,
+        'end'           => $this->endDate ?: null,
+    ];
 }
 
 
@@ -323,4 +312,6 @@ $salesQuery = Sale::query()
             'account-details-' . $sale->id . '.pdf'
         );
     }
+
 }
+

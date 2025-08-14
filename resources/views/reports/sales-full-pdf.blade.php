@@ -4,7 +4,7 @@
 
     // اتجاه + الوكالة الأولى
     $dir    = 'rtl';
-    $agency = $sales->first()?->agency;
+    $agency = $agency ?? $sales->first()?->agency;
 
     // ألوان الثيم (افتراضي عند غياب $colors)
     $colors = isset($colors) && is_array($colors) ? $colors : [
@@ -50,86 +50,69 @@
 <head>
     <meta charset="UTF-8">
     <title>تقرير المبيعات</title>
-    <style>
-        :root{
-            --primary-100: {{ $colors['primary-100'] ?? '209,250,229' }}; /* rgb */
-            --primary-500: {{ $colors['primary-500'] ?? '16,185,129'  }}; /* rgb */
-            --primary-600: {{ $colors['primary-600'] ?? '5,150,105'   }}; /* rgb */
+<style>
+    :root{
+        --primary-100: {{ $colors['primary-100'] ?? '209,250,229' }};
+        --primary-500: {{ $colors['primary-500'] ?? '16,185,129'  }};
+        --primary-600: {{ $colors['primary-600'] ?? '5,150,105'   }};
+        --border:#e5e7eb; --muted:#6b7280; --heading:#111827;
+        --grid:#111; /* حدود الجدول داكنة مثل الحسابات */
+    }
 
-            --border: #e5e7eb;
-            --muted: #6b7280;
-            --heading: #111827;
-        }
+    @page { size: A4 landscape; margin: 6mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-        @page { size: A4; margin: 14mm 10mm; }        /* نعتمد الهامش من CSS فقط */
-        * { box-sizing: border-box; }
+    body { font-family: DejaVu Sans, Tahoma, Arial, sans-serif; color:#111827; line-height:1.55; font-size:13px; margin:0; }
+    h1,h2,h3 { margin:0 0 10px; color:var(--heading); font-weight:800; }
+    .muted { color: var(--muted); font-size:12px; }
+    .hr { border:0; border-top: 2px solid var(--border); margin: 10px 0; }
 
-        html, body { margin:0; padding:0; }           /* ألغِ أي هوامش افتراضية */
-        body { font-family: DejaVu Sans, Tahoma, Arial, sans-serif; color:#111827; line-height: 1.55; font-size: 13px; }
-        h1,h2,h3 { margin:0 0 10px; color: var(--heading); font-weight: 800; }
-        .muted { color: var(--muted); font-size: 12px; }
-        .hr { border:0; border-top: 2px solid var(--border); margin: 10px 0; }
+    .invoice-head {
+        text-align:center; padding:10px 0 12px;
+        border-bottom:3px solid rgb(var(--primary-600)); margin-bottom:14px;
+    }
+    .brand { display:flex; align-items:center; justify-content:center; gap:12px; }
+    .brand img { height:48px; width:auto; }
+    .brand .name { font-size:20px; font-weight:800; color:#111827; }
 
-        /* الهيدر: شعار + اسم الوكالة */
-        .invoice-head {
-            text-align: center;
-            padding: 10px 0 12px;
-            border-bottom: 3px solid rgb(var(--primary-600));
-            margin-bottom: 14px;
-        }
-        .brand { display:flex; align-items:center; justify-content:center; gap:12px; }
-        .brand img { height: 48px; width:auto; }
-        .brand .name { font-size: 20px; font-weight:800; color: #111827; }
+    .title { text-align:center; margin-top:6px; }
+    .title h2 { margin:0; font-size:20px; color:#111827; }
 
-        .title { text-align:center; margin-top: 6px; }
-        .title h2 { margin:0; font-size: 20px; color: #111827; }
-        .title .muted { margin-top: 2px; }
-        /* غلاف يضمن ألا يتجاوز المحتوى عرض الصفحة بعد الهوامش: 210mm - 10 - 10 = 190mm */
-        .page { max-width: 190mm; margin: 0 auto; }
+    /* جدول مطابق لتقرير الحسابات */
+    table{
+      table-layout:fixed; width:100%; border-collapse:collapse;
+      border:0.6pt solid var(--grid);
+    }
+    th,td{
+      font-size:9px;  padding:3px 4px; line-height:1.3;
+      text-align:right; vertical-align:top;
+      white-space:normal;            /* لا تقسيم لكل حرف */
+      word-break:normal;             /* لا تكسر العربية */
+      overflow-wrap:break-word;      /* اسم طويل فقط */
+      border:0.5pt solid var(--grid);
+    }
+thead th{
+  font-size:8px;                /* أصغر */
+  line-height:1.2;               /* يقلل ارتفاع الخلية */
+  padding:2px 3px;               /* حواف أقل */
+  white-space:normal;            /* يسمح بكسر السطر */
+  word-break:keep-all;           /* يحافظ على الكلمات العربية */
+  border-top:0.6pt solid var(--grid);
+  border-bottom:0.6pt solid var(--grid);
+}
+    tbody tr:nth-child(even){ background:#fcfcfc; }
 
-        table { width:100%; border-collapse:collapse; margin-top:8px; table-layout: fixed; } /* يمنع تمدد الأعمدة */
-        th,td {
-            border:1px solid var(--border);
-            padding:6px 8px;
-            font-size:12px;
-            text-align:right;
-            word-break: break-word;     /* يكسر النصوص الطويلة */
-            overflow-wrap: anywhere;    /* يكسر الأرقام/الروابط */
-        }
+    .section {
+        margin:14px 0 8px; padding:6px 10px;
+        border-inline-start:4px solid rgb(var(--primary-600));
+        background: rgba(var(--primary-100), .1);
+        font-weight:700; color:#111827;
+    }
+    .card { position:relative; border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:12px; background:#fff; }
+    .card:before{ content:""; position:absolute; inset-inline-start:0; top:0; bottom:0; width:4px; background:rgb(var(--primary-600)); border-radius:8px 0 0 8px; }
+    .footer-note { margin-top:10px; text-align:center; font-size:11px; color:var(--muted); }
+</style>
 
-        .blue { color:#2563eb; }
-        .green{ color:#16a34a; }
-        .red  { color:#dc2626; }
-
-        .section {
-            margin: 14px 0 8px;
-            padding: 6px 10px;
-            border-inline-start: 4px solid rgb(var(--primary-600));
-            background: rgba(var(--primary-100), .1);
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .card {
-            position: relative;
-            border:1px solid var(--border);
-            border-radius:8px;
-            padding:10px;
-            margin-bottom:12px;
-            background: #fff;
-            overflow: hidden;           /* امنع أي تجاوز عرضي من العناصر الداخلية */
-        }
-        .card:before{
-            content:"";
-            position:absolute;
-            inset-inline-start:0; top:0; bottom:0;
-            width:4px;
-            background: rgb(var(--primary-600));
-            border-radius:8px 0 0 8px;
-        }
-
-        .footer-note { margin-top: 10px; text-align: center; font-size: 11px; color: var(--muted); }
-    </style>
 </head>
 <body>
 
@@ -154,42 +137,45 @@
     {{-- جدول المبيعات --}}
     <div class="card">
         <div class="section">قائمة العمليات</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>التاريخ</th>
-                    <th>الموظف</th>
-                    <th>نوع الخدمة</th>
-                    <th>المزود</th>
-                    <th>حساب العميل</th>
-                    <th>المرجع</th>
-                    <th>PNR</th>
-                    <th>العميل عبر</th>
-                    <th>طريقة/حالة الدفع</th>
-                    <th>المبلغ ({{ $currency }})</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($sales as $sale)
-                    <tr>
-                        <td>{{ optional($sale->created_at)->format('Y-m-d') ?? '-' }}</td>
-                        <td>{{ $sale->user->name ?? '-' }}</td>
-                        <td>{{ $sale->service->label ?? '-' }}</td>
-                        <td>{{ $sale->provider->name ?? '-' }}</td>
-                        <td>{{ $sale->customer->name ?? '-' }}</td>
-                        <td>{{ $sale->reference ?? '-' }}</td>
-                        <td>{{ $sale->pnr ?? '-' }}</td>
-                        <td>{{ $pretty($sale->customer_via) }}</td>
-                        <td>{{ $pretty($sale->payment_method) }}</td>
-                        <td class="green" style="text-align:left;">{{ number_format((float)$sale->usd_sell, 2) }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="10" class="muted" style="text-align:center;">لا توجد بيانات</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+{{-- بعد — استبدل الجسم الجدولي فقط بـ: --}}
+@php
+  $statusMap = [
+    'paid'=>'مدفوع','unpaid'=>'غير مدفوع','issued'=>'تم الإصدار','reissued'=>'أعيد إصداره',
+    'refunded'=>'تم الاسترداد','canceled'=>'ملغي','pending'=>'قيد الانتظار','void'=>'ملغي نهائي',
+    'Refund-Full'=>'Refund-Full','Refund-Partial'=>'Refund-Partial','Issued'=>'Issued'
+  ];
+  $nf = fn($v)=>number_format((float)$v,2,'.',',');
+@endphp
+
+<table>
+  <thead>
+    <tr>
+      @foreach($fields as $f)
+        <th>{{ $headers[$f] ?? $f }}</th>
+      @endforeach
+    </tr>
+  </thead>
+  <tbody>
+    @forelse($sales as $sale)
+      <tr>
+        @foreach($fields as $f)
+          @php $val = data_get($sale, $f); @endphp
+          <td class="text-right">
+            @switch($formats[$f] ?? null)
+              @case('money')  {{ $nf($val) }} {{ $sale->agency->currency ?? 'USD' }} @break
+              @case('date')   {{ $val ? \Carbon\Carbon::parse($val)->format('Y-m-d H:i') : '—' }} @break
+              @case('status') {{ $statusMap[$val] ?? ($val ?? '—') }} @break
+              @default        {{ is_scalar($val) ? $val : (is_array($val)?json_encode($val,JSON_UNESCAPED_UNICODE):'—') }}
+            @endswitch
+          </td>
+        @endforeach
+      </tr>
+    @empty
+      <tr><td colspan="{{ count($fields) }}" style="text-align:center;">لا توجد بيانات</td></tr>
+    @endforelse
+  </tbody>
+</table>
+
     </div>
 
     {{-- الملخص الإجمالي --}}

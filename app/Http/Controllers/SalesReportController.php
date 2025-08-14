@@ -11,6 +11,7 @@ use App\Models\Customer;
 use App\Models\Provider;
 use App\Models\DynamicListItem;
 use Illuminate\Support\Facades\Auth;
+use App\Tables\SalesTable; 
 
 class SalesReportController extends Controller
 {
@@ -20,85 +21,93 @@ class SalesReportController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function downloadPdf(Request $request)
-    {
-        $agency = auth()->user()->agency;
-        $agencyIds = $agency->parent_id
-            ? [$agency->id]
-            : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
+public function downloadPdf(Request $request)
+{
+    $user   = Auth::user();
+    $agency = $user->agency;
 
-        // بناء الاستعلام مع جميع الفلاتر
-        $query = Sale::with(['user', 'service', 'provider', 'account', 'customer'])
-            ->whereIn('agency_id', $agencyIds);
+    $agencyIds = $agency->parent_id
+        ? [$agency->id]
+        : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        // إضافة تصفية المستخدم - عرض مبيعات المستخدم الحالي فقط إلا إذا كان أدمن
-        $currentUser = auth()->user();
-        $isAgencyAdmin = $currentUser->hasRole('agency-admin');
-        
-        if (!$isAgencyAdmin) {
-            $query->where('user_id', $currentUser->id);
-        }
+    $query = Sale::query()
+        ->with([
+            'user:id,name','provider:id,name','service:id,label','customer:id,name',
+            'agency:id,name,currency',
+        ])
+        ->whereIn('agency_id', $agencyIds);
 
-        $query->when($request->search, function ($q) use ($request) {
-                $term = '%' . $request->search . '%';
-                $q->where(function ($q2) use ($term) {
-                    $q2->where('beneficiary_name', 'like', $term)
-                        ->orWhere('reference', 'like', $term)
-                        ->orWhere('pnr', 'like', $term);
-                });
-            })
-            ->when($request->serviceTypeFilter, function ($q) use ($request) {
-                $q->where('service_type_id', $request->serviceTypeFilter);
-            })
-            ->when($request->providerFilter, function ($q) use ($request) {
-                $q->where('provider_id', $request->providerFilter);
-            })
-            ->when($request->accountFilter, function ($q) use ($request) {
-                $q->where('customer_id', $request->accountFilter);
-            })
-            ->when($request->pnrFilter, function ($q) use ($request) {
-                $q->where('pnr', 'like', '%' . $request->pnrFilter . '%');
-            })
-            ->when($request->referenceFilter, function ($q) use ($request) {
-                $q->where('reference', 'like', '%' . $request->referenceFilter . '%');
-            })
-            ->when($request->startDate, function ($q) use ($request) {
-                $q->whereDate('created_at', '>=', $request->startDate);
-            })
-            ->when($request->endDate, function ($q) use ($request) {
-                $q->whereDate('created_at', '<=', $request->endDate);
-            })
-            ->orderBy(
-                $request->sortField ?? 'created_at',
-                $request->sortDirection ?? 'desc'
-            );
 
-        // جلب النتائج وحساب الإجمالي
-        $sales = $query->get();
-        $totalSales = $sales->sum('usd_sell');
+    // فلترة باسم الموظف مثل تقرير الحسابات
+    $query->when($request->search, function($q) use ($request){
+        $t = '%'.$request->search.'%';
+        $q->whereHas('user', fn($u)=>$u->where('name','like',$t));
+    });
 
-        // توليد HTML لعرض PDF
-        $html = view('reports.sales-full-pdf', [
-            'sales' => $sales,
-            'totalSales' => $totalSales,
-            'agency' => $agency,
-            'startDate' => $request->startDate,
-            'endDate' => $request->endDate,
-        ])->render();
+    $query
+        ->when($request->serviceTypeFilter, fn($q)=>$q->where('service_type_id',$request->serviceTypeFilter))
+        ->when($request->providerFilter,    fn($q)=>$q->where('provider_id',$request->providerFilter))
+        ->when($request->accountFilter,     fn($q)=>$q->where('customer_id',$request->accountFilter))
+        ->when($request->pnrFilter, function($q) use ($request){
+            $t = trim($request->pnrFilter);
+            $q->where('pnr','like', mb_strlen($t)>=3 ? "%$t%" : "$t%");
+        })
+        ->when($request->referenceFilter, function($q) use ($request){
+            $t = trim($request->referenceFilter);
+            $q->where('reference','like', mb_strlen($t)>=3 ? "%$t%" : "$t%");
+        })
+        // التاريخ على sale_date مع whereBetween للاستفادة من الفهرس
+        ->when($request->startDate && $request->endDate,
+            fn($q)=>$q->whereBetween('sale_date', [$request->startDate, $request->endDate]))
+        ->when($request->startDate && !$request->endDate,
+            fn($q)=>$q->where('sale_date','>=',$request->startDate))
+        ->when(!$request->startDate && $request->endDate,
+            fn($q)=>$q->where('sale_date','<=',$request->endDate))
+        ->orderBy($request->sortField ?? 'created_at', $request->sortDirection ?? 'desc');
 
-        // إنشاء وإرجاع ملف PDF
-        return response(
-            Browsershot::html($html)
-                ->format('A4')
-                ->noSandbox()
-                ->emulateMedia('screen')
-                ->waitUntilNetworkIdle()
-                ->pdf()
-        )->withHeaders([
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'inline; filename="sales-report.pdf"',
-                ]);
+    $sales      = $query->get();
+    $totalSales = $sales->sum('usd_sell');
+
+    // استخراج أعمدة PDF من جدول واجهة المبيعات (بدون عمود الإجراءات)
+$columns = array_values(array_filter(SalesTable::columns(true, true), function($c){
+    $k = $c['key'] ?? '';
+    return !in_array($k, ['actions','duplicatedBy.name']); // إخفاء "تم التكرار بواسطة"
+}));
+
+
+    $fields  = array_map(fn($c)=>$c['key'], $columns);
+    $headers = [];
+    $formats = [];
+    foreach ($columns as $c) {
+        $headers[$c['key']] = $c['label'] ?? $c['key'];
+        if (isset($c['format'])) $formats[$c['key']] = $c['format'];
     }
+
+    $html = view('reports.sales-full-pdf', [
+        'sales'      => $sales,
+        'totalSales' => $totalSales,
+        'agency'     => $agency,
+        'startDate'  => $request->startDate,
+        'endDate'    => $request->endDate,
+        // ⬅️ هذه هي المتغيرات المفقودة التي سببت الخطأ
+        'fields'     => $fields,
+        'headers'    => $headers,
+        'formats'    => $formats,
+    ])->render();
+
+    return response(
+        Browsershot::html($html)
+            ->format('A4')
+            ->emulateMedia('screen')
+            ->noSandbox()
+            ->waitUntilNetworkIdle()
+            ->pdf()
+    )->withHeaders([
+        'Content-Type'        => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="sales-report.pdf"',
+    ]);
+}
+
     /**
      * تحميل تقرير المبيعات بصيغة Excel.
      *
@@ -109,12 +118,28 @@ class SalesReportController extends Controller
     {
         $data = $this->prepareReportData($request);
 
-        return Excel::download(
-            new SalesReportExport([
-                'sales' => $data['sales']
-            ]),
-            'sales-' . now()->format('Y-m-d') . '.xlsx'
-        );
+$columns = array_values(array_filter(
+    \App\Tables\SalesTable::columns(true, true),
+    fn($c)=>!in_array($c['key'] ?? '', ['actions','duplicatedBy.name'])
+));
+$fields  = array_map(fn($c)=>$c['key'], $columns);
+$headers = []; $formats = [];
+foreach ($columns as $c) {
+    $headers[$c['key']] = $c['label'] ?? $c['key'];
+    if (isset($c['format'])) $formats[$c['key']] = $c['format'];
+}
+
+return Excel::download(
+    new \App\Exports\SalesReportExport(
+        sales:    $data['sales'],
+        fields:   $fields,
+        headers:  $headers,
+        formats:  $formats,
+        currency: $currency,
+    ),
+    'sales-' . now()->format('Y-m-d') . '.xlsx'
+);
+
     }
 
     /**

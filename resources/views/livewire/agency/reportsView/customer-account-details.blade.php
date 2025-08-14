@@ -1,24 +1,29 @@
 <div class="space-y-6">
     <!-- العنوان العلوي -->
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold text-[rgb(var(--primary-700))] border-b border-[rgba(var(--primary-200),0.5)] pb-2">
-            التقرير المالي لمشتريات العميل
-        </h2>
-        <div class="flex gap-2">
-            <a href="{{ route('agency.reports.customer-accounts.pdf', $customer->id) }}" target="_blank"
-                class="flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                <i class="fas fa-file-export"></i>
-                <span>تصدير التقرير</span>
-            </a>
-            <button onclick="history.back();"
-                class="group flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
-                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                <i class="fas fa-arrow-left transform transition-transform duration-300 group-hover:-translate-x-1"></i>
-                <span>رجوع</span>
-            </button>
-        </div>
+ <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-bold text-[rgb(var(--primary-700))] border-b border-[rgba(var(--primary-200),0.5)] pb-2">
+        التقرير المالي لمشتريات العميل
+    </h2>
+    <div class="flex gap-2">
+        <!-- زر الرجوع -->
+        <button onclick="history.back();"
+            class="group flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
+            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+            <i class="fas fa-arrow-left transform transition-transform duration-300 group-hover:-translate-x-1"></i>
+            <span>رجوع</span>
+        </button>
+
+        <!-- زر تنزيل PDF -->
+        <a href="{{ route('agency.reports.customer-accounts.pdf', $customer->id) }}"
+            class="group flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm hover:shadow-lg"
+            style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+            <i class="fas fa-file-pdf transform transition-transform duration-300 group-hover:scale-110"></i>
+            <span>تنزيل PDF</span>
+        </a>
     </div>
+</div>
+
+
 
     <!-- بيانات العميل -->
     <div>
@@ -56,77 +61,43 @@
                         <th class="p-3 border-b">وصف الحالة</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse ($sortedTransactions as $transaction)
-                        <tr class="hover:bg-gray-50">
-                            <td class="p-2">{{ \Carbon\Carbon::parse($transaction['date'])->format('Y-m-d') }}</td>
+               <tbody>
+@forelse ($sortedTransactions as $row)
+    <tr class="hover:bg-gray-50">
+        {{-- التاريخ --}}
+        <td class="p-2">{{ \Carbon\Carbon::parse($row['date'])->format('Y-m-d') }}</td>
 
-                            @if ($transaction['type'] == 'sale')
-                                <td class="p-2 font-medium {{ $transaction['is_refund'] ? 'text-blue-600' : 'text-red-600' }}">
-                                    @switch($transaction['data']->status)
-                                        @case('Issued') بيع - تم الإصدار @break
-                                        @case('Re-Issued') بيع - إعادة الإصدار @break
-                                        @case('Re-Route') بيع - تغيير المسار @break
-                                        @case('Refund-Full') استرداد كلي @break
-                                        @case('Refund-Partial') استرداد جزئي @break
-                                        @case('Void') ملغي نهائي @break
-                                        @case('Rejected') مرفوض @break
-                                        @case('Approved') مقبول @break
-                                        @default بيع
-                                    @endswitch
-                                </td>
+        {{-- نوع العملية مشتق من الوصف --}}
+        <td class="p-2 font-medium">
+            {{ str_starts_with($row['desc'], 'سداد') ? 'تحصيل' : 'بيع/حدث عملية' }}
+        </td>
 
-                                <td class="p-2 font-medium
-                                    @if (in_array($transaction['data']->status, ['Refund-Full', 'Refund-Partial']) ||
-                                            $transaction['data']->payment_method == 'kash') text-green-600
-                                    @elseif($transaction['data']->payment_method == 'part') text-yellow-600
-                                    @else text-gray-600 @endif">
-                                    @if (in_array($transaction['data']->status, ['Refund-Full', 'Refund-Partial']))
-                                        دفع كامل
-                                    @elseif($transaction['data']->payment_method == 'kash')
-                                        دفع كامل
-                                    @elseif($transaction['data']->payment_method == 'part')
-                                        دفع جزئي
-                                    @else
-                                        لم يدفع
-                                    @endif
-                                </td>
+        {{-- حالة الدفع كما بُنيت في الصف --}}
+        <td class="p-2 font-medium">
+            {{ $row['status'] }}
+        </td>
 
-                                <td class="p-2 text-gray-800">
-                                    @if ($transaction['is_refund'])
-                                        -{{ number_format(abs($transaction['amount']), 2) }}
-                                    @elseif($transaction['is_partial'])
-                                        {{ number_format($transaction['partial_amount'], 2) }}
-                                    @else
-                                        {{ number_format($transaction['amount'], 2) }}
-                                    @endif
-                                    {{ $currency }}
-                                </td>
+        {{-- مبلغ العملية: المدين = مبيعات، الدائن = سداد/استرداد --}}
+        <td class="p-2 text-gray-800">
+            @php
+                $amt = $row['debit'] > 0 ? $row['debit'] : $row['credit'];
+            @endphp
+            {{ number_format($amt, 2) }} {{ $currency }}
+        </td>
 
-                                <td class="p-2 text-gray-600">{{ $transaction['data']->reference ?? '—' }}</td>
-                                <td class="p-2 text-gray-600">{{ ucfirst($transaction['data']->status) }}</td>
-                            @else
-                                <td class="p-2 text-green-600 font-medium">تحصيل</td>
-                                <td class="p-2 text-green-600 font-medium">تم السداد</td>
-                                <td class="p-2 text-gray-800">
-                                    {{ number_format($transaction['amount'], 2) }} {{ $currency }}
-                                </td>
-                                <td class="p-2 text-gray-600">{{ $transaction['data']->sale->reference ?? '—' }}</td>
-                                <td class="p-2 text-gray-600">
-                                    @if (strpos($transaction['data']->note ?? '', 'رصيد الشركة') !== false)
-                                        تم خصم {{ number_format($transaction['amount'], 2) }} من رصيد الشركة
-                                    @else
-                                        {{ $transaction['data']->note ?? '—' }}
-                                    @endif
-                                </td>
-                            @endif
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center text-gray-400 p-4">لا توجد عمليات</td>
-                        </tr>
-                    @endforelse
-                </tbody>
+        {{-- المرجع غير متاح في الصف الموحد، اتركه شرطة --}}
+        <td class="p-2 text-gray-600">—</td>
+
+        {{-- وصف الحالة الكامل --}}
+        <td class="p-2 text-gray-600">{{ $row['desc'] }}</td>
+    </tr>
+@empty
+    <tr>
+        <td colspan="6" class="text-center text-gray-400 p-4">لا توجد عمليات</td>
+    </tr>
+@endforelse
+</tbody>
+
             </table>
         </div>
     </div>

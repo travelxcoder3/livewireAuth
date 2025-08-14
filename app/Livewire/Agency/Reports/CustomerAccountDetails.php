@@ -18,6 +18,156 @@ class CustomerAccountDetails extends Component
     public $collections = [];
     public $availableBalanceToPayOthers = 0;
 
+
+    private function statusArabicLabel(string $st): string
+{
+    $s = mb_strtolower(trim($st));
+    if (str_contains($s, 'refund') && str_contains($s, 'partial')) return 'استرداد جزئي';
+    if (str_contains($s, 'refund') && str_contains($s, 'full'))    return 'استرداد كلي';
+    if ($s === 'void' || str_contains($s, 'cancel'))               return 'إلغاء';
+    if ($s === 'issued' || str_contains($s, 'reissued'))           return 'تم الإصدار';
+    if ($s === 'pending' || str_contains($s, 'submit'))            return 'قيد التقديم';
+    return $st ?: '-';
+}
+private function fmtDate($dt): string
+{
+    if (!$dt) return '';
+    try { return \Carbon\Carbon::parse($dt)->format('Y-m-d H:i:s'); }
+    catch (\Throwable $e) { return (string)$dt; }
+}
+
+/**
+ * يبني نفس صفوف كشف الحساب: شراء/قيد التقديم، استرداد/إلغاء، مدفوعات مباشرة، والتحصيلات.
+ * ويعيد الإجماليات (المبيعات = مدين، المدفوعات/الاستردادات = دائن).
+ */
+private function buildRowsLikeStatement(): array
+{
+    $sales = \App\Models\Sale::with(['collections','service','customer'])
+        ->where('agency_id', Auth::user()->agency_id)
+        ->where('customer_id', $this->customer->id)
+        ->orderBy('created_at')
+        ->get();
+
+    $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
+    $void   = ['void','cancel','canceled','cancelled'];
+
+    $rows = [];
+    foreach ($sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id) as $group) {
+        $grpTs = $this->fmtDate($group->min('created_at'));
+        foreach ($group as $sale) {
+            $st          = mb_strtolower(trim($sale->status ?? ''));
+            $serviceName = (string)($sale->service->label ?? '-');
+            $benefName   = (string)($sale->beneficiary_name ?? $sale->customer->name ?? '-');
+
+            // شراء/قيد التقديم
+            if (!in_array($st, $refund, true) && !in_array($st, $void, true)) {
+                $label = ($st === 'pending' || str_contains($st, 'submit'))
+                    ? "قيد التقديم {$serviceName} لـ{$benefName}"
+                    : "شراء {$serviceName} لـ{$benefName}";
+                $rows[] = [
+                    'date'=>$this->fmtDate($sale->created_at),'desc'=>$label,
+                    'status'=>$this->statusArabicLabel($st),
+                    'debit'=>(float)$sale->usd_sell,'credit'=>0.0,
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>1,
+                ];
+            }
+
+            // استرداد/إلغاء
+            if (in_array($st, $refund, true) || in_array($st, $void, true)) {
+                $label = $this->statusArabicLabel($st);
+                $rows[] = [
+                    'date'=>$this->fmtDate($sale->created_at),
+                    'desc'=> "{$label} لـ{$serviceName} لـ{$benefName}",
+                    'status'=>$label,'debit'=>0.0,'credit'=>abs((float)$sale->usd_sell),
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>2,
+                ];
+            }
+
+            // مدفوعات مباشرة من العملية (amount_paid)
+            if ((float)$sale->amount_paid > 0) {
+                $statusLabel = ($sale->payment_method === 'kash' && (float)$sale->amount_paid >= (float)$sale->usd_sell)
+                    ? 'سداد كلي' : 'سداد جزئي';
+                $rows[] = [
+                    'date'=>$this->fmtDate($sale->created_at),
+                    'desc'=> "{$statusLabel} {$serviceName} لـ{$benefName}",
+                    'status'=>$statusLabel,'debit'=>0.0,'credit'=>(float)$sale->amount_paid,
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>3,
+                ];
+            }
+
+            // التحصيلات
+            foreach ($sale->collections as $col) {
+                $evt = $this->fmtDate($col->created_at ?? $col->payment_date);
+                $rows[] = [
+                    'date'=>$evt,'desc'=>"سداد من التحصيل {$serviceName} لـ{$benefName}",
+                    'status'=>'سداد من التحصيل','debit'=>0.0,'credit'=>(float)$col->amount,
+                    '_grp'=>$grpTs,'_evt'=>$evt,'_ord'=>4,
+                ];
+            }
+        }
+    }
+
+    // فرز موحد
+    usort($rows, fn($a,$b) => [$a['_grp'],$a['_evt'],$a['_ord']] <=> [$b['_grp'],$b['_evt'],$b['_ord']]);
+    foreach ($rows as &$r) unset($r['_grp'],$r['_evt'],$r['_ord']);
+    unset($r);
+
+    // إجماليات مثل كشف الحساب
+    $totalDebit  = array_sum(array_column($rows,'debit'));   // إجمالي المبيعات
+    $totalCredit = array_sum(array_column($rows,'credit'));  // إجمالي التحصيل + المدفوعات + الاستردادات
+    $netBalance  = max($totalDebit - $totalCredit, 0);       // المتبقي على العميل
+    return [$rows, $totalDebit, $totalCredit, $netBalance];
+}
+
+public function calculateFinancials(): array
+{
+    [$rows, $totalDebit, $totalCredit, $netBalance] = $this->buildRowsLikeStatement();
+    // نحتفظ بقيمة الرصيد المتاح السابقة كما هي
+    return [
+        'active_sales'   => $totalDebit,
+        'direct_payments'=> 0,                // لم نعد نفصلها هنا
+        'full_payments'  => 0,
+        'partial_payments'=>0,
+        'refunded_amount'=>0,
+        'net_payments'   => $totalCredit,     // كل الدائن
+        'net_balance'    => $netBalance,
+        'available_balance' => $this->availableBalanceToPayOthers,
+        'currency'       => Auth::user()->agency->currency ?? 'USD',
+        'rows'           => $rows,
+    ];
+}
+
+/** لم نعد نحتاج prepareTransactions */
+public function prepareTransactions()
+{
+    [$rows] = $this->buildRowsLikeStatement();
+    // نحولها لمجموعة مرتبة تُعرض في الجدول
+    return collect($rows);
+}
+
+public function render()
+{
+    $accountNumber = Customer::where('agency_id',$this->customer->agency_id)
+        ->orderBy('created_at')->pluck('id')->search($this->customer->id) + 1;
+
+    $financials        = $this->calculateFinancials();
+    $sortedTransactions= collect($financials['rows']); // نفس صفوف كشف الحساب
+
+    return view('livewire.agency.reportsView.customer-account-details', [
+        'accountNumber' => $accountNumber,
+        'activeSales'   => $financials['active_sales'],
+        'directPayments'=> 0,
+        'fullPayments'  => 0,
+        'partialPayments'=>0,
+        'refundedAmount'=> 0,
+        'netPayments'   => $financials['net_payments'],
+        'netBalance'    => $financials['net_balance'],
+        'availableBalanceToPayOthers' => $financials['available_balance'],
+        'currency'      => $financials['currency'],
+        'sortedTransactions' => $sortedTransactions,
+    ]);
+}
+
     public function mount($id)
     {
         $this->customerId = $id;
@@ -84,171 +234,9 @@ class CustomerAccountDetails extends Component
         $this->availableBalanceToPayOthers = max(0, $this->availableBalanceToPayOthers - $usedForOthers);
     }
 
-    public function calculateFinancials()
-    {
-        $currency = Auth::user()->agency->currency ?? 'USD';
-        Log::channel('customer_accounts')->info('[calculateFinancials] بدء حساب التحصيلات', ['customer_id' => $this->customerId]);
 
-        // 1. حساب إجمالي المبيعات النشطة
-        $activeSales = $this->sales->whereNotIn('status', ['Void'])->sum('usd_sell');
-        Log::debug('إجمالي المبيعات النشطة', ['amount' => $activeSales, 'currency' => $currency]);
 
-        // 2. حساب المدفوعات المباشرة
-        $directPayments = $this->collections->sum('amount');
-        Log::debug('المدفوعات المباشرة (التحصيلات)', [
-            'amount' => $directPayments,
-            'count' => $this->collections->count(),
-            'details' => $this->collections->pluck('amount', 'id')
-        ]);
 
-        // 3. حساب المدفوعات الكاملة (kash)
-        $fullPayments = $this->sales
-            ->where('payment_method', 'kash')
-            ->whereNotIn('status', ['Refund-Full', 'Refund-Partial'])
-            ->sum('usd_sell');
 
-        Log::debug('المدفوعات الكاملة (kash)', [
-            'amount' => $fullPayments,
-            'sales' => $this->sales->where('payment_method', 'kash')->pluck('usd_sell', 'id')
-        ]);
-
-        // 4. حساب المدفوعات الجزئية والاستردادات
-        $partialPayments = 0;
-        $validRefunds = 0;
-        $groupedSales = $this->sales->groupBy(function ($sale) {
-            return $sale->sale_group_id ?? $sale->id;
-        });
-
-        Log::debug('عدد مجموعات البيع', ['count' => $groupedSales->count()]);
-
-        foreach ($groupedSales as $groupId => $group) {
-            $totalPaid = 0;
-            $totalRefunded = 0;
-
-            foreach ($group as $sale) {
-                if ($sale->payment_method == 'part' && !in_array($sale->status, ['Refund-Full', 'Refund-Partial'])) {
-                    $totalPaid += $sale->amount_paid ?? 0;
-                }
-
-                if (in_array($sale->status, ['Refund-Full', 'Refund-Partial'])) {
-                    $totalRefunded += abs($sale->usd_sell); // نستخدم القيمة المطلقة
-                }
-            }
-
-            Log::debug("معالجة مجموعة البيع {$groupId}", [
-                'total_paid' => $totalPaid,
-                'total_refunded' => $totalRefunded,
-                'net_payment' => max($totalPaid - $totalRefunded, 0)
-            ]);
-
-            if ($totalRefunded > 0) {
-                if ($totalRefunded >= $totalPaid) {
-                    // استرداد كامل - لا نضيف أي شيء للتحصيلات
-                    $validRefunds += $totalPaid;
-                    $partialPayments += 0;
-                    Log::debug("استرداد كامل للمجموعة {$groupId} - تم إلغاء كامل المبلغ المدفوع");
-                } else {
-                    // استرداد جزئي - نضيف الفرق فقط
-                    $partialPayments += ($totalPaid - $totalRefunded);
-                    $validRefunds += $totalRefunded;
-                    Log::debug("استرداد جزئي للمجموعة {$groupId} - تم خصم الجزء المسترد");
-                }
-            } else {
-                // لا يوجد استرداد - نضيف المبلغ كاملاً
-                $partialPayments += $totalPaid;
-                Log::debug("لا يوجد استرداد للمجموعة {$groupId} - تم إضافة كامل المبلغ");
-            }
-        }
-        // 5. حساب الإجماليات النهائية
-        $netPayments = $directPayments + $fullPayments + $partialPayments;
-        $netBalance = max($activeSales - $netPayments, 0);
-        $totalRefundedAmount = $this->sales
-            ->whereIn('status', ['Refund-Full', 'Refund-Partial'])
-            ->sum('usd_sell');
-
-        Log::info('النتائج النهائية', [
-            'active_sales' => $activeSales,
-            'direct_payments' => $directPayments,
-            'full_payments' => $fullPayments,
-            'partial_payments' => $partialPayments,
-            'total_refunded' => $totalRefundedAmount,
-            'valid_refunds' => $validRefunds,
-            'net_payments' => $netPayments,
-            'net_balance' => $netBalance,
-            'calculation' => "{$directPayments} + {$fullPayments} + {$partialPayments} = {$netPayments}"
-        ]);
-
-        return [
-            'active_sales' => $activeSales,
-            'direct_payments' => $directPayments,
-            'full_payments' => $fullPayments,
-            'partial_payments' => $partialPayments,
-            'refunded_amount' => $totalRefundedAmount,
-            'valid_refunds' => $validRefunds,
-            'net_payments' => $netPayments,
-            'net_balance' => $netBalance,
-            'available_balance' => $this->availableBalanceToPayOthers,
-            'currency' => $currency
-        ];
-    }
-    public function prepareTransactions()
-    {
-        $transactions = collect();
-
-        // إضافة عمليات البيع
-        foreach ($this->sales as $sale) {
-            $transactions->push([
-                'created_at' => $sale->created_at,
-                'date' => $sale->sale_date,
-                'type' => 'sale',
-                'data' => $sale,
-                'amount' => $sale->usd_sell,
-                'is_refund' => in_array($sale->status, ['Refund-Full', 'Refund-Partial']),
-                'is_partial' => $sale->payment_method == 'part',
-                'partial_amount' => $sale->amount_paid ?? 0,
-            ]);
-        }
-
-        // إضافة عمليات التحصيل
-        foreach ($this->collections as $collection) {
-            $transactions->push([
-                'created_at' => $collection->created_at,
-                'date' => $collection->payment_date,
-                'type' => 'collection',
-                'data' => $collection,
-                'amount' => $collection->amount,
-                'is_refund' => false,
-                'is_partial' => false,
-                'partial_amount' => 0,
-            ]);
-        }
-
-        // ترتيب العمليات حسب وقت حدوثها
-        return $transactions->sortBy('created_at');
-    }
-
-    public function render()
-    {
-        $accountNumber = \App\Models\Customer::where('agency_id', $this->customer->agency_id)
-            ->orderBy('created_at')
-            ->pluck('id')
-            ->search($this->customer->id) + 1;
-
-        $financials = $this->calculateFinancials();
-        $sortedTransactions = $this->prepareTransactions();
-
-        return view('livewire.agency.reportsView.customer-account-details', [
-            'accountNumber' => $accountNumber,
-            'activeSales' => $financials['active_sales'],
-            'directPayments' => $financials['direct_payments'],
-            'fullPayments' => $financials['full_payments'],
-            'partialPayments' => $financials['partial_payments'],
-            'refundedAmount' => $financials['refunded_amount'],
-            'netPayments' => $financials['net_payments'],
-            'netBalance' => $financials['net_balance'],
-            'availableBalanceToPayOthers' => $financials['available_balance'],
-            'currency' => $financials['currency'],
-            'sortedTransactions' => $sortedTransactions,
-        ]);
-    }
+    
 }

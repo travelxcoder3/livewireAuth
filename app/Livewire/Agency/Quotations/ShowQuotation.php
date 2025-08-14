@@ -85,13 +85,15 @@ class ShowQuotation extends Component
     }
     public function save()
     {
-       $this->validate([
+      $this->validate([
             'quotationDate' => 'required|date',
             'taxRate' => 'numeric|min:0|max:100',
             'services' => 'array|min:1',
             'services.*.price' => 'numeric|min:0',
             'terms' => 'array',
-            'terms.*' => 'string|max:500',
+            // إمّا بدون حد، أو حد كبير:
+            // 'terms.*' => 'string',
+            'terms.*' => 'string|max:5000',
         ]);
 
 

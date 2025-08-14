@@ -262,3 +262,7 @@ Route::get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice
 
 
 
+// routes/web.php
+Route::get('agency/reports/customer-accounts/{id}/pdf',
+    \App\Http\Controllers\Agency\Reports\CustomerAccountPdfController::class
+)->name('agency.reports.customer-accounts.pdf');
