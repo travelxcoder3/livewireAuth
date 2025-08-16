@@ -1,5 +1,5 @@
 <div>
-<div class="flex flex-col h-screen overflow-hidden">
+<div class="flex flex-col min-h-[100dvh]">
     <!-- المحتوى القابل للتمرير -->
     <div class="flex-1 overflow-y-auto">
         <div class="bg-white rounded-xl shadow-md min-h-full flex flex-col p-6">
@@ -154,7 +154,7 @@
 
             <!-- زر التعديل -->
             @can('agency.profile.edit')
-            <div class="flex justify-end mt-6 pb-4">
+            <div class="flex justify-end mt-6 pb-24 md:pb-4">
                <x-primary-button wire:click="startEditing">
                     تعديل البيانات
                 </x-primary-button>
@@ -276,9 +276,11 @@
 
 <!-- تحسين واجهة المستخدم -->
 <style>
-    html, body {
-        height: 100%;
-        overflow: hidden;
+    @media (min-width: 768px){
+        html, body { height:100%; overflow:hidden; }
+    }
+    @media (max-width: 767px){
+        html, body { height:auto; overflow:auto; }
     }
     ::-webkit-scrollbar {
         width: 8px;

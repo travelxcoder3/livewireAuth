@@ -148,16 +148,16 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
     Route::get('/sales/report/pdf', [\App\Http\Controllers\Agency\ReportController::class, 'salesPdf'])
         ->name('sales.report.pdf');
     // تقرير Excel
-    Route::get('/excel', function (\Illuminate\Http\Request $request) {
-        $fields = $request->input('fields');
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+   Route::get('/excel', function (\Illuminate\Http\Request $request) {
+    $fields    = $request->input('fields');
+    $startDate = $request->input('start_date');
+    $endDate   = $request->input('end_date');
 
-        return Excel::download(
-            new \App\Exports\SalesExport($fields, $startDate, $endDate),
-            'sales-report.xlsx'
-        );
-    })->name('sales.report.excel');
+    return Excel::download(
+        new \App\Exports\SalesExport($fields, $startDate, $endDate),
+        'sales-report.xlsx'
+    );
+})->name('sales.report.excel');
     Route::get('/sales/report-preview', function () {
         return view('livewire.sales.report-preview');
     })->name('sales.report.preview');
