@@ -20,7 +20,7 @@
     <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
-            إدارة الحسابات
+            مراجعة الحسابات
         </h2>
         <div class="flex items-center gap-2">
             <label class="text-sm font-semibold text-gray-700">الإجمالي:</label>
