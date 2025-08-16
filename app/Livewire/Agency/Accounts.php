@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\Provider;
@@ -23,7 +24,7 @@ class Accounts extends Component
     public $editingId = null;
 
     /** فلاتر/فرز */
-    public $search = '';
+    public $employeeSearch = '';
     public $serviceTypes = [];
     public $providers = [];
     public $sortField = 'created_at';
@@ -42,14 +43,13 @@ class Accounts extends Component
 
     /** فاتورة فردية */
     public bool $showInvoiceModal = false;
-    /** نخزّن بيانات العملية ككائن بسيط (ليس موديل) لتجنّب Hydration */
-    public $selectedSale = null;
+    public $selectedSale = null; // كائن بسيط لتفادي Hydration
     public float $taxAmount = 0.0;
     public bool  $taxIsPercent = true;
     public string $invoiceStep = 'tax';
     public ?int $currentInvoiceId = null;
     public array $invoiceTotals = ['base' => 0.0, 'tax' => 0.0, 'net' => 0.0];
-    public bool $isCreditNote = false; // NEW
+    public bool $isCreditNote = false;
 
     /** فاتورة مجمّعة */
     public $selectAll = false;
@@ -72,16 +72,16 @@ class Accounts extends Component
     ];
 
     protected $queryString = [
-        'search' => ['except' => ''],
+        'employeeSearch'    => ['except' => ''],
         'serviceTypeFilter' => ['except' => ''],
-        'providerFilter' => ['except' => ''],
-        'accountFilter' => ['except' => ''],
-        'startDate' => ['except' => ''],
-        'endDate' => ['except' => ''],
-        'pnrFilter' => ['except' => ''],
-        'referenceFilter' => ['except' => ''],
-        'sortField' => ['except' => 'created_at'],
-        'sortDirection' => ['except' => 'desc'],
+        'providerFilter'    => ['except' => ''],
+        'accountFilter'     => ['except' => ''],
+        'startDate'         => ['except' => ''],
+        'endDate'           => ['except' => ''],
+        'pnrFilter'         => ['except' => ''],
+        'referenceFilter'   => ['except' => ''],
+        'sortField'         => ['except' => 'created_at'],
+        'sortDirection'     => ['except' => 'desc'],
     ];
 
     /* ================= Helpers ================= */
@@ -93,14 +93,11 @@ class Accounts extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        return Sale::with(['service','provider','account','customer','collections'])
+        return Sale::with(['service','provider','account','customer','collections','user'])
             ->whereIn('agency_id', $agencyIds)
-            ->when($this->search, function ($q) {
-                $s = '%'.$this->search.'%';
-                $q->where(fn($qq)=>$qq
-                    ->where('beneficiary_name','like',$s)
-                    ->orWhere('reference','like',$s)
-                    ->orWhere('pnr','like',$s));
+            ->when($this->employeeSearch, function ($q) {
+                $s = '%'.$this->employeeSearch.'%';
+                $q->whereHas('user', fn($uq) => $uq->where('name','like',$s));
             })
             ->when($this->serviceTypeFilter !== '' && $this->serviceTypeFilter !== null, fn($q)=>$q->where('service_type_id', (int)$this->serviceTypeFilter))
             ->when($this->providerFilter    !== '' && $this->providerFilter    !== null, fn($q)=>$q->where('provider_id', (int)$this->providerFilter))
@@ -116,20 +113,14 @@ class Accounts extends Component
         $base   = (float) data_get($this->selectedSale, 'usd_sell', 0);
         $status = (string) data_get($this->selectedSale, 'status', '');
 
-        // عمليات مستردة = إشعار دائن وقيم سالبة
         $this->isCreditNote = in_array($status, ['Refund-Full','Refund-Partial'], true);
-        if ($this->isCreditNote) {
-            $base = -abs($base);
-        }
+        if ($this->isCreditNote) $base = -abs($base);
 
         $taxInput = round((float)$this->taxAmount, 2);
 
-        if ($this->taxIsPercent) {
-            $tax = round($base * ($taxInput / 100), 2); // يتبع إشارة الأساس تلقائياً
-        } else {
-            // مبلغ ثابت: حدد الإشارة حسب النوع
-            $tax = $this->isCreditNote ? -abs($taxInput) : abs($taxInput);
-        }
+        $tax = $this->taxIsPercent
+            ? round($base * ($taxInput / 100), 2)
+            : ($this->isCreditNote ? -abs($taxInput) : abs($taxInput));
 
         $net = $base + $tax;
         $this->invoiceTotals = compact('base','tax','net');
@@ -183,13 +174,13 @@ class Accounts extends Component
         $data['paid_total'] = $paid;
         $data['remaining']  = $rem;
 
-        $this->selectedSale     = (object)$data; // كائن بسيط
+        $this->selectedSale     = (object)$data;
         $this->taxIsPercent     = true;
         $this->taxAmount        = 0.0;
         $this->currentInvoiceId = $this->latestInvoiceIdForSale((int)$saleId);
 
         $this->invoiceStep = 'tax';
-        $this->recalcInvoiceTotals(); // يحدد $isCreditNote
+        $this->recalcInvoiceTotals();
         $this->showInvoiceModal = true;
     }
 
@@ -207,7 +198,6 @@ class Accounts extends Component
         $tax  = round((float)$this->invoiceTotals['tax'],  2);
         $net  = round((float)$this->invoiceTotals['net'],  2);
 
-        // نوع المستند حسب الحالة
         $prefix = $this->isCreditNote ? 'CN-' : 'INV-';
 
         $invoice = Invoice::updateOrCreate(
@@ -229,7 +219,7 @@ class Accounts extends Component
                 'tax_is_percent' => $this->taxIsPercent ? 1 : 0,
                 'tax_input'      => $this->taxIsPercent
                     ? round((float)$this->taxAmount, 2)
-                    : ($this->isCreditNote ? -abs(round((float)$this->taxAmount, 2)) : abs(round((float)$this->taxAmount, 2))),
+                    : ($this->isCreditNote ? -abs(round((float)$this->taxAmount, 2)) : abs(round((float)$this->taxAmount, 2)) ),
                 'tax_amount'     => $tax,
                 'line_total'     => $net,
             ],
@@ -237,7 +227,6 @@ class Accounts extends Component
 
         $this->currentInvoiceId = $invoice->id;
         $this->invoiceStep = 'preview';
-        // نُبقي selectedSale ككائن بسيط
     }
 
     public function editTax(): void
@@ -267,15 +256,24 @@ class Accounts extends Component
             'invoice' => $invoice,
         ])->render();
 
-        $pdfPath = 'pdfs/invoice-' . $invoice->id . '.pdf';
-        Browsershot::html($html)
-            ->format('A4')
-            ->landscape()
-            ->margins(10, 10, 10, 10)
-            ->waitUntilNetworkIdle()
-            ->save(storage_path('app/public/' . $pdfPath));
+        $pdfPath  = 'pdfs/invoice-' . $invoice->id . '.pdf';
+        $absolute = storage_path('app/public/' . $pdfPath);
+        Storage::disk('public')->makeDirectory('pdfs');
 
-        return response()->download(storage_path('app/public/' . $pdfPath));
+        $chromePath = env('BROWSERSHOT_CHROME_PATH', PHP_OS_FAMILY === 'Windows'
+            ? 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+            : '/usr/bin/google-chrome');
+
+        Browsershot::html($html)
+            ->setChromePath($chromePath)
+            ->noSandbox()
+            ->setOption('args', ['--disable-dev-shm-usage'])
+            ->format('A4')->landscape()->margins(10, 10, 10, 10)
+            ->waitUntilNetworkIdle()
+            ->timeout(60)
+            ->savePdf($absolute);
+
+        return response()->download($absolute);
     }
 
     public function downloadInvoicePdf($saleId)
@@ -381,7 +379,7 @@ class Accounts extends Component
     public function resetFilters()
     {
         $this->reset([
-            'search','serviceTypeFilter','providerFilter','accountFilter',
+            'employeeSearch','serviceTypeFilter','providerFilter','accountFilter',
             'startDate','endDate','pnrFilter','referenceFilter'
         ]);
         $this->resetPage();
@@ -393,7 +391,7 @@ class Accounts extends Component
     public function updating($name, $value)
     {
         $filters = [
-            'search','serviceTypeFilter','providerFilter','accountFilter',
+            'employeeSearch','serviceTypeFilter','providerFilter','accountFilter',
             'startDate','endDate','pnrFilter','referenceFilter','sortField','sortDirection'
         ];
         if (in_array($name, $filters, true)) {
@@ -428,9 +426,7 @@ class Accounts extends Component
         $this->bulkSubtotal = 0.0;
         foreach ($sales as $s) {
             $b = (float)$s->usd_sell;
-            if (in_array($s->status ?? '', ['Refund-Full','Refund-Partial'])) {
-                $b = -abs($b);
-            }
+            if (in_array($s->status ?? '', ['Refund-Full','Refund-Partial'])) $b = -abs($b);
             $this->bulkSubtotal += $b;
         }
 
@@ -469,15 +465,24 @@ class Accounts extends Component
 
         $html = view('invoices.bulk-invoice', ['invoice' => $invoice])->render();
 
-        $pdfPath = 'pdfs/bulk-invoice-' . $invoice->id . '.pdf';
-        Browsershot::html($html)
-            ->format('A4')
-            ->landscape()
-            ->margins(10, 10, 10, 10)
-            ->waitUntilNetworkIdle()
-            ->save(storage_path('app/public/' . $pdfPath));
+        $pdfPath  = 'pdfs/bulk-invoice-' . $invoice->id . '.pdf';
+        $absolute = storage_path('app/public/' . $pdfPath);
+        Storage::disk('public')->makeDirectory('pdfs');
 
-        return response()->download(storage_path('app/public/' . $pdfPath));
+        $chromePath = env('BROWSERSHOT_CHROME_PATH', PHP_OS_FAMILY === 'Windows'
+            ? 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+            : '/usr/bin/google-chrome');
+
+        Browsershot::html($html)
+            ->setChromePath($chromePath)
+            ->noSandbox()
+            ->setOption('args', ['--disable-dev-shm-usage'])
+            ->format('A4')->landscape()->margins(10, 10, 10, 10)
+            ->waitUntilNetworkIdle()
+            ->timeout(60)
+            ->savePdf($absolute);
+
+        return response()->download($absolute);
     }
 
     public function createBulkInvoice()
@@ -500,9 +505,7 @@ class Accounts extends Component
             $subtotal = 0.0;
             foreach ($sales as $s) {
                 $b = (float)$s->usd_sell;
-                if (in_array($s->status ?? '', ['Refund-Full','Refund-Partial'])) {
-                    $b = -abs($b);
-                }
+                if (in_array($s->status ?? '', ['Refund-Full','Refund-Partial'])) $b = -abs($b);
                 $subtotal += $b;
             }
 
@@ -532,9 +535,7 @@ class Accounts extends Component
             foreach ($sales as $s) {
                 $i++;
                 $base = (float)$s->usd_sell;
-                if (in_array($s->status ?? '', ['Refund-Full','Refund-Partial'])) {
-                    $base = -abs($base);
-                }
+                if (in_array($s->status ?? '', ['Refund-Full','Refund-Partial'])) $base = -abs($base);
 
                 if ($this->bulkTaxIsPercent) {
                     $lineTax = round($base * $percent, 2);
@@ -543,9 +544,7 @@ class Accounts extends Component
                     $lineTax = round($tax * $weight, 2);
                 }
 
-                if ($i === $count) {
-                    $lineTax = round($tax - $sumSoFar, 2);
-                }
+                if ($i === $count) $lineTax = round($tax - $sumSoFar, 2);
                 $sumSoFar += $lineTax;
 
                 $attachData[$s->id] = [

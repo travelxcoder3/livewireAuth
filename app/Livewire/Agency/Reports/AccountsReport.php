@@ -217,7 +217,7 @@ $salesQuery = Sale::query()
     ->select([
         'id','agency_id','user_id','provider_id','service_type_id','customer_id',
         'beneficiary_name','route','status','duplicated_by','sale_group_id',
-        'amount_paid','usd_sell','sale_date','service_date','pnr','reference','created_at',
+        'amount_paid','usd_sell','usd_buy','sale_date','service_date','pnr','reference','created_at',
     ])
     ->with([
         'user:id,name',
