@@ -79,13 +79,21 @@ class AccountController extends Controller
         ])->render();
 
         // توليد PDF عبر Browsershot
+        $chromePath = env('BROWSERSHOT_CHROME_PATH', PHP_OS_FAMILY === 'Windows'
+            ? 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+            : '/usr/bin/google-chrome');
+
         Browsershot::html($html)
-            ->setChromePath('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe') // استخدم Edge بدلاً من Chrome
+            ->setChromePath($chromePath)
+            ->noSandbox()
+            ->setOption('args', ['--disable-dev-shm-usage'])
             ->format('A4')
             ->landscape()
             ->waitUntilNetworkIdle()
             ->timeout(60)
             ->savePdf($pdfPath);
+
+        return response()->download($pdfPath)->deleteFileAfterSend();
 
         return response()->download($pdfPath)->deleteFileAfterSend();
     }

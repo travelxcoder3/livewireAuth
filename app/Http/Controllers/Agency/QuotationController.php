@@ -37,18 +37,23 @@ class QuotationController extends Controller
     {
       
         $html = $this->view($quotation)->render();
+    $file = storage_path('app/public/quotation_' . $quotation->quotation_number . '.pdf');
 
-        $file = storage_path('app/public/quotation_' . $quotation->quotation_number . '.pdf');
+    $chromePath = env('BROWSERSHOT_CHROME_PATH', PHP_OS_FAMILY === 'Windows'
+        ? 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+        : '/usr/bin/google-chrome');
 
-        Browsershot::html($html)
-            ->setChromePath('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe')
-            ->format('A4')
-            ->margins(10,10,10,10)
-            ->emulateMedia('screen')
-            ->waitUntilNetworkIdle()
-            ->timeout(60)
-            ->savePdf($file);
+    Browsershot::html($html)
+        ->setChromePath($chromePath)
+        ->noSandbox()
+        ->setOption('args', ['--disable-dev-shm-usage'])
+        ->format('A4')
+        ->margins(10,10,10,10)
+        ->emulateMedia('screen')
+        ->waitUntilNetworkIdle()
+        ->timeout(60)
+        ->savePdf($file);
 
-        return response()->download($file)->deleteFileAfterSend();
+    return response()->download($file)->deleteFileAfterSend();
     }
 }

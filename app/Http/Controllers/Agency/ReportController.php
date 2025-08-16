@@ -64,8 +64,14 @@ class ReportController extends Controller
         'fields' => $fields
     ])->render();
 
+     $chromePath = env('BROWSERSHOT_CHROME_PATH', PHP_OS_FAMILY === 'Windows'
+        ? 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+        : '/usr/bin/google-chrome');
+
     Browsershot::html($html)
-        ->setChromePath('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe')
+        ->setChromePath($chromePath)
+        ->noSandbox()
+        ->setOption('args', ['--disable-dev-shm-usage'])
         ->format('A4')
         ->landscape()
         ->timeout(60)
