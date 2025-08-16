@@ -38,8 +38,8 @@
 
     <!-- فلاتر -->
     <div class="bg-white rounded-xl shadow-md p-4">
-    <div class="grid md:grid-cols-4 gap-4">
-        {{-- بحث باسم الموظف --}}
+        <div class="grid md:grid-cols-4 gap-4">
+  {{-- بحث باسم الموظف --}}
         <x-input-field
             name="employee"
             label="اسم الموظف"
@@ -49,37 +49,34 @@
             fieldClass="{{ $fieldClass }}"
         />
 
-        <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter"
-            :options="$serviceTypes->pluck('label', 'id')->toArray()"
-            placeholder="جميع أنواع الخدمات" containerClass="relative" />
+            <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter" :options="$serviceTypes->pluck('label', 'id')->toArray()"
+                placeholder="جميع أنواع الخدمات" containerClass="relative" />
 
-        <x-select-field label="المزود" name="provider" wireModel="providerFilter"
-            :options="$providers->pluck('name', 'id')->toArray()"
-            placeholder="جميع المزودين" containerClass="relative" />
+            <x-select-field label="المزود" name="provider" wireModel="providerFilter" :options="$providers->pluck('name', 'id')->toArray()"
+                placeholder="جميع المزودين" containerClass="relative" />
 
-        <x-select-field label="الحساب" name="account" wireModel="accountFilter"
-            :options="$customers->pluck('name', 'id')->toArray()"
-            placeholder="جميع الحسابات" containerClass="relative" />
+            <x-select-field label="الحساب" name="account" wireModel="accountFilter" :options="$customers->pluck('name', 'id')->toArray()"
+                placeholder="جميع الحسابات" containerClass="relative" />
 
-        <div class="relative mt-1">
-            <input type="date" name="start_date" id="start_date" wire:model.live="startDate" wire:change="$refresh"
-                placeholder=" " class="peer {{ $fieldClass }}" />
-            <label for="start_date" class="{{ $labelClass }}">من تاريخ</label>
+            <div class="relative mt-1">
+                <input type="date" name="start_date" id="start_date" wire:model.live="startDate" wire:change="$refresh"
+                    placeholder=" " class="peer {{ $fieldClass }}" />
+                <label for="start_date" class="{{ $labelClass }}">من تاريخ</label>
+            </div>
+
+            <div class="relative mt-1">
+                <input type="date" name="end_date" id="end_date" wire:model.live="endDate" wire:change="$refresh"
+                    placeholder=" " class="peer {{ $fieldClass }}" />
+                <label for="end_date" class="{{ $labelClass }}">إلى تاريخ</label>
+            </div>
+
+            <x-input-field name="pnr" label="PNR" wireModel="pnrFilter" placeholder="بحث بـ PNR"
+                containerClass="relative" fieldClass="{{ $fieldClass }}" />
+
+            <x-input-field name="reference" label="المرجع" wireModel="referenceFilter" placeholder="بحث بالمرجع"
+                containerClass="relative" fieldClass="{{ $fieldClass }}" />
         </div>
 
-        <div class="relative mt-1">
-            <input type="date" name="end_date" id="end_date" wire:model.live="endDate" wire:change="$refresh"
-                placeholder=" " class="peer {{ $fieldClass }}" />
-            <label for="end_date" class="{{ $labelClass }}">إلى تاريخ</label>
-        </div>
-
-        <x-input-field name="pnr" label="PNR" wireModel="pnrFilter" placeholder="بحث بـ PNR"
-            containerClass="relative" fieldClass="{{ $fieldClass }}" />
-
-        <x-input-field name="reference" label="المرجع" wireModel="referenceFilter" placeholder="بحث بالمرجع"
-            containerClass="relative" fieldClass="{{ $fieldClass }}" />
-    </div>
-</div>
         <div class="flex flex-col md:flex-row justify-end items-center gap-2 mt-3">
             <button wire:click="resetFilters"
                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
