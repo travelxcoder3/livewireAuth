@@ -76,46 +76,58 @@ $rows = $sales->map(function($customer, $i) {
             <label class="{{ $labelClass }}">إلى تاريخ</label>
         </div>
 
-        <div class="col-span-1 md:col-span-4 flex justify-end gap-2 mt-2">
-        @can('collection.details.view')
-        <x-primary-button
-            href="{{ route('agency.collections.all') }}"
-            class="inline-block"
-            gradient
-        >
-            إظهار جميع التحصيلات
-        </x-primary-button>
+        <div class="col-span-1 md:col-span-4 mt-2">
+  <!-- موبايل: شبكة 2x2 -->
+  <div class="md:hidden grid grid-cols-2 gap-2 w-full">
+    @can('collection.details.view')
+    <x-primary-button href="{{ route('agency.collections.all') }}" class="w-full text-xs" gradient>
+      إظهار جميع التحصيلات
+    </x-primary-button>
+    <x-primary-button href="{{ route('agency.customer-credit-balances') }}" class="w-full text-xs" gradient>
+      إظهار جميع المديونية
+    </x-primary-button>
+    <x-primary-button href="{{ route('agency.customer-accounts') }}" class="w-full text-xs col-span-2" gradient>
+      عرض جميع حسابات العملاء
+    </x-primary-button>
+    @endcan
+    <button wire:click="resetFilters"
+      class="w-full text-xs bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded shadow col-span-2">
+      إعادة تعيين الفلاتر
+    </button>
+  </div>
 
+  <!-- ديسكتوب/تابلت: صف يمين -->
+  <div class="hidden md:flex justify-end flex-wrap gap-2">
+    @can('collection.details.view')
+    <x-primary-button href="{{ route('agency.collections.all') }}" class="text-sm" gradient>
+      إظهار جميع التحصيلات
+    </x-primary-button>
+    <x-primary-button href="{{ route('agency.customer-credit-balances') }}" class="text-sm" gradient>
+      إظهار جميع المديونية
+    </x-primary-button>
+    <x-primary-button href="{{ route('agency.customer-accounts') }}" class="text-sm" gradient>
+      عرض جميع حسابات العملاء
+    </x-primary-button>
+    @endcan
+    <button wire:click="resetFilters"
+      class="text-sm bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded shadow">
+      إعادة تعيين الفلاتر
+    </button>
+  </div>
+</div>
 
-
-        
-        <x-primary-button
-            href="{{ route('agency.customer-credit-balances') }}"
-            class="inline-block"
-            gradient
-        >
-            إظهار جميع المديونية
-        </x-primary-button>
-
-
-<x-primary-button
-    href="{{ route('agency.customer-accounts') }}"
-    class="inline-block"
-    gradient
->
-    عرض جميع حسابات العملاء
-</x-primary-button>
-@endcan
-
-
-            <button wire:click="resetFilters" class="bg-gray-100 hover:bg-gray-200 text-sm px-4 py-1.5 rounded shadow">
-                إعادة تعيين الفلاتر
-            </button>
+<!-- جدول التحصيلات -->
+<div class="col-span-1 md:col-span-4 mt-4">
+  <div class="bg-white rounded-xl shadow-md">
+    <div class="overflow-x-auto w-full">
+      <div class="inline-block min-w-full align-middle">
+        <!-- امنع الانضغاط على الموبايل ثم اسمح بالتمدد على الشاشات الأكبر -->
+        <div class="min-w-[1100px] md:min-w-0">
+          <x-data-table :rows="$rows" :columns="$columns" />
         </div>
+      </div>
     </div>
-
-    <!-- جدول التحصيلات -->
-    <x-data-table :rows="$rows" :columns="$columns" />
-
+  </div>
+</div>
      
 </div>
