@@ -1036,7 +1036,7 @@ class Index extends Component
 
         $sale = Sale::findOrFail($this->editingSale);
 
-        if ($sale->created_at->diffInHours(now()) >= 3) {
+        if ($sale->created_at->diffInHours(now()) >= 72) {
             $this->addError('general', 'لا يمكن تعديل العملية بعد مرور 3 ساعات.');
             return;
         }
