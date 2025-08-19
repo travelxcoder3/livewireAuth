@@ -19,10 +19,8 @@ class AccountController extends Controller
         $user = Auth::user();
         $agency = $user->agency;
         $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account'])
-            ->where('agency_id', $agency->id)
-            ->when(!$user->hasRole('agency-admin'), function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
+            ->where('agency_id', $agency->id);
+
         // فلترة التاريخ
         if ($request->filled('start_date')) {
             $query->whereDate('sale_date', '>=', $request->start_date);
@@ -105,12 +103,12 @@ class AccountController extends Controller
         $fields = $request->has('fields') ? $request->fields : null;
         $filters = $request->only(['start_date', 'end_date', 'service_type', 'provider', 'account', 'pnr', 'reference']);
 
-        $user = Auth::user();
-        $isAgencyAdmin = $user->hasRole('agency-admin');
+        // $user = Auth::user();
+        // $isAgencyAdmin = $user->hasRole('agency-admin');
 
-        if (!$isAgencyAdmin) {
-            $filters['user_id'] = $user->id;
-        }
+        // if (!$isAgencyAdmin) {
+        //     $filters['user_id'] = $user->id;
+        // }
 
         return Excel::download(new AccountsExport($fields, $filters), 'accounts_report_' . now()->format('Y-m-d') . '.xlsx');
     }

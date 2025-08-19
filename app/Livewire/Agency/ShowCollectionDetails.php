@@ -6,9 +6,12 @@ use Livewire\Component;
 use App\Models\Sale;
 use Illuminate\Support\Facades\Auth;
 use App\Models\DynamicListItemSub;
+use Livewire\WithPagination;
+use App\Models\Collection;
 
 class ShowCollectionDetails extends Component
 {
+    use WithPagination;
     public $sale;
     public $services = [];
     public $saleId;
@@ -379,6 +382,19 @@ protected function linkRefundToSourceSales($collection, $amountUsed)
             'note' => $collection->note . " | تم السداد من: " . $sourceNotes
         ]);
     }
+}
+
+
+public function getCustomerCollectionsProperty()
+{
+    return Collection::with('user','sale')
+        ->whereHas('sale', fn($q) =>
+            $q->where('agency_id', Auth::user()->agency_id)
+              ->where('customer_id', $this->sale->customer_id)
+        )
+        ->orderByDesc('payment_date')
+        ->orderByDesc('id')
+        ->paginate(10);
 }
 
 }

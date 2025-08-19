@@ -200,6 +200,10 @@
         use App\Tables\EmployeeTable;
         $columns = EmployeeTable::columns();
     @endphp
+    @if($showWallet && $walletUserId)
+    <livewire:agency.employee-wallet :userId="$walletUserId" wire:key="emp-wallet-{{ $walletUserId }}" />
+@endif
+
     <x-data-table :rows="$employees" :columns="$columns" />
 
     <style>

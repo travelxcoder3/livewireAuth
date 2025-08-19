@@ -12,7 +12,6 @@
 @endphp
 
 <div class="space-y-6">
-    {{-- عنوان الصفحة + أدوات التقرير (محسّن للجوال) --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div class="flex items-center justify-between">
             <h2 class="text-xl sm:text-2xl font-bold"
@@ -20,7 +19,7 @@
                 تقرير الحسابات
             </h2>
 
-            {{-- زر مختصر للجوال --}}
+            {{-- زر الجوال (<640px) --}}
             <div class="sm:hidden">
                 <div x-data="{ open:false }" class="relative">
                     <x-primary-button type="button" @click="open=!open"
@@ -42,7 +41,7 @@
             </div>
         </div>
 
-        {{-- إجمالي + زر سطح مكتب --}}
+        {{-- إجمالي + زر سطح المكتب (>=640px) --}}
         <div class="flex items-center gap-3 sm:justify-end">
             <div class="flex items-center gap-2">
                 <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
@@ -50,13 +49,14 @@
                        class="bg-gray-100 border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm w-28 sm:w-32 text-center">
             </div>
 
-            <div wire:ignore.self x-data="{ open:false }" class="relative hidden sm:block">
+            {{-- زر سطح المكتب --}}
+            <div x-data="{ open:false }" class="relative hidden sm:flex sm:items-center">
                 <x-primary-button type="button" @click="open=!open"
                     padding="px-4 py-2" fontSize="text-sm" class="hover:shadow-lg"
                     icon="<i class='fas fa-file-export'></i>">
                     <span class="hidden md:inline">تصدير التقرير</span>
                     <i class="fas fa-chevron-down text-xs transition-transform duration-200"
-                    :class="{ 'rotate-180': open }"></i>
+                       :class="{ 'rotate-180': open }"></i>
                 </x-primary-button>
 
                 <div x-show="open" @click.away="open=false" x-transition
@@ -79,22 +79,21 @@
             <x-input-field name="search" label="بحث بالموظف" wireModel="search" placeholder="اكتب اسم الموظف..."
                 containerClass="relative" fieldClass="{{ $fieldClass }}" />
 
-            <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter"   
+            <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter"
                 :options="$serviceTypes->pluck('label','id')->toArray()" placeholder="جميع أنواع الخدمات"
                 containerClass="relative" />
 
-<x-select-field
-    label="المزود" wireModel="providerFilter"
-    :options="$providerOptions" optionsWire="providerOptions"
-    searchKey="providerSearch" selectedLabelWire="providerLabel"
-    placeholder="جميع المزودين" />
+            <x-select-field
+                label="المزود" wireModel="providerFilter"
+                :options="$providerOptions" optionsWire="providerOptions"
+                searchKey="providerSearch" selectedLabelWire="providerLabel"
+                placeholder="جميع المزودين" />
 
-<x-select-field
-    label="حساب العميل" wireModel="accountFilter"
-    :options="$customerOptions" optionsWire="customerOptions"
-    searchKey="customerSearch" selectedLabelWire="customerLabel"
-    placeholder="حساب العميل" />
-
+            <x-select-field
+                label="حساب العميل" wireModel="accountFilter"
+                :options="$customerOptions" optionsWire="customerOptions"
+                searchKey="customerSearch" selectedLabelWire="customerLabel"
+                placeholder="حساب العميل" />
 
             <div class="flex flex-col gap-1">
                 <label for="start_date" class="text-sm font-semibold text-gray-600">من تاريخ</label>

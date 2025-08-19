@@ -15,13 +15,18 @@ class AddCustomer extends Component
 
     public $images = [];
     public $deletedImageIds = [];
+    public $showWallet = false;
+    public $walletCustomerId = null;
+    // AddCustomer.php
+protected $listeners = ['wallet-closed' => 'closeWallet'];
+
 
     public function deleteExistingImage($id)
     {
         $this->deletedImageIds[] = $id;
     }
 
-
+    
 
     public $name, $email, $phone, $address, $has_commission = false;
 
@@ -222,7 +227,17 @@ public function removeImage($index)
 }
 
 
+public function openWallet($id)
+{
+    $this->walletCustomerId = (int) $id;
+    $this->showWallet = true;
+}
 
+public function closeWallet()
+{
+    $this->showWallet = false;
+    $this->walletCustomerId = null;
+}
 
 
 }

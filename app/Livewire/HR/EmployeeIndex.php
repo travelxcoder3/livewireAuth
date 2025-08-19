@@ -14,7 +14,8 @@ class EmployeeIndex extends Component
 {
     use WithPagination;
 
-    protected $listeners = ['refreshEmployeeList' => '$refresh'];
+    protected $listeners = ['refreshEmployeeList' => '$refresh',
+                            'closeEmployeeWalletFromParent' => 'closeWallet',];
 
     // فلترة البحث (للواجهة الرئيسية فقط)
     public $search = '';
@@ -36,6 +37,9 @@ class EmployeeIndex extends Component
     // القوائم المنسدلة
     public $departments = [];
     public $positions = [];
+
+    public bool $showWallet = false;
+    public ?int $walletUserId = null;
 
     public function mount()
     {
@@ -221,5 +225,17 @@ class EmployeeIndex extends Component
             'departments' => $this->departments,
             'positions' => $this->positions
         ]);
+    }
+
+    public function openWallet($id)
+    {
+        $this->walletUserId = (int)$id;
+        $this->showWallet = true;
+    }
+
+    public function closeWallet()
+    {
+        $this->showWallet = false;
+        $this->walletUserId = null;
     }
 }

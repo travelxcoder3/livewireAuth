@@ -41,21 +41,27 @@ class CustomerTable
 
            
             [
-                'key' => 'actions',
-                'label' => 'إجراءات',
-                'actions' => [
-                    [
-                        'type' => 'edit',
-                        'label' => 'تعديل',
-                        'icon' => 'fa fa-edit',
-                        'can' => auth()->user()->can('customers.edit'),
-                        'method' => 'edit',
-                        'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold',
-                    ]
-
-                    
-                ]
+            'key' => 'actions',
+            'label' => 'إجراءات',
+            'actions' => [
+                [
+                'type' => 'edit',
+                'label' => 'تعديل',
+                'icon' => 'fa fa-edit',
+                'can' => auth()->user()->can('customers.edit'),
+                'method' => 'edit',
+                'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold',
+                ],
+                [
+                'type'   => 'custom',
+                'label'  => 'رصيد',
+                'icon'   => 'fa fa-wallet',
+                'method' => 'openWallet',
+                 'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold',
+                ],
             ]
+            ]
+
         ];
     }
 } 

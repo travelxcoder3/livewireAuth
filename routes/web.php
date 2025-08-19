@@ -70,6 +70,12 @@ use App\Http\Controllers\Agency\QuotationController;
 use App\Livewire\Agency\Statements\CustomersList;
 use App\Livewire\Agency\Statements\CustomerStatement; 
 use App\Http\Controllers\Agency\StatementPdfController;
+
+use App\Livewire\Agency\Reports\ProviderAccounts;
+use App\Livewire\Agency\Reports\ProviderAccountDetails;
+use App\Http\Controllers\Agency\Reports\ProviderAccountPdfController;
+
+use App\Livewire\Agency\CommissionPolicies;
 Route::get('/', fn() => view('welcome'));
 
 Route::get('/login', Login::class)->name('login');
@@ -191,6 +197,24 @@ Route::get('/statements/customers/{customer}/pdf', [StatementPdfController::clas
         ->name('collections.all');
     Route::get('/collections/{sale}', \App\Livewire\Agency\ShowCollectionDetails::class)
         ->name('collection.details');
+   Route::get('/employee-collections', \App\Livewire\Agency\EmployeeCollectionsIndex::class)
+    ->name('employee-collections');
+
+
+  Route::get('/collections-employee/{sale}', \App\Livewire\Agency\ShowCollectionDetailsEmployee::class)
+    ->name('collection.details.employee');
+
+
+
+
+// ضع الثابت قبل الديناميكي
+Route::get('/employee-collections/all', \App\Livewire\Agency\EmployeeCollectionsAll::class)
+    ->name('employee-collections.all');
+
+// قيّد {user} حتى لا يلتقط "all"
+Route::get('/employee-collections/{user}', \App\Livewire\Agency\EmployeeCollectionsShow::class)
+    ->whereNumber('user')
+    ->name('employee-collections.show');
     // ============================
     // 🧑‍💼 قسم التسلسلات داخل لوحة الوكالة
     // ============================
@@ -243,6 +267,16 @@ Route::get('/statements/customers/{customer}/pdf', [StatementPdfController::clas
         Route::get('reports/employee-sales/print/{sale}', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'printPdf'])
             ->name('.reports.employee-sales.sale-pdf');
         
+         Route::get('/provider-accounts', ProviderAccounts::class)
+        ->name('reports.provider-accounts');
+        Route::get('provider-accounts/{id}/details', ProviderAccountDetails::class)
+            ->name('reports.provider-accounts.details');
+            Route::get('reports/provider-accounts/{id}/pdf', \App\Http\Controllers\Agency\Reports\ProviderAccountPdfController::class)
+            ->name('reports.provider-accounts.pdf');
+                
+
+        Route::get('/commission-policies', CommissionPolicies::class)
+            ->name('commission-policies');
         
 
     });

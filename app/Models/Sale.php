@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
+// app/Models/Sale.php
+use Illuminate\Support\Facades\DB;
+use App\Services\AutoSettlementService;
 class Sale extends Model
 {
     protected $fillable = [
@@ -122,6 +125,21 @@ class Sale extends Model
     return $this->belongsTo(User::class, 'duplicated_by');
 }
 
+
+protected static function booted()
+{
+    static::saved(function (Sale $sale) {
+        DB::afterCommit(function () use ($sale) {
+            $customer = $sale->customer()->with(['agency','wallet'])->first();
+            if (!$customer || !$customer->wallet || $customer->wallet->balance <= 0) return;
+
+            app(AutoSettlementService::class)->autoSettle(
+                $customer,
+                auth()->user()->name ?? 'System'
+            );
+        });
+    });
+}
 
 
 }

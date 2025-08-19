@@ -17,6 +17,8 @@ use App\Models\Beneficiary;
 use App\Tables\SalesTable;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use App\Models\CommissionProfile;
+use App\Models\CommissionEmployeeRateOverride;
 
 class Index extends Component
 {
@@ -505,7 +507,19 @@ class Index extends Component
         $this->totalProfit   = $totalProfit;
 
         $target = (float) (Auth::user()->main_target ?? 0);
-        $rate   = 0.17;
+
+        $profile = \App\Models\CommissionProfile::where('agency_id', $agency->id)
+                    ->where('is_active', true)->first();
+
+        $effectiveRatePct = $profile
+            ? optional(
+                \App\Models\CommissionEmployeeRateOverride::where('profile_id', $profile->id)
+                    ->where('user_id', $user->id)->first()
+            )->rate ?? (float) ($profile->employee_rate ?? 0)
+            : 0;
+
+        $rate = ((float) $effectiveRatePct) / 100; // يحوّل من % إلى كسر
+
 
         $this->userCommission    = max(($totalProfit - $target) * $rate, 0);
         $this->userCommissionDue = max(($totalCollectedProfit - $target) * $rate, 0);
@@ -778,7 +792,7 @@ class Index extends Component
             $this->amount_paid = 0;
         }
 
-        Sale::create([
+       $sale = Sale::create([
             'beneficiary_name' => $this->beneficiary_name,
             'sale_date' => $this->sale_date,
             'service_type_id' => $this->service_type_id,
@@ -807,6 +821,14 @@ class Index extends Component
             'expected_payment_date' => $this->expected_payment_date,
             'sale_group_id' => $this->sale_group_id,
         ]);
+
+        // ⬇️ تحديث محفظة الموظف بالعمولة المتوقعة لشهر العملية
+        app(\App\Services\EmployeeWalletService::class)
+            ->postExpectedCommission($sale);
+                    if ($this->customer_id) {
+                    app(\App\Services\CustomerCreditService::class)
+                        ->autoDepositToWallet((int) $this->customer_id, Auth::user()->agency_id, 'sales-auto');
+                }
 
         if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
             $this->amount_paid = 0;
@@ -1067,6 +1089,15 @@ class Index extends Component
             'updated_by' => Auth::id(),
         ]);
 
+        if ($sale->customer_id) {
+            app(\App\Services\CustomerCreditService::class)
+                ->autoDepositToWallet((int) $sale->customer_id, Auth::user()->agency_id, 'sales-auto');
+        }
+
+        $sale->refresh();
+        app(\App\Services\EmployeeWalletService::class)
+            ->upsertExpectedCommission($sale);
+    
         $this->resetForm();
         $this->editingSale = null;
         $this->successMessage = 'تم تحديث العملية بنجاح';

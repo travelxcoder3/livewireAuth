@@ -126,4 +126,10 @@ class Agency extends Model
         return $this->hasMany(\App\Models\Invoice::class);
     }
 
+    public function commissionProfiles()
+    {
+        return $this->hasMany(\App\Models\CommissionProfile::class, 'agency_id');
+    }
+
+
 }
