@@ -6,7 +6,8 @@ use App\Models\Sale;
 use Livewire\Component;
 use App\Models\Customer;
 use Illuminate\Support\Facades\Auth;
-
+use App\Models\CommissionProfile;
+use App\Models\CommissionEmployeeRateOverride;
 class Commissions extends Component
 {
     public $month;
@@ -67,37 +68,53 @@ class Commissions extends Component
     public function loadEmployeeCommissions() // تغيير اسم الدالة
     {
         $agencyId = Auth::user()->agency_id;
-        $users = User::where('agency_id', $agencyId)->get();
 
-        $this->employeeCommissions = $users->map(function ($user) {
-            $sales = Sale::where('user_id', $user->id)
-                ->whereMonth('sale_date', $this->month)
-                ->whereYear('sale_date', $this->year)
-                ->get();
+// ...
+$users = User::where('agency_id', $agencyId)->get();
 
-            $totalProfit = $sales->sum('sale_profit');
-            $collectedProfit = $sales->filter(function ($sale) {
-                $totalRequired = $sale->usd_sell;
-                $collected = $sale->amount_paid + $sale->collections->sum('amount');
-                return $collected >= $totalRequired;
-            })->sum('sale_profit');
+// حمّل بروفايل الوكالة ونِسب الاستثناءات مرّة واحدة
+$profile = CommissionProfile::where('agency_id', $agencyId)
+            ->where('is_active', true)->first();
 
-            $target = $user->main_target ?? 0;
-            $rate = 0.17; // نسبة العمولة ثابتة 17%
+$overrideMap = $profile
+    ? CommissionEmployeeRateOverride::where('profile_id', $profile->id)->pluck('rate','user_id')
+    : collect();
 
-            $expectedCommission = max(($totalProfit - $target) * $rate, 0);
-            $earnedCommission = max(($collectedProfit - $target) * $rate, 0);
+$this->employeeCommissions = $users->map(function ($user) use ($profile, $overrideMap) {
+    $sales = Sale::where('user_id', $user->id)
+        ->whereMonth('sale_date', $this->month)
+        ->whereYear('sale_date', $this->year)
+        ->get();
 
-            return [
-                'user' => $user->name,
-                'target' => $target,
-                'rate' => $rate * 100,
-                'total_profit' => $totalProfit,
-                'collected_profit' => $collectedProfit,
-                'expected_commission' => round($expectedCommission, 2),
-                'earned_commission' => round($earnedCommission, 2),
-            ];
-        })->toArray();
+    $totalProfit = $sales->sum('sale_profit');
+    $collectedProfit = $sales->filter(function ($sale) {
+        $totalRequired = $sale->usd_sell;
+        $collected = $sale->amount_paid + $sale->collections->sum('amount');
+        return $collected >= $totalRequired;
+    })->sum('sale_profit');
+
+    $target = $user->main_target ?? 0;
+
+    // النسبة من قاعدة البيانات: استثناء المستخدم ثم النسبة العامة للبروفايل
+    $effectiveRatePct = $profile
+        ? ($overrideMap[$user->id] ?? (float) ($profile->employee_rate ?? 0))
+        : 0;
+    $rate = ((float)$effectiveRatePct) / 100.0;
+
+    $expectedCommission = max(($totalProfit - $target) * $rate, 0);
+    $earnedCommission = max(($collectedProfit - $target) * $rate, 0);
+
+    return [
+        'user' => $user->name,
+        'target' => $target,
+        'rate' => $effectiveRatePct, // أعرضها كنسبة %
+        'total_profit' => $totalProfit,
+        'collected_profit' => $collectedProfit,
+        'expected_commission' => round($expectedCommission, 2),
+        'earned_commission' => round($earnedCommission, 2),
+    ];
+})->toArray();
+
     }
 
     public function render()

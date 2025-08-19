@@ -216,6 +216,10 @@
             </div>
         </div>
 
+
+
+        
+
         <!-- نافذة تعديل المبلغ -->
         @if ($showEditModal)
             <div class="fixed inset-0 z-50 bg-black/10 flex items-start justify-center pt-10 backdrop-blur-sm">
@@ -363,6 +367,47 @@
                 </div>
             </div>
         @endif
+<!-- تحصيل المبالغ (لكل العميل) -->
+<div class="bg-white rounded-xl shadow-md p-6">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-bold" style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
+      تحصيل المبالغ
+    </h3>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
+      <thead class="bg-gray-100 text-gray-600">
+        <tr>
+          <th class="px-2 py-1">تاريخ التحصيل</th>
+          <th class="px-2 py-1">المبلغ المحصل</th>
+          <th class="px-2 py-1">المحصّل</th>
+          <th class="px-2 py-1">الملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @php($cols = $this->customerCollections)
+        @forelse($cols as $col)
+          @php($isAuto = str_contains((string)$col->note, 'تحصيل تلقائي'))
+          <tr class="hover:bg-gray-50 {{ $isAuto ? 'bg-emerald-50/40' : '' }}">
+            <td class="px-2 py-1 whitespace-nowrap">{{ $col->payment_date }}</td>
+            <td class="px-2 py-1 font-bold text-right">{{ number_format($col->amount, 2) }}</td>
+            <td class="px-2 py-1">{{ optional($col->user)->name ?? '-' }}</td>
+            <td class="px-2 py-1">
+              {{ $col->note ?? '-' }}
+              @if($isAuto)<span class="text-xs text-emerald-700">• تصفية تلقائية</span>@endif
+            </td>
+          </tr>
+        @empty
+          <tr><td colspan="4" class="py-4 text-center text-gray-400">لا توجد عمليات تحصيل</td></tr>
+        @endforelse
+      </tbody>
+    </table>
+    <div class="mt-2">
+      {{ $cols->links() }}
+    </div>
+  </div>
+</div>
 
       
     </div>

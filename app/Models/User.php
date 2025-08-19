@@ -90,5 +90,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\Invoice::class);
     }
+    
+    public function employeeWallet() {
+        return $this->hasOne(\App\Models\EmployeeWallet::class);
+    }
+    public function employeeWalletTransactions() {
+        return $this->hasManyThrough(
+            \App\Models\EmployeeWalletTransaction::class,
+            \App\Models\EmployeeWallet::class,
+            'user_id', 'wallet_id', 'id', 'id'
+        );
+    }
 
 }

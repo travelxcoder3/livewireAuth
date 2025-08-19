@@ -29,13 +29,25 @@ class EmployeeTable
                         'label' => 'تعديل',
                         'icon' => 'fa fa-edit',
                         'method' => 'editEmployee',
-                        'can' => auth()->user()->can('employees.edit'),
                         'showIf' => function ($row) {
                             return $row->agency_id == auth()->user()->agency_id;
                         },
-                    ]
+                    ],
+                    [
+                        // يمكنك إبقاء type = 'edit' لو الـ DataTable ينسّق حسب الـ type،
+                        // أو استعمل 'button' إن كان مدعومًا في مشروعك.
+                        'type' => 'edit',
+                        'label' => 'حساب الموظف',
+                        'icon' => 'fa fa-wallet',
+                        'method' => 'openWallet',   // تستدعي method من EmployeeIndex
+                        'can' => auth()->user()->can('employees.view'), // غيّر الصلاحية لو لزم
+                        'showIf' => function ($row) {
+                            return $row->agency_id == auth()->user()->agency_id;
+                        },
+                    ],
                 ]
             ]
+
         ];
     }
 }

@@ -1,0 +1,268 @@
+<div>
+
+@php
+    use App\Services\ThemeService;
+    $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
+    $colors = ThemeService::getCurrentThemeColors($themeName);
+@endphp
+<div>
+    <div class="space-y-6">
+
+      
+        <!-- العنوان الرئيسي -->
+        <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold"
+                style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
+                تفاصيل التحصيل
+            </h2>
+            <div class="flex justify-end mb-4">
+              <a href="{{ url()->previous() ?: route('agency.collections') }}"
+   class="flex items-center gap-2 px-4 py-2 rounded-lg border transition duration-200 text-sm font-medium
+          bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))]
+          hover:shadow-md hover:text-[rgb(var(--primary-700))]">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-180" fill="none"
+         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+    <span>رجوع</span>
+</a>
+
+            </div>
+
+        </div>
+
+        <!-- المعلومات الأساسية -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="text-lg font-bold mb-4"
+                style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
+                المعلومات الأساسية
+            </h3>
+           
+
+            <div class="grid md:grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-500">اسم العميل:</span>
+                    <span class="font-bold">{{  $sale->customer?->name ?? 'غير معروف' }}</span>
+
+                   
+
+
+                </div>
+                <div>
+                    <span class="text-gray-500">رقم الهاتف:</span>
+                    <span class="font-bold">{{ $sale->customer?->phone ?? 'غير معروف' }}</span>
+                </div>
+
+                <div class="flex items-center">
+                    <strong class="min-w-[100px] text-gray-500">الحالة:</strong>
+                    <span
+                        class="font-medium">{{ optional($sale->collections->last()?->customerType)->label ?? 'غير محدد' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- المعلومات المالية -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="text-lg font-bold mb-4"
+                style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
+                المعلومات المالية
+            </h3>
+
+            <div class="grid md:grid-cols-4 gap-4 text-sm">
+                <div class="flex items-center">
+                    <strong class="min-w-[100px] text-gray-500">نوع العميل:</strong>
+                    <span
+                        class="font-medium">{{ optional($sale->collections->last()?->customerType)->label ?? '-' }}</span>
+                </div>
+                
+                    <div class="flex items-center">
+                        <strong class="min-w-[100px] text-gray-500">نوع المديونية:</strong>
+                        <span class="font-medium">{{ optional($sale->collections->last()?->debtType)->label ?? '-' }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <strong class="min-w-[100px] text-gray-500">تجاوب العميل:</strong>
+                        <span
+                            class="font-medium">{{ optional($sale->collections->last()?->customerResponse)->label ?? '-' }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <strong class="min-w-[100px] text-gray-500">نوع الارتباط:</strong>
+                        <span
+                            class="font-medium">{{ optional($sale->collections->last()?->customerRelation)->label ?? '-' }}</span>
+                    </div>
+            </div>
+        </div>
+
+        <!-- المبيعات الأخرى لنفس العميل -->
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-bold"
+        style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
+        جميع المبيعات المرتبطة بالعميل
+    </h3>
+
+    <div class="text-sm font-bold bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+        إجمالي المديونية:
+        <span class="text-red-600">{{ number_format($this->totalDebt, 2) }}</span>
+    </div>
+</div>
+
+
+
+  <x-toast />
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
+                    <thead class="bg-gray-100 text-gray-600">
+                        <tr>
+                            <th class="px-2 py-1">اسم المستفيد</th>
+                            <th class="px-2 py-1">الخدمة</th>
+                            <th class="px-2 py-1">تاريخ البيع</th>
+                            <th class="px-2 py-1">مبلغ الخدمه </th>
+                            <th class="px-2 py-1">المتبقي </th>
+                            <th class="px-2 py-1">تاريخ السداد المتوقع</th>
+                            <th class="px-2 py-1">الموظف</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        
+                        @foreach ($customerSales as $s)
+                            @php
+                                $collected = $s->collections_total ?? 0;
+                                $paidFromSale = $s->amount_paid ?? 0;
+                                $totalPaid = $collected + $paidFromSale;
+                                $remaining = ($s->usd_sell ?? 0) - $totalPaid;
+                            @endphp
+
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-2 py-1">{{ $s->beneficiary_name ?? '-' }}</td>
+                                <td class="px-2 py-1">{{ $s->service_type_name ?? '-' }}</td>
+
+                                <td class="px-2 py-1">{{ $s->sale_date }}</td>
+                                <td class="px-2 py-1 text-green-700 font-bold">{{ $s->usd_sell }}</td>
+
+                                <td class="px-2 py-1 text-red-600 font-bold">
+                                    {{ $remaining > 0 ? number_format($remaining, 2) : '-' }}
+                                </td>
+
+                                <td class="px-2 py-1">{{ $s->expected_payment_date ?? '-' }}</td>
+                                <td class="px-2 py-1">{{ optional($s->employee)->name ?? '-' }}</td>
+                             
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+        <!-- تحصيل المبالغ -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold"
+                    style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
+                    تحصيل المبالغ
+                </h3>
+
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
+                    <thead class="bg-gray-100 text-gray-600">
+                        <tr>
+                            <th class="px-2 py-1">تاريخ التحصيل</th>
+                            <th class="px-2 py-1">المبلغ المحصل</th>
+                            <th class="px-2 py-1">المحصّل</th>
+                            <th class="px-2 py-1">الملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        @forelse($sale->collections as $col)
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-2 py-1 whitespace-nowrap">{{ $col->payment_date }}</td>
+                                <td class="px-2 py-1" style="color: rgb(var(--primary-600)); font-weight: 600;">
+                                    {{ number_format($col->amount, 2) }}</td>
+                                <td class="px-2 py-1">
+                                    {{ optional($col->user)->name ?? '-' }}
+                                </td>
+
+                                <td class="px-2 py-1">{{ $col->note ?? '-' }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="py-4 text-center text-gray-400">لا توجد عمليات تحصيل</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+
+        
+
+
+
+      
+    </div>
+
+    <style>
+        /* تأثيرات hover للجدول */
+        table tbody tr:hover {
+            background-color: rgba(var(--primary-50), 0.5);
+        }
+
+        /* تأثيرات الأزرار */
+        button[style*="background: linear-gradient"] {
+            transition: all 0.3s ease;
+        }
+
+        button[style*="background: linear-gradient"]:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(var(--primary-500), 0.2);
+            opacity: 0.9;
+        }
+
+        button[style*="background: linear-gradient"]:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* تأثيرات النوافذ المنبثقة */
+        .backdrop-blur-sm {
+            backdrop-filter: blur(5px);
+        }
+
+        /* تأثيرات حقول الإدخال */
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: rgb(var(--primary-500));
+            box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);
+            outline: none;
+        }
+
+        /* تدرجات الألوان للبطاقات */
+        .bg-\[rgb\(var\(--primary-50\)\)\] {
+            background-color: rgba(var(--primary-50), 1);
+        }
+
+        .border-\[rgb\(var\(--primary-100\)\)\] {
+            border-color: rgba(var(--primary-100), 1);
+        }
+    </style>
+    <script>
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('amountsUpdated', () => {
+                // لا حاجة لعمل أي شيء، البيانات سيتم تحديثها تلقائياً
+                console.log('تم تحديث المبالغ بنجاح');
+            });
+        });
+    </script>
+</div>
+
+
+    </div>

@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
 use App\Services\ThemeService;
+use App\Models\Sale;
+use App\Observers\SaleObserver;
+use App\Models\Collection;
+use App\Observers\CollectionObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +27,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ✅ ربط الـ Observers
+        Sale::observe(SaleObserver::class);
+        if (class_exists(Collection::class) && class_exists(CollectionObserver::class)) {
+            Collection::observe(CollectionObserver::class);
+        }
+
         // ✅ تحديث آخر نشاط للمستخدم
         if (Auth::check()) {
             Auth::user()->update(['last_activity_at' => now()]);
@@ -32,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
         try {
             view()->composer('*', function ($view) {
                 if (auth()->check()) {
-                    $theme = auth()->user()->hasRole('super-admin') 
+                    $theme = auth()->user()->hasRole('super-admin')
                         ? ThemeService::getSystemTheme()
                         : (auth()->user()->agency->theme_color ?? 'emerald');
 
@@ -44,4 +54,5 @@ class AppServiceProvider extends ServiceProvider
             Log::error('Theme provider error: ' . $e->getMessage());
         }
     }
+
 }

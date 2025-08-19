@@ -33,4 +33,15 @@ class Customer extends Model
         return $this->hasMany(CustomerImage::class);
     }
 
+   
+
+
+    // App/Models/Customer.php
+public function wallet()      { return $this->hasOne(\App\Models\Wallet::class); }
+
+// App/Models/Wallet.php
+public function customer()    { return $this->belongsTo(\App\Models\Customer::class); }
+public function transactions(){ return $this->hasMany(\App\Models\WalletTransaction::class); }
+
+
 }

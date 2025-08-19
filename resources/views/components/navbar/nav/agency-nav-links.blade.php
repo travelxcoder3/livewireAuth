@@ -148,9 +148,12 @@
                         :show="true" />
                 @endif
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
-                    <x-navbar.buttons.dropdown-link :href="route('agency.reports.employee-sales')" icon="fas fa-users" label="حسابات الموظفين"
-                        :show="true" />
+                        <x-navbar.buttons.dropdown-link :href="route('agency.reports.employee-sales')" icon="fas fa-users" label="حسابات الموظفين"
+                            :show="true" />
                 @endif
+                        <x-navbar.buttons.dropdown-link :href="route('agency.reports.provider-accounts')" icon="fas fa-users" label="حسابات المزودين"
+                            :show="true" />
+              
 
             </div>
         </div>
@@ -195,9 +198,17 @@
                     <x-navbar.buttons.dropdown-link :href="route('agency.approval-sequences')" icon="fas fa-random" label="تسلسل الموافقات"
                         :show="true" />
                 @endif
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('commissions-setup.view'))
+                              @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('commissions-setup.view'))
                     <x-navbar.buttons.dropdown-link href="{{ route('agency.commissions') }}" icon="fas fa-percentage"
                         label="تهيئة العمولات" :show="true" />
+                @endif
+                {{-- داخل dropdown-settings --}}
+                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('commission-policies.view'))
+                    <x-navbar.buttons.dropdown-link
+                        :href="route('agency.commission-policies')"
+                        icon="fas fa-percentage"
+                        label="تهيئة عمولات الموظفين"
+                        :show="true" />
                 @endif
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('policies.view'))
                     <x-navbar.buttons.dropdown-link :href="route('agency.policies')" icon="fas fa-file-contract"
@@ -210,6 +221,36 @@
             </div>
         </div>
     @endif
+    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('employee-collections.view'))
+<div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
+    <x-navbar.buttons.icon-button
+        icon="fas fa-users"
+        tooltip="تحصيلات الموظفين"
+        label="تحصيلات الموظفين"
+        href="#"
+        class="!px-2 !py-1"
+        dropdown="true"
+        :active="request()->routeIs('agency.employee-collections') || request()->routeIs('agency.employee-collections.all')"
+    />
+    <div class="dropdown-settings absolute right-0 top-full min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
+        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('employee-collections.view'))
+            <x-navbar.buttons.dropdown-link
+                :href="route('agency.employee-collections')"
+                icon="fas fa-user-friends"
+                label="تحصيلات الموظفين"
+                :show="true" />
+        @endif
+        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('employee-collections.all.view'))
+            <x-navbar.buttons.dropdown-link
+                :href="route('agency.employee-collections.all')"
+                icon="fas fa-clipboard-list"
+                label="عرض التحصيلات"
+                :show="true" />
+        @endif
+    </div>
+</div>
+@endif
+
 
     {{-- سياسات المستخدم العادي --}}
     @if ($showPoliciesLinkUser)
