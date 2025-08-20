@@ -829,6 +829,9 @@ class Index extends Component
                     app(\App\Services\CustomerCreditService::class)
                         ->autoDepositToWallet((int) $this->customer_id, Auth::user()->agency_id, 'sales-auto');
                 }
+                // بعد إنشاء السيل وقيد عمولة الموظف
+app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+
 
         if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
             $this->amount_paid = 0;
@@ -1097,6 +1100,8 @@ class Index extends Component
         $sale->refresh();
         app(\App\Services\EmployeeWalletService::class)
             ->upsertExpectedCommission($sale);
+            app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+
     
         $this->resetForm();
         $this->editingSale = null;
