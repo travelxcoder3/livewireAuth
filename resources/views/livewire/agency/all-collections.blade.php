@@ -18,110 +18,36 @@
             </a>
         </div>
     </div>
+    <div class="bg-white rounded-xl shadow p-4 grid md:grid-cols-4 gap-3 text-sm items-end relative">
 
-    <!-- حقل البحث -->
-   <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
-    <div class="relative">
-        <input type="text" wire:model.live="search"
-               placeholder="ابحث باسم المستفيد أو المبلغ أو رقم العملية..."
-               class="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[rgb(var(--primary-300))] focus:border-[rgb(var(--primary-300))] transition">
-        <div class="absolute left-3 top-2.5 text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-        </div>
-    </div>
+            <x-input-field
+                wire:key="search-{{ $filtersVersion }}"
+                wireModel="search"
+                label="بحث عام"
+                placeholder="الاسم، المبلغ، رقم العملية" />
 
-    <input type="date" wire:model.live="startDate"
-           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[rgb(var(--primary-300))] focus:border-[rgb(var(--primary-300))] transition"
-           placeholder="من تاريخ">
+            <x-date-picker name="startDate" wireModel="startDate" label="من تاريخ الإنشاء" />
+            <x-date-picker name="endDate"   wireModel="endDate"   label="إلى تاريخ الإنشاء" />
 
-    <div class="flex gap-2">
-        <input type="date" wire:model.live="endDate"
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[rgb(var(--primary-300))] focus:border-[rgb(var(--primary-300))] transition"
-               placeholder="إلى تاريخ">
-        <button type="button" wire:click="clearDateFilters"
-                class="px-3 py-2 rounded-lg border bg-white text-sm hover:shadow">
-            مسح
-        </button>
-    </div>
-</div>
-
-    {{-- عرض كجدول بدلاً من البطاقات --}}
-    @if ($sales->isEmpty())
-        <div class="bg-white rounded-xl shadow-md p-6 text-center">
-            <p class="text-gray-500 text-sm">
-                @if ($search)
-                    لا توجد نتائج مطابقة للبحث "{{ $search }}"
-                @else
-                    لا توجد عمليات بيع حتى الآن.
-                @endif
-            </p>
-        </div>
-    @else
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm text-right divide-y divide-gray-200">
-                    <thead class="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th class="px-3 py-2">المستفيد</th>
-                            <th class="px-3 py-2">الحالة</th>
-                            <th class="px-3 py-2">الإجمالي $</th>
-                            <th class="px-3 py-2">المحصل $</th>
-                            <th class="px-3 py-2">عدد التحصيلات</th>
-                            <th class="px-3 py-2">أُنشئت</th>
-                            <th class="px-3 py-2">إجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @foreach ($sales as $sale)
-                            @php
-                                $paymentStatus = $this->getPaymentStatus($sale);
-                                $total = $sale->invoice_total_true ?? $sale->usd_sell;
-                                $collected = $sale->collections->sum('amount');
-                                $count = $sale->collections->count();
-                            @endphp
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-3 py-2 font-medium text-gray-800">
-                                    {{ $sale->beneficiary_name }}
-                                </td>
-                                <td class="px-3 py-2">
-                                    <span class="text-xs px-2 py-1 rounded-full {{ $paymentStatus['color'] }}">
-                                        {{ $paymentStatus['status'] }}
-                                    </span>
-                                </td>
-                                <td class="px-3 py-2">{{ number_format($total, 2) }}</td>
-                                <td class="px-3 py-2">{{ number_format($collected, 2) }}</td>
-                                <td class="px-3 py-2">
-                                    <span class="px-2 py-1 rounded-full text-xs"
-                                          style="background-color: rgba(var(--primary-100), 0.3); color: rgb(var(--primary-700));">
-                                        {{ $count }}
-                                    </span>
-                                </td>
-                                <td class="px-3 py-2 text-gray-500">
-                                    {{ $sale->created_at->diffForHumans() }}
-                                </td>
-                                <td class="px-3 py-2">
-                                    <button wire:click="showCollectionDetails({{ $sale->id }})"
-                                        class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] underline text-sm">
-                                        عرض التفاصيل
-                                    </button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            <div class="absolute top-4 left-4">
+                <button
+                wire:click="clearDateFilters"
+                class="w-34 h-9 rounded-lg shadow text-sm font-medium
+                        bg-gray-200 hover:bg-gray-300 text-gray-800
+                        flex items-center justify-center gap-2 transition">
+                اعادة تعيين الفلاتر
+                </button>
             </div>
 
-            @if (method_exists($sales, 'links'))
-                <div class="px-4 py-3 border-t bg-gray-50">
-                    {{ $sales->links() }}
-                </div>
-            @endif
-        </div>
-    @endif
+    </div>
 
+    @php
+        use App\Tables\SalesByBeneficiaryTable;
+        $columns = SalesByBeneficiaryTable::columns();
+        $rows    = $this->rows; // من getRowsProperty()
+    @endphp
+
+    <x-data-table :rows="$rows" :columns="$columns" />
     <!-- Modal لعرض التفاصيل -->
     @if ($activeSaleId)
         @php $sale = $sales->firstWhere('id', $activeSaleId); @endphp
@@ -261,4 +187,5 @@
             </div>
         </div>
     @endif
+
 </div>

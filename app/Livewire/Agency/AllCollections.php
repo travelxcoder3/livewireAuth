@@ -17,6 +17,8 @@ class AllCollections extends Component
     // فلاتر التاريخ
     public ?string $startDate = null;
     public ?string $endDate   = null;
+    public int $filtersVersion = 0;
+
 
     public function mount()
     {
@@ -63,9 +65,11 @@ class AllCollections extends Component
                 });
             })
             // فلترة بالتاريخ على sale_date
+           // فلترة بالتاريخ على sale_date
             ->when($this->startDate, fn($q) => $q->whereDate('sale_date', '>=', $this->startDate))
             ->when($this->endDate,   fn($q) => $q->whereDate('sale_date', '<=', $this->endDate))
             ->get();
+
 
         $grouped = $rawSales->groupBy(fn ($item) => $item->sale_group_id ?? $item->id);
 
@@ -121,17 +125,47 @@ class AllCollections extends Component
             ];
         })->sortByDesc('created_at')->values();
     }
+    public function updatedSearch($value)
+{
+    $this->search = trim($value);
+    $this->resetPage();
+    $this->loadSales();
+}
+public function updatedStartDate()  { $this->resetPage(); $this->loadSales(); }
+public function updatedEndDate()    { $this->resetPage(); $this->loadSales(); }
+public function clearDateFilters()
+{
+    $this->search    = '';
+    $this->startDate = null;
+    $this->endDate   = null;
 
-    // تحديثات فورية
-    public function updatedSearch()     { $this->resetPage(); $this->loadSales(); }
-    public function updatedStartDate()  { $this->resetPage(); $this->loadSales(); }
-    public function updatedEndDate()    { $this->resetPage(); $this->loadSales(); }
+    $this->filtersVersion++;   // يجبر إعادة رسم الحقول
+    $this->resetPage();
+    $this->loadSales();
+}
 
-    public function clearDateFilters()
-    {
-        $this->startDate = null;
-        $this->endDate   = null;
-        $this->resetPage();
-        $this->loadSales();
+public function getRowsProperty()
+{
+    $map = function ($sale) {
+        $payment = $this->getPaymentStatus($sale);
+
+        return (object)[
+            'id'               => $sale->id,
+            'beneficiary_name' => $sale->beneficiary_name,
+            'status_html'      => $payment['status'], // نص فقط
+            'total'            => $sale->invoice_total_true ?? $sale->usd_sell,
+            'collected'        => (float) $sale->collections->sum('amount'),
+            'count'            => (int) $sale->collections->count(),
+            'created_human'    => $sale->created_at?->diffForHumans(),
+        ];
+    };
+
+    if (is_object($this->sales) && method_exists($this->sales, 'through')) {
+        return $this->sales->through($map);
     }
+
+    return collect($this->sales)->map($map);
+}
+
+
 }

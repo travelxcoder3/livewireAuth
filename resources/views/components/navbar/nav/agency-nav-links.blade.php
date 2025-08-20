@@ -68,13 +68,7 @@
         </div>
     @endif
 
-    {{-- التحصيل --}}
-    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.view'))
-        <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">
-            <x-navbar.buttons.icon-button icon="fas fa-hand-holding-usd" tooltip="التحصيل" label="التحصيل"
-                href="{{ route('agency.collections') }}" :active="request()->routeIs('agency.collections')" />
-        </div>
-    @endif
+   
 
     {{-- الموارد البشرية --}}
     @php

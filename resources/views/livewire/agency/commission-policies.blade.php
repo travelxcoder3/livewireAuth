@@ -282,7 +282,7 @@
         <div x-show="tab==='debt'" x-cloak class="p-4">
             <div class="grid md:grid-cols-3 gap-4">
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
-                        <x-input-field label="الأيام حتى تحويل العمولة لدَين على الموظف"
+                        <x-input-field label="الأيام حتى تحويل المتبقي من التحصيل لدَين على الموظف"
                             type="number" wireModel="daysToDebt"/>
                 </div>
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
