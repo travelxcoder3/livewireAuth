@@ -9,7 +9,7 @@ use App\Models\Customer;
 use App\Services\AutoSettlementService;
 
 use App\Models\{User, Sale, DynamicListItemSub, Wallet, WalletTransaction};
-
+use Carbon\Carbon;
 
 class EmployeeCollectionsShow extends Component
 {
@@ -28,14 +28,13 @@ class EmployeeCollectionsShow extends Component
     public $currentResponseType = null;
 
     public $remaining = 0;
-    public $paid_now = null;
-    public $pay_method = '';          // وسيلة الدفع (نقدي/حوالة/..)
+    public $paid_now = null;         // وسيلة الدفع (نقدي/حوالة/..)
     public $collector_method = null;  // طريقة التحصيل لاحتساب عمولة المُحصّل
     public $note = '';
 
     public function mount(User $user)
     {
-        $this->employee = $user;
+        $this->employee = $user->load(['department','position']);
     }
 
     public function updatingSearchCustomer(){ $this->resetPage(); }
@@ -79,15 +78,18 @@ class EmployeeCollectionsShow extends Component
             });
 
             $lastCol = $cs->flatMap->collections->sortByDesc('payment_date')->first();
+            $baseDate = $lastCol?->payment_date ?? $cs->min('sale_date'); 
+            $days = $baseDate ? Carbon::parse($baseDate)->diffInDays(now(), false) : null;
 
             return (object)[
+                'id'            => $customer?->id, 
                 'customer_id'   => $customer?->id,
                 'customer_name' => $customer?->name ?? '—',
                 'phone'         => $customer?->phone ?? '—',
                 'debt_amount'   => $debt,
                 'last_paid'     => optional($lastCol)->amount,
                 'last_paid_at'  => optional($lastCol)->payment_date,
-                'debt_age_days' => $lastCol ? now()->diffInDays($lastCol->payment_date) : null,
+                'debt_age_days' => $days !== null ? max(0, (int)$days) : null,
                 'account_type'  => $customer?->account_type ?? '-',
                 'debt_type'     => optional($lastCol?->debtType)->label ?? '-',
                 'response'      => optional($lastCol?->customerResponse)->label ?? '-',
@@ -104,7 +106,7 @@ class EmployeeCollectionsShow extends Component
         $this->currentCustomerId = $customerId;
         $this->currentCustomerName = $row->customer_name;
         $this->remaining = $row->debt_amount;
-        $this->paid_now = $row->debt_amount;
+        $this->paid_now  = null;
         $this->showPayModal = true;
     }
 
@@ -112,7 +114,6 @@ class EmployeeCollectionsShow extends Component
 {
     $this->validate([
         'paid_now'          => 'required|numeric|min:0.01|max:'.$this->remaining,
-        'pay_method'        => 'required|string|max:50',
         'collector_method'  => 'required|integer|in:1,2,3,4,5,6,7,8', // الطرق المعرفة لديك
     ]);
     DB::transaction(function () {
@@ -129,14 +130,15 @@ class EmployeeCollectionsShow extends Component
   'collector_method' => $this->collector_method,
   'paid_now' => $this->paid_now,
 ]);
-        WalletTransaction::create([
+       WalletTransaction::create([
             'wallet_id'       => $wallet->id,
             'type'            => 'deposit',
             'amount'          => $this->paid_now,
             'running_balance' => $newBalance,
             'reference'       => 'employee-collections',
-            'note'            => trim('سداد عبر تحصيلات الموظفين - طريقة: '.$this->pay_method.($this->note ? ' - '.$this->note : '')),
+            'note'            => trim('سداد عبر تحصيلات الموظفين'.($this->note ? ' - '.$this->note : '')),
         ]);
+
 
         $wallet->update(['balance' => $newBalance]);
 
@@ -159,7 +161,7 @@ app(\App\Services\AutoSettlementService::class)->autoSettle(
 
 // تحديث الواجهة بدون استخدام $this->sale (غير موجود هنا)
 $this->showPayModal = false;
-$this->reset(['paid_now','pay_method','note','currentDebtType','currentResponseType']);
+$this->reset(['paid_now','note','currentDebtType','currentResponseType']);
 $this->resetPage();          // يعيد حساب القوائم
 $this->dispatch('$refresh'); // يجبر إعادة الرندر
 session()->flash('message','تم السداد وإنشاء قيود التحصيل وتحديث آخر سداد تلقائيًا.');
@@ -178,5 +180,15 @@ session()->flash('message','تم السداد وإنشاء قيود التحصي
             'debtTypes'=>$debtTypes,
             'responseTypes'=>$responseTypes,
         ])->layout('layouts.agency')->title('تفاصيل تحصيلات: '.$this->employee->name);
+    }
+
+    public function resetFilters()
+    {
+        $this->searchCustomer = '';
+        $this->lastPayFrom    = null;
+        $this->lastPayTo      = null;
+
+        // أجبر مكونات التاريخ على مسح حالتها في الواجهة
+        $this->dispatch('filters-cleared');
     }
 }

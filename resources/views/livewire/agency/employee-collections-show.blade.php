@@ -1,65 +1,98 @@
-<div class="space-y-6">
-  <div class="bg-white rounded-xl shadow p-5">
-    <div class="flex justify-between items-start">
-      <div>
-        <h2 class="text-2xl font-bold" style="color: rgb(var(--primary-700));">تحصيلات الموظف</h2>
-        <div class="text-sm text-gray-600 mt-2">
-          <div><b>الاسم:</b> {{ $employee->name }}</div>
-          <div><b>الهاتف:</b> {{ $employee->phone ?? '-' }}</div>
-          <div><b>القسم:</b> {{ optional($employee->department)->name ?? '-' }}</div>
-          <div><b>المسمى الوظيفي:</b> {{ $employee->job_title ?? '-' }}</div>
-        </div>
-      </div>
-  <a href="{{ url()->previous() ?: route('agency.employee-collections') }}"
-   class="px-4 py-2 rounded border text-sm text-[rgb(var(--primary-700))]">رجوع</a>
 
+<div>
+<div class="space-y-6">
+<div class="bg-white rounded-xl shadow overflow-hidden">
+  <!-- رأس -->
+  <div class="flex items-center justify-between px-5 py-3">
+    <h2 class="text-xl md:text-2xl font-bold" style="color: rgb(var(--primary-700));">تفاصيل تحصيلات الموظف</h2>
+    <a href="{{ url()->previous()!=url()->current()?url()->previous():route('agency.employee-collections') }}"
+       class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm
+              border-[rgb(var(--primary-300))] text-[rgb(var(--primary-700))]
+              hover:bg-[rgb(var(--primary-50))] hover:shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      رجوع
+    </a>
+  </div>
+
+  <!-- جسم -->
+  <div class="grid md:grid-cols-4 text-sm">
+    <div class="p-4">
+      <div class="text-gray-500 mb-1">الاسم</div>
+      <div class="font-semibold text-gray-800">{{ $employee->name }}</div>
+    </div>
+
+    <div class="p-4">
+      <div class="text-gray-500 mb-1">الهاتف</div>
+      <div class="font-semibold text-gray-800">{{ $employee->phone ?? '-' }}</div>
+    </div>
+
+    <div class="p-4">
+      <div class="text-gray-500 mb-1">القسم</div>
+      <div class="font-semibold" style="color: rgb(var(--primary-700));">
+        {{ optional($employee->department)->label ?? '-' }}
+      </div>
+    </div>
+
+    <div class="p-4">
+      <div class="text-gray-500 mb-1">المسمى الوظيفي</div>
+      <div class="font-semibold" style="color: rgb(var(--primary-700));">
+        {{ optional($employee->position)->label ?? '-' }}
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="bg-white rounded-xl shadow p-4 grid md:grid-cols-4 gap-3 text-sm">
-    <x-input-field wireModel="searchCustomer" label="اسم العميل" placeholder="ابحث" />
-    <x-input-field wireModel="lastPayFrom" label="من تاريخ آخر سداد" type="date" />
-    <x-input-field wireModel="lastPayTo"   label="إلى تاريخ آخر سداد" type="date" />
-    <button wire:click="$set('searchCustomer','');$set('lastPayFrom',null);$set('lastPayTo',null)"
-            class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded">مسح الفلاتر</button>
+<div class="bg-white rounded-xl shadow p-4 grid md:grid-cols-4 gap-3 text-sm items-end relative">
+
+  <x-input-field wireModel="searchCustomer" label="اسم العميل" placeholder="ابحث" />
+
+  <x-date-picker
+      name="lastPayFrom"
+      wireModel="lastPayFrom"
+      label="من تاريخ آخر سداد"
+      placeholder="اختر التاريخ" />
+
+  <x-date-picker
+      name="lastPayTo"
+      wireModel="lastPayTo"
+      label="إلى تاريخ آخر سداد"
+      placeholder="اختر التاريخ" />
+
+  <!-- زر مسح الفلاتر بمحاذاة يمين -->
+  <div class="absolute top-4 left-4">
+    <button
+        wire:click="resetFilters"
+        class="w-34 h-9 rounded-lg shadow text-sm font-medium
+               bg-gray-200 hover:bg-gray-300 text-gray-800
+               flex items-center justify-center gap-2 transition">
+        اعادة تعيين الفلاتر
+    </button>
   </div>
 
-  <div class="bg-white rounded-xl shadow overflow-x-auto">
-    <table class="min-w-[1100px] w-full text-xs">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="p-2 text-right">العميل</th>
-          <th class="p-2 text-right">الدين</th>
-          <th class="p-2 text-right">آخر سداد</th>
-          <th class="p-2 text-right">تاريخ آخر سداد</th>
-          <th class="p-2 text-right">عمر الدين (يوم)</th>
-          <th class="p-2 text-right">نوع العميل</th>
-          <th class="p-2 text-right">نوع المديونية</th>
-          <th class="p-2 text-right">تجاوب العميل</th>
-          <th class="p-2 text-right">الارتباط</th>
-          <th class="p-2 text-right">إجراء</th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach($rows as $r)
-          <tr class="border-t">
-            <td class="p-2">{{ $r->customer_name }}</td>
-            <td class="p-2 text-red-600 font-bold">{{ number_format($r->debt_amount,2) }}</td>
-            <td class="p-2">{{ $r->last_paid ? number_format($r->last_paid,2) : '-' }}</td>
-            <td class="p-2">{{ $r->last_paid_at ?? '-' }}</td>
-            <td class="p-2">{{ $r->debt_age_days ?? '-' }}</td>
-            <td class="p-2">{{ $r->account_type }}</td>
-            <td class="p-2">{{ $r->debt_type }}</td>
-            <td class="p-2">{{ $r->response }}</td>
-            <td class="p-2">{{ $r->relation }}</td>
-            <td class="p-2">
-              <x-primary-button wire:click="openPay({{ $r->customer_id }})" class="text-xs">تسديد</x-primary-button>
-            </td>
-          </tr>
-        @endforeach
-      </tbody>
-    </table>
+</div>
+
+
+
+
+
+    </div>
+
+
+@php
+  use App\Tables\EmployeeCollectionsByCustomerTable;
+  $columns = EmployeeCollectionsByCustomerTable::columns();
+@endphp
+
+<div class="bg-white rounded-xl shadow">
+  <div class="overflow-x-auto">
+    <div class="min-w-[1100px] md:min-w-0">
+      <x-data-table :rows="$rows" :columns="$columns" />
+    </div>
   </div>
+</div>
+
 
   @if ($showPayModal)
   <div class="fixed inset-0 z-50 bg-black/10 backdrop-blur-sm flex items-start justify-center pt-10">
@@ -76,6 +109,8 @@
         <div class="border rounded-lg p-3">
           <h4 class="font-bold mb-2">تحديث حالة العميل</h4>
           <x-input-field label="اسم العميل" :disabled="true" wireModel="currentCustomerName" />
+           <x-select-field label="نوع العميل"  wireModel="currentDebtType"
+            :options="$debtTypes->pluck('label','id')->toArray()" placeholder="اختر"/>
           <x-select-field label="نوع المديونية"  wireModel="currentDebtType"
             :options="$debtTypes->pluck('label','id')->toArray()" placeholder="اختر"/>
           <x-select-field label="تجاوب العميل" wireModel="currentResponseType"
@@ -86,13 +121,20 @@
         <div class="border rounded-lg p-3">
           <h4 class="font-bold mb-2">تفاصيل السداد</h4>
           {{-- داخل القسم الثاني: السداد --}}
-<x-input-field label="المبلغ المتبقي" :disabled="true" value="{{ number_format($remaining,2) }}" />
-<x-input-field label="المبلغ المدفوع" type="number" wireModel="paid_now" />
+<x-input-field
+    label="المبلغ المتبقي"
+    wireModel="remaining"
+    :disabled="true" />
 
-{{-- وسيلة الدفع (كما كانت) --}}
-<x-select-field label="وسيلة الدفع" wireModel="pay_method"
-  :options="['cash'=>'نقدي','bank'=>'حوالة بنكية','pos'=>'نقطة بيع','online'=>'أونلاين']"
-  placeholder="اختر الوسيلة"/>
+
+<x-input-field
+    label="المبلغ المدفوع"
+    type="number"
+    wireModel="paid_now"
+    step="0.01" />
+
+
+
 
 {{-- جديد: طريقة التحصيل لاحتساب عمولة المُحصّل --}}
 <x-select-field label="طريقة التحصيل" wireModel="collector_method"
@@ -124,3 +166,4 @@
     </div>
   @endif
 </div>
+  </div>

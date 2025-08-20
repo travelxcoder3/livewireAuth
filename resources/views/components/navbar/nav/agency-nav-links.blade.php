@@ -224,9 +224,7 @@
     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('employee-collections.view'))
 <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
     <x-navbar.buttons.icon-button
-        icon="fas fa-users"
-        tooltip="تحصيلات الموظفين"
-        label="تحصيلات الموظفين"
+        icon="fas fa-hand-holding-usd" tooltip="التحصيل" label="التحصيل"
         href="#"
         class="!px-2 !py-1"
         dropdown="true"

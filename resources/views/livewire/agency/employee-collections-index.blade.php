@@ -16,13 +16,35 @@
 <div class="space-y-6">
   <h2 class="text-2xl font-bold" style="color: rgb(var(--primary-700));">تحصيلات الموظفين</h2>
 
-  <div class="bg-white rounded-xl shadow p-4 grid md:grid-cols-4 gap-3 text-sm">
-    <x-input-field wireModel="name" label="اسم الموظف" placeholder="ابحث بالاسم" />
-    <x-input-field wireModel="from" label="من تاريخ آخر تحصيل" type="date" />
-    <x-input-field wireModel="to"   label="إلى تاريخ آخر تحصيل" type="date" />
-    <button wire:click="$set('name','');$set('from',null);$set('to',null)"
-            class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded">مسح الفلاتر</button>
+ <div class="bg-white rounded-xl shadow p-4 grid md:grid-cols-4 gap-3 text-sm items-end relative">
+
+  <x-input-field wireModel="name" label="اسم الموظف" placeholder="ابحث بالاسم" />
+
+  <x-date-picker
+      name="from"
+      wireModel="from"
+      label="من تاريخ آخر تحصيل"
+      placeholder="اختر التاريخ" />
+
+  <x-date-picker
+      name="to"
+      wireModel="to"
+      label="إلى تاريخ آخر تحصيل"
+      placeholder="اختر التاريخ" />
+
+  <!-- زر مسح الفلاتر بمحاذاة اليسار -->
+  <div class="absolute top-4 left-4">
+    <button
+        wire:click="resetFilters"
+        class="w-34 h-9 rounded-lg shadow text-sm font-medium
+               bg-gray-200 hover:bg-gray-300 text-gray-800
+               flex items-center justify-center gap-2 transition">
+        اعادة تعيين الفلاتر
+    </button>
   </div>
+
+</div>
+
 
   <div class="bg-white rounded-xl shadow">
     <div class="overflow-x-auto">

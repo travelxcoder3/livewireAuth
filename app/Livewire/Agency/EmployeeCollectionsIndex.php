@@ -23,13 +23,11 @@ class EmployeeCollectionsIndex extends Component
         // اجلب كل المبيعات مع التحصيلات للوكالة
         $sales = Sale::with(['employee','collections'=>fn($q)=>$q->latest()])
             ->where('agency_id', Auth::user()->agency_id)
-            ->when($this->name, fn($q)=>$q->whereHas('employee',
-                fn($qq)=>$qq->where('name','like',"%{$this->name}%")))
-            ->when($this->from, fn($q)=>$q->whereHas('collections',
-                fn($qq)=>$qq->whereDate('payment_date','>=',$this->from)))
-            ->when($this->to, fn($q)=>$q->whereHas('collections',
-                fn($qq)=>$qq->whereDate('payment_date','<=',$this->to)))
-            ->get();
+           ->when($this->name, fn($q)=>$q->whereHas('employee',
+    fn($qq)=>$qq->where('name','like',"%{$this->name}%")))
+->get();
+
+           
 
         // تجميع حسب الموظف وحساب المتبقي من مبيعاته
         $byEmp = $sales->groupBy('user_id')->map(function($empSales){
@@ -55,7 +53,13 @@ class EmployeeCollectionsIndex extends Component
                 'last_collection_amount'=> optional($lastCol)->amount,
                 'last_collection_at'    => optional($lastCol)->payment_date,
             ];
-        })->values();
+        })->filter(function($row){
+    $ok = true;
+    if ($this->from) $ok = $ok && $row->last_payment_at >= $this->from;
+    if ($this->to)   $ok = $ok && $row->last_payment_at <= $this->to;
+    return $ok;
+})->values();
+
 
         // أضف رقم تسلسلي
         $rows = $byEmp->map(function($r,$i){ $r->index=$i+1; return $r; });
@@ -63,4 +67,13 @@ class EmployeeCollectionsIndex extends Component
         return view('livewire.agency.employee-collections-index', compact('rows'))
             ->layout('layouts.agency')->title('تحصيلات الموظفين');
     }
+
+
+    public function resetFilters()
+{
+    $this->name = '';
+    $this->from = null;
+    $this->to   = null;
+}
+
 }

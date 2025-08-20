@@ -36,13 +36,13 @@ $rows = $sales->map(function($customer, $i) {
 <div class="space-y-6">
     <!-- عنوان الصفحة -->
     <h2 class="text-xl font-bold text-gray-700 border-b pb-2" style="color: rgb(var(--primary-700));">
-        عرض التحصيلات
+        تقرير المديونيات 
     </h2>
 
     <!-- الفلاتر -->
     <div class="bg-white rounded-xl shadow-md p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="{{ $containerClass }}">
-            <input type="text" wire:model.live="search" class="{{ $fieldClass }}" placeholder="اسم العميل ">
+            <input type="text" wire:model.live="search" class="{{ $fieldClass }}" >
             <label class="{{ $labelClass }}">بحث</label>
         </div>
 
@@ -111,9 +111,10 @@ $rows = $sales->map(function($customer, $i) {
     </x-primary-button>
     @endcan
     <button wire:click="resetFilters"
-      class="text-sm bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded shadow">
-      إعادة تعيين الفلاتر
+        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
+        إعادة تعيين الفلاتر
     </button>
+
   </div>
 </div>
 

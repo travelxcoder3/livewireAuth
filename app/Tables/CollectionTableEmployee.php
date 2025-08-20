@@ -11,7 +11,7 @@ class CollectionTableEmployee
         ['key' => 'name', 'label' => 'اسم العميل'],
         [
             'key' => 'remaining_for_customer',
-            'label' => 'متبقي على العميل',
+            'label' => 'المديوينية',
             'format' => 'money',
         ],
 

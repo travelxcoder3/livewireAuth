@@ -16,7 +16,7 @@
                 تفاصيل التحصيل
             </h2>
             <div class="flex justify-end mb-4">
-              <a href="{{ url()->previous() ?: route('agency.collections') }}"
+<a href="{{ url()->previous() != url()->current() ? url()->previous() : route('agency.employee-collections.all') }}"
    class="flex items-center gap-2 px-4 py-2 rounded-lg border transition duration-200 text-sm font-medium
           bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))]
           hover:shadow-md hover:text-[rgb(var(--primary-700))]">
@@ -26,6 +26,7 @@
     </svg>
     <span>رجوع</span>
 </a>
+
 
             </div>
 
@@ -93,16 +94,22 @@
         </div>
 
         <!-- المبيعات الأخرى لنفس العميل -->
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-bold"
-        style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
-        جميع المبيعات المرتبطة بالعميل
-    </h3>
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold"
+                style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-100), 0.5); padding-bottom: 0.5rem;">
+                جميع المبيعات المرتبطة بالعميل
+            </h3>
 
-    <div class="text-sm font-bold bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
-        إجمالي المديونية:
-        <span class="text-red-600">{{ number_format($this->totalDebt, 2) }}</span>
-    </div>
+            <div class="flex items-center gap-3">
+                <span class="border-b-2 border-[rgb(var(--primary-500))] 
+                            text-[rgb(var(--primary-700))] text-xs font-semibold pb-0.5">
+                    إجمالي المديونية:
+                </span>
+                <span class="border-b-2 border-red-500 text-red-600 font-bold text-sm pb-0.5">
+                    {{ number_format($this->totalDebt, 2) }}
+                </span>
+            </div>
+
 </div>
 
 

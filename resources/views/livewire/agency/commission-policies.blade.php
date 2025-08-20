@@ -17,9 +17,15 @@
                 <div class="flex items-center gap-2">
                     <label class="text-sm text-gray-600">٪ عمولة الموظف</label>
                     <div class="relative">
-                        <input type="number" step="0.01" min="0"
-                               wire:model.debounce.300ms="employeeRate"
-                               class="border rounded-lg px-3 py-2 w-24 text-right">
+                    <x-input-field
+                        label="" labelClass="hidden"
+                        type="number"
+                        wireModel="employeeRate"
+                        containerClass="relative"
+                        fieldClass="peer rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))]"
+                        width="w-24 text-right"
+                    />
+
                         <span class="absolute inset-y-0 left-2 grid place-items-center text-gray-500 text-xs">%</span>
                     </div>
                 </div>
@@ -31,53 +37,42 @@
             </div>
         </div>
     </div>
-
-    <div class="bg-white/70 backdrop-blur rounded-2xl shadow ring-1 ring-black/5">
- <div class="flex flex-wrap gap-2 p-2">
-    <x-primary-button
-        :gradient="false" color="transparent" textColor="gray-700"
-        padding="px-3 py-2" fontSize="text-sm" rounded="rounded-xl" shadow=""
-        class="ring-1 transition"
-        x-on:click="tab='collector'"
-        x-bind:class="tab==='collector'
-            ? 'bg-[rgb(var(--primary-50))] text-[rgb(var(--primary-700))] ring-[rgb(var(--primary-200))]'
-            : 'bg-white text-gray-700 ring-gray-200'">
+<div class="bg-white/70 backdrop-blur rounded-2xl shadow ring-1 ring-black/5">
+ <div class="flex gap-4 px-3 py-2">
+    <button @click="tab='collector'"
+        class="px-2 py-1 text-sm font-semibold transition"
+        :class="tab==='collector'
+            ? 'text-[rgb(var(--primary-700))] border-b-2 border-[rgb(var(--primary-600))]'
+            : 'text-gray-500 hover:text-gray-700'">
         قواعد التحصيل
-    </x-primary-button>
+    </button>
 
-    <x-primary-button
-        :gradient="false" color="transparent" textColor="gray-700"
-        padding="px-3 py-2" fontSize="text-sm" rounded="rounded-xl" shadow=""
-        class="ring-1 transition"
-        x-on:click="tab='overrides'"
-        x-bind:class="tab==='overrides'
-            ? 'bg-[rgb(var(--primary-50))] text-[rgb(var(--primary-700))] ring-[rgb(var(--primary-200))]'
-            : 'bg-white text-gray-700 ring-gray-200'">
+    <button @click="tab='overrides'"
+        class="px-2 py-1 text-sm font-semibold transition"
+        :class="tab==='overrides'
+            ? 'text-[rgb(var(--primary-700))] border-b-2 border-[rgb(var(--primary-600))]'
+            : 'text-gray-500 hover:text-gray-700'">
         استثناءات موظفين
-    </x-primary-button>
+    </button>
 
-    <x-primary-button
-        :gradient="false" color="transparent" textColor="gray-700"
-        padding="px-3 py-2" fontSize="text-sm" rounded="rounded-xl" shadow=""
-        class="ring-1 transition"
-        x-on:click="tab='debt'"
-        x-bind:class="tab==='debt'
-            ? 'bg-[rgb(var(--primary-50))] text-[rgb(var(--primary-700))] ring-[rgb(var(--primary-200))]'
-            : 'bg-white text-gray-700 ring-gray-200'">
+    <button @click="tab='debt'"
+        class="px-2 py-1 text-sm font-semibold transition"
+        :class="tab==='debt'
+            ? 'text-[rgb(var(--primary-700))] border-b-2 border-[rgb(var(--primary-600))]'
+            : 'text-gray-500 hover:text-gray-700'">
         سياسة دين الموظف
-    </x-primary-button>
+    </button>
 
-    <x-primary-button
-        :gradient="false" color="transparent" textColor="gray-700"
-        padding="px-3 py-2" fontSize="text-sm" rounded="rounded-xl" shadow=""
-        class="ring-1 transition"
-        x-on:click="tab='sim'"
-        x-bind:class="tab==='sim'
-            ? 'bg-[rgb(var(--primary-50))] text-[rgb(var(--primary-700))] ring-[rgb(var(--primary-200))]'
-            : 'bg-white text-gray-700 ring-gray-200'">
+    <button @click="tab='sim'"
+        class="px-2 py-1 text-sm font-semibold transition"
+        :class="tab==='sim'
+            ? 'text-[rgb(var(--primary-700))] border-b-2 border-[rgb(var(--primary-600))]'
+            : 'text-gray-500 hover:text-gray-700'">
         محاكي
-    </x-primary-button>
+    </button>
+ </div>
 </div>
+
 
 
         {{-- قواعد المُحصّل العامة --}}
@@ -101,32 +96,41 @@
                                     @if($isNone)
                                         <span class="inline-flex items-center gap-2 px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs">لا ينطبق</span>
                                     @else
-                                        <select class="border rounded-lg px-2 py-2 w-full"
-                                                wire:model="collectorRules.{{ $m }}.type">
-                                            <option value="percent">نسبة %</option>
-                                            <option value="fixed">مبلغ ثابت</option>
-                                        </select>
+                                        <x-select-field
+                                            label="" labelClass="hidden"
+                                            wireModel="collectorRules.{{ $m }}.type"
+                                            :options="['percent'=>'نسبة %','fixed'=>'مبلغ ثابت']"
+                                        />
+
                                     @endif
                                 </td>
                                 <td class="px-4 py-3">
                                     @if($isNone)
                                         <input disabled class="border rounded-lg px-2 py-2 w-full bg-gray-50 text-gray-400" placeholder="—">
                                     @else
-                                        <input type="number" step="0.01" min="0"
-                                               wire:model.lazy="collectorRules.{{ $m }}.value"
-                                               class="border rounded-lg px-3 py-2 w-full text-right" placeholder="قيمة">
+                                        <x-input-field
+                                            label="" labelClass="hidden"
+                                            type="number" wireModel="collectorRules.{{ $m }}.value"
+                                            containerClass="relative"
+                                            width="w-full text-right"
+                                        />
+
                                     @endif
                                 </td>
                                 <td class="px-4 py-3">
                                     @if($isNone)
                                         <input disabled class="border rounded-lg px-2 py-2 w-full bg-gray-50 text-gray-400" placeholder="—">
                                     @else
-                                        <select class="border rounded-lg px-2 py-2 w-full"
-                                                wire:model="collectorRules.{{ $m }}.basis">
-                                            <option value="collected_amount">من المبلغ المُحصَّل</option>
-                                            <option value="net_margin">من صافي الربح</option>
-                                            <option value="employee_commission">من عمولة الموظف</option>
-                                        </select>
+                                        <x-select-field
+                                            label="" labelClass="hidden"
+                                            wireModel="collectorRules.{{ $m }}.basis"
+                                            :options="[
+                                            'collected_amount'=>'من المبلغ المُحصَّل',
+                                            'net_margin'=>'من صافي الربح',
+                                            'employee_commission'=>'من عمولة الموظف'
+                                            ]"
+                                        />
+
                                     @endif
                                 </td>
                             </tr>
@@ -162,18 +166,21 @@
                             @forelse($employeeRateOverridesRows as $i => $row)
                                 <tr>
                                     <td class="px-4 py-2">
-                                        <select wire:model="employeeRateOverridesRows.{{ $i }}.employee_id"
-                                                class="border rounded-lg px-2 py-2 w-full">
-                                            <option value="">— اختر —</option>
-                                            @foreach($employees as $e)
-                                                <option value="{{ $e->id }}">{{ $e->name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <x-select-field
+                                            label="" labelClass="hidden"
+                                            wireModel="employeeRateOverridesRows.{{ $i }}.employee_id"
+                                            :options="$employees->pluck('name','id')->toArray()"
+                                            placeholder="— اختر —"
+                                        />
+
                                     </td>
                                     <td class="px-4 py-2">
-                                        <input type="number" step="0.01" min="0"
-                                               wire:model.lazy="employeeRateOverridesRows.{{ $i }}.rate"
-                                               class="border rounded-lg px-3 py-2 w-full text-right" placeholder="مثال 12">
+                                        <x-input-field
+                                            label="" labelClass="hidden"
+                                            type="number" wireModel="employeeRateOverridesRows.{{ $i }}.rate"
+                                            width="w-full text-right"
+                                        />
+
                                     </td>
                                     <td class="px-4 py-2 text-right">
                                         <x-primary-button type="button" :gradient="false" color="#ef4444"
@@ -217,13 +224,10 @@
                             @forelse($collectorOverrideRows as $i => $row)
                                 <tr>
                                     <td class="px-4 py-2">
-                                        <select wire:model="collectorOverrideRows.{{ $i }}.employee_id"
-                                                class="border rounded-lg px-2 py-2 w-full">
-                                            <option value="">— اختر —</option>
-                                            @foreach($employees as $e)
-                                                <option value="{{ $e->id }}">{{ $e->name }}</option>
-                                            @endforeach
-                                        </select>
+                                    <x-select-field label="" labelClass="hidden"
+                                        wireModel="collectorOverrideRows.{{ $i }}.employee_id"
+                                        :options="$employees->pluck('name','id')->toArray()" placeholder="— اختر —"/>
+
                                     </td>
                                     <td class="px-4 py-2">
                                         <select wire:model="collectorOverrideRows.{{ $i }}.method"
@@ -236,24 +240,26 @@
                                         </select>
                                     </td>
                                     <td class="px-4 py-2">
-                                        <select wire:model="collectorOverrideRows.{{ $i }}.type"
-                                                class="border rounded-lg px-2 py-2 w-full">
-                                            <option value="percent">نسبة %</option>
-                                            <option value="fixed">مبلغ ثابت</option>
-                                        </select>
+                                        <x-select-field label="" labelClass="hidden"
+                                            wireModel="collectorOverrideRows.{{ $i }}.type"
+                                            :options="['percent'=>'نسبة %','fixed'=>'مبلغ ثابت']"/>
+
                                     </td>
                                     <td class="px-4 py-2">
-                                        <input type="number" step="0.01" min="0"
-                                               wire:model.lazy="collectorOverrideRows.{{ $i }}.value"
-                                               class="border rounded-lg px-3 py-2 w-full text-right" placeholder="قيمة">
+                                        <x-input-field label="" labelClass="hidden"
+                                            type="number" wireModel="collectorOverrideRows.{{ $i }}.value"
+                                            width="w-full text-right"/>
+
                                     </td>
                                     <td class="px-4 py-2">
-                                        <select wire:model="collectorOverrideRows.{{ $i }}.basis"
-                                                class="border rounded-lg px-2 py-2 w-full">
-                                            <option value="collected_amount">من المبلغ المُحصَّل</option>
-                                            <option value="net_margin">من صافي الربح</option>
-                                            <option value="employee_commission">من عمولة الموظف</option>
-                                        </select>
+                                        <x-select-field label="" labelClass="hidden"
+                                            wireModel="collectorOverrideRows.{{ $i }}.basis"
+                                            :options="[
+                                            'collected_amount'=>'من المبلغ المُحصَّل',
+                                            'net_margin'=>'من صافي الربح',
+                                            'employee_commission'=>'من عمولة الموظف'
+                                            ]"/>
+
                                     </td>
                                     <td class="px-4 py-2 text-right">
                                         <x-primary-button type="button" :gradient="false" color="#ef4444"
@@ -276,16 +282,15 @@
         <div x-show="tab==='debt'" x-cloak class="p-4">
             <div class="grid md:grid-cols-3 gap-4">
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
-                    <label class="text-sm text-gray-600">الأيام حتى تحويل العمولة لدَين على الموظف</label>
-                    <input type="number" min="0" wire:model="daysToDebt"
-                           class="mt-2 border rounded-lg px-3 py-2 w-full">
+                        <x-input-field label="الأيام حتى تحويل العمولة لدَين على الموظف"
+                            type="number" wireModel="daysToDebt"/>
                 </div>
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
-                    <label class="text-sm text-gray-600">سلوك الدين</label>
-                    <select wire:model="debtBehavior" class="mt-2 border rounded-lg px-3 py-2 w-full">
-                        <option value="deduct_commission_until_paid">خصم العمولة حتى السداد</option>
-                        <option value="hold_commission">تعليق العمولة حتى السداد</option>
-                    </select>
+                        <x-select-field label="سلوك الدين" wireModel="debtBehavior"
+                            :options="[
+                            'deduct_commission_until_paid'=>'خصم العمولة حتى السداد',
+                            'hold_commission'=>'تعليق العمولة حتى السداد'
+                            ]"/>
                 </div>
                 <div class="flex items-end">
                     <x-primary-button type="button" :gradient="false" color="rgb(var(--primary-600))"
@@ -301,31 +306,21 @@
         <div x-show="tab==='sim'" x-cloak class="p-4 space-y-4">
             <div class="grid md:grid-cols-6 gap-3">
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
-                    <label class="text-sm text-gray-600">الموظف</label>
-                    <select wire:model="sim.employee_id" class="mt-2 border rounded-lg px-3 py-2 w-full">
-                        <option value="">— لأي موظف —</option>
-                        @foreach($employees as $e)
-                            <option value="{{ $e->id }}">{{ $e->name }}</option>
-                        @endforeach
-                    </select>
+                        <x-select-field label="الموظف" wireModel="sim.employee_id"
+                            :options="$employees->pluck('name','id')->toArray()" placeholder="— لأي موظف —"/>
                 </div>
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
-                    <label class="text-sm text-gray-600">سعر البيع</label>
-                    <input type="number" step="0.01" wire:model="sim.sale" class="mt-2 border rounded-lg px-3 py-2 w-full">
+                        <x-input-field label="سعر البيع" type="number" wireModel="sim.sale"/>
                 </div>
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
-                    <label class="text-sm text-gray-600">التكلفة</label>
-                    <input type="number" step="0.01" wire:model="sim.cost" class="mt-2 border rounded-lg px-3 py-2 w-full">
+                    <x-input-field label="التكلفة"   type="number" wireModel="sim.cost"/>
                 </div>
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
-                    <label class="text-sm text-gray-600">طريقة التحصيل</label>
-                    <select wire:model="sim.method" class="mt-2 border rounded-lg px-3 py-2 w-full">
-                        @foreach($collectionMethods as $k=>$v)<option value="{{ $k }}">{{ $v }}</option>@endforeach
-                    </select>
+                    <x-select-field label="طريقة التحصيل" wireModel="sim.method"
+                        :options="collect($collectionMethods)->toArray()"/>
                 </div>
                 <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
-                    <label class="text-sm text-gray-600">المبلغ المُحصَّل</label>
-                    <input type="number" step="0.01" wire:model="sim.collected" class="mt-2 border rounded-lg px-3 py-2 w-full">
+                    <x-input-field label="المبلغ المُحصَّل" type="number" wireModel="sim.collected"/>
                 </div>
                 <div class="flex items-end">
                     <x-primary-button type="button" :gradient="false" color="rgb(var(--primary-600))"
