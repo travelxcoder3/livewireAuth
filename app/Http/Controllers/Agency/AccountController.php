@@ -16,16 +16,30 @@ class AccountController extends Controller
     {
         $pdfPath = storage_path('app/public/sales_report.pdf');
 
-        $user = Auth::user();
+        $user   = Auth::user();
         $agency = $user->agency;
-        $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account'])
+
+        $query = Sale::with(['customer','serviceType','provider','intermediary','account','user'])
             ->where('agency_id', $agency->id);
+
+        // فلترة الموظف: id أو نص الاسم (تلتقط employee_id أو employeeSearch أو search)
+        $employee = $request->input('employee_id')
+            ?? $request->input('employeeSearch')
+            ?? $request->input('search');
+
+        if (!empty($employee)) {
+            if (is_numeric($employee)) {
+                $query->where('user_id', (int) $employee);
+            } else {
+                $t = '%'.trim($employee).'%';
+                $query->whereHas('user', fn($u) => $u->where('name', 'like', $t));
+            }
+        }
 
         // فلترة التاريخ
         if ($request->filled('start_date')) {
             $query->whereDate('sale_date', '>=', $request->start_date);
         }
-
         if ($request->filled('end_date')) {
             $query->whereDate('sale_date', '<=', $request->end_date);
         }
@@ -34,26 +48,22 @@ class AccountController extends Controller
         if ($request->filled('service_type')) {
             $query->where('service_type_id', $request->service_type);
         }
-
         if ($request->filled('provider')) {
             $query->where('provider_id', $request->provider);
         }
-
         if ($request->filled('account')) {
             $query->where('account_id', $request->account);
         }
-
         if ($request->filled('pnr')) {
-            $query->where('pnr', 'like', '%' . $request->pnr . '%');
+            $query->where('pnr', 'like', '%'.$request->pnr.'%');
         }
-
         if ($request->filled('reference')) {
-            $query->where('reference', 'like', '%' . $request->reference . '%');
+            $query->where('reference', 'like', '%'.$request->reference.'%');
         }
 
         $sales = $query->latest()->get();
 
-        // تحديد الحقول المراد عرضها
+        // الحقول الافتراضية
         $fields = $request->input('fields', [
             'sale_date',
             'beneficiary_name',
@@ -67,16 +77,16 @@ class AccountController extends Controller
             'customer_id',
         ]);
 
-        // تحضير HTML
+        // HTML
         $html = view('reports.accounts-pdf', [
-            'sales' => $sales,
-            'agency' => $agency,
+            'sales'     => $sales,
+            'agency'    => $agency,
             'startDate' => $request->start_date,
-            'endDate' => $request->end_date,
-            'fields' => $fields
+            'endDate'   => $request->end_date,
+            'fields'    => $fields,
         ])->render();
 
-        // توليد PDF عبر Browsershot
+        // توليد PDF
         $chromePath = env('BROWSERSHOT_CHROME_PATH', PHP_OS_FAMILY === 'Windows'
             ? 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
             : '/usr/bin/google-chrome');
@@ -92,24 +102,21 @@ class AccountController extends Controller
             ->savePdf($pdfPath);
 
         return response()->download($pdfPath)->deleteFileAfterSend();
-
-        return response()->download($pdfPath)->deleteFileAfterSend();
     }
-
-
 
     public function generateExcelReport(Request $request)
     {
-        $fields = $request->has('fields') ? $request->fields : null;
-        $filters = $request->only(['start_date', 'end_date', 'service_type', 'provider', 'account', 'pnr', 'reference']);
+        $fields  = $request->has('fields') ? $request->fields : null;
+        $filters = $request->only(['start_date','end_date','service_type','provider','account','pnr','reference']);
 
-        // $user = Auth::user();
-        // $isAgencyAdmin = $user->hasRole('agency-admin');
+        // تمرير فلتر الموظف مثل الواجهة
+        $filters['employee'] = $request->input('employee_id')
+            ?? $request->input('employeeSearch')
+            ?? $request->input('search');
 
-        // if (!$isAgencyAdmin) {
-        //     $filters['user_id'] = $user->id;
-        // }
-
-        return Excel::download(new AccountsExport($fields, $filters), 'accounts_report_' . now()->format('Y-m-d') . '.xlsx');
+        return Excel::download(
+            new AccountsExport($fields, $filters),
+            'accounts_report_' . now()->format('Y-m-d') . '.xlsx'
+        );
     }
 }

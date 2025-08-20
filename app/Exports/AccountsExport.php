@@ -6,7 +6,6 @@ use App\Models\Sale;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Illuminate\Http\Request;
 
 class AccountsExport implements FromCollection, WithHeadings
 {
@@ -15,19 +14,29 @@ class AccountsExport implements FromCollection, WithHeadings
 
     public function __construct($fields = null, $filters = [])
     {
-        $this->fields = $fields;
+        $this->fields  = $fields;
         $this->filters = $filters;
     }
 
     public function collection()
     {
-        $query = Sale::with(['customer', 'serviceType', 'provider', 'intermediary', 'account', 'user'])
-            ;
+        // حصر النتائج على الوكالة الحالية وفروعها
+        $agency = Auth::user()->agency;
+        $agencyIds = $agency->parent_id
+            ? [$agency->id]
+            : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        // تطبيق الفلاتر
+        $query = Sale::with(['customer','serviceType','provider','intermediary','account','user'])
+            ->whereIn('agency_id', $agencyIds);
+
+        // الفلاتر العامة
         if (!empty($this->filters)) {
             if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
                 $query->whereBetween('sale_date', [$this->filters['start_date'], $this->filters['end_date']]);
+            } elseif (!empty($this->filters['start_date'])) {
+                $query->whereDate('sale_date', '>=', $this->filters['start_date']);
+            } elseif (!empty($this->filters['end_date'])) {
+                $query->whereDate('sale_date', '<=', $this->filters['end_date']);
             }
 
             if (!empty($this->filters['service_type'])) {
@@ -43,12 +52,25 @@ class AccountsExport implements FromCollection, WithHeadings
             }
 
             if (!empty($this->filters['pnr'])) {
-                $query->where('pnr', 'like', '%' . $this->filters['pnr'] . '%');
+                $query->where('pnr', 'like', '%'.$this->filters['pnr'].'%');
             }
 
             if (!empty($this->filters['reference'])) {
-                $query->where('reference', 'like', '%' . $this->filters['reference'] . '%');
+                $query->where('reference', 'like', '%'.$this->filters['reference'].'%');
             }
+
+            // فلترة الموظف: id أو اسم
+            if (!empty($this->filters['employee'])) {
+                $emp = trim($this->filters['employee']);
+                if (is_numeric($emp)) {
+                    $query->where('user_id', (int) $emp);
+                } else {
+                    $like = '%'.$emp.'%';
+                    $query->whereHas('user', fn($u) => $u->where('name', 'like', $like));
+                }
+            }
+
+            // دعم قديم إن وُجد user_id صريح
             if (!empty($this->filters['user_id'])) {
                 $query->where('user_id', $this->filters['user_id']);
             }
@@ -57,39 +79,39 @@ class AccountsExport implements FromCollection, WithHeadings
         $sales = $query->latest()->get();
 
         return $sales->map(function ($sale) {
-            $data = [];
-
             $fieldMap = [
-                'sale_date' => $sale->sale_date,
+                'sale_date'        => $sale->sale_date,
                 'beneficiary_name' => $sale->beneficiary_name,
-                'serviceType' => optional($sale->serviceType)->label,
-                'route' => $sale->route,
-                'pnr' => $sale->pnr,
-                'reference' => $sale->reference,
-                'status' => $sale->status,
-                'usd_buy' => $sale->usd_buy,
-                'usd_sell' => $sale->usd_sell,
-                'provider' => optional($sale->provider)->name,
-                'customer' => optional($sale->customer)->name,
-
+                'serviceType'      => optional($sale->serviceType)->label,
+                'route'            => $sale->route,
+                'pnr'              => $sale->pnr,
+                'reference'        => $sale->reference,
+                'status'           => $sale->status,
+                'usd_buy'          => $sale->usd_buy,
+                'usd_sell'         => $sale->usd_sell,
+                'provider'         => optional($sale->provider)->name,
+                'customer'         => optional($sale->customer)->name,
+                'account'          => optional($sale->account)->name,
             ];
 
             if ($this->fields) {
+                $data = [];
                 foreach ($this->fields as $field) {
-                    if (isset($fieldMap[$field])) {
+                    if (array_key_exists($field, $fieldMap)) {
                         $data[$field] = $fieldMap[$field];
                     }
                 }
-            } else {
-                $data = array_values($fieldMap);
+                return $data;
             }
 
-            return $data;
+            // إن لم تُحدد الحقول نعيد الكل بالترتيب أعلاه
+            return array_values($fieldMap);
         });
     }
 
     public function headings(): array
     {
+        // العناوين الافتراضية موافقة للترتيب في fieldMap
         $defaultHeadings = [
             'التاريخ',
             'المستفيد',
@@ -97,12 +119,12 @@ class AccountsExport implements FromCollection, WithHeadings
             'Route',
             'PNR',
             'المرجع',
-            'action',
+            'الحالة',
             'USD Buy',
             'USD Sell',
-            'المزود',
+            'المزوّد',
+            'العميل',
             'الحساب',
-
         ];
 
         if (!$this->fields) {
@@ -110,21 +132,18 @@ class AccountsExport implements FromCollection, WithHeadings
         }
 
         $headingsMap = [
-            'sale_date' => 'التاريخ',
+            'sale_date'        => 'التاريخ',
             'beneficiary_name' => 'المستفيد',
-            'customer' => 'العميل',
-            'serviceType' => 'الخدمة',
-
-            'route' => 'Route',
-            'pnr' => 'PNR',
-            'reference' => 'المرجع',
-            'action' => 'الإجراء',
-            'usd_buy' => 'USD Buy',
-            'usd_sell' => 'USD Sell',
-
-            'provider' => 'المزود',
-            'customer' => 'الحساب',
-
+            'serviceType'      => 'الخدمة',
+            'route'            => 'Route',
+            'pnr'              => 'PNR',
+            'reference'        => 'المرجع',
+            'status'           => 'الحالة',
+            'usd_buy'          => 'USD Buy',
+            'usd_sell'         => 'USD Sell',
+            'provider'         => 'المزوّد',
+            'customer'         => 'العميل',
+            'account'          => 'الحساب',
         ];
 
         $headings = [];
@@ -133,7 +152,6 @@ class AccountsExport implements FromCollection, WithHeadings
                 $headings[] = $headingsMap[$field];
             }
         }
-
         return $headings;
     }
 }

@@ -14,42 +14,41 @@
     $agencyCurrency = Auth::user()?->agency?->currency ?? 'USD';
 @endphp
 
-<div class="space-y-6">
+<div class="space-y-6" x-data="reportBox()">
     <style>[x-cloak]{display:none!important}</style>
 
     <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-    <h2 class="text-xl sm:text-2xl font-bold"
-        style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
-        مراجعة الحسابات
-    </h2>
+        <h2 class="text-xl sm:text-2xl font-bold"
+            style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
+            مراجعة الحسابات
+        </h2>
 
-    <div class="flex items-center gap-2 order-last sm:order-none w-full sm:w-auto">
-        <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
-        <input type="text" value="{{ number_format($totalSales, 2) }}" readonly
-               class="bg-gray-100 border border-gray-300 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm text-gray-700 w-24 sm:w-32 text-center">
-        @can('accounts.invoice')
-            @if ($sales->count())
-                <x-primary-button wire:click="openBulkInvoiceModal"
-                    class="ml-0 sm:ml-2 px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm rounded-lg">
-                    إصدار فاتورة مجمعة
-                </x-primary-button>
-            @endif
-        @endcan
+        <div class="flex items-center gap-2 order-last sm:order-none w-full sm:w-auto">
+            <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
+            <input type="text" value="{{ number_format($totalSales, 2) }}" readonly
+                   class="bg-gray-100 border border-gray-300 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm text-gray-700 w-24 sm:w-32 text-center">
+            @can('accounts.invoice')
+                @if ($sales->count())
+                    <x-primary-button wire:click="openBulkInvoiceModal"
+                        class="ml-0 sm:ml-2 px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm rounded-lg">
+                        إصدار فاتورة مجمعة
+                    </x-primary-button>
+                @endif
+            @endcan
+        </div>
     </div>
-</div>
 
-
-    <!-- فلاتر -->
+    {{-- فلاتر --}}
     <div class="bg-white rounded-xl shadow-md p-4">
         <div class="grid md:grid-cols-4 gap-4">
-             <x-input-field
-            name="employee"
-            label="اسم الموظف"
-            wireModel="employeeSearch"
-            placeholder="ابحث باسم الموظف"
-            containerClass="relative"
-            fieldClass="{{ $fieldClass }}"
-        />
+            <x-input-field
+                name="employee"
+                label="اسم الموظف"
+                wireModel="employeeSearch"
+                placeholder="ابحث باسم الموظف"
+                containerClass="relative"
+                fieldClass="{{ $fieldClass }}"
+            />
 
             <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter" :options="$serviceTypes->pluck('label', 'id')->toArray()"
                 placeholder="جميع أنواع الخدمات" containerClass="relative" />
@@ -86,11 +85,11 @@
             </button>
 
             @can('accounts.export')
-                <x-primary-button type="button" onclick="openReportModal('excel')">تقرير Excel</x-primary-button>
+                <x-primary-button type="button" @click="open('excel')">تقرير Excel</x-primary-button>
             @endcan
 
             @can('accounts.print')
-                <x-primary-button type="button" onclick="openReportModal('pdf')">تقرير PDF</x-primary-button>
+                <x-primary-button type="button" @click="open('pdf')">تقرير PDF</x-primary-button>
             @endcan
         </div>
 
@@ -173,10 +172,7 @@
                                         @case('custom')
                                             @can('accounts.invoice')
                                                 @if($isRefund)
-                                                    {{-- زر غير قابل للنقر: لا wire:click --}}
-                                                    <span
-                                                        class="font-semibold text-red-400 cursor-not-allowed select-none"
-                                                        title="إشعار دائن للعرض فقط">
+                                                    <span class="font-semibold text-red-400 cursor-not-allowed select-none" title="إشعار دائن للعرض فقط">
                                                         إشعار دائن
                                                     </span>
                                                 @else
@@ -367,7 +363,6 @@
                         @error('invoiceDate') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
 
-                    {{-- ضريبة المجمّعة --}}
                     <div>
                         <label class="block text-sm font-semibold mb-1">
                             الضريبة (للفاتورة المجمّعة)
@@ -386,7 +381,6 @@
                         </div>
                     </div>
 
-                    {{-- معاينة --}}
                     @php
                         $__bulkTax  = $bulkTaxIsPercent ? round($bulkSubtotal * ($bulkTaxAmount/100), 2) : (float)$bulkTaxAmount;
                         $__bulkGrand = $bulkSubtotal + $__bulkTax;
@@ -410,17 +404,17 @@
     @endif
 
     {{-- ======= نوافذ التقارير ======= --}}
-    <div id="reportModal"
-         class="fixed inset-0 z-40 bg-black/10 flex items-center justify-center hidden backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
-            <button onclick="closeReportModal()"
-                    class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+    <div
+        x-cloak
+        x-show="showReport"
+        class="fixed inset-0 z-40 bg-black/10 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative">
+            <button @click="close()" class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
             <h3 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">اختر نوع التقرير</h3>
             <div class="flex flex-col gap-4">
-                <input type="hidden" id="reportType">
-                <x-primary-button type="button" onclick="generateFullReport()" padding="px-6 py-3">تقرير كامل</x-primary-button>
-                <x-primary-button type="button" onclick="openFieldsModal()" padding="px-6 py-3">تقرير مخصص</x-primary-button>
-                <button type="button" onclick="closeReportModal()"
+                <x-primary-button type="button" @click="generateFull()" padding="px-6 py-3">تقرير كامل</x-primary-button>
+                <x-primary-button type="button" @click="openFields()" padding="px-6 py-3">تقرير مخصص</x-primary-button>
+                <button type="button" @click="close()"
                         class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-3 rounded-xl shadow transition duration-300 text-sm mt-4">
                     إلغاء
                 </button>
@@ -428,13 +422,14 @@
         </div>
     </div>
 
-    <div id="fieldsModal"
-         class="fixed inset-0 z-40 bg-black/10 flex items-center justify-center hidden backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative transform transition-all duration-300">
-            <button onclick="closeFieldsModal()"
-                    class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+    <div
+        x-cloak
+        x-show="showFields"
+        class="fixed inset-0 z-40 bg-black/10 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative">
+            <button @click="closeFields()" class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
             <h3 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">اختر حقول التقرير</h3>
-            <form id="customReportForm" method="GET" target="_blank" onsubmit="prepareCustomReport()">
+            <form id="customReportForm" method="GET" target="_blank" @submit="prepareCustom">
                 <div class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto p-2">
                     @foreach ([
                         'sale_date' => 'تاريخ البيع',
@@ -459,7 +454,7 @@
                     @endforeach
                 </div>
                 <div class="mt-6 flex justify-center gap-3">
-                    <button type="button" onclick="closeFieldsModal()"
+                    <button type="button" @click="closeFields()"
                             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-2 rounded-xl shadow transition duration-300 text-sm">
                         رجوع
                     </button>
@@ -476,102 +471,75 @@
             .print-area { position: absolute; left: 0; top: 0; width: 100%; }
         }
     </style>
-
-    <script>
-        let currentReportType = '';
-
-        function openReportModal(type) {
-            currentReportType = type;
-            const modal = document.getElementById('reportModal');
-            const content = modal.querySelector('.bg-white');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('opacity-0', 'scale-95');
-                content.classList.add('opacity-100', 'scale-100');
-            }, 10);
-        }
-
-        function closeReportModal() {
-            const modal = document.getElementById('reportModal');
-            const content = modal.querySelector('.bg-white');
-            content.classList.remove('opacity-100', 'scale-100');
-            content.classList.add('opacity-0', 'scale-95');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-
-        function openFieldsModal() {
-            closeReportModal();
-            const modal = document.getElementById('fieldsModal');
-            const content = modal.querySelector('.bg-white');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('opacity-0', 'scale-95');
-                content.classList.add('opacity-100', 'scale-100');
-            }, 10);
-        }
-
-        function closeFieldsModal() {
-            const modal = document.getElementById('fieldsModal');
-            const content = modal.querySelector('.bg-white');
-            content.classList.remove('opacity-100', 'scale-100');
-            content.classList.add('opacity-0', 'scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                openReportModal(currentReportType);
-            }, 300);
-        }
-
-        function generateFullReport() {
-            const startDate = "{{ $startDate }}";
-            const endDate = "{{ $endDate }}";
-            const serviceTypeFilter = "{{ $serviceTypeFilter }}";
-            const providerFilter = "{{ $providerFilter }}";
-            const accountFilter = "{{ $accountFilter }}";
-            const pnrFilter = "{{ $pnrFilter }}";
-            const referenceFilter = "{{ $referenceFilter }}";
-
-            if (currentReportType === 'pdf') {
-                window.open(
-                    `/agency/accounts/report/pdf?start_date=${startDate}&end_date=${endDate}&service_type=${serviceTypeFilter}&provider=${providerFilter}&account=${accountFilter}&pnr=${pnrFilter}&reference=${referenceFilter}`,
-                    '_blank');
-            } else {
-                window.open(
-                    `/agency/accounts/report/excel?start_date=${startDate}&end_date=${endDate}&service_type=${serviceTypeFilter}&provider=${providerFilter}&account=${accountFilter}&pnr=${pnrFilter}&reference=${referenceFilter}`,
-                    '_blank');
-            }
-
-            closeReportModal();
-        }
-
-        function prepareCustomReport() {
-            event.preventDefault();
-            const form = document.getElementById('customReportForm');
-            const startDate = "{{ $startDate }}";
-            const endDate = "{{ $endDate }}";
-            const serviceTypeFilter = "{{ $serviceTypeFilter }}";
-            const providerFilter = "{{ $providerFilter }}";
-            const accountFilter = "{{ $accountFilter }}";
-            const pnrFilter = "{{ $pnrFilter }}";
-            const referenceFilter = "{{ $referenceFilter }}";
-
-            const addHiddenInput = (name, value) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = name;
-                input.value = value;
-                form.appendChild(input);
-            };
-
-            addHiddenInput('service_type', serviceTypeFilter);
-            addHiddenInput('provider', providerFilter);
-            addHiddenInput('account', accountFilter);
-            addHiddenInput('pnr', pnrFilter);
-            addHiddenInput('reference', referenceFilter);
-
-            form.action = currentReportType === 'pdf' ? "/agency/accounts/report/pdf" : "/agency/accounts/report/excel";
-            form.submit();
-            closeFieldsModal();
-            closeReportModal();
-        }
-    </script>
 </div>
+
+{{-- ======= سكربت Alpine لربط الفلاتر الحية وإرسالها ======= --}}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('reportBox', () => ({
+            // ربط حي مع Livewire
+            employeeSearch: @entangle('employeeSearch'),
+            serviceType:    @entangle('serviceTypeFilter'),
+            provider:       @entangle('providerFilter'),
+            account:        @entangle('accountFilter'),
+            startDate:      @entangle('startDate'),
+            endDate:        @entangle('endDate'),
+            pnr:            @entangle('pnrFilter'),
+            reference:      @entangle('referenceFilter'),
+
+            currentReportType: '',
+            showReport: false,
+            showFields: false,
+
+            open(type){ this.currentReportType = type; this.showReport = true; },
+            close(){ this.showReport = false; },
+            openFields(){ this.showReport = false; this.showFields = true; },
+            closeFields(){ this.showFields = false; this.showReport = true; },
+
+            params() {
+                const o = {
+                    employeeSearch: this.employeeSearch,
+                    service_type:   this.serviceType,
+                    provider:       this.provider,
+                    account:        this.account,
+                    start_date:     this.startDate,
+                    end_date:       this.endDate,
+                    pnr:            this.pnr,
+                    reference:      this.reference,
+                };
+                const p = new URLSearchParams();
+                Object.entries(o).forEach(([k,v])=>{
+                    if(v!==null && v!==undefined && String(v).trim()!=='') p.append(k, v);
+                });
+                return p.toString();
+            },
+
+            generateFull() {
+                const base = this.currentReportType === 'pdf'
+                    ? '/agency/accounts/report/pdf'
+                    : '/agency/accounts/report/excel';
+                window.open(`${base}?${this.params()}`, '_blank');
+                this.close();
+            },
+
+            prepareCustom(e){
+                e.preventDefault();
+                const form = document.getElementById('customReportForm');
+                [...form.querySelectorAll('input[type=hidden]')].forEach(n=>n.remove());
+                const add = (k,v)=>{ if(v!==null && v!==undefined && String(v).trim()!==''){ 
+                    const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i);
+                }};
+                const q = Object.fromEntries(new URLSearchParams(this.params()));
+                Object.entries(q).forEach(([k,v])=>add(k,v));
+                form.action = this.currentReportType === 'pdf'
+                    ? '/agency/accounts/report/pdf'
+                    : '/agency/accounts/report/excel';
+                form.submit();
+                this.showFields = false;
+            },
+
+            // اختياري: عند تغيير نوع الخدمة امسح فلتر الموظف لتجنب لبس النتائج
+            // $watch('serviceType', () => { this.employeeSearch = ''; }),
+        }));
+    });
+</script>
