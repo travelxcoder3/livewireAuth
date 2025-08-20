@@ -29,7 +29,8 @@ class EmployeeCollectionsShow extends Component
 
     public $remaining = 0;
     public $paid_now = null;
-    public $pay_method = '';
+    public $pay_method = '';          // وسيلة الدفع (نقدي/حوالة/..)
+    public $collector_method = null;  // طريقة التحصيل لاحتساب عمولة المُحصّل
     public $note = '';
 
     public function mount(User $user)
@@ -110,10 +111,10 @@ class EmployeeCollectionsShow extends Component
   public function savePay()
 {
     $this->validate([
-        'paid_now'   => 'required|numeric|min:0.01|max:'.$this->remaining,
-        'pay_method' => 'required|string|max:50',
+        'paid_now'          => 'required|numeric|min:0.01|max:'.$this->remaining,
+        'pay_method'        => 'required|string|max:50',
+        'collector_method'  => 'required|integer|in:1,2,3,4,5,6,7,8', // الطرق المعرفة لديك
     ]);
-
     DB::transaction(function () {
         $wallet = Wallet::firstOrCreate(
             ['customer_id' => $this->currentCustomerId],
@@ -122,7 +123,12 @@ class EmployeeCollectionsShow extends Component
 
         $wallet = Wallet::where('id', $wallet->id)->lockForUpdate()->first();
         $newBalance = (float)$wallet->balance + (float)$this->paid_now;
-
+        \Log::info('UI.savePay.input', [
+  'employee_id' => $this->employee->id,
+  'customer_id' => $this->currentCustomerId,
+  'collector_method' => $this->collector_method,
+  'paid_now' => $this->paid_now,
+]);
         WalletTransaction::create([
             'wallet_id'       => $wallet->id,
             'type'            => 'deposit',
@@ -133,12 +139,21 @@ class EmployeeCollectionsShow extends Component
         ]);
 
         $wallet->update(['balance' => $newBalance]);
+
+
     });
 
     // تسوية فورية لإنشاء قيود collections وتحديث آخر سداد
 $customer = \App\Models\Customer::findOrFail($this->currentCustomerId);
-app(\App\Services\AutoSettlementService::class)
-    ->autoSettle($customer, 'employee-collections', $this->employee->id);
+app(\App\Services\AutoSettlementService::class)->autoSettle(
+    customer: $customer,
+    performedByName: 'employee-collections',
+    onlyEmployeeId: $this->employee->id,
+     collectorUserId: Auth::id(),
+    collectorMethod: ($this->collector_method !== null ? (int)$this->collector_method : null),
+);
+
+
 
 
 

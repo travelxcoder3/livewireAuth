@@ -8,20 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class Collection extends Model
 {
+   
+
     protected $fillable = [
-        'agency_id',
-        'sale_id',
-        'amount',
-        'payment_date',
-        'method',
-        'note',
-        'customer_type_id',
-        'debt_type_id',
-        'customer_response_id',
-        'customer_relation_id',
-        'delay_reason_id',
-        'user_id'
+    'agency_id','sale_id','amount','payment_date','method','note','user_id',
+    'collector_user_id','collector_method' // جديد
     ];
+
+    public function collector()
+    {
+        return $this->belongsTo(User::class,'collector_user_id');
+    }
+
 
     public function sale()
     {

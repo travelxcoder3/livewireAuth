@@ -85,13 +85,30 @@
         <!-- القسم الثاني: السداد -->
         <div class="border rounded-lg p-3">
           <h4 class="font-bold mb-2">تفاصيل السداد</h4>
-          <x-input-field label="المبلغ المتبقي" :disabled="true"
-              value="{{ number_format($remaining,2) }}" />
-          <x-input-field label="المبلغ المدفوع" type="number" wireModel="paid_now" />
-          <x-select-field label="طريقة التحصيل" wireModel="pay_method"
-            :options="['cash'=>'نقدي','bank'=>'حوالة بنكية','pos'=>'نقطة بيع','online'=>'أونلاين']"
-            placeholder="اختر الطريقة"/>
-          <x-input-field label="ملاحظة" wireModel="note" />
+          {{-- داخل القسم الثاني: السداد --}}
+<x-input-field label="المبلغ المتبقي" :disabled="true" value="{{ number_format($remaining,2) }}" />
+<x-input-field label="المبلغ المدفوع" type="number" wireModel="paid_now" />
+
+{{-- وسيلة الدفع (كما كانت) --}}
+<x-select-field label="وسيلة الدفع" wireModel="pay_method"
+  :options="['cash'=>'نقدي','bank'=>'حوالة بنكية','pos'=>'نقطة بيع','online'=>'أونلاين']"
+  placeholder="اختر الوسيلة"/>
+
+{{-- جديد: طريقة التحصيل لاحتساب عمولة المُحصّل --}}
+<x-select-field label="طريقة التحصيل" wireModel="collector_method"
+  :options="[
+    1=>'مباشر عبر المحصّل',
+    2=>'غير مباشر متابعة الموظف',
+    3=>'عبر الموظف مباشرة',
+    4=>'متعثر مباشر',
+    5=>'متعثر غير مباشر',
+    6=>'شبه معدوم مباشر',
+    7=>'شبه معدوم غير مباشر',
+    8=>'معدوم مباشر',
+  ]"
+  placeholder="اختر الطريقة"/>
+<x-input-field label="ملاحظة" wireModel="note" />
+
           <div class="mt-3">
             <x-primary-button wire:click="savePay" class="w-full">موافق</x-primary-button>
           </div>
