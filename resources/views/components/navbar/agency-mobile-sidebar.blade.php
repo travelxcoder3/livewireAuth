@@ -103,13 +103,39 @@
             @endif
 
             <!-- التحصيل -->
-            @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('collections.view'))
-            <a href="{{ route('agency.collections') }}" @click="mobileSidebarOpen = false"
-               class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+
+       @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.view')|| Auth::user()->can('collection.employee.view'))
+            <div x-data="{open: false}" class="relative">
+                @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('accounts.view'))
+                <button @click="open = !open" class="flex items-center justify-between w-full px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                    <div class="flex items-center gap-3">
                 <i class="fas fa-hand-holding-usd"></i>
-                <span>التحصيل</span>
-            </a>
-            @endif
+                        <span>التحصيل</span>
+                    </div>
+                    <i class="fas" :class="{'fa-chevron-down': !open, 'fa-chevron-up': open}"></i>
+                </button>
+                @endif
+
+        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.employee.view'))
+                <div x-show="open" class="rtl:pr-4 ltr:pl-4">
+                    <a href="{{ route('agency.employee-collections') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-user-friends"></i>
+                        <span>تحصيلات الموظفين</span>
+                    </a>
+                @endif
+
+        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.view'))
+                <div x-show="open" class="rtl:pr-4 ltr:pl-4">
+                    <a href="{{ route('agency.employee-collections.all') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>عرض التحصيلات</span>
+                    </a>
+                @endif
+    </div>
+</div>
+@endif
 
             <!-- الموارد البشرية -->
             @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('employees.view') || Auth::user()->can('roles.view') || Auth::user()->can('users.view') || Auth::user()->can('permissions.view'))
@@ -159,7 +185,7 @@
             @endif
 
             <!-- التقارير -->
-            @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportsSales.view') || Auth::user()->can('reportsAccounts.view') || Auth::user()->can('reportCustomers.view') || Auth::user()->can('reportEmployeeSales.view'))
+            @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportsSales.view') || Auth::user()->can('reportsAccounts.view') || Auth::user()->can('reportCustomers.view') || Auth::user()->can('reportEmployeeSales.view')|| Auth::user()->can('reportProvider.view'))
             <div x-data="{open: false}" class="relative">
                 <button @click="open = !open" class="flex items-center justify-between w-full px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                     <div class="flex items-center gap-3">
@@ -198,6 +224,13 @@
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                         <i class="fas fa-file-alt"></i>
                         <span> حسابات الموظفين</span>
+                    </a>
+                    @endif
+                    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportProvider.view'))
+                    <a href="{{ route('agency.reports.provider-accounts') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-file-alt"></i>
+                        <span> حسابات المزودين</span>
                     </a>
                     @endif
                 </div>
@@ -259,6 +292,13 @@
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                         <i class="fas fa-percentage"></i>
                         <span>تهيئة العمولات</span>
+                    </a>
+                @endif
+                @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('commission-policies.view'))
+                    <a href="{{ route('agency.commission-policies') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-percentage"></i>
+                        <span>تهيئة عمولات الموظفين</span>
                     </a>
                 @endif
 

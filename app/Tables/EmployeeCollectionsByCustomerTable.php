@@ -50,6 +50,7 @@ class EmployeeCollectionsByCustomerTable
                         'icon'   => 'fas fa-hand-holding-usd', // أيقونة فلوس
                         'method' => 'openPay',
                         'param_key' => 'customer_id',
+                        'can' => auth()->user()->can('collection.payment'),
                         'class'  => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))] font-semibold text-xs',
                     ],
                 ],

@@ -30,6 +30,7 @@ class CollectionTableEmployee
                 'type' => 'details',
                 'label' => 'تفاصيل',
                 'icon'  => 'fas fa-eye',
+                'can' => auth()->user()->can('collection.details.view'),
                 'url'   => fn($row) => route('agency.collection.details.employee', $row->first_sale_id),
                 'class' => 'text-[rgb(var(--primary-600))] hover:text-black font-medium text-xs transition',
             ],
