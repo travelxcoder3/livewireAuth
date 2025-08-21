@@ -150,4 +150,28 @@ class EmployeeWalletService
         }
     }
 
+    // App/Services/EmployeeWalletService.php
+    public function transferCollectorCommission(
+        float $amount, int $sellerUserId, int $collectorUserId, string $refBase, string $note = ''
+    ): void {
+        if ($amount <= 0) return;
+
+        DB::transaction(function () use ($amount, $sellerUserId, $collectorUserId, $refBase, $note) {
+            $seller    = $this->ensureWallet($sellerUserId);
+            $collector = $this->ensureWallet($collectorUserId);
+
+            // إيداع للمحصّل
+            $this->post($collector, 'commission_collected', $amount, $refBase, $note ?: 'عمولة تحصيل');
+
+            // خصم من البائع أو تسجيل دين
+            $sellerLocked = EmployeeWallet::lockForUpdate()->find($seller->id);
+            if (($sellerLocked->balance ?? 0) >= $amount) {
+                $this->post($sellerLocked, 'withdraw', $amount, $refBase.':seller', 'خصم عمولة التحصيل');
+            } else {
+                $this->post($sellerLocked, 'sale_debt', $amount, $refBase.':debt', 'دين عمولة التحصيل');
+            }
+        });
+    }
+
+
 }

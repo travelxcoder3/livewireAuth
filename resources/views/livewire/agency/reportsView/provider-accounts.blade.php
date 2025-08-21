@@ -64,7 +64,7 @@
         <th class="py-3 px-4 border-b" colspan="2">الرصيد</th>
         <th class="py-3 px-4 border-b">إجمالي الشراء</th>
         <th class="py-3 px-4 border-b">استرداد</th>
-        <th class="py-3 px-4 border-b">إلغاء</th>
+
         <th class="py-3 px-4 border-b">آخر عملية</th>
         <th class="py-3 px-4 border-b">الإجراء</th>
     </tr>
@@ -84,7 +84,6 @@
     <td class="py-2 px-4 text-red-600 font-mono">{{ number_format($p['for_agency'],2) }}</td>
     <td class="py-2 px-4 font-mono">{{ number_format($p['buy'],2) }}</td>
     <td class="py-2 px-4 text-rose-700 font-mono">{{ number_format($p['refund'],2) }}</td>
-    <td class="py-2 px-4 text-rose-700 font-mono">{{ number_format($p['cancel'],2) }}</td>
     <td class="py-2 px-4">
         {{ $p['last_sale_date'] ? \Carbon\Carbon::parse($p['last_sale_date'])->format('Y-m-d') : '-' }}
     </td>

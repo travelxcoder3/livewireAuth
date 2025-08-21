@@ -27,6 +27,13 @@
           {{ number_format($wallet->balance,2) }}
           <span class="text-sm text-gray-500">{{ $customer->agency?->currency }}</span>
         </div>
+
+        <div class="text-xs text-gray-500 mt-1">الدَّين المستحق</div>
+<div class="text-xl font-extrabold {{ $this->debt > 0 ? 'text-red-600' : 'text-emerald-600' }}">
+  {{ number_format($this->debt, 2) }}
+  <span class="text-sm text-gray-500">{{ $customer->agency?->currency }}</span>
+</div>
+
         <div class="flex gap-2">
 
 </div>

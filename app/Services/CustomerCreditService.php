@@ -117,4 +117,72 @@ $wallet->decrement('balance', $use);
     });
 }
 
+
+// CustomerCreditService.php
+public function autoPayAllFromWallet(Customer $customer): float
+{
+    $totalApplied = 0.0;
+
+    DB::transaction(function () use ($customer, &$totalApplied) {
+
+        // اقفل المحفظة ثم اجلب الرصيد
+        $wallet = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
+        $balance = (float) $wallet->balance;
+        if ($balance <= 0) return;
+
+        // اجلب المبيعات غير المسددة بالأقدمية
+        $sales = Sale::with('collections')
+            ->where('customer_id', $customer->id)
+          //  ->whereIn('payment_method', ['part','all'])
+            ->orderBy('id')  // بدّلها بتاريخ البيع إن وُجد عمود
+            ->get();
+
+        foreach ($sales as $sale) {
+            if ($balance <= 0) break;
+
+            $totalPaid = (float) ($sale->amount_paid ?? 0);
+            $collected = (float) $sale->collections->sum('amount');
+            $totalDue  = (float) ($sale->invoice_total_true ?? $sale->usd_sell ?? 0);
+            $remaining = max(0.0, $totalDue - $totalPaid - $collected);
+            if ($remaining <= 0) continue;
+
+            $use = min($remaining, $balance);
+            if ($use <= 0) continue;
+
+            // حركة سحب من المحفظة
+            WalletTransaction::create([
+                'wallet_id'         => $wallet->id,
+                'type'              => 'withdraw',
+                'amount'            => $use,
+                'running_balance'   => $balance - $use,
+                'reference'         => 'sale:'.$sale->id,
+                'note'              => 'سداد تلقائي لبيع جزئي #'.$sale->id,
+                'performed_by_name' => auth()->user()->name ?? 'system',
+            ]);
+
+            // حدث الرصيد
+            $balance -= $use;
+            $wallet->balance = $balance;
+            $wallet->save();
+
+            // قيد تحصيل يظهر في تقارير التحصيل
+            Collection::create([
+                'sale_id'           => $sale->id,
+                'customer_id'       => $sale->customer_id,
+                'agency_id'         => $sale->agency_id,
+                'amount'            => $use,
+                'method'            => 'wallet',
+                'collector_user_id' => auth()->id(),
+                'note'              => 'سداد من رصيد العميل تلقائياً',
+                'payment_date'      => now()->format('Y-m-d'),
+            ]);
+
+            $totalApplied += $use;
+        }
+    });
+
+    return round($totalApplied, 2);
+}
+
+
 }

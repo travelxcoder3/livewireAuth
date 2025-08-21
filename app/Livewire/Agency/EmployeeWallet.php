@@ -102,48 +102,65 @@ class EmployeeWallet extends Component
         ]);
     }
 
-    public function getCurrentOverdueDebtProperty(): float
-    {
-        // سياسة المهلة
-        $profile = CommissionProfile::where('agency_id', $this->user->agency_id)
-            ->where('is_active', true)->first();
+public function getCurrentOverdueDebtProperty(): float
+{
+    $profile = \App\Models\CommissionProfile::where('agency_id',$this->user->agency_id)
+        ->where('is_active', true)->first();
+    $days = (int)($profile->days_to_debt ?? 0);
+    if ($days <= 0) return 0.0;
 
-        $days = (int)($profile->days_to_debt ?? 0);
-        if ($days <= 0) return 0.0;
+    $cutoff = \Carbon\Carbon::now()->subDays($days)->startOfDay();
 
-        // أحدث سداد "عام" لأي عميل يتبع هذا الموظف
-        $latestAnyPay = Collection::whereHas('sale', function ($q) {
-                $q->where('agency_id', $this->user->agency_id)
-                ->where('user_id',   $this->userId)
-                ->where('status','!=','Void');
-            })
-            ->max('payment_date');
+    // 1) آخر سداد لأي عملية تخص هذا الموظف (نستخدم payment_date وإن غاب فـ created_at)
+    $latestAnyPay = \App\Models\Collection::whereHas('sale', function($q){
+            $q->where('agency_id', $this->user->agency_id)
+              ->where('user_id',   $this->userId)
+              ->where('status','!=','Void');
+        })
+        ->selectRaw('MAX(COALESCE(payment_date, created_at)) as last_dt')
+        ->value('last_dt');
 
-        // إذا يوجد سداد خلال المهلة => لا يوجد دين حالي
-        if ($latestAnyPay && Carbon::parse($latestAnyPay)->addDays($days)->isFuture()) {
-            return 0.0;
-        }
-
-        // لا يوجد سداد ضمن المهلة -> احسب إجمالي المتبقي على العملاء (غير المحصل بالكامل)
-        $sales = Sale::withSum('collections','amount')
-            ->where('agency_id', $this->user->agency_id)
-            ->where('user_id',   $this->userId)
-            ->where('status','!=','Void')
-            ->get(['id','sale_group_id','usd_sell','amount_paid','sale_date']);
-
-        // اجمع المتبقي لكل مجموعة بيع
-        $groups = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
-
-        $total = 0.0;
-        foreach ($groups as $g) {
-            $required  = (float)$g->sum('usd_sell');
-            $collected = (float)$g->sum('amount_paid') + (float)$g->sum('collections_sum_amount');
-            $rem = $required - $collected;
-            if ($rem > 0) $total += $rem;
-        }
-
-        return round($total, 2);
+    // 2) لو هناك سداد داخل المهلة => لا دين مطلقًا
+    if ($latestAnyPay && \Carbon\Carbon::parse($latestAnyPay)->gte($cutoff)) {
+        return 0.0;
     }
+
+    // 3) غير ذلك: احسب المتبقي فقط للمبيعات التي **تجاوزت** المهلة
+    $sales = \App\Models\Sale::query()
+        ->where('agency_id',$this->user->agency_id)
+        ->where('user_id',  $this->userId)
+        ->where('status','!=','Void')
+        ->withSum('collections','amount')
+        ->withMax(['collections as last_paid_at' => function($q){
+            $q->whereNotNull('payment_date');
+        }], 'payment_date')
+        ->get(['id','sale_group_id','usd_sell','amount_paid','sale_date','created_at']);
+
+    $groups = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
+
+    $total = 0.0;
+    foreach ($groups as $g) {
+        // مرجع المجموعة: آخر سداد، وإلا تاريخ البيع، وإلا created_at
+        $refDate = collect($g)->map(function($s){
+            $dt = $s->last_paid_at
+                ? \Carbon\Carbon::parse($s->last_paid_at)
+                : ($s->sale_date
+                    ? \Carbon\Carbon::parse($s->sale_date)
+                    : \Carbon\Carbon::parse($s->created_at));
+            return $dt;
+        })->max();
+
+        // لو المرجع داخل المهلة -> تجاهل
+        if ($refDate && $refDate->gte($cutoff)) continue;
+
+        $required  = (float)$g->sum('usd_sell');
+        $collected = (float)$g->sum('amount_paid') + (float)$g->sum('collections_sum_amount');
+        $rem = $required - $collected;
+        if ($rem > 0) $total += $rem;
+    }
+
+    return round($total, 2);
+}
 
 
 

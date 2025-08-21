@@ -5,7 +5,7 @@ namespace App\Livewire\Agency;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
-use App\Models\{Customer, Wallet, WalletTransaction};
+use App\Models\{Customer, Wallet, WalletTransaction, Sale};
 
 class CustomerWallet extends Component
 {
@@ -82,12 +82,13 @@ public function submit()
         $wallet->update(['balance' => $newBalance]);
     });
 
-    // 3) تشغيل التصفية التلقائية بعد النجاح إن كانت العملية إيداع
-    $autoApplied = 0.0;
-    if ($typeAtSubmit === 'deposit') {
-        $autoApplied = app(\App\Services\AutoSettlementService::class)
-            ->autoSettle($this->customer, auth()->user()->name ?? 'Auto-Settle');
-    }
+  // 3) تشغيل السداد من المحفظة بعد الإيداع
+$autoApplied = 0.0;
+if ($typeAtSubmit === 'deposit') {
+    $autoApplied = app(\App\Services\CustomerCreditService::class)
+        ->autoPayAllFromWallet($this->customer);
+}
+
 
     // 4) تحديث الواجهة
     $this->wallet->refresh();
@@ -136,6 +137,24 @@ public function runAutoSettle()
 
     $this->wallet->refresh();
     session()->flash('message', $applied > 0 ? 'تمت التصفية: '.number_format($applied,2) : 'لا يوجد ما يُصفّى');
+}
+
+
+
+public function getDebtProperty(): float
+{
+    $sales = Sale::with('collections')
+        ->where('customer_id', $this->customerId)
+        ->get();
+
+    $total = 0.0;
+    foreach ($sales as $s) {
+        $totalAmount = $s->invoice_total_true ?? $s->usd_sell ?? 0.0;
+        $paid = ($s->amount_paid ?? 0.0) + ($s->collections?->sum('amount') ?? 0.0);
+        $remain = $totalAmount - $paid;
+        if ($remain > 0) $total += $remain;
+    }
+    return round($total, 2);
 }
 
 
