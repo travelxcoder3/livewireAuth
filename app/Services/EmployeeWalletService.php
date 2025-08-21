@@ -2,10 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\{EmployeeWallet, EmployeeWalletTransaction, Sale, CommissionProfile};
 use Illuminate\Support\Facades\DB;
 use App\Models\CommissionEmployeeRateOverride;
-
+use App\Models\{EmployeeWallet, EmployeeWalletTransaction, Sale, CommissionProfile, User};
 class EmployeeWalletService
 {
     public function ensureWallet(int $userId): EmployeeWallet
@@ -71,7 +70,7 @@ class EmployeeWalletService
             ->where('reference', $ref)->exists();
 
         if (!$exists) {
-            $amount = $this->computeEmployeeCommission($sale);
+            $amount = $this->computeEmployeeCommissionOverTarget($sale);
             if ($amount > 0) {
                 $this->post($wallet, 'commission_expected', $amount, $ref, "عمولة متوقعة لعملية #{$sale->id}");
             }
@@ -88,7 +87,7 @@ class EmployeeWalletService
             $current = EmployeeWalletTransaction::where('wallet_id', $locked->id)
                 ->where('reference', $ref)->first();
 
-            $newAmount = $this->computeEmployeeCommission($sale);
+            $newAmount = $this->computeEmployeeCommissionOverTarget($sale);
 
             if (!$current) {
                 if ($newAmount > 0) {
@@ -122,7 +121,7 @@ class EmployeeWalletService
         $ref = "sale:{$sale->id}:debt";
         $exists = EmployeeWalletTransaction::where('wallet_id',$wallet->id)->where('reference',$ref)->exists();
         if (!$exists) {
-            $amount = $this->computeEmployeeCommission($sale);
+            $amount = $this->computeEmployeeCommissionOverTarget($sale);
             if ($amount > 0) {
                 $this->post($wallet, 'sale_debt', $amount, $ref, "دين عمولة لعملية غير محصّلة #{$sale->id}");
             }
@@ -133,7 +132,7 @@ class EmployeeWalletService
     public function releaseDebtAndPostCommission(Sale $sale): void
     {
         $wallet = $this->ensureWallet($sale->user_id);
-        $amount = $this->computeEmployeeCommission($sale);
+        $amount = $this->computeEmployeeCommissionOverTarget($sale);
         if ($amount <= 0) return;
 
         // لا نفك الدين إلا إذا اكتمل التحصيل فعلاً
@@ -172,6 +171,73 @@ class EmployeeWalletService
             }
         });
     }
+
+
+    // App\Services\EmployeeWalletService.php
+
+
+private function computeEmployeeCommissionOverTarget(Sale $sale): float
+{
+    // نسبة الموظف
+    $profile = CommissionProfile::where('agency_id', $sale->agency_id)
+        ->where('is_active', true)->first();
+
+    $ratePct = 0.0;
+    if ($profile) {
+        $override = CommissionEmployeeRateOverride::where('profile_id', $profile->id)
+            ->where('user_id', $sale->user_id)
+            ->value('rate');
+        $ratePct = (float) ($override ?? ($profile->employee_rate ?? 0));
+    }
+    $rate = $ratePct / 100.0;
+
+    // هدف الموظف الشهري
+    $target = (float) (User::where('id', $sale->user_id)->value('main_target') ?? 0);
+
+    // الشهر المرجعي = شهر الإنشاء
+    $refDate = $sale->created_at instanceof \Carbon\Carbon
+        ? $sale->created_at
+        : \Carbon\Carbon::parse($sale->created_at);
+    $mStart  = $refDate->copy()->startOfMonth()->toDateString();
+    $mEnd    = $refDate->copy()->endOfMonth()->toDateString();
+
+    // ربح العملية
+    $saleProfit = max((float) ($sale->sale_profit ?? (($sale->usd_sell ?? 0) - ($sale->usd_buy ?? 0))), 0);
+
+    // كل مبيعات نفس الشهر بالإنشاء فقط
+    $base = Sale::query()
+        ->where('agency_id', $sale->agency_id)
+        ->where('user_id',   $sale->user_id)
+        ->where('status','!=','Void')
+        ->whereBetween(DB::raw('DATE(created_at)'), [$mStart, $mEnd]);
+
+    // أرباح ما قبل هذه المبيعة (created_at ثم id)
+    $beforeSum = (float) (clone $base)
+        ->where(function($q) use ($sale) {
+            $q->where('created_at','<',$sale->created_at)
+              ->orWhere(function($qq) use ($sale){
+                  $qq->where('created_at','=',$sale->created_at)
+                     ->where('id','<',$sale->id);
+              });
+        })
+        ->sum(DB::raw('COALESCE(sale_profit, (usd_sell - usd_buy))'));
+    $beforeSum = max($beforeSum, 0);
+
+    // بعد إضافة العملية
+    $afterSum = $beforeSum + $saleProfit;
+
+    // الجزء المتجاوز للهدف فقط
+    $excessBefore = max(0, $beforeSum - $target);
+    $excessAfter  = max(0, $afterSum  - $target);
+    $incremental  = max(0, $excessAfter - $excessBefore);
+
+    // إن لم يوجد هدف: عمولة كاملة من ربح العملية
+    if ($target <= 0) {
+        $incremental = $saleProfit;
+    }
+
+    return round($incremental * $rate, 2);
+}
 
 
 }

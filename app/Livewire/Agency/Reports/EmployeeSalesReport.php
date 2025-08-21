@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Auth;
 use Spatie\Browsershot\Browsershot;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use App\Models\CommissionProfile;
+use App\Models\CommissionEmployeeRateOverride;
+
 
 #[Layout('layouts.agency')]
 class EmployeeSalesReport extends Component
@@ -123,25 +128,41 @@ class EmployeeSalesReport extends Component
 
     // =========================
     // 🔢 جلب نسبة عمولة الموظف
-    protected function employeeCommissionRate(?User $user): float
-    {
-        if (!$user) return 0.0;
+protected function employeeCommissionRate(?User $user): float
+{
+    if (!$user) return 20.0;
 
-        // حاول حقول شائعة أولاً
-        $rate = null;
-        if (isset($user->commission_rate))       $rate = $user->commission_rate;
-        if ($rate === null && isset($user->commission_percentage)) $rate = $user->commission_percentage;
+    // لو محددة على مستوى الموظف نفسه
+    if (!is_null($user->commission_rate) && $user->commission_rate > 0) {
+        return (float) $user->commission_rate;
+    }
+    if (!is_null($user->commission_percentage) && $user->commission_percentage > 0) {
+        return (float) $user->commission_percentage;
+    }
 
-        // إن لم توجد بالموظف استخدم إعداد الوكالة إن وُجد
-        if ($rate === null) {
-            $agency = $user->agency;
-            if ($agency && isset($agency->employee_commission_rate)) {
-                $rate = $agency->employee_commission_rate;
-            }
+    // بروفايل العمولات للوكالة
+    $profile = CommissionProfile::where('agency_id', $user->agency_id)
+                ->where('is_active', 1)->first();
+
+    if ($profile) {
+        // Override خاص بالموظف (إن وُجد)
+        $override = CommissionEmployeeRateOverride::where('profile_id', $profile->id)
+                    ->where('user_id', $user->id)
+                    ->value('rate');
+
+        if (!is_null($override) && $override > 0) {
+            return (float) $override;   // نسبة مئوية مثل 20
         }
 
-        return (float) max(0, $rate ?? 0);
+        // وإلا استخدم نسبة البروفايل الافتراضية
+        if (!is_null($profile->employee_rate) && $profile->employee_rate > 0) {
+            return (float) $profile->employee_rate;
+        }
     }
+
+    // أخيرًا fallback عام
+    return 20.0;
+}
 
     // ✅ عمولة العملية بعد مراعاة الاسترداد (مطابقة لمنطق التهيئة إن رغبت)
     protected function effectiveCustomerCommission($sale): float
@@ -585,9 +606,8 @@ protected function prepareReportData(bool $applyDrill = false)
 
             // 🔸 عمولة الموظف للعرض في الجدول
      // عند عرض تفصيلي لموظف محدد استخدم نفس منطق الصفحة: 17%
-        $rate = $this->employeeId
-            ? 0.17
-            : ($this->employeeCommissionRate($sale->user) / 100.0);
+        $rate = $this->employeeCommissionRate($sale->user) / 100.0;
+
 
         $pp   = $this->profitParts($sale);
         $sale->employee_commission_expected = round($pp['net_profit'] * $rate, 2);
@@ -669,11 +689,10 @@ protected function aggCommissionLikeIndex($rows, ?User $employee = null): array
     // نفس الصفحة: طرح هدف الموظف ثم 17%
     $target = (float) ($employee?->main_target ?? 0);
 
-    // لجعلها مطابقة تمامًا لصفحة المبيعات نخليها ثابتة 17%
-    $rate = 0.17;
+   
+    $rate = $this->employeeCommissionRate($employee) / 100.0;
 
-    // لو حبيت ترجع للنسبة من بيانات الموظف بدلاً من الثابت:
-    // $rate = ($this->employeeCommissionRate($employee) / 100.0);
+
 
     $expected = max(($totalProfit - $target) * $rate, 0);
     $due      = max(($totalCollectedProfit - $target) * $rate, 0);

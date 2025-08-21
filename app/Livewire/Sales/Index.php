@@ -823,8 +823,10 @@ class Index extends Component
         ]);
 
         // ⬇️ تحديث محفظة الموظف بالعمولة المتوقعة لشهر العملية
-        app(\App\Services\EmployeeWalletService::class)
-            ->postExpectedCommission($sale);
+        // ⬇️ قيد تزايدي حسب تجاوز الهدف (لا يتكرر)
+app(\App\Services\EmployeeWalletService::class)
+    ->upsertExpectedCommission($sale);
+
                     if ($this->customer_id) {
                     app(\App\Services\CustomerCreditService::class)
                         ->autoDepositToWallet((int) $this->customer_id, Auth::user()->agency_id, 'sales-auto');

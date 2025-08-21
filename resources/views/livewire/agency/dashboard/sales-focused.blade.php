@@ -1,3 +1,16 @@
+@php
+    use Illuminate\Support\Facades\DB;
+
+    $userTarget = Auth::user()->sales_target ?? 0;
+
+    // الربح الشهري = SUM(usd_sell - usd_buy) لمستخدمك فقط
+    $userMonthlyProfit = \App\Models\Sale::where('user_id', Auth::id())
+        ->whereMonth('sale_date', now()->month)
+        ->whereYear('sale_date', now()->year)
+        ->sum(DB::raw('COALESCE(usd_sell,0) - COALESCE(usd_buy,0)'));
+
+    $targetPercentage = $userTarget > 0 ? min((max($userMonthlyProfit,0) / $userTarget) * 100, 100) : 0;
+@endphp
 <div class="space-y-6">
     <!-- معلومات الشركة - قسم كامل العرض في الأعلى -->
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -94,7 +107,7 @@
 
     <!-- الهدف الشخصي -->
     @php
-        $userTarget = Auth::user()->sales_target ?? 0;
+        $userTarget = Auth::user()->main_target ?? 0;
         $userMonthlySales = \App\Models\Sale::where('user_id', Auth::id())
             ->whereMonth('sale_date', now()->month)
             ->whereYear('sale_date', now()->year)
@@ -113,9 +126,10 @@
                 <p class="text-2xl font-bold mt-1" style="color: rgb(var(--orange-600));">
                     ${{ number_format($userTarget, 0) }}
                 </p>
-                <p class="text-xs text-gray-500 mt-1">
-                    محقق: ${{ number_format($userMonthlySales, 0) }} ({{ number_format($targetPercentage, 1) }}%)
-                </p>
+<p class="text-xs text-gray-500 mt-1">
+    محقق: ${{ number_format($userMonthlyProfit, 0) }} ({{ number_format($targetPercentage, 1) }}%)
+</p>
+
                 <div class="mt-2 h-1 rounded-full overflow-hidden bg-gray-100">
                     <div class="h-full transition-all duration-300"
                          style="width: {{ $targetPercentage }}%; background-color: rgb(var(--orange-500));"></div>
