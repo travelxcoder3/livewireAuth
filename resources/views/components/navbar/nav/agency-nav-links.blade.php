@@ -17,7 +17,16 @@
         </div>
     @endif
 
-
+    @if (Auth::check() && Auth::user()->hasRole('agency-admin'))
+        <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">
+            <x-navbar.buttons.icon-button
+                icon="fas fa-bullseye"
+                tooltip="الأهداف الشهرية"
+                label="الأهداف"
+                href="{{ route('agency.monthly-targets') }}"
+                :active="request()->routeIs('agency.monthly-targets')" />
+        </div>
+    @endif
 
     {{-- الحسابات --}}
     @php
@@ -173,6 +182,10 @@
                 @endif
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportProvider.view'))
                         <x-navbar.buttons.dropdown-link :href="route('agency.reports.provider-accounts')" icon="fas fa-users" label="حسابات المزودين"
+                            :show="true" />
+                @endif
+                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportQuotation.view'))
+                        <x-navbar.buttons.dropdown-link :href="route('agency.reports.quotations')" icon="fas fa-users" label="تقارير عروض الاسعار"
                             :show="true" />
                 @endif
 

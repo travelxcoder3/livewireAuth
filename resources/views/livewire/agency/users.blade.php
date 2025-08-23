@@ -136,26 +136,7 @@
                         errorName="{{ $showEditModal ? 'edit_role' : 'role' }}"
                     />
                 @endif
-
-                <!-- الهدف المبيعي -->
-                <x-input-field 
-                    type="number"
-                    wireModel="sales_target"
-                    name="sales_target"
-                    label="الهدف المبيعي"
-                    placeholder="أدخل الهدف المبيعي"
-                    errorName="sales_target"
-                />
-
-                <!-- الهدف الأساسي -->
-                <x-input-field 
-                    type="number"
-                    wireModel="main_target"
-                    name="main_target"
-                    label="الهدف الأساسي"
-                    placeholder="أدخل الهدف الأساسي"
-                    errorName="main_target"
-                />
+                
 
                     <!-- الحالة -->
         <x-checkbox-field

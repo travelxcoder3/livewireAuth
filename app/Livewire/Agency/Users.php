@@ -30,8 +30,6 @@ class Users extends Component
     public $edit_role = '';
     public $edit_is_active = true;
 
-    public $sales_target = '';
-    public $main_target = '';
 
     protected $rules = [
     'name' => 'required|string|max:255',
@@ -39,8 +37,6 @@ class Users extends Component
     'password' => 'required|string|min:6',
     'role' => 'required|exists:roles,name',
     'is_active' => 'boolean',
-    'sales_target' => 'nullable|numeric|min:0',
-    'main_target' => 'nullable|numeric|min:0',
 ];
 
 
@@ -82,9 +78,6 @@ class Users extends Component
             'password' => Hash::make($this->password),
             'agency_id' => Auth::user()->agency_id,
             'is_active' => $this->is_active,
-            'sales_target'  => $this->sales_target,
-            'main_target'   => $this->main_target,
-
         ]);
         
         $user->assignRole($this->role);
@@ -120,8 +113,6 @@ class Users extends Component
         $this->edit_email = $user->email;
         $this->edit_role = $user->roles->first()->name ?? '';
         $this->edit_is_active = $user->is_active;
-        $this->sales_target = $user->sales_target;
-        $this->main_target  = $user->main_target;
         $this->showEditModal = true;
     }
 
@@ -132,8 +123,6 @@ class Users extends Component
             abort(403, 'غير مصرح لك بتحديث مستخدمي الفروع');
         }
 
-          if ($this->sales_target === '') $this->sales_target = null;
-          if ($this->main_target  === '') $this->main_target  = null;
     
         $this->validate([
             'edit_name' => 'required|string|max:255',
@@ -141,15 +130,11 @@ class Users extends Component
             'edit_password' => 'nullable|string|min:6',
             'edit_role' => 'required|exists:roles,name',
             'edit_is_active' => 'boolean',
-            'sales_target' => 'nullable|numeric|min:0',
-            'main_target' => 'nullable|numeric|min:0',
         ]);
        $user->update([
             'name' => $this->edit_name,
             'email' => $this->edit_email,
             'is_active' => $this->edit_is_active,
-            'sales_target' => $this->sales_target,
-            'main_target' => $this->main_target,
         ]);
 
         if ($this->edit_password) {

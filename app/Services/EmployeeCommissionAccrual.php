@@ -7,34 +7,40 @@ use App\Models\Sale;
 use App\Models\EmployeeWallet;
 use App\Models\EmployeeWalletTransaction;
 use App\Models\CommissionProfile;
-use App\Models\CommissionEmployeeRateOverride;
 use Illuminate\Support\Facades\DB;
 
 class EmployeeCommissionAccrual
 {
+
     public function expectedForMonth(User $user, int $year, int $month): float
     {
-        $profile = CommissionProfile::where('agency_id', $user->agency_id)
-            ->where('is_active', true)->first();
+        $target = (float) (\App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
+                    ->where('year',$year)->where('month',$month)->value('main_target')
+                ?? $user->main_target ?? 0);
 
-        $ratePct = $profile
-            ? (float) (CommissionEmployeeRateOverride::where('profile_id', $profile->id)
-                    ->where('user_id', $user->id)
-                    ->value('rate') ?? $profile->employee_rate ?? 0)
-            : 0;
+        $override = \App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
+            ->where('year',$year)->where('month',$month)->value('override_rate');
 
-        $rate   = $ratePct / 100.0;
-        $target = (float) ($user->main_target ?? 0);
+        $ratePct = ($override !== null)
+            ? (float)$override
+            : (float)(CommissionProfile::where('agency_id',$user->agency_id)
+                ->where('is_active',true)->value('employee_rate') ?? 0);
+        $rate = $ratePct / 100.0;
 
-        $sales = Sale::where('user_id', $user->id)
-            ->whereYear('sale_date', $year)
-            ->whereMonth('sale_date', $month)
-            ->get();
 
-        $totalProfit = (float) $sales->sum('sale_profit');
+        $sales = Sale::where('user_id',$user->id)
+            ->whereYear('sale_date',$year)->whereMonth('sale_date',$month)
+            ->where('status','!=','Void')
+            ->get(['usd_buy','usd_sell','sale_profit']);
+
+        $totalProfit = $sales->sum(fn($s) =>
+            is_numeric($s->sale_profit) ? (float)$s->sale_profit
+                                        : (float)(($s->usd_sell ?? 0) - ($s->usd_buy ?? 0))
+        );
 
         return round(max(($totalProfit - $target) * $rate, 0), 2);
     }
+
 
     public function syncWalletToExpected(\App\Models\User $user, int $year, int $month): void
 {
@@ -85,36 +91,35 @@ class EmployeeCommissionAccrual
         }
     });
 }
+
     public function computeExpectedFor(User $user, int $year, int $month): float
     {
-        // أرباح مبيعات الموظف في الشهر (استبعاد Void)
-        $sales = Sale::where('user_id', $user->id)
-            ->whereYear('sale_date', $year)
-            ->whereMonth('sale_date', $month)
-            ->where('status', '!=', 'Void')
+        $target = (float) (\App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
+                    ->where('year',$year)->where('month',$month)->value('main_target')
+                ?? $user->main_target ?? 0);
+
+        $sales = Sale::where('user_id',$user->id)
+            ->whereYear('sale_date',$year)->whereMonth('sale_date',$month)
+            ->where('status','!=','Void')
             ->get(['usd_buy','usd_sell','sale_profit']);
 
-        $totalProfit = $sales->sum(function ($s) {
-            return is_numeric($s->sale_profit)
-                ? (float) $s->sale_profit
-                : (float) (($s->usd_sell ?? 0) - ($s->usd_buy ?? 0));
-        });
+        $totalProfit = $sales->sum(fn($s) =>
+            is_numeric($s->sale_profit) ? (float)$s->sale_profit
+                                        : (float)(($s->usd_sell ?? 0) - ($s->usd_buy ?? 0))
+        );
 
-        $target = (float) ($user->main_target ?? 0);
+        $override = \App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
+            ->where('year',$year)->where('month',$month)->value('override_rate');
 
-        // نسبة العمولة من البروفايل/الاستثناءات
-        $profile = CommissionProfile::where('agency_id', $user->agency_id)
-                    ->where('is_active', true)->first();
-
-        $ratePct = 0.0;
-        if ($profile) {
-            $override = CommissionEmployeeRateOverride::where('profile_id', $profile->id)
-                ->where('user_id', $user->id)
-                ->value('rate');
-            $ratePct = $override ?? (float) ($profile->employee_rate ?? 0);
-        }
-
+        $ratePct = ($override !== null)
+            ? (float)$override
+            : (float)(CommissionProfile::where('agency_id',$user->agency_id)
+                ->where('is_active',true)->value('employee_rate') ?? 0);
         $rate = $ratePct / 100.0;
+
+
         return round(max(($totalProfit - $target) * $rate, 0), 2);
     }
+
+
 }

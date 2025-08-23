@@ -233,6 +233,13 @@
                         <span> حسابات المزودين</span>
                     </a>
                     @endif
+                    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportQuotation.view'))
+                    <a href="{{ route('agency.reports.quotations') }}" @click="mobileSidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-file-alt"></i>
+                        <span>تقرير عروض الاسعار</span>
+                    </a>
+                    @endif
                 </div>
             </div>
             @endif

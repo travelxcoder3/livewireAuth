@@ -56,25 +56,15 @@ class CollectorCommissionService
         if ($collectorCommission <= 0) return;
 
         // إيداع في محفظة الموظف
-        DB::transaction(function () use ($employeeId, $collectorCommission, $collection) {
-            $wallet = EmployeeWallet::firstOrCreate(
-                ['user_id'=>$employeeId],
-                ['balance'=>0, 'status'=>'active']
-            );
-            $wallet = EmployeeWallet::lockForUpdate()->find($wallet->id);
-            $newBal = round(((float)$wallet->balance) + $collectorCommission, 2);
+        // حوّلها عبر خدمة المحفظة: تُسجّل الإيداع للمحصّل
+        // والخصم/الدَّين على البائع في نفس العملية
+        app(\App\Services\EmployeeWalletService::class)->transferCollectorCommission(
+            $collectorCommission,
+            $sale->user_id,         // البائع (صاحب السيل)
+            $employeeId,            // المُحصّل
+            "col:{$collection->id}",// مرجع موحّد
+            "عمولة مُحصّل لطريقة #{$method}"
+        );
 
-            EmployeeWalletTransaction::create([
-                'wallet_id'       => $wallet->id,
-                'type'            => 'deposit',
-                'amount'          => $collectorCommission,
-                'running_balance' => $newBal,
-                'reference'       => "collection:{$collection->id}",
-                'note'            => "عمولة مُحصّل لطريقة #{$collection->collector_method}",
-                'performed_by_name'=> 'System (collector commission)',
-            ]);
-
-            $wallet->update(['balance'=>$newBal]);
-        });
     }
 }

@@ -118,36 +118,41 @@
   </div>
 
 
-    <!-- جدول الحركات -->
-    <div class="mt-3 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="p-2 text-right">التاريخ</th>
-            <th class="p-2 text-right">النوع</th>
-            <th class="p-2 text-right">المبلغ</th>
-            <th class="p-2 text-right">الرصيد</th>
-            <th class="p-2 text-right">مرجع</th>
-            <th class="p-2 text-right">منفّذ</th>
-          </tr>
-        </thead>
-        <tbody>
-          @foreach($this->transactions as $t)
-            <tr class="{{ $t->type === 'deposit' ? 'bg-emerald-50' : ($t->type === 'withdraw' ? 'bg-red-50' : '') }}">
-              <td class="p-2">{{ $t->created_at }}</td>
-              <td class="p-2">{{ $t->type }}</td>
-              <td class="p-2 text-right">{{ number_format($t->amount,2) }}</td>
-              <td class="p-2 text-right">{{ number_format($t->running_balance,2) }}</td>
-              <td class="p-2">{{ $t->reference }}</td>
-              <td class="p-2">{{ $t->performed_by_name }}</td>
-            </tr>
-          @endforeach
-        </tbody>
-      </table>
-      <div class="mt-2">
-        {{ $this->transactions->links() }}
-      </div>
-    </div>
+<!-- كشف موحّد بعمودين: له | عليه -->
+<div class="mt-3 overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+<th class="p-2 text-right">التاريخ</th>
+<th class="p-2 text-right">البيان</th>
+<th class="p-2 text-right">له</th>
+<th class="p-2 text-right">عليه</th>
+<th class="p-2 text-right">الرصيد بعد العملية</th>
+<th class="p-2 text-right">مرجع</th>
+<th class="p-2 text-right">منفّذ</th>
+...
+@foreach($this->unifiedLedger as $row)
+<tr class="{{ ($row['credit']??0) > 0 ? 'bg-emerald-50' : (($row['debit']??0) > 0 ? 'bg-red-50' : '') }}">
+  <td class="p-2">{{ $row['ts'] }}</td>
+  <td class="p-2">{{ $row['label'] }}</td>
+  <td class="p-2 text-right">{{ number_format($row['credit'] ?? 0,2) }}</td>
+  <td class="p-2 text-right">{{ number_format($row['debit']  ?? 0,2) }}</td>
+  <td class="p-2 text-right">—</td> {{-- لا نعرض running balance هنا --}}
+  <td class="p-2">{{ $row['reference'] ?? '' }}</td>
+  <td class="p-2">{{ $row['performed'] ?? '' }}</td>
+</tr>
+@endforeach
+
+
+    </tbody>
+  </table>
+
+  <!-- يظلّ الـ pagination خاصًّا بمعاملات المحفظة -->
+  <div class="mt-2">
+    {{ $this->transactions->links() }}
+  </div>
+</div>
+
 
    <button wire:click="$dispatch('wallet-closed')"
         class="mt-6 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl">

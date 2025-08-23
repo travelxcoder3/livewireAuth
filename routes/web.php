@@ -66,9 +66,8 @@ use App\Http\Controllers\Agency\QuotationController;
 // 🌐 المسارات العامة والمصادقة
 // ============================
 
-// routes/web.php
 use App\Livewire\Agency\Statements\CustomersList;
-use App\Livewire\Agency\Statements\CustomerStatement; 
+use App\Livewire\Agency\Statements\CustomerStatement;
 use App\Http\Controllers\Agency\StatementPdfController;
 
 use App\Livewire\Agency\Reports\ProviderAccounts;
@@ -76,6 +75,9 @@ use App\Livewire\Agency\Reports\ProviderAccountDetails;
 use App\Http\Controllers\Agency\Reports\ProviderAccountPdfController;
 
 use App\Livewire\Agency\CommissionPolicies;
+use App\Livewire\Agency\Reports\QuotationsReport;
+use App\Http\Controllers\Agency\Reports\QuotationReportsController;
+use App\Livewire\Agency\MonthlyTargets;
 Route::get('/', fn() => view('welcome'));
 
 Route::get('/login', Login::class)->name('login');
@@ -95,7 +97,6 @@ Route::post('/logout', function () {
     return redirect('/');
 })->name('logout');
 
-
 // ============================
 // 👑 مسارات السوبر أدمن
 // ============================
@@ -106,12 +107,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super-admin'])
     Route::get('/agencies/add', AddAgency::class)->name('add-agency');
     Route::get('/agencies/{agency}/edit', EditAgency::class)->name('edit-agency');
     Route::get('/agencies/{agency}/delete', DeleteAgency::class)->name('delete-agency');
-    Route::get('/dynamic-lists', DynamicLists::class)
-        ->name('dynamic-lists');
-    Route::post('/system/update-theme', [SystemSettingsController::class, 'updateTheme'])
-        ->name('system.update-theme');
+    Route::get('/dynamic-lists', DynamicLists::class)->name('dynamic-lists');
+    Route::post('/system/update-theme', [SystemSettingsController::class, 'updateTheme'])->name('system.update-theme');
 });
-
 
 // ============================
 // 🏢 مسارات أدمن الوكالة
@@ -128,98 +126,71 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
     Route::get('/profile', Profile::class)->name('profile');
     Route::get('/dynamic-lists', \App\Livewire\Agency\DynamicLists::class)->name('dynamic-lists');
     Route::get('/change-password', ChangePassword::class)->name('change-password');
-    Route::get('/obligations', Index::class)
-        ->name('obligations');
-        Route::get('/obligations-view',\App\Livewire\Agency\ObligationsView::class
-        )->name('obligations-view');
-    
-    Route::get('/customer-detailed-invoices', CustomerDetailedInvoices::class)
-        ->name('customer-detailed-invoices');
-    Route::get('/customer-invoices/{customer}', CustomerInvoiceOverview::class)
-        ->name('customer-invoice-overview');
-    Route::get('/customer-invoices/{customer}/print', [CustomerInvoicePrintController::class, 'printSelected'])
-        ->name('customer-invoices.print');
+    Route::get('/obligations', Index::class)->name('obligations');
+    Route::get('/obligations-view', \App\Livewire\Agency\ObligationsView::class)->name('obligations-view');
 
-            Route::get('/customer-accounts/{customer}/history', \App\Livewire\Agency\AccountHistoryDetails::class)
-                ->name('customer-accounts.details');
-                
-     Route::get('/customer-accounts', AccountHistories::class)
-        ->name('customer-accounts');
-    
-        Route::get('/customer-credit-balances', \App\Livewire\Agency\CustomerCreditBalances::class)
-        ->name('customer-credit-balances');
+    Route::get('/customer-detailed-invoices', CustomerDetailedInvoices::class)->name('customer-detailed-invoices');
+    Route::get('/customer-invoices/{customer}', CustomerInvoiceOverview::class)->name('customer-invoice-overview');
+    Route::get('/customer-invoices/{customer}/print', [CustomerInvoicePrintController::class, 'printSelected'])->name('customer-invoices.print');
+
+    Route::get('/customer-accounts/{customer}/history', \App\Livewire\Agency\AccountHistoryDetails::class)->name('customer-accounts.details');
+    Route::get('/customer-accounts', AccountHistories::class)->name('customer-accounts');
+    Route::get('/customer-credit-balances', \App\Livewire\Agency\CustomerCreditBalances::class)->name('customer-credit-balances');
+
     // ✅ واجهة المبيعات الخاصة بأدمن الوكالة
     Route::get('/sales', SalesIndex::class)->name('sales.index');
-    // ✅ تقارير المبيعات PDF و Excel
-    Route::get('/sales/report/pdf', [\App\Http\Controllers\Agency\ReportController::class, 'salesPdf'])
-        ->name('sales.report.pdf');
-    // تقرير Excel
-   Route::get('/excel', function (\Illuminate\Http\Request $request) {
-    $fields    = $request->input('fields');
-    $startDate = $request->input('start_date');
-    $endDate   = $request->input('end_date');
 
-    return Excel::download(
-        new \App\Exports\SalesExport($fields, $startDate, $endDate),
-        'sales-report.xlsx'
-    );
-})->name('sales.report.excel');
-    Route::get('/sales/report-preview', function () {
-        return view('livewire.sales.report-preview');
-    })->name('sales.report.preview');
+    // ✅ تقارير المبيعات PDF و Excel
+    Route::get('/sales/report/pdf', [\App\Http\Controllers\Agency\ReportController::class, 'salesPdf'])->name('sales.report.pdf');
+
+    Route::get('/excel', function (Request $request) {
+        $fields    = $request->input('fields');
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
+        return Excel::download(new \App\Exports\SalesExport($fields, $startDate, $endDate), 'sales-report.xlsx');
+    })->name('sales.report.excel');
+
+    Route::get('/sales/report-preview', fn() => view('livewire.sales.report-preview'))->name('sales.report.preview');
+
     // ============================
     // 🧑‍💼 قسم الحسابات داخل لوحة الوكالة
     // ============================
     Route::prefix('accounts')->group(function () {
-        Route::get('/report/pdf', [\App\Http\Controllers\Agency\AccountController::class, 'generatePdfReport'])
-            ->name('accounts.report.pdf');
-
-        Route::get('/report/excel', [\App\Http\Controllers\Agency\AccountController::class, 'generateExcelReport'])
-            ->name('accounts.report.excel');
+        Route::get('/report/pdf', [\App\Http\Controllers\Agency\AccountController::class, 'generatePdfReport'])->name('accounts.report.pdf');
+        Route::get('/report/excel', [\App\Http\Controllers\Agency\AccountController::class, 'generateExcelReport'])->name('accounts.report.excel');
     });
-      Route::get('/quotations/{quotation}/view', [\App\Http\Controllers\Agency\QuotationController::class,'view'])
-        ->name('quotations.view');
-    Route::get('/quotations/{quotation}/pdf',  [\App\Http\Controllers\Agency\QuotationController::class,'pdf'])
-        ->name('quotations.pdf');
- Route::get('/statements/customers', CustomersList::class)
-        ->name('statements.customers');
-Route::get('/statements/customers/{customer}/pdf', [StatementPdfController::class, 'download'])
-    ->name('statements.customer.pdf');
-    Route::get('/statements/customers/{customer}', CustomerStatement::class)
-        ->name('statements.customer');
+
+    Route::get('/quotations/{quotation}/view', [\App\Http\Controllers\Agency\QuotationController::class,'view'])->name('quotations.view');
+    Route::get('/quotations/{quotation}/pdf',  [\App\Http\Controllers\Agency\QuotationController::class,'pdf'])->name('quotations.pdf');
+
+    Route::get('/statements/customers', CustomersList::class)->name('statements.customers');
+    Route::get('/statements/customers/{customer}/pdf', [StatementPdfController::class, 'download'])->name('statements.customer.pdf');
+    Route::get('/statements/customers/{customer}', CustomerStatement::class)->name('statements.customer');
+
     Route::get('/accounts', Accounts::class)->name('accounts');
+// قسم التهيئة للهدف المبيعي والاساسي للموظف
+    Route::get('/monthly-targets', MonthlyTargets::class)->name('monthly-targets');
     // ============================
     // 🧑‍💼 قسم التحصيلات داخل لوحة الوكالة
     // ============================
-    Route::get('/collections', \App\Livewire\Agency\Collections::class)
-        ->name('collections');
-    Route::get('/collections/all', \App\Livewire\Agency\AllCollections::class)
-        ->name('collections.all');
-    Route::get('/collections/{sale}', \App\Livewire\Agency\ShowCollectionDetails::class)
-        ->name('collection.details');
-   Route::get('/employee-collections', \App\Livewire\Agency\EmployeeCollectionsIndex::class)
-    ->name('employee-collections');
+    Route::get('/collections', \App\Livewire\Agency\Collections::class)->name('collections');
+    Route::get('/collections/all', \App\Livewire\Agency\AllCollections::class)->name('collections.all');
+    Route::get('/collections/{sale}', \App\Livewire\Agency\ShowCollectionDetails::class)->name('collection.details');
+    Route::get('/employee-collections', \App\Livewire\Agency\EmployeeCollectionsIndex::class)->name('employee-collections');
 
+    Route::get('/collections-employee/{sale}', \App\Livewire\Agency\ShowCollectionDetailsEmployee::class)->name('collection.details.employee');
 
-  Route::get('/collections-employee/{sale}', \App\Livewire\Agency\ShowCollectionDetailsEmployee::class)
-    ->name('collection.details.employee');
+    // ضع الثابت قبل الديناميكي
+    Route::get('/employee-collections/all', \App\Livewire\Agency\EmployeeCollectionsAll::class)->name('employee-collections.all');
 
+    // قيّد {user} حتى لا يلتقط "all"
+    Route::get('/employee-collections/{user}', \App\Livewire\Agency\EmployeeCollectionsShow::class)->whereNumber('user')->name('employee-collections.show');
 
-
-
-// ضع الثابت قبل الديناميكي
-Route::get('/employee-collections/all', \App\Livewire\Agency\EmployeeCollectionsAll::class)
-    ->name('employee-collections.all');
-
-// قيّد {user} حتى لا يلتقط "all"
-Route::get('/employee-collections/{user}', \App\Livewire\Agency\EmployeeCollectionsShow::class)
-    ->whereNumber('user')
-    ->name('employee-collections.show');
     // ============================
     // 🧑‍💼 قسم التسلسلات داخل لوحة الوكالة
     // ============================
-    Route::get('/approval-sequences', \App\Livewire\Agency\ApprovalSequences::class)
-        ->name('approval-sequences');
+    Route::get('/approval-sequences', \App\Livewire\Agency\ApprovalSequences::class)->name('approval-sequences');
+
     // ============================
     // 🧑‍💼 قسم الموارد البشرية داخل لوحة الوكالة
     // ============================
@@ -228,13 +199,16 @@ Route::get('/employee-collections/{user}', \App\Livewire\Agency\EmployeeCollecti
         Route::get('/employees/create', EmployeeCreate::class)->name('employees.create');
         Route::get('/employees/edit/{employee}', EmployeeEdit::class)->name('employees.edit');
     });
+
     Route::get('/policies', AgencyPolicies::class)->name('policies');
     Route::get('/policies/view', \App\Livewire\Agency\PoliciesView::class)->name('policies.view');
+
     Route::get('/quotation', ShowQuotation::class)->name('quotation');
-    Route::post('/quotation/pdf', [QuotationController::class, 'download'])
-    ->name('quotation.pdf');
+    Route::post('/quotation/pdf', [QuotationController::class, 'download'])->name('quotation.pdf');
+
     // === رابط الموافقات للوكالة (جديد) ===
     Route::get('/approval-requests', \App\Livewire\Agency\ApprovalRequests::class)->name('approvals.index');
+
     // ============================
     // 🧑‍💼 قسم التقارير داخل لوحة الوكالة
     // ============================
@@ -244,47 +218,35 @@ Route::get('/employee-collections/{user}', \App\Livewire\Agency\EmployeeCollecti
 
         Route::get('/sales', \App\Livewire\Agency\Reports\SalesReport::class)->name('reports.sales');
         Route::get('/sales/pdf', [SalesReportController::class, 'downloadPdf'])->name('reports.sales.pdf');
+ 
         // تقرير تتبع العملاء
-        Route::get('/customers-follow-up', \App\Livewire\Agency\Reports\CustomerFollowUpReport::class)
-            ->name('reports.customers-follow-up');
-        Route::get('customers-follow-up/pdf', [CustomerFollowUpReportController::class, 'downloadPdf'])
-            ->name('reports.customers-follow-up.pdf');
-        Route::get('customer-accounts', \App\Livewire\Agency\Reports\CustomerAccounts::class)
-            ->name('reports.customer-accounts');
-        Route::get('customer-accounts/{id}/details', CustomerAccountDetails::class)
-            ->name('reports.customer-accounts.details');
-        Route::get('customer-accounts/{id}/pdf', [CustomerAccountReportController::class, 'generatePdf'])
-            ->name('reports.customer-accounts.pdf');
-        Route::get('employee-sales', \App\Livewire\Agency\Reports\EmployeeSalesReport::class)
-            ->name('reports.employee-sales');
-        
-        Route::get('employee-sales/pdf', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'exportToPdf'])
-            ->name('reports.employee-sales.pdf');
-        
-        Route::get('employee-sales/excel', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'exportToExcel'])
-            ->name('reports.employee-sales.excel');
+        Route::get('/customers-follow-up', \App\Livewire\Agency\Reports\CustomerFollowUpReport::class)->name('reports.customers-follow-up');
+        Route::get('/customers-follow-up/pdf', [CustomerFollowUpReportController::class, 'downloadPdf'])->name('reports.customers-follow-up.pdf');
 
-        Route::get('reports/employee-sales/print/{sale}', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'printPdf'])
-            ->name('.reports.employee-sales.sale-pdf');
-        
-         Route::get('/provider-accounts', ProviderAccounts::class)
-        ->name('reports.provider-accounts');
-        Route::get('provider-accounts/{id}/details', ProviderAccountDetails::class)
-            ->name('reports.provider-accounts.details');
-            Route::get('reports/provider-accounts/{id}/pdf', \App\Http\Controllers\Agency\Reports\ProviderAccountPdfController::class)
-            ->name('reports.provider-accounts.pdf');
-                
+        Route::get('/customer-accounts', \App\Livewire\Agency\Reports\CustomerAccounts::class)->name('reports.customer-accounts');
+        Route::get('/customer-accounts/{id}/details', CustomerAccountDetails::class)->name('reports.customer-accounts.details');
+        Route::get('/customer-accounts/{id}/pdf', [CustomerAccountReportController::class, 'generatePdf'])->name('reports.customer-accounts.pdf');
 
-        Route::get('/commission-policies', CommissionPolicies::class)
-            ->name('commission-policies');
-        
+        Route::get('/employee-sales', \App\Livewire\Agency\Reports\EmployeeSalesReport::class)->name('reports.employee-sales');
+        Route::get('/employee-sales/pdf', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'exportToPdf'])->name('reports.employee-sales.pdf');
+        Route::get('/employee-sales/excel', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'exportToExcel'])->name('reports.employee-sales.excel');
+        Route::get('/employee-sales/print/{sale}', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'printPdf'])->name('reports.employee-sales.sale-pdf');
 
+        Route::get('/provider-accounts', ProviderAccounts::class)->name('reports.provider-accounts');
+        Route::get('/provider-accounts/{id}/details', ProviderAccountDetails::class)->name('reports.provider-accounts.details');
+        Route::get('/provider-accounts/{id}/pdf', ProviderAccountPdfController::class)->name('reports.provider-accounts.pdf');
+
+        Route::get('/commission-policies', CommissionPolicies::class)->name('commission-policies');
+
+        // تقارير عروض الأسعار
+        Route::get('/quotations', QuotationsReport::class)->name('reports.quotations');
+        Route::get('/quotations/pdf', [QuotationReportsController::class, 'quotationsPdf'])->name('reports.quotations.pdf');
     });
 });
+
 // Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
 //     ->middleware(['auth', 'agency']);
-Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
-    ->middleware(['auth']);
+Route::post('/update-theme', [ThemeController::class, 'updateTheme'])->middleware(['auth']);
 
 Route::get('/commissions', Commissions::class)->name('agency.commissions');
 
@@ -293,10 +255,5 @@ Route::get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice
     return (new App\Livewire\Agency\Accounts())->downloadBulkInvoicePdf($invoice->id);
 })->name('invoices.download');
 
-
-
-
 // routes/web.php
-Route::get('agency/reports/customer-accounts/{id}/pdf',
-    \App\Http\Controllers\Agency\Reports\CustomerAccountPdfController::class
-)->name('agency.reports.customer-accounts.pdf');
+Route::get('agency/reports/customer-accounts/{id}/pdf', \App\Http\Controllers\Agency\Reports\CustomerAccountPdfController::class)->name('agency.reports.customer-accounts.pdf');

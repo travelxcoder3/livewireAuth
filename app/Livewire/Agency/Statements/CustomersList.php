@@ -37,7 +37,7 @@ class CustomersList extends Component
                 }
                 $q->whereRaw("$sql LIKE ?", ['%'.$term.'%']);
             })
-            ->orderByDesc('id')->paginate(10);
+            ->orderByDesc('id')->paginate(10)->through(fn($c) => tap($c, fn() => $c->details_url = route('agency.statements.customer', $c->id)));
 
         return view('livewire.agency.statements.customers-list', compact('customers'));
     }

@@ -265,4 +265,13 @@ private function rebuild(): void
             $this->selectedRows = array_keys($this->statement); // 0..n-1
         }
     }
+
+    public function resetFilters(): void
+    {
+        $this->beneficiary = '';
+        $this->fromDate    = '';
+        $this->toDate      = '';
+        $this->rebuild();
+    }
+
 }

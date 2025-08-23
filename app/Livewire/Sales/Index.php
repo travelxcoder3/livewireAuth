@@ -18,7 +18,8 @@ use App\Tables\SalesTable;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use App\Models\CommissionProfile;
-use App\Models\CommissionEmployeeRateOverride;
+use App\Models\EmployeeMonthlyTarget;
+use Carbon\Carbon;
 
 class Index extends Component
 {
@@ -506,23 +507,58 @@ class Index extends Component
         $this->totalPending  = $totalPending;
         $this->totalProfit   = $totalProfit;
 
-        $target = (float) (Auth::user()->main_target ?? 0);
+        // تحديد شهر المرجع من الفلاتر إن كانت داخل نفس الشهر، وإلا شهر اليوم
+        $ref = now();
+        if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
+            $s = Carbon::parse($this->filters['start_date']);
+            $e = Carbon::parse($this->filters['end_date']);
+            if ($s->isSameMonth($e)) { $ref = $s; }
+        }
+        $year  = (int) $ref->year;
+        $month = (int) $ref->month;
 
-        $profile = \App\Models\CommissionProfile::where('agency_id', $agency->id)
-                    ->where('is_active', true)->first();
+        // هدف الشهر من جدول employee_monthly_targets وإلا من users.main_target
+        $target = (float) (EmployeeMonthlyTarget::where('user_id', $user->id)
+                    ->where('year', $year)->where('month', $month)->value('main_target')
+                ?? $user->main_target ?? 0);
 
-        $effectiveRatePct = $profile
-            ? optional(
-                \App\Models\CommissionEmployeeRateOverride::where('profile_id', $profile->id)
-                    ->where('user_id', $user->id)->first()
-            )->rate ?? (float) ($profile->employee_rate ?? 0)
-            : 0;
+            // نسبة الشهر: Override إن وُجد، وإلا نسبة بروفايل الوكالة
+            $override = \App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
+                ->where('year',$year)->where('month',$month)->value('override_rate');
 
-        $rate = ((float) $effectiveRatePct) / 100; // يحوّل من % إلى كسر
+            $ratePct = ($override !== null)
+                ? (float)$override
+                : (float)(CommissionProfile::where('agency_id',$agency->id)
+                    ->where('is_active', true)->value('employee_rate') ?? 0);
+            $rate = $ratePct / 100.0;
 
 
-        $this->userCommission    = max(($totalProfit - $target) * $rate, 0);
-        $this->userCommissionDue = max(($totalCollectedProfit - $target) * $rate, 0);
+        // أرباح الشهر حسب sale_date وتجميع profit المُحصّل فقط للـDue
+        $monthRows = Sale::where('agency_id', $agency->id)
+            ->where('user_id', $user->id)
+            ->where('status','!=','Void')
+            ->whereYear('sale_date', $year)
+            ->whereMonth('sale_date', $month)
+            ->withSum('collections','amount')
+            ->get(['id','usd_sell','amount_paid','sale_profit','sale_group_id']);
+
+        $groupedM = $monthRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+
+        $monthProfit = 0.0;
+        $monthCollectedProfit = 0.0;
+        foreach ($groupedM as $g) {
+            $netSell      = (float) $g->sum('usd_sell');
+            $netCollected = (float) $g->sum('amount_paid') + (float) $g->sum('collections_sum_amount');
+            $gProfit      = (float) $g->sum('sale_profit');
+            $monthProfit += $gProfit;
+            if ($netCollected + 0.01 >= $netSell) {
+                $monthCollectedProfit += $gProfit;
+            }
+        }
+
+        $this->userCommission    = max(($monthProfit - $target) * $rate, 0);
+        $this->userCommissionDue = max(($monthCollectedProfit - $target) * $rate, 0);
+
 
         return view('livewire.sales.index', [
             'sales'           => $sales,
@@ -821,16 +857,18 @@ class Index extends Component
             'expected_payment_date' => $this->expected_payment_date,
             'sale_group_id' => $this->sale_group_id,
         ]);
+        app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
 
-        // ⬇️ تحديث محفظة الموظف بالعمولة المتوقعة لشهر العملية
-        // ⬇️ قيد تزايدي حسب تجاوز الهدف (لا يتكرر)
-app(\App\Services\EmployeeWalletService::class)
-    ->upsertExpectedCommission($sale);
+        // إعادة حساب عمولات الشهر كاملًا لهذا المستخدم (يعالج ترتيب التواريخ)
+        $svc = app(\App\Services\EmployeeWalletService::class);
+        $ref = \Carbon\Carbon::parse($sale->sale_date ?: $sale->created_at);
+        $svc->recalcMonthForUser($sale->user_id, (int)$ref->year, (int)$ref->month);
 
-                    if ($this->customer_id) {
-                    app(\App\Services\CustomerCreditService::class)
-                        ->autoDepositToWallet((int) $this->customer_id, Auth::user()->agency_id, 'sales-auto');
-                }
+                if ($this->customer_id) {
+    app(\App\Services\CustomerCreditService::class)
+        ->autoDepositToWallet((int)$this->customer_id, Auth::user()->agency_id, 'sales-auto|group:'.$this->sale_group_id);
+}
+
                 // بعد إنشاء السيل وقيد عمولة الموظف
 app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
 
@@ -1095,14 +1133,20 @@ app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
         ]);
 
         if ($sale->customer_id) {
-            app(\App\Services\CustomerCreditService::class)
-                ->autoDepositToWallet((int) $sale->customer_id, Auth::user()->agency_id, 'sales-auto');
-        }
+    app(\App\Services\CustomerCreditService::class)
+        ->autoDepositToWallet((int)$sale->customer_id, Auth::user()->agency_id, 'sales-auto|group:'.($sale->sale_group_id ?: $sale->id));
+}
+
 
         $sale->refresh();
-        app(\App\Services\EmployeeWalletService::class)
-            ->upsertExpectedCommission($sale);
-            app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+        app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
+        // إعادة حساب عمولات الشهر كاملًا لأن تعديل عملية قديمة يغيّر التوزيع
+        $svc = app(\App\Services\EmployeeWalletService::class);
+        $ref = \Carbon\Carbon::parse($sale->sale_date ?: $sale->created_at);
+        $svc->recalcMonthForUser($sale->user_id, (int)$ref->year, (int)$ref->month);
+
+        app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+
 
     
         $this->resetForm();
