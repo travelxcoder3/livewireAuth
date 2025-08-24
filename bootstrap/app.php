@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
     // Global middleware
     $middleware->append(\App\Http\Middleware\UpdateLastActivity::class);
 
+    // ✅ تشغيل الميدلوير على مجموعة web فقط
+    $middleware->appendToGroup('web', \App\Http\Middleware\DefaultAgencyParam::class);
+    // بديل مكافئ لو أردت:
+    // $middleware->web(\App\Http\Middleware\DefaultAgencyParam::class);
+
     // Middleware aliases
     $middleware->alias([
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
@@ -25,6 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ]);
 })
 
+    ->withCommands([
+        \App\Console\Commands\AgencyBackup::class,
+        \App\Console\Commands\AgencyRestore::class,
+        \App\Console\Commands\AgencyBackupAll::class,      // ← جديد
+        \App\Console\Commands\AgencyPruneBackups::class,
+    ])
 
     ->withExceptions(function (Exceptions $exceptions): void {
         //

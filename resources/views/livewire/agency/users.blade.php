@@ -22,31 +22,28 @@
 
         <!-- فلتر الدور -->
         <div class="relative mt-1">
-            <select wire:model.live="role_filter"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer">
-                <option value="">كل الأدوار</option>
-                @foreach($roles as $role)
-                    <option value="{{ $role->name }}">{{ $role->name }}</option>
-                @endforeach
-            </select>
-            <label
-                class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
-                الدور
-            </label>
+           <!-- فلتر الدور -->
+            <x-select-field
+                wireModel="role_filter"
+                name="role_filter"
+                label="الدور"
+                placeholder="كل الأدوار"
+                :options="$roles->pluck('name','name')->toArray()"
+            />
+
         </div>
 
         <!-- فلتر الحالة -->
         <div class="relative mt-1">
-            <select wire:model.live="status_filter"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer">
-                <option value="">كل الحالات</option>
-                <option value="1">نشط</option>
-                <option value="0">غير نشط</option>
-            </select>
-            <label
-                class="absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]">
-                الحالة
-            </label>
+          <!-- فلتر الحالة -->
+            <x-select-field
+                wireModel="status_filter"
+                name="status_filter"
+                label="الحالة"
+                placeholder="كل الحالات"
+                :options="['1' => 'نشط', '0' => 'غير نشط']"
+            />
+
         </div>
 
         <!-- عدد المستخدمين -->

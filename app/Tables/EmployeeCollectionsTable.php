@@ -12,7 +12,6 @@ class EmployeeCollectionsTable {
       [
         'key'=>'actions','label'=>'إجراء','actions'=>[[
           'type'=>'details','label'=>'تفاصيل','icon'=>'fas fa-eye',
-          'can' => auth()->user()->can('collection.emp.details.view'),
           'url'=>fn($row)=>route('agency.employee-collections.show',$row->employee_id),
           'class'=>'text-[rgb(var(--primary-600))] hover:text-black font-medium text-xs'
         ]]

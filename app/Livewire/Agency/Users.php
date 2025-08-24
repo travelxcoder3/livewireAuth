@@ -182,15 +182,16 @@ class Users extends Component
     }
 
     public function closeModal()
-    {
-       $this->reset([
-    'name', 'email', 'password', 'role', 'is_active',
-    'edit_name', 'edit_email', 'edit_password', 'edit_role', 'edit_is_active',
-    'sales_target', 'main_target',
-    'showAddModal', 'showEditModal', 'editingUser'
-]);
+{
+    $this->reset([
+        'name','email','password','role','is_active',
+        'edit_name','edit_email','edit_password','edit_role','edit_is_active',
+        'showAddModal','showEditModal','editingUser',
+    ]);
 
-    }
+    $this->resetValidation();
+}
+
 
  
 

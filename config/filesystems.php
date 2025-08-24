@@ -59,6 +59,11 @@ return [
             'throw' => false,
             'report' => false,
         ],
+        'agency_backups' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/agency_backups'),
+            'throw'  => false,
+        ],
 
     ],
 

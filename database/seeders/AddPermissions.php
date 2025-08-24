@@ -15,6 +15,7 @@ class AddPermissions extends Seeder
             'reportProvider.view',
             'commission-policies.view',
             'reportQuotation.view',
+            'backup.view',
         ];
 
         foreach ($perms as $name) {

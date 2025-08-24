@@ -78,6 +78,9 @@ use App\Livewire\Agency\CommissionPolicies;
 use App\Livewire\Agency\Reports\QuotationsReport;
 use App\Http\Controllers\Agency\Reports\QuotationReportsController;
 use App\Livewire\Agency\MonthlyTargets;
+
+use App\Http\Controllers\AgencyBackupController;
+
 Route::get('/', fn() => view('welcome'));
 
 Route::get('/login', Login::class)->name('login');
@@ -128,7 +131,6 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
     Route::get('/change-password', ChangePassword::class)->name('change-password');
     Route::get('/obligations', Index::class)->name('obligations');
     Route::get('/obligations-view', \App\Livewire\Agency\ObligationsView::class)->name('obligations-view');
-
     Route::get('/customer-detailed-invoices', CustomerDetailedInvoices::class)->name('customer-detailed-invoices');
     Route::get('/customer-invoices/{customer}', CustomerInvoiceOverview::class)->name('customer-invoice-overview');
     Route::get('/customer-invoices/{customer}/print', [CustomerInvoicePrintController::class, 'printSelected'])->name('customer-invoices.print');
@@ -242,6 +244,16 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
         Route::get('/quotations', QuotationsReport::class)->name('reports.quotations');
         Route::get('/quotations/pdf', [QuotationReportsController::class, 'quotationsPdf'])->name('reports.quotations.pdf');
     });
+    Route::prefix('{agency}/backups')->group(function () {
+    // عرض القائمة عبر Livewire
+    Route::get('/', \App\Livewire\Agency\Backups\Index::class)->name('backups.index');
+
+    // أفعال الإنشاء/التنزيل/الاستعادة عبر الكنترولر الحالي
+    Route::post('/',           [AgencyBackupController::class, 'store'])->name('backups.store');
+    Route::get('/{file}',      [AgencyBackupController::class, 'download'])->name('backups.download');
+    Route::post('/restore',    [AgencyBackupController::class, 'restore'])->name('backups.restore');
+    Route::post('/{file}/run', [AgencyBackupController::class, 'restoreExisting'])->name('backups.restore_existing');
+});
 });
 
 // Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
