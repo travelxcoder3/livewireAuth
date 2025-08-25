@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\ScopedToAgency;
 
 class Customer extends Model
 {
+    use ScopedToAgency;
+
     protected $fillable = ['agency_id', 'name', 'email', 'phone', 'address', 'has_commission','account_type'];
 
     public function agency()
@@ -19,12 +22,12 @@ class Customer extends Model
     public function collections()
     {
         return $this->hasManyThrough(
-            \App\Models\Collection::class, // النموذج النهائي
-            \App\Models\Sale::class,       // النموذج الوسيط
-            'customer_id',                 // المفتاح في جدول Sale الذي يشير إلى Customer
-            'sale_id',                     // المفتاح في جدول Collection الذي يشير إلى Sale
-            'id',                          // المفتاح المحلي في جدول Customer
-            'id'                           // المفتاح المحلي في جدول Sale
+            \App\Models\Collection::class, 
+            \App\Models\Sale::class,       
+            'customer_id',                 
+            'sale_id',                     
+            'id',                          
+            'id'                           
         );
     }
 
@@ -33,15 +36,20 @@ class Customer extends Model
         return $this->hasMany(CustomerImage::class);
     }
 
-   
+    public function wallet()      
+    { 
+        return $this->hasOne(\App\Models\Wallet::class); 
+    }
 
+    public function customer()
+    { 
+        return $this->belongsTo(\App\Models\Customer::class);
+    }
 
-    // App/Models/Customer.php
-public function wallet()      { return $this->hasOne(\App\Models\Wallet::class); }
-
-// App/Models/Wallet.php
-public function customer()    { return $this->belongsTo(\App\Models\Customer::class); }
-public function transactions(){ return $this->hasMany(\App\Models\WalletTransaction::class); }
+    public function transactions()
+    { 
+        return $this->hasMany(\App\Models\WalletTransaction::class); 
+    }
 
 
 }

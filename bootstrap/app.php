@@ -12,28 +12,24 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
   ->withMiddleware(function (Middleware $middleware): void {
-    // Global middleware
     $middleware->append(\App\Http\Middleware\UpdateLastActivity::class);
-
-    // ✅ تشغيل الميدلوير على مجموعة web فقط
     $middleware->appendToGroup('web', \App\Http\Middleware\DefaultAgencyParam::class);
-    // بديل مكافئ لو أردت:
-    // $middleware->web(\App\Http\Middleware\DefaultAgencyParam::class);
 
-    // Middleware aliases
     $middleware->alias([
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'ensureCurrency' => \App\Http\Middleware\EnsureAgencyCurrencyIsSet::class,
         'mustChangePassword' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
         'check.agency.subscription' => \App\Http\Middleware\CheckAgencySubscription::class,
         'active.user' => \App\Http\Middleware\UpdateLastActivity::class,
+        'agency.scope' => \App\Http\Middleware\EnforceAgencyScope::class,
+
     ]);
 })
 
     ->withCommands([
         \App\Console\Commands\AgencyBackup::class,
         \App\Console\Commands\AgencyRestore::class,
-        \App\Console\Commands\AgencyBackupAll::class,      // ← جديد
+        \App\Console\Commands\AgencyBackupAll::class,      
         \App\Console\Commands\AgencyPruneBackups::class,
     ])
 

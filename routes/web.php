@@ -5,14 +5,12 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\AccountsReportController;
 
-// Admin Components
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Agencies;
 use App\Livewire\Admin\AddAgency;
 use App\Livewire\Admin\EditAgency;
 use App\Livewire\Admin\DeleteAgency;
 
-// Agency Components
 use App\Livewire\Agency\Dashboard as AgencyDashboard;
 use App\Livewire\Agency\Users;
 use App\Livewire\Agency\Roles;
@@ -23,15 +21,12 @@ use App\Livewire\Agency\Providers;
 use App\Livewire\Agency\AddCustomer;
 use App\Livewire\Agency\Profile;
 
-// HR Components
 use App\Livewire\HR\EmployeeIndex;
 use App\Livewire\HR\EmployeeCreate;
 use App\Livewire\HR\EmployeeEdit;
 
-// Auth Components
 use App\Livewire\Auth\Login;
 
-// Sales & Reports
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Http\Controllers\Agency\ReportController;
 
@@ -55,16 +50,12 @@ use App\Http\Controllers\CustomerAccountReportController;
 use App\Livewire\Agency\AccountHistories;
 use App\Livewire\Agency\Reports\EmployeeServiceSales;
 
-//customer invoice details
 use App\Livewire\Agency\CustomerDetailedInvoices;
 use App\Livewire\Agency\CustomerInvoiceOverview;
 use App\Http\Controllers\Agency\CustomerInvoicePrintController;
 use App\Livewire\Agency\Quotations\ShowQuotation;
 use App\Http\Controllers\Agency\QuotationController;
 
-// ============================
-// 🌐 المسارات العامة والمصادقة
-// ============================
 
 use App\Livewire\Agency\Statements\CustomersList;
 use App\Livewire\Agency\Statements\CustomerStatement;
@@ -101,7 +92,7 @@ Route::post('/logout', function () {
 })->name('logout');
 
 // ============================
-// 👑 مسارات السوبر أدمن
+//  مسارات السوبر أدمن
 // ============================
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super-admin'])->group(function () {
@@ -115,10 +106,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super-admin'])
 });
 
 // ============================
-// 🏢 مسارات أدمن الوكالة
+//  مسارات أدمن الوكالة
 // ============================
 
-Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePassword', 'active.user'])->group(function () {
+Route::prefix('agency')
+    ->name('agency.')
+    ->middleware(['auth', 'mustChangePassword', 'active.user', 'agency.scope'])
+    ->scopeBindings()
+    ->group(function () {
     Route::get('/dashboard', AgencyDashboard::class)->name('dashboard');
     Route::get('/users', Users::class)->name('users');
     Route::get('/roles', Roles::class)->name('roles');
@@ -170,7 +165,7 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
     Route::get('/statements/customers/{customer}', CustomerStatement::class)->name('statements.customer');
 
     Route::get('/accounts', Accounts::class)->name('accounts');
-// قسم التهيئة للهدف المبيعي والاساسي للموظف
+    // قسم التهيئة للهدف المبيعي والاساسي للموظف
     Route::get('/monthly-targets', MonthlyTargets::class)->name('monthly-targets');
     // ============================
     // 🧑‍💼 قسم التحصيلات داخل لوحة الوكالة
@@ -256,16 +251,15 @@ Route::prefix('agency')->name('agency.')->middleware(['auth', 'mustChangePasswor
 });
 });
 
-// Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
-//     ->middleware(['auth', 'agency']);
-Route::post('/update-theme', [ThemeController::class, 'updateTheme'])->middleware(['auth']);
+Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
+    ->middleware(['auth','mustChangePassword','active.user','agency.scope']);
 
-Route::get('/commissions', Commissions::class)->name('agency.commissions');
 
-// في routes/web.php
-Route::get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice) {
-    return (new App\Livewire\Agency\Accounts())->downloadBulkInvoicePdf($invoice->id);
-})->name('invoices.download');
+Route::middleware(['auth','mustChangePassword','active.user','agency.scope'])
+    ->get('/commissions', Commissions::class)->name('agency.commissions');
 
-// routes/web.php
-Route::get('agency/reports/customer-accounts/{id}/pdf', \App\Http\Controllers\Agency\Reports\CustomerAccountPdfController::class)->name('agency.reports.customer-accounts.pdf');
+
+Route::middleware(['auth','mustChangePassword','active.user','agency.scope'])
+    ->get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice) {
+        return (new App\Livewire\Agency\Accounts())->downloadBulkInvoicePdf($invoice->id);
+    })->name('invoices.download');
