@@ -46,63 +46,181 @@
                     request()->routeIs('agency.customers.add')" dropdown="true" />
             <div
                 class="dropdown-accounts absolute right-0 top-full min-w-[200px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('accounts.view'))
-                    <x-navbar.buttons.dropdown-link :href="route('agency.accounts')" icon="fas fa-calculator"
-                        label="مراجعة الحسابات" :show="true" />
-                @endif
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('invoices.view'))
-                <x-navbar.buttons.dropdown-link :href="route('agency.customer-detailed-invoices')"  icon="fas fa-file-invoice-dollar" label="فواتير العملاء المفصلة" :show="true" />
-                @endif
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers.view'))
-                    <x-navbar.buttons.dropdown-link :href="route('agency.customers.add')"  icon="fas fa-address-book" label="ملفات العملاء"
-                        :show="true" />
-                @endif
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('providers.view'))
-                    <x-navbar.buttons.dropdown-link :href="route('agency.providers')"  icon="fas fa-handshake" label="ملفات المزودين"
-                        :show="true" />
-                @endif
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('quotations.view'))
-                <x-navbar.buttons.dropdown-link :href="route('agency.quotation')"  icon="fas fa-file-signature" label="عرض السعر" :show="true" />
-                @endif
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('statements.view'))
-                <x-navbar.buttons.dropdown-link
-                        :href="route('agency.statements.customers')"
-                        icon="fas fa-clipboard-list"
-                        label="كشف حساب"
+              
+
+                <div class="relative group/audit">
+                    {{-- العنوان الرئيسي بدون تنقّل --}}
+                    <x-navbar.buttons.dropdown-link
+                        href="#"
+                        x-on:click.prevent
+                        icon="fas fa-clipboard-check"
+                        label="مراجعة"
                         :show="true"
-                    />
-@endif
-     </div>
+                        class="pr-8 cursor-default select-none" />
+
+                    <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+
+                    {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
+                    <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
+                        <x-navbar.buttons.dropdown-link
+                        :href="route('agency.accounts')"     
+                            icon="fas fa-chart-line"
+                            label="مراجعة المبيعات"
+                            :show="true" />
+
+                        <x-navbar.buttons.dropdown-link
+                             :href="route('agency.reports.accounts')" 
+                            icon="fas fa-wallet"
+                            label="مراجعة الحسابات"
+                            :show="true" />
+
+                        <x-navbar.buttons.dropdown-link
+                            href="route('#')"  
+                            icon="fas fa-file-invoice"
+                            label="مراجعة الفواتير"
+                            :show="true" />
+                    </div>
+                </div>
+
+
+
+                 <div class="relative group/audit">
+                    {{-- العنوان الرئيسي بدون تنقّل --}}
+                    <x-navbar.buttons.dropdown-link
+                        href="#"
+                        x-on:click.prevent
+                        icon="fas fa-clipboard-check"
+                        label="فواتير"
+                        :show="true"
+                        class="pr-8 cursor-default select-none" />
+
+                    <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+
+                    {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
+                    <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.reports.customer-accounts')"    
+                            icon="fas fa-chart-line"
+                            label="فواتير العملاء "
+                            :show="true" />
+
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.reports.provider-accounts')"
+                            icon="fas fa-wallet"
+                            label="فواتير المزودين "
+                            :show="true" />
+
+                        <x-navbar.buttons.dropdown-link
+                           :href="route('agency.quotation')" 
+                            icon="fas fa-file-invoice"
+                            label="عرض السعر  "
+                            :show="true" />
+                    </div>
+                </div>
+
+
+                 <div class="relative group/audit">
+                    {{-- العنوان الرئيسي بدون تنقّل --}}
+                    <x-navbar.buttons.dropdown-link
+                        href="#"
+                        x-on:click.prevent
+                        icon="fas fa-clipboard-check"
+                        label="اداره حسابات الشركة"
+                        :show="true"
+                        class="pr-8 cursor-default select-none" />
+
+                    <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+
+                    {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
+                    <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.customers.add')"     
+                            icon="fas fa-chart-line"
+                            label=" ملفات العملاء "
+                            :show="true" />
+
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.providers')"
+                            icon="fas fa-wallet"
+                            label="ملفات المزودين   "
+                            :show="true" />
+
+                        <x-navbar.buttons.dropdown-link
+                           href="#" 
+                            icon="fas fa-file-invoice"
+                            label="ملفات الموظفين    "
+                            :show="true" />
+                    </div>
+                </div>
+
+
+                <div class="relative group/audit">
+                    {{-- العنوان الرئيسي بدون تنقّل --}}
+                    <x-navbar.buttons.dropdown-link
+                        href="#"
+                        x-on:click.prevent
+                        icon="fas fa-clipboard-check"
+                        label="  كشف حساب "
+                        :show="true"
+                        class="pr-8 cursor-default select-none" />
+
+                    <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+
+                    {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
+                    <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.statements.customers')"
+                            icon="fas fa-chart-line"
+                            label=" كشف حساب  العملاء "
+                            :show="true" />
+
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.reports.provider-accounts')"
+                            icon="fas fa-wallet"
+                            label="كشف حساب المزودين   "
+                            :show="true" />
+
+                        <x-navbar.buttons.dropdown-link
+                            href="#" 
+                            icon="fas fa-file-invoice"
+                            label="كشف حساب  الموظفين    "
+                            :show="true" />
+                    </div>
+                </div>
+
+               
+           
+           </div>
         </div>
     @endif
 
        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.view')|| Auth::user()->can('collection.employee.view'))
-<div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
-    <x-navbar.buttons.icon-button
-        icon="fas fa-hand-holding-usd" tooltip="التحصيل" label="التحصيل"
-        href="#"
-        class="!px-2 !py-1"
-        dropdown="true"
-        :active="request()->routeIs('agency.employee-collections') || request()->routeIs('agency.employee-collections.all')"
-    />
-    <div class="dropdown-settings absolute right-0 top-full min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
-        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.employee.view'))
-            <x-navbar.buttons.dropdown-link
-                :href="route('agency.employee-collections')"
-                icon="fas fa-user-friends"
-                label="تحصيلات الموظفين"
-                :show="true" />
-        @endif
-        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.view'))
-            <x-navbar.buttons.dropdown-link
-                :href="route('agency.employee-collections.all')"
-                icon="fas fa-clipboard-list"
-                label="عرض التحصيلات"
-                :show="true" />
-        @endif
-    </div>
-</div>
-@endif
+            <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
+                <x-navbar.buttons.icon-button
+                    icon="fas fa-hand-holding-usd" tooltip="التحصيل" label="التحصيل"
+                    href="#"
+                    class="!px-2 !py-1"
+                    dropdown="true"
+                    :active="request()->routeIs('agency.employee-collections') || request()->routeIs('agency.employee-collections.all')"
+                />
+                <div class="dropdown-settings absolute right-0 top-full min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
+                    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.employee.view'))
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.employee-collections')"
+                            icon="fas fa-user-friends"
+                            label="تحصيلات الموظفين"
+                            :show="true" />
+                    @endif
+                    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.view'))
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.employee-collections.all')"
+                            icon="fas fa-clipboard-list"
+                            label="عرض التحصيلات"
+                            :show="true" />
+                    @endif
+                </div>
+            </div>
+     @endif
 
     {{-- الموارد البشرية --}}
     @php
@@ -171,56 +289,65 @@
                         :show="true" />
                 @endif
 
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportsAccounts.view'))
-                    <x-navbar.buttons.dropdown-link
-                        :href="route('agency.reports.accounts')"
-                        icon="fas fa-file-invoice-dollar"
-                        label="تقرير الحسابات"
-                        :show="true" />
-                @endif
+          
 
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportCustomers.view'))
+                <div class="relative group/clients">
+                    {{-- العنوان الرئيسي بدون تنقّل --}}
+                    <x-navbar.buttons.dropdown-link
+                        href="#"
+                        x-on:click.prevent
+                        icon="fas fa-user-check"
+                        label="تقرير العملاء"
+                        :show="true"
+                        class="pr-8 cursor-default select-none" />
+
+                    <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+
+                    {{-- القائمة الفرعية --}}
+                    <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/clients:block">
                     <x-navbar.buttons.dropdown-link
                         :href="route('agency.reports.customers-follow-up')"
-                        icon="fas fa-user-check"
-                        label="تقرير تتبع العملاء"
+                        icon="fas fa-user-clock"
+                        label="تتبع العملاء"
                         :show="true" />
-                @endif
 
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportCustomerAccounts.view'))
                     <x-navbar.buttons.dropdown-link
-                        :href="route('agency.reports.customer-accounts')"
-                        icon="fas fa-wallet"
-                        label="مشتريات العملاء"
+                        :href="route('agency.customer-detailed-invoices')"  
+                        icon="fas fa-list-check"
+                        label="عمليات العملاء"
                         :show="true" />
-                @endif
+                    </div>
+                    </div>
+                        @endif
 
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
-                    <x-navbar.buttons.dropdown-link
-                        :href="route('agency.reports.employee-sales')"
-                        icon="fas fa-user-tie"
-                        label="حسابات الموظفين"
-                        :show="true" />
-                @endif
+                        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
+                            <x-navbar.buttons.dropdown-link
+                                href="#"
+                                icon="fas fa-user-tie"
+                                label=" تقارير المزودين "
+                                :show="true" />
+                        @endif
 
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportProvider.view'))
-                    <x-navbar.buttons.dropdown-link
-                        :href="route('agency.reports.provider-accounts')"
-                        icon="fas fa-handshake"
-                        label="حسابات المزودين"
-                        :show="true" />
-                @endif
+                        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
+                            <x-navbar.buttons.dropdown-link
+                                href="#"
+                                icon="fas fa-user-tie"
+                                label=" تقارير الموظفين "
+                                :show="true" />
+                        @endif
 
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportQuotation.view'))
-                    <x-navbar.buttons.dropdown-link
-                        :href="route('agency.reports.quotations')"
-                        icon="fas fa-file-invoice"
-                        label="تقارير عروض الاسعار"
-                        :show="true" />
-                @endif
 
-            </div>
-        </div>
+                        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportQuotation.view'))
+                            <x-navbar.buttons.dropdown-link
+                                :href="route('agency.reports.quotations')"
+                                icon="fas fa-file-invoice"
+                                label="تقارير عروض الاسعار"
+                                :show="true" />
+                        @endif
+
+                        </div>
+                    </div>
      @endif
 
 

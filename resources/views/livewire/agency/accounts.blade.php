@@ -20,7 +20,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <h2 class="text-xl sm:text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
-            مراجعة الحسابات
+            مراجعة المبيعات
         </h2>
 
         <div class="flex items-center gap-2 order-last sm:order-none w-full sm:w-auto">
