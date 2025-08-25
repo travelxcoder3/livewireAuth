@@ -2,7 +2,7 @@
 <!-- Drawer جانبي ثابت -->
 <div class="fixed inset-0 z-50 flex justify-end">
   <!-- overlay يغطي الشاشة كاملة -->
-  <div class="absolute inset-0 z-40 bg-black/30" wire:click="$dispatch('wallet-closed')"></div>
+  <div class="absolute inset-0 z-40 bg-black/30" wire:click="close"></div>
 
   <!-- اللوحة -->
   <div class="relative z-50 w-full sm:w-[520px] bg-white h-screen shadow-2xl p-5 overflow-y-auto">
@@ -137,7 +137,9 @@
   <td class="p-2">{{ $row['label'] }}</td>
   <td class="p-2 text-right">{{ number_format($row['credit'] ?? 0,2) }}</td>
   <td class="p-2 text-right">{{ number_format($row['debit']  ?? 0,2) }}</td>
-  <td class="p-2 text-right">—</td> {{-- لا نعرض running balance هنا --}}
+  <td class="p-2 text-right">
+    {{ isset($row['running']) ? number_format($row['running'], 2) : '—' }}
+  </td>
   <td class="p-2">{{ $row['reference'] ?? '' }}</td>
   <td class="p-2">{{ $row['performed'] ?? '' }}</td>
 </tr>

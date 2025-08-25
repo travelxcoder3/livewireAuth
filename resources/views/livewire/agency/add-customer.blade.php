@@ -163,8 +163,13 @@
         $columns = CustomerTable::columns();
     @endphp
     <x-data-table :rows="$customers" :columns="$columns" />
-    @if($showWallet && $walletCustomerId)
-        <livewire:agency.customer-wallet :customerId="$walletCustomerId" wire:key="wallet-{{ $walletCustomerId }}" />
-    @endif
+@if($showWallet && $walletCustomerId)
+<livewire:agency.customer-wallet
+    :customerId="$walletCustomerId"
+    wire:key="wallet-{{ $walletCustomerId }}-{{ $walletNonce }}" />
+
+@endif
+
+
 
 </div>

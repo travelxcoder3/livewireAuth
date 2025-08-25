@@ -50,7 +50,9 @@ $remaining = $group->sum(function ($s) use ($getEffectiveTotal) {
 
     // لا تسمح بأي مبالغ سالبة تُحسب كمدفوعات
     $paid      = max(0.0, (float) ($s->amount_paid ?? 0));
-    $collected = max(0.0, (float) $s->collections->sum('amount'));
+    // احسب كل التحصيلات بما فيها "wallet" حتى نعيد ما سُحب من المحفظة عند الاسترداد
+    $collected = max(0.0, (float) $s->collections()->sum('amount'));
+
 
     return $totalDue - $paid - $collected;
 });
@@ -69,12 +71,16 @@ if ($remaining < 0) {
             ->where('note', 'like', '%تسديد من رصيد الشركة للعميل%')
             ->sum('amount');
 
-        $usedFromWallet = WalletTransaction::whereHas('wallet', fn($q) =>
-                $q->where('customer_id', $customerId)
-            )
-            ->where('type', 'deposit')
-            ->whereIn('reference', ['employee-collections','sales-auto'])
-            ->sum('amount');
+            $usedFromWallet = WalletTransaction::whereHas('wallet', fn($q) =>
+                    $q->where('customer_id', $customerId)
+                )
+                ->where('type', 'deposit')
+                ->where(function($q){
+                    $q->where('reference', 'employee-collections')
+                    ->orWhere('reference', 'like', 'sales-auto%'); // يشمل sales-auto|group:...
+                })
+                ->sum('amount');
+
 
         return max(0, $rawCredit - $usedFromCollections - $usedFromWallet);
     }
@@ -112,8 +118,8 @@ if (!$sale->customer_id) return;
 
 // لا نسدد من المحفظة لصفقة ملغاة/مستردة
 $status = mb_strtolower(trim((string) $sale->status));
-if ($status === 'void' || str_contains($status, 'cancel') || (str_contains($status, 'refund') && str_contains($status, 'full'))) {
-    return;
+if ($status === 'void' || str_contains($status, 'cancel') || str_contains($status, 'refund')) {
+    return; // لا نسدد من المحفظة لأي استرداد (جزئي/كلي)
 }
 
 // إجمالي فعلي حسب الحالة
@@ -237,8 +243,6 @@ foreach ($sales as $sale) {
     return round($totalApplied, 2);
 }
 
-// app/Services/CustomerCreditService.php
-
 public function syncCustomerCommission(Sale $sale): void
 {
     if (!$sale->customer_id) return;
@@ -251,34 +255,29 @@ public function syncCustomerCommission(Sale $sale): void
         $customer = Customer::findOrFail($sale->customer_id);
         $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
 
-        // اجلب كل عمليات نفس المجموعة
+        // كل سجلات نفس المجموعة
         $groupSales = Sale::where(function ($q) use ($groupId) {
                 $q->where('sale_group_id', $groupId)
-                  ->orWhere('id', $groupId); // دعم سجل قديم بلا sale_group_id
+                  ->orWhere('id', $groupId);
             })
             ->where('customer_id', $sale->customer_id)
+            ->orderBy('id') // التسلسل الزمني
             ->get();
 
-        // هل يوجد استرداد كلي في أي سجل داخل المجموعة؟
+        // وجود استرداد كلي يلغي أي عمولة
         $hasFullRefund = $groupSales->contains(function ($s) {
             return strcasecmp((string)$s->status, 'Refund-Full') === 0;
         });
 
-        // الصافي المقيد سابقاً لمرجع العمولة لهذه المجموعة
-        $deposited = WalletTransaction::where('wallet_id', $wallet->id)
-            ->where('reference', $ref)
-            ->where('type', 'deposit')
-            ->sum('amount');
-
-        $withdrawn = WalletTransaction::where('wallet_id', $wallet->id)
-            ->where('reference', $ref)
-            ->where('type', 'withdraw')
-            ->sum('amount');
-
-        $net = (float)$deposited - (float)$withdrawn;
+        // صافي ما قُيِّد سابقاً لهذه العمولة (إيداع - سحب)
+        $deposited = (float) WalletTransaction::where('wallet_id', $wallet->id)
+            ->where('reference', $ref)->where('type', 'deposit')->sum('amount');
+        $withdrawn = (float) WalletTransaction::where('wallet_id', $wallet->id)
+            ->where('reference', $ref)->where('type', 'withdraw')->sum('amount');
+        $net = $deposited - $withdrawn;
 
         if ($hasFullRefund) {
-            // صفّر العمولة (اسحب الصافي إن وُجد)
+            // صفّر الصافي إن وجد
             if ($net > 0) {
                 WalletTransaction::create([
                     'wallet_id'        => $wallet->id,
@@ -294,23 +293,46 @@ public function syncCustomerCommission(Sale $sale): void
             return;
         }
 
-        // لا تُسجل عمولة ثانية إن كان هناك قيد سابق لنفس المجموعة
-        $commission = (float)($sale->commission ?? 0);
-        $customerHasCommission = (bool)($customer->has_commission ?? false);
+        // أحدث سجل "فعّال" داخل المجموعة لتحديد العمولة المطلوبة
+        $latestActive = $groupSales->last(function ($s) {
+            $st = mb_strtolower((string)$s->status);
+            return $st !== 'void'
+                && !str_contains($st,'cancel')
+                && !str_contains($st,'refund');
+        });
 
-        if ($net <= 0 && $commission > 0 && $customerHasCommission) {
-            // قيّد العمولة مرة واحدة للمجموعة
+        $desired = 0.0;
+        if ($customer->has_commission && $latestActive) {
+            $desired = (float) ($latestActive->commission ?? 0);
+        }
+
+        // اضبط الصافي الحالي ليطابق desired
+        if ($desired > $net) {
+            $diff = $desired - $net; // إيداع زيادة
             WalletTransaction::create([
                 'wallet_id'        => $wallet->id,
                 'type'             => 'deposit',
-                'amount'           => $commission,
-                'running_balance'  => $wallet->balance + $commission,
+                'amount'           => $diff,
+                'running_balance'  => $wallet->balance + $diff,
                 'reference'        => $ref,
-                'note'             => 'عمولة عميل للمجموعة #' . $groupId,
+                'note'             => 'تعديل عمولة المجموعة #' . $groupId . ' (زيادة)',
                 'performed_by_name'=> auth()->user()->name ?? 'system',
             ]);
-            $wallet->increment('balance', $commission);
+            $wallet->increment('balance', $diff);
+        } elseif ($desired < $net && $net > 0) {
+            $diff = $net - $desired; // سحب فرق
+            WalletTransaction::create([
+                'wallet_id'        => $wallet->id,
+                'type'             => 'withdraw',
+                'amount'           => $diff,
+                'running_balance'  => $wallet->balance - $diff,
+                'reference'        => $ref,
+                'note'             => 'تعديل عمولة المجموعة #' . $groupId . ' (خصم)',
+                'performed_by_name'=> auth()->user()->name ?? 'system',
+            ]);
+            $wallet->decrement('balance', $diff);
         }
+        // إن كان desired == net فلا إجراء
     });
 }
 

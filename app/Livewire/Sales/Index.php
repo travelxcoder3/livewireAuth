@@ -857,32 +857,50 @@ class Index extends Component
             'expected_payment_date' => $this->expected_payment_date,
             'sale_group_id' => $this->sale_group_id,
         ]);
-        app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
 
-        // إعادة حساب عمولات الشهر كاملًا لهذا المستخدم (يعالج ترتيب التواريخ)
-        $svc = app(\App\Services\EmployeeWalletService::class);
-        $ref = \Carbon\Carbon::parse($sale->sale_date ?: $sale->created_at);
-        $svc->recalcMonthForUser($sale->user_id, (int)$ref->year, (int)$ref->month);
+// 1) زامن عمولة العميل أولاً (يضيف 10 في حالتك على نفس المجموعة)
+app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
 
-                if ($this->customer_id) {
-    app(\App\Services\CustomerCreditService::class)
-        ->autoDepositToWallet((int)$this->customer_id, Auth::user()->agency_id, 'sales-auto|group:'.$this->sale_group_id);
+// 2) إن كانت Refund أودِع الاسترداد للمحفظة
+if ($this->customer_id && (
+    in_array($sale->status, ['Refund-Full','Refund-Partial']) || (float)$sale->usd_sell < 0
+)) {
+app(\App\Services\CustomerCreditService::class)
+    ->autoDepositToWallet(
+        (int)$this->customer_id,
+        Auth::user()->agency_id,
+        'sales-auto|group:'.($sale->sale_group_id ?: $sale->id)
+    );
+
 }
 
-                // بعد إنشاء السيل وقيد عمولة الموظف
+// 3) أخيراً نفّذ السداد من المحفظة مرة واحدة فقط
 app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
 
 
-        if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
-            $this->amount_paid = 0;
-        }
+// 🔔 بلّغ المحفظة لتتحدث فوراً
+if ($this->customer_id) {
+    $this->dispatch('wallet-updated', customerId: (int)$this->customer_id);
+}
 
-        $this->resetForm();
-        $this->isDuplicated = false;
-        $this->updateStatusOptions();
-        $this->status = 'Issued';
-        $this->successMessage = 'تمت إضافة العملية بنجاح';
-        $this->original_user_id = null;
+/* ✅ عمولة الموظّف (إضافة/تعديل الحركة المتوقعة حسب الهدف الشهري) */
+$svc = app(\App\Services\EmployeeWalletService::class);
+$ref = \Carbon\Carbon::parse($sale->sale_date ?: $sale->created_at);
+$svc->recalcMonthForUser($sale->user_id, (int)$ref->year, (int)$ref->month);
+// بديل أخف لو تحب لمس العملية فقط:
+// app(\App\Services\EmployeeWalletService::class)->upsertExpectedCommission($sale);
+
+if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
+    $this->amount_paid = 0;
+}
+
+$this->resetForm();
+$this->isDuplicated = false;
+$this->updateStatusOptions();
+$this->status = 'Issued';
+$this->successMessage = 'تمت إضافة العملية بنجاح';
+$this->original_user_id = null;
+
     }
 
     public function updatedPaymentMethod($value)
@@ -1132,25 +1150,49 @@ app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
             'updated_by' => Auth::id(),
         ]);
 
-        if ($sale->customer_id) {
+
+$sale->refresh();
+
+$sale->refresh();
+
+// 1) زامن عمولة العميل أولاً
+app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
+
+// 2) إيداع الاسترداد إن وُجد
+if ($sale->customer_id && (
+    in_array($sale->status, ['Refund-Full','Refund-Partial']) || (float)$sale->usd_sell < 0
+)) {
     app(\App\Services\CustomerCreditService::class)
         ->autoDepositToWallet((int)$sale->customer_id, Auth::user()->agency_id, 'sales-auto|group:'.($sale->sale_group_id ?: $sale->id));
 }
 
-
-        $sale->refresh();
-        app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
-        // إعادة حساب عمولات الشهر كاملًا لأن تعديل عملية قديمة يغيّر التوزيع
-        $svc = app(\App\Services\EmployeeWalletService::class);
-        $ref = \Carbon\Carbon::parse($sale->sale_date ?: $sale->created_at);
-        $svc->recalcMonthForUser($sale->user_id, (int)$ref->year, (int)$ref->month);
-
-        app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+// 3) ثم السداد من المحفظة مرة واحدة فقط
+app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
 
 
-    
+// 4) (كما هو) إعادة حساب عمولات الموظف
+$svc = app(\App\Services\EmployeeWalletService::class);
+$ref = \Carbon\Carbon::parse($sale->sale_date ?: $sale->created_at);
+$svc->recalcMonthForUser($sale->user_id, (int)$ref->year, (int)$ref->month);
+
+// 5) تحديث واجهة المحفظة
+if ($sale->customer_id) {
+    $this->dispatch('wallet-updated', customerId: (int)$sale->customer_id);
+}
+ 
         $this->resetForm();
         $this->editingSale = null;
         $this->successMessage = 'تم تحديث العملية بنجاح';
     }
+
+    public function showWallet(int $customerId): void
+{
+    // افتح مودال/صفحة المحفظة حسب تطبيقك
+    $this->dispatch('open-wallet-modal', customerId: $customerId);
+
+    // 👈 بلّغ مكوّن المحفظة ليتحدّث فورًا عند الفتح
+    $this->dispatch('wallet-opened', customerId: $customerId)
+         ->to(\App\Livewire\Agency\CustomerWallet::class);
+}
+
 }

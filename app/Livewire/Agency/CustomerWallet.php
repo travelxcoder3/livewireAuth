@@ -15,6 +15,10 @@ class CustomerWallet extends Component
     public int $customerId;
     public ?Customer $customer = null;
     public ?Wallet $wallet = null;
+protected $listeners = [
+    'wallet-updated'   => 'onWalletUpdated',   // لو وصلك إشعار من صفحة المبيعات
+    'wallet-opened'    => 'onWalletOpened',    // 👈 جديد: عند فتح المحفظة
+];
 
     // نموذج العملية
     public $type = 'deposit'; // deposit|withdraw|adjust
@@ -34,7 +38,21 @@ class CustomerWallet extends Component
         $this->wallet = Wallet::firstOrCreate(['customer_id' => $customerId], [
             'balance' => 0, 'status' => 'active'
         ]);
+
+        // 👈 تحديث فوري عند الفتح (بدون انتظار أي حدث خارجي)
+        $this->onWalletOpened($customerId);
     }
+
+    // لمنع تعارض الترقيم مع صفحات أخرى تستخدم WithPagination
+    public function getPageName()
+    {
+        return 'walletPage';
+    }
+public function close(): void
+{
+    $this->dispatch('wallet-closed');
+}
+
 
 public function submit()
 {
@@ -249,7 +267,6 @@ public function getDebtBreakdownProperty(): array
     return $rows;
 }
 
-
 public function getUnifiedLedgerProperty(): array
 {
     $rows = [];
@@ -257,56 +274,253 @@ public function getUnifiedLedgerProperty(): array
     foreach ($this->debtBreakdown as $g) {
         $gid = (string)$g['group_id'];
         $ts  = (string)$g['latest_ts'];
-        $ref = trim(($g['reference'] ?? '').' '.($g['route'] ? '| '.$g['route'] : '').($g['pnr'] ? ' | PNR: '.$g['pnr'] : ''));
 
-        // 1) عمولة هذه المجموعة (إيداعات commission:group:<gid>)
-        $commission = (float) \App\Models\WalletTransaction::where('wallet_id', $this->wallet->id)
-            ->where('type','deposit')
-            ->where('reference','commission:group:'.$gid)
+        // مرجع نصي مختصر
+        $ref = trim(
+            ($g['reference'] ?? '')
+            .' '.($g['route'] ? '| '.$g['route'] : '')
+            .($g['pnr'] ? ' | PNR: '.$g['pnr'] : '')
+        );
+
+        // حركات مرتبطة بالمجموعة
+        $withdrawTxs = \App\Models\WalletTransaction::where('wallet_id', $this->wallet->id)
+            ->where('type', 'withdraw')
+            ->where('reference', 'like', '%|group:'.$gid.'%')
+            ->orderBy('id')
+            ->get(['amount','performed_by_name','created_at','reference','running_balance']);
+
+        $commTxs = \App\Models\WalletTransaction::where('wallet_id', $this->wallet->id)
+            ->where('reference', 'commission:group:'.$gid)
+            ->orderBy('id')
+            ->get(['type','amount','performed_by_name','created_at','reference','running_balance']);
+
+        $refundTxs = \App\Models\WalletTransaction::where('wallet_id', $this->wallet->id)
+            ->where('type', 'deposit')
+            ->where('reference', 'like', '%sales-auto|group:'.$gid.'%')
+            ->orderBy('id')
+            ->get(['amount','performed_by_name','created_at','reference','running_balance']);
+
+        // مرساة زمنية واحدة لعرض كتلة المجموعة
+        $anchorTs = null;
+        foreach ([
+            optional($withdrawTxs->first())->created_at,
+            optional($commTxs->first())->created_at,
+            optional($refundTxs->first())->created_at,
+        ] as $cand) {
+            if ($cand && (!$anchorTs || $cand->lt($anchorTs))) $anchorTs = $cand;
+        }
+        $anchor = ($anchorTs ?: \Carbon\Carbon::parse($ts))->toDateTimeString();
+
+
+        // احسب دين العملية "قبل خصم المحفظة"
+        $saleIds = \App\Models\Sale::where(function($q) use ($gid) {
+                $q->where('sale_group_id', $gid)->orWhere('id', $gid);
+            })
+            ->where('customer_id', $this->customerId)
+            ->pluck('id');
+
+        $collectionsNonWallet = (float) \App\Models\Collection::whereIn('sale_id', $saleIds)
+            ->where('method', '!=', 'wallet')
             ->sum('amount');
 
-        // 2) مبالغ السداد من المحفظة لهذه المجموعة (سحوبات مرجعها يحتوي |group:<gid>)
-        $walletApplied = (float) \App\Models\WalletTransaction::where('wallet_id', $this->wallet->id)
-            ->where('type','withdraw')
-            ->where('reference','like','%|group:'.$gid.'%')
-            ->sum('amount');
-
-        // 3) دين العملية قبل الخصم من المحفظة
-        // = إجمالي البيع - المدفوع داخل السجل - تحصيلات غير المحفظة
-        $collectionsNonWallet = max(0.0, (float)$g['collections'] - $walletApplied);
         $debtBeforeWallet = max(0.0, (float)$g['active'] - (float)$g['paid'] - $collectionsNonWallet);
 
-        // الأسطر الثلاثة بالترتيب المطلوب
-        $rows[] = [
-            'ts'=>$ts, 'seq'=>1, 'label'=>'عمولة هذه العملية',
-            'credit'=>$commission, 'debit'=>0.0,
-            'reference'=>'commission:group:'.$gid, 'performed'=>'',
-        ];
+        // بناء كتلة الصفوف للمجموعة
+        $block = [];
 
-        $rows[] = [
-            'ts'=>$ts, 'seq'=>2, 'label'=>'دين العملية قبل الخصم',
-            'credit'=>0.0, 'debit'=>$debtBeforeWallet,
-            'reference'=>$ref, 'performed'=>'',
-        ];
+// (أ) عمولة العميل
+foreach ($commTxs as $tx) {
+    $isDeposit = strtolower($tx->type) === 'deposit';
 
-        $rows[] = [
-            'ts'=>$ts, 'seq'=>3, 'label'=>'خصم من العمولة',
-            'credit'=>0.0, 'debit'=>$walletApplied,
-            'reference'=>'sale:*|group:'.$gid, 'performed'=>'',
-        ];
-    }
+    $block[] = [
+        // الإضافة بوقت البيع، الخصم بوقته الحقيقي (عادة مع الاسترداد)
+        'ts'        => $isDeposit
+            ? $anchor
+            : ($tx->created_at?->toDateTimeString() ?? $anchor),
 
-    // ترتيب: أحدث وقت أولاً، ثم seq 1→3
-    usort($rows, function($a,$b){
-        $cmp = strcmp($b['ts'],$a['ts']);
-        return $cmp !== 0 ? $cmp : (($a['seq'] ?? 0) <=> ($b['seq'] ?? 0));
-    });
+        // ترتيب داخل نفس الثانية:
+        // 1.01 = إضافة عمولة (قبل دين/سحب)
+        // 1.24 = خصم عمولة (يأتي مباشرة قبل صف "استرداد" 1.25)
+        'seq'       => $isDeposit ? 1.01 : 1.24,
 
-    return $rows;
+        'label'     => $isDeposit ? 'إضافة عمولة عميل' : 'تعديل عمولة عميل (خصم)',
+        'credit'    => $isDeposit ? (float)$tx->amount : 0.0,
+        'debit'     => $isDeposit ? 0.0 : (float)$tx->amount,
+        'reference' => 'commission:group:'.$gid,
+        'performed' => (string)($tx->performed_by_name ?? ''),
+        'kind'      => $isDeposit ? 'deposit' : 'withdraw_misc',
+        'running'   => null,
+    ];
 }
 
 
+        // (ب) دين العملية قبل الخصم — مرجع بصري فقط
+        if ($debtBeforeWallet > 0) {
+            $block[] = [
+                'ts'        => $anchor, 
+                'seq'       => 1.10,
+                'label'     => 'دين العملية قبل الخصم',
+                'credit'    => 0.0,
+                'debit'     => $debtBeforeWallet,
+                'reference' => $ref,
+                'performed' => '',
+                'kind'      => 'debt_anchor',   // لا يؤثر على صافي المحفظة
+                'running'   => null,            // ✅ اتركه null ليُعرض رصيد المحفظة كما هو
+            ];
+        }
 
+        // (ج) سحب من الرصيد للسداد — معلومة فقط
+// (ج) سحب من الرصيد للسداد — معلومة فقط
+$paidFromWallet = 0.0;
+foreach ($withdrawTxs as $tx) {
+    $paidFromWallet += (float)$tx->amount;
+
+    // المتبقي من الدين بعد السحوبات الحالية في نفس المجموعة
+    $gap = round($debtBeforeWallet - $paidFromWallet, 2);
+
+    $block[] = [
+        'ts'        => $anchor,
+        'seq'       => 1.20,
+        'label'     => 'سحب من الرصيد للسداد',
+        'credit'    => 0.0,
+        'debit'     => (float)$tx->amount,
+        'reference' => (string)($tx->reference ?? ('sale:*|group:'.$gid)),
+        'performed' => (string)($tx->performed_by_name ?? ''),
+        'kind'      => 'withdraw_sale_info',
+        // إن بقي دين نُظهره بالسالب (مثال: -1090). إذا لا يوجد دين نتركها null لعرض رصيد المحفظة الفعلي.
+        'running'   => ($gap > 0 ? -$gap : null),
+    ];
+}
+
+        // (د) استرداد (إن وجد) — استخدم تاريخ الإنشاء الحقيقي للحفاظ على الترتيب الزمني العام
+        foreach ($refundTxs as $tx) {
+            $block[] = [
+                'ts'        => $tx->created_at?->toDateTimeString() ?? $anchor,
+                'seq'       => 1.25, // أي رقم عادي؛ المهم عدم تثبيته كآخر عنصر
+                'label'     => 'استرداد',
+                'credit'    => (float)$tx->amount,
+                'debit'     => 0.0,
+                'reference' => (string)($tx->reference ?? ('sales-auto|group:'.$gid)),
+                'performed' => (string)($tx->performed_by_name ?? ''),
+                'kind'      => 'deposit',
+                'running'   => null,
+            ];
+        }
+
+
+        // فرز داخل المجموعة (تصاعدي بالثانية ثم seq)
+        usort($block, function($a,$b){
+            $cmp = strcmp($a['ts'],$b['ts']);
+            return $cmp !== 0 ? $cmp : (($a['seq'] ?? 0) <=> ($b['seq'] ?? 0));
+        });
+
+        $rows = array_merge($rows, $block);
+    }
+
+    // (هـ) العمليات اليدوية غير المرتبطة بمجموعات/عمولات/استردادات
+$miscTxs = \App\Models\WalletTransaction::where('wallet_id', $this->wallet->id)
+    ->where(function($q){
+        $q->whereNull('reference')
+          ->orWhere(function($qq){
+              $qq->where('reference', 'not like', 'commission:group:%')
+                 ->where('reference', 'not like', '%sales-auto|group:%')
+                 ->where('reference', 'not like', 'sale:%|group:%')
+                 ->where('reference', '!=', 'auto-settle'); // 👈 لا تعرض سحوبات التسوية الفورية
+          });
+    })
+    ->orderBy('id')
+    ->get(['type','amount','performed_by_name','created_at','reference','running_balance']);
+
+
+foreach ($miscTxs as $tx) {
+    $isDeposit = strtolower($tx->type) === 'deposit';
+
+    // الافتراض
+    $label   = $isDeposit ? 'إيداع محفظة' : 'سحب محفظة';
+    $kind    = $isDeposit ? 'deposit' : 'withdraw_misc';
+    $running = null;
+
+    // 👈 تخصيص عرض إيداع التحصيل
+    if ($isDeposit && (string)$tx->reference === 'employee-collections') {
+        $label   = 'إيداع تحصيل';
+        $kind    = 'deposit_ec_info';          // معلومات فقط، لا تؤثر على صافي المحفظة
+        $running = -1 * (float) $this->debt;   // المتبقي بعد التسوية (يظهر بالسالب)
+    }
+
+    $rows[] = [
+        'ts'        => $tx->created_at?->toDateTimeString() ?? now()->toDateTimeString(),
+        'seq'       => $isDeposit ? 1.15 : 1.14,
+        'label'     => $label,
+        'credit'    => $isDeposit ? (float)$tx->amount : 0.0,
+        'debit'     => $isDeposit ? 0.0 : (float)$tx->amount,
+        'reference' => (string)($tx->reference ?? ''),
+        'performed' => (string)($tx->performed_by_name ?? ''),
+        'kind'      => $kind,
+        'running'   => $running,
+    ];
+}
+
+    /* -------- حساب الرصيد العام للمحفظة -------- */
+
+    // 1) تصاعدي لحساب الصافي
+    $ordered = $rows;
+    usort($ordered, function($a,$b){
+        $cmp = strcmp($a['ts'],$b['ts']); // أقدم → أحدث
+        return $cmp !== 0 ? $cmp : (($a['seq'] ?? 0) <=> ($b['seq'] ?? 0));
+    });
+
+    $net = 0.0;
+    foreach ($ordered as &$r) {
+switch ($r['kind'] ?? null) {
+    case 'deposit':            $net += (float)($r['credit'] ?? 0); break;
+    case 'withdraw_misc':      $net -= (float)($r['debit']  ?? 0); break;
+    case 'withdraw_sale_info': $net -= (float)($r['debit']  ?? 0); break;
+    case 'debt_anchor':
+    case 'deposit_ec_info':    /* معلومات فقط: لا تغيّر صافي المحفظة */ break;
+}
+
+        if (!isset($r['running']) || $r['running'] === null) {
+            $r['running'] = round($net, 2);
+        }
+    }
+
+    unset($r);
+
+    // 3) عرض تنازلي (الأحدث أعلى)
+    usort($ordered, function($a,$b){
+        $cmp = strcmp($b['ts'],$a['ts']);             // الأحدث أولاً
+        return $cmp !== 0 ? $cmp : (($b['seq'] ?? 0) <=> ($a['seq'] ?? 0)); // ← اجعلها DESC
+    });
+
+
+    return $ordered;
+}
+
+public function onWalletUpdated($customerId = null)
+{
+    // للتوافق لو جاء Array بالغلط
+    if (is_array($customerId)) {
+        $customerId = $customerId['customerId'] ?? null;
+    }
+
+    if ((int)$customerId !== (int)$this->customerId) {
+        return;
+    }
+
+    $this->wallet->refresh();
+    $this->resetPage();
+    $this->dispatch('$refresh');
+}
+
+public function onWalletOpened($payload = null): void
+{
+    $customerId = is_array($payload) ? ($payload['customerId'] ?? null) : $payload;
+    if ((int)$customerId !== (int)$this->customerId) return;
+
+    $this->wallet->refresh();
+    $this->resetPage();
+    $this->dispatch('$refresh');
+}
 
 
 }

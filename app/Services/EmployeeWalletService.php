@@ -104,11 +104,14 @@ class EmployeeWalletService
 
             $diff = round($newAmount - (float)$current->amount, 2);
             if (abs($diff) >= 0.01) {
-                if ($diff > 0) {
-                    $this->post($locked, 'commission_adjust', $diff, $ref.':adjust', 'زيادة عمولة متوقعة');
-                } else {
-                    $this->post($locked, 'withdraw', abs($diff), $ref.':adjust', 'تخفيض عمولة متوقعة');
-                }
+$adjRef = $ref.':adjust:'.now()->format('YmdHis');
+
+if ($diff > 0) {
+    $this->post($locked, 'commission_adjust', $diff, $adjRef, 'زيادة عمولة متوقعة');
+} else {
+    $this->post($locked, 'withdraw', abs($diff), $adjRef, 'تخفيض عمولة متوقعة');
+}
+
                 $current->update(['amount' => $newAmount]);
             }
         });

@@ -17,8 +17,8 @@ class AddCustomer extends Component
     public $deletedImageIds = [];
     public $showWallet = false;
     public $walletCustomerId = null;
-    // AddCustomer.php
-protected $listeners = ['wallet-closed' => 'closeWallet'];
+    protected $listeners = ['wallet-closed' => 'closeWallet'];
+    public int $walletNonce = 0;
 
 
     public function deleteExistingImage($id)
@@ -230,8 +230,10 @@ public function removeImage($index)
 public function openWallet($id)
 {
     $this->walletCustomerId = (int) $id;
-    $this->showWallet = true;
+    $this->showWallet = true; // الحدث سيُرسل من الواجهة بعد ما يتركّب الطفل
 }
+
+
 
 public function closeWallet()
 {
