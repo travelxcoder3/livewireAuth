@@ -102,12 +102,14 @@ class Sale extends Model
     
     public function items()
     {
-        return $this->hasMany(SaleItem::class); // أو الاسم الصحيح
+        return $this->hasMany(SaleItem::class); 
     }
 
-    public function invoices()
-    {
-        return $this->belongsToMany(Invoice::class, 'invoice_sale');
+   public function invoices()
+   {
+        return $this->belongsToMany(\App\Models\Invoice::class,'invoice_sale')
+            ->withPivot(['base_amount','tax_is_percent','tax_input','tax_amount','line_total'])
+            ->withTimestamps();
     }
 
         public function employee()
@@ -140,6 +142,8 @@ protected static function booted()
         });
     });
 }
+
+
 
 
 }

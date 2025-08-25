@@ -71,6 +71,8 @@ use App\Http\Controllers\Agency\Reports\QuotationReportsController;
 use App\Livewire\Agency\MonthlyTargets;
 
 use App\Http\Controllers\AgencyBackupController;
+use App\Livewire\Agency\InvoicesReview;
+use App\Livewire\Agency\Reports\ProviderLedger;
 
 Route::get('/', fn() => view('welcome'));
 
@@ -234,7 +236,8 @@ Route::prefix('agency')
         Route::get('/provider-accounts/{id}/pdf', ProviderAccountPdfController::class)->name('reports.provider-accounts.pdf');
 
         Route::get('/commission-policies', CommissionPolicies::class)->name('commission-policies');
-
+        Route::get('/reports/provider-ledger', ProviderLedger::class)->name('reports.provider-ledger');
+        Route::get('/audit/accounts', \App\Livewire\Agency\Audit\Accounts::class)->name('audit.accounts');
         // تقارير عروض الأسعار
         Route::get('/quotations', QuotationsReport::class)->name('reports.quotations');
         Route::get('/quotations/pdf', [QuotationReportsController::class, 'quotationsPdf'])->name('reports.quotations.pdf');
@@ -248,7 +251,11 @@ Route::prefix('agency')
     Route::get('/{file}',      [AgencyBackupController::class, 'download'])->name('backups.download');
     Route::post('/restore',    [AgencyBackupController::class, 'restore'])->name('backups.restore');
     Route::post('/{file}/run', [AgencyBackupController::class, 'restoreExisting'])->name('backups.restore_existing');
+
 });
+
+    Route::get('/invoices', InvoicesReview::class)->name('invoices.review'); 
+
 });
 
 Route::post('/update-theme', [ThemeController::class, 'updateTheme'])

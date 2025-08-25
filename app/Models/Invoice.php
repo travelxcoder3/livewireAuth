@@ -34,9 +34,11 @@ protected $with = ['sales'];
     }
 
     public function sales()
-{
-    return $this->belongsToMany(\App\Models\Sale::class)
-        ->withPivot(['base_amount','tax_is_percent','tax_input','tax_amount','line_total'])
-        ->withTimestamps();
-}
+    {
+        return $this->belongsToMany(\App\Models\Sale::class, 'invoice_sale', 'invoice_id', 'sale_id')
+            ->withPivot(['base_amount','tax_is_percent','tax_input','tax_amount','line_total'])
+            ->withTimestamps();
+    }
+
+
 }

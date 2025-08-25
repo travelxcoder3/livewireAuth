@@ -69,13 +69,13 @@
                             :show="true" />
 
                         <x-navbar.buttons.dropdown-link
-                             :href="route('agency.reports.accounts')" 
-                            icon="fas fa-wallet"
-                            label="مراجعة الحسابات"
-                            :show="true" />
+                             :href="route('agency.audit.accounts')" 
+                             icon="fas fa-wallet"
+                             label="مراجعة الحسابات"
+                             :show="true" />
 
                         <x-navbar.buttons.dropdown-link
-                            href="route('#')"  
+                             :href="route('agency.invoices.review')"    
                             icon="fas fa-file-invoice"
                             label="مراجعة الفواتير"
                             :show="true" />
@@ -99,7 +99,7 @@
                     {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
                     <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
                         <x-navbar.buttons.dropdown-link
-                            :href="route('agency.reports.customer-accounts')"    
+                            :href="route('agency.customer-detailed-invoices')"     
                             icon="fas fa-chart-line"
                             label="فواتير العملاء "
                             :show="true" />
@@ -169,19 +169,19 @@
                     {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
                     <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
                         <x-navbar.buttons.dropdown-link
-                            :href="route('agency.statements.customers')"
+                            :href="route('agency.reports.customer-accounts')"
                             icon="fas fa-chart-line"
                             label=" كشف حساب  العملاء "
                             :show="true" />
 
                         <x-navbar.buttons.dropdown-link
-                            :href="route('agency.reports.provider-accounts')"
+                            :href="route('agency.reports.provider-ledger')"
                             icon="fas fa-wallet"
                             label="كشف حساب المزودين   "
                             :show="true" />
 
                         <x-navbar.buttons.dropdown-link
-                            href="#" 
+                            :href="route('agency.reports.employee-sales')" 
                             icon="fas fa-file-invoice"
                             label="كشف حساب  الموظفين    "
                             :show="true" />
@@ -220,7 +220,7 @@
                     @endif
                 </div>
             </div>
-     @endif
+@endif
 
     {{-- الموارد البشرية --}}
     @php
