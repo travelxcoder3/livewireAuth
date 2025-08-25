@@ -6,217 +6,195 @@
 @endphp
 
 <div class="space-y-6" x-data>
-    {{-- العنوان --}}
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-xl sm:text-2xl font-bold"
-            style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
-            مراجعة الحسابات
-        </h2>
-    </div>
-
-    {{-- الفلاتر (باستخدام الـ components) --}}
-    <div class="bg-white rounded-xl shadow-md p-4 space-y-3">
-        <div class="grid md:grid-cols-6 items-end gap-3">
-            <x-input-field
-                name="date_from"
-                type="date"
-                label="من تاريخ"
-                wireModel="date_from"
-                containerClass="relative"
-                fieldClass="{{ $fieldClass }}"
-            />
-
-            <x-input-field
-                name="date_to"
-                type="date"
-                label="إلى تاريخ"
-                wireModel="date_to"
-                containerClass="relative"
-                fieldClass="{{ $fieldClass }}"
-            />
-
-           <x-select-field
-    label="تجميع بحسب"
-    name="group_by"
-    wireModel="group_by"
-    :options="[
-        'service_type' => 'الخدمة',
-        'customer'     => 'العميل',
-        'provider'     => 'المزوّد',
-        'employee'     => 'الموظف',
-        'none'         => 'بدون',
-    ]"
-    placeholder="اختر"
-/>
-
-            <x-select-field
-                label="الخدمة"
-                name="service_type_id"
-                wireModel="service_type_id"
-                :options="$serviceTypeOptions"
-                :optionsWire="'serviceTypeOptions'"
-                :selectedLabelWire="'serviceTypeLabel'"
-                placeholder="جميع الخدمات"
-                containerClass="relative"
-            />
-
-            <x-select-field
-                label="العميل"
-                name="customer_id"
-                wireModel="customer_id"
-                :options="$customerOptions"
-                :optionsWire="'customerOptions'"
-                :selectedLabelWire="'customerLabel'"
-                placeholder="جميع العملاء"
-                containerClass="relative"
-            />
-
-            <x-select-field
-                label="المزوّد"
-                name="provider_id"
-                wireModel="provider_id"
-                :options="$providerOptions"
-                :optionsWire="'providerOptions'"
-                :selectedLabelWire="'providerLabel'"
-                placeholder="جميع المزوّدين"
-                containerClass="relative"
-            />
+        {{-- العنوان --}}
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-xl sm:text-2xl font-bold"
+                style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
+                مراجعة الحسابات
+            </h2>
         </div>
 
-        <div class="flex justify-end gap-2">
-            <x-primary-button wire:click="resetFilters">
+        {{-- الفلاتر (باستخدام الـ components) --}}
+        <div class="bg-white rounded-xl shadow-md p-4 space-y-3">
+            <div class="grid md:grid-cols-6 items-end gap-3">
+                <x-input-field
+                    name="date_from"
+                    type="date"
+                    label="من تاريخ"
+                    wireModel="date_from"
+                    containerClass="relative"
+                    fieldClass="{{ $fieldClass }}"
+                />
+
+                <x-input-field
+                    name="date_to"
+                    type="date"
+                    label="إلى تاريخ"
+                    wireModel="date_to"
+                    containerClass="relative"
+                    fieldClass="{{ $fieldClass }}"
+                />
+
+            <x-select-field
+                    label="تجميع بحسب"
+                    name="group_by"
+                    wireModel="group_by"
+                    :options="[
+                        'service_type' => 'الخدمة',
+                        'customer'     => 'العميل',
+                        'provider'     => 'المزوّد',
+                        'employee'     => 'الموظف',
+                        'none'         => 'بدون',
+                    ]"
+                    placeholder="اختر"
+                />
+
+                <x-select-field
+                    label="الخدمة"
+                    name="service_type_id"
+                    wireModel="service_type_id"
+                    :options="$serviceTypeOptions"
+                    :optionsWire="'serviceTypeOptions'"
+                    :selectedLabelWire="'serviceTypeLabel'"
+                    placeholder="جميع الخدمات"
+                    containerClass="relative"
+                />
+
+                <x-select-field
+                    label="العميل"
+                    name="customer_id"
+                    wireModel="customer_id"
+                    :options="$customerOptions"
+                    :optionsWire="'customerOptions'"
+                    :selectedLabelWire="'customerLabel'"
+                    placeholder="جميع العملاء"
+                    containerClass="relative"
+                />
+
+                <x-select-field
+                    label="المزوّد"
+                    name="provider_id"
+                    wireModel="provider_id"
+                    :options="$providerOptions"
+                    :optionsWire="'providerOptions'"
+                    :selectedLabelWire="'providerLabel'"
+                    placeholder="جميع المزوّدين"
+                    containerClass="relative"
+                />
+            </div>
+
+            <div class="flex justify-end gap-2">
+            <button type="button" wire:click="resetFilters"
+                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-xl shadow text-sm">
                 إعادة تعيين
-            </x-primary-button>
+                </button>
+
+            </div>
         </div>
-    </div>
 
-    {{-- KPIs --}}
-    <div class="bg-white rounded-xl shadow-md p-4 overflow-x-auto">
-        <table class="min-w-full border text-xs sm:text-sm text-center">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="px-3 py-2 border">المبيعات</th>
-                    <th class="px-3 py-2 border">التكلفة</th>
-                    <th class="px-3 py-2 border">عمولة الموظف</th>
-                    <th class="px-3 py-2 border">عمولة العميل</th>
-                    <th class="px-3 py-2 border">صافي الربح</th>
-                    <th class="px-3 py-2 border">الاسترجاعات</th>
-                    <th class="px-3 py-2 border">التحصيلات</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="px-3 py-2 border">{{ number_format($kpis['sales'] ?? 0,2) }}</td>
-                    <td class="px-3 py-2 border">{{ number_format($kpis['costs'] ?? 0,2) }}</td>
-                    <td class="px-3 py-2 border">{{ number_format($kpis['employeeComms'] ?? 0,2) }}</td>
-                    <td class="px-3 py-2 border">{{ number_format($kpis['commissions'] ?? 0,2) }}</td>
-                    <td class="px-3 py-2 border">{{ number_format($kpis['net_profit'] ?? 0,2) }}</td>
-                    <td class="px-3 py-2 border">{{ number_format($kpis['refunds'] ?? 0,2) }}</td>
-                    <td class="px-3 py-2 border">{{ number_format($kpis['collections'] ?? 0,2) }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    {{-- الجدول --}}
-    <div class="bg-white rounded-xl shadow-md p-0 overflow-x-auto">
-        @php
-            $isGrouped = $group_by !== 'none';
-            $pageCount = 0; $pageSales = 0; $pageCost = 0; $pageComm = 0;
+        {{-- KPIs as compact single-row cards with colored borders --}}
+       @php
+        $card = 'bg-white rounded-xl shadow p-3 border-2 border-[rgb(var(--primary-500))] hover:border-[rgb(var(--primary-600))] transition-colors';
         @endphp
 
-        <table class="min-w-full text-xs sm:text-sm text-center border-separate border-spacing-0">
-            <thead class="bg-gray-50 sticky top-0 z-10">
-                <tr>
-                    @if($isGrouped)
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">المفتاح</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">العدد</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">المبيعات</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">التكلفة</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">عمولة العميل</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">الربح الصافي</th>
-                    @else
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">#</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">التاريخ</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">الخدمة</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">العميل</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">المزوّد</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">المبيعات</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">التكلفة</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">عمولة</th>
-                        <th class="border-b border-gray-200 px-3 py-2 bg-gray-100">الربح الصافي</th>
-                    @endif
-                </tr>
-            </thead>
 
-            <tbody>
-                @forelse($salesGrouped as $row)
-                    @php
-                        $profit = (float)($row->total ?? 0) - (float)($row->cost ?? 0);
-                        $pageCount += (int)($row->row_count ?? ($row->rows ?? 1));
-                        $pageSales += (float)($row->total ?? 0);
-                        $pageCost  += (float)($row->cost ?? 0);
-                        $pageComm  += (float)($row->commission ?? 0);
-                    @endphp
+        <div class="overflow-x-auto">
+        <div class="grid grid-flow-col auto-cols-[minmax(130px,1fr)] gap-2">
 
-                    @if($isGrouped)
-                        <tr class="{{ $loop->odd ? 'bg-white' : 'bg-gray-50' }} hover:bg-gray-100">
-                            <td class="px-3 py-2 border-t">
-                                {{ $keyLabels[$row->key_id] ?? $row->key_id ?? '—' }}
-                            </td>
-                            <td class="px-3 py-2 border-t">{{ $row->row_count ?? ($row->rows ?? 1) }}</td>
-                            <td class="px-3 py-2 border-t">{{ number_format($row->total ?? 0,2) }}</td>
-                            <td class="px-3 py-2 border-t">{{ number_format($row->cost ?? 0,2) }}</td>
-                            <td class="px-3 py-2 border-t">{{ number_format($row->commission ?? 0,2) }}</td>
-                            <td class="px-3 py-2 border-t font-semibold">{{ number_format($profit,2) }}</td>
-                        </tr>
-                    @else
-                        <tr class="{{ $loop->odd ? 'bg-white' : 'bg-gray-50' }} hover:bg-gray-100">
-                            <td class="px-3 py-2 border-t">#{{ $row->id }}</td>
-                            <td class="px-3 py-2 border-t">{{ \Carbon\Carbon::parse($row->sale_date)->format('Y-m-d') }}</td>
-                            <td class="px-3 py-2 border-t">{{ $row->service->label  ?? '-' }}</td>
-                            <td class="px-3 py-2 border-t">{{ $row->customer->name ?? '-' }}</td>
-                            <td class="px-3 py-2 border-t">{{ $row->provider->name ?? '-' }}</td>
-                            <td class="px-3 py-2 border-t">{{ number_format($row->total,2) }}</td>
-                            <td class="px-3 py-2 border-t">{{ number_format($row->cost,2) }}</td>
-                            <td class="px-3 py-2 border-t">{{ number_format($row->commission ?? 0,2) }}</td>
-                            <td class="px-3 py-2 border-t font-semibold">{{ number_format($profit,2) }}</td>
-                        </tr>
-                    @endif
-                @empty
-                    <tr>
-                        <td colspan="{{ $isGrouped ? 6 : 9 }}" class="px-4 py-6 text-gray-400">
-                            لا توجد بيانات مطابقة للفلاتر
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
+            <div class="{{ $card }}">
+            <div class="text-[11px] text-gray-500">المبيعات</div>
+            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+                {{ number_format($kpis['sales'] ?? 0,2) }}
+            </div>
+            </div>
 
-            {{-- تذييل إجماليات الصفحة --}}
-            <tfoot class="bg-gray-100">
-                @if($isGrouped)
-                    <tr>
-                        <th class="px-3 py-2 border-t">إجمالي الصفحة</th>
-                        <th class="px-3 py-2 border-t">{{ number_format($pageCount,0) }}</th>
-                        <th class="px-3 py-2 border-t">{{ number_format($pageSales,2) }}</th>
-                        <th class="px-3 py-2 border-t">{{ number_format($pageCost,2) }}</th>
-                        <th class="px-3 py-2 border-t">{{ number_format($pageComm,2) }}</th>
-                        <th class="px-3 py-2 border-t font-semibold">{{ number_format($pageSales - $pageCost,2) }}</th>
-                    </tr>
-                @else
-                    <tr>
-                        <th class="px-3 py-2 border-t text-right" colspan="5">إجمالي الصفحة</th>
-                        <th class="px-3 py-2 border-t">{{ number_format($pageSales,2) }}</th>
-                        <th class="px-3 py-2 border-t">{{ number_format($pageCost,2) }}</th>
-                        <th class="px-3 py-2 border-t">{{ number_format($pageComm,2) }}</th>
-                        <th class="px-3 py-2 border-t font-semibold">{{ number_format($pageSales - $pageCost,2) }}</th>
-                    </tr>
-                @endif
-            </tfoot>
-        </table>
+            <div class="{{ $card }}">
+            <div class="text-[11px] text-gray-500">التكلفة</div>
+            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+                {{ number_format($kpis['costs'] ?? 0,2) }}
+            </div>
+            </div>
 
-        <div class="px-4 py-2 border-t border-gray-200">
-            {{ $salesGrouped->links() }}
+            <div class="{{ $card }}">
+            <div class="text-[11px] text-gray-500">عمولة الموظف</div>
+            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+                {{ number_format($kpis['employeeComms'] ?? 0,2) }}
+            </div>
+            </div>
+
+            <div class="{{ $card }}">
+            <div class="text-[11px] text-gray-500">عمولة العميل</div>
+            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+                {{ number_format($kpis['commissions'] ?? 0,2) }}
+            </div>
+            </div>
+
+            <div class="{{ $card }} border-t-4" style="border-top-color: rgb(var(--primary-500));">
+            <div class="text-[11px] text-gray-500">صافي الربح</div>
+            <div class="mt-1 text-sm font-extrabold" style="color: rgb(var(--primary-700));">
+                {{ number_format($kpis['net_profit'] ?? 0,2) }}
+            </div>
+            </div>
+
+            <div class="{{ $card }}">
+            <div class="text-[11px] text-gray-500">الاسترجاعات</div>
+            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+                {{ number_format($kpis['refunds'] ?? 0,2) }}
+            </div>
+            </div>
+
+            <div class="{{ $card }}">
+            <div class="text-[11px] text-gray-500">التحصيلات</div>
+            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+                {{ number_format($kpis['collections'] ?? 0,2) }}
+            </div>
+            </div>
+
         </div>
-    </div>
+        </div>
+
+        @php
+            use App\Tables\AuditAccountsTable as T;
+            $isGrouped = $group_by !== 'none';
+            $columns   = $isGrouped ? T::groupedColumns() : T::detailColumns();
+
+            $items     = collect($salesGrouped->items());
+            $pageCount = $isGrouped ? $items->sum(fn($r)=> (int)($r->row_count ?? ($r->rows ?? 1))) : 0;
+            $pageSales = $items->sum(fn($r)=> (float)($r->total ?? 0));
+            $pageCost  = $items->sum(fn($r)=> (float)($r->cost ?? 0));
+            $pageComm  = $items->sum(fn($r)=> (float)($r->commission ?? 0));
+            $pageNet   = $pageSales - $pageCost;
+        @endphp
+
+        <div class="bg-white rounded-xl shadow-md p-4">
+            <x-data-table
+                    :columns="$columns"
+                    :rows="$salesGrouped"
+                    wire:key="audit-{{ $group_by }}-{{ md5(json_encode([$date_from,$date_to,$service_type_id,$customer_id,$provider_id,$employee_id])) }}-p{{ $salesGrouped->currentPage() }}"
+                >
+                    <x-slot name="footer">
+                    @if($isGrouped)
+                        <tr>
+                       <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))]">إجمالي الصفحة</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))]">{{ number_format($pageCount,0) }}</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))]">{{ number_format($pageSales,2) }}</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))]">{{ number_format($pageCost,2) }}</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))]">{{ number_format($pageComm,2) }}</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))] font-semibold">{{ number_format($pageNet,2) }}</th>
+
+                        </tr>
+                    @else
+                        <tr>
+                       <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))] text-right" colspan="5">إجمالي الصفحة</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))]">{{ number_format($pageSales,2) }}</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))]">{{ number_format($pageCost,2) }}</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))]">{{ number_format($pageComm,2) }}</th>
+                        <th class="px-3 py-2 border-t-2 border-[rgb(var(--primary-100))] font-semibold">{{ number_format($pageNet,2) }}</th>
+
+                        </tr>
+                    @endif
+                    </x-slot>
+            </x-data-table>
+        </div>
+
 </div>

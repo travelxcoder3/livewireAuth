@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Models;
+use App\Models\Sale;
+
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,12 +18,16 @@ class Provider extends Model
     {
         return $this->belongsTo(\App\Models\DynamicListItem::class, 'service_item_id');
     }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'provider_id');
+    }
     
-// في نموذج Provider (app/Models/Provider.php)
-public function serviceItem()
-{
-    return $this->belongsTo(DynamicListItem::class, 'service_item_id');
-}
+    public function serviceItem()
+    {
+        return $this->belongsTo(DynamicListItem::class, 'service_item_id');
+    }
 
 
 }

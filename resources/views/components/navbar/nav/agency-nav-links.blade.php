@@ -105,7 +105,7 @@
                             :show="true" />
 
                         <x-navbar.buttons.dropdown-link
-                            :href="route('agency.reports.provider-accounts')"
+                            :href="route('agency.provider-detailed-invoices')"
                             icon="fas fa-wallet"
                             label="فواتير المزودين "
                             :show="true" />
@@ -146,7 +146,7 @@
                             :show="true" />
 
                         <x-navbar.buttons.dropdown-link
-                           href="#" 
+                            :href="route('agency.hr.employee-files')"
                             icon="fas fa-file-invoice"
                             label="ملفات الموظفين    "
                             :show="true" />

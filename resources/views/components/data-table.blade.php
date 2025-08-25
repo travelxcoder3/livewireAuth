@@ -191,6 +191,11 @@
                     </tr>
                 @endforelse
             </tbody>
+              @if (isset($footer) && trim($footer) !== '')
+                    <tfoot class="bg-gray-100">
+                    {{ $footer }}
+                    </tfoot>
+                @endif
         </table>
     </div>
 

@@ -73,6 +73,7 @@ use App\Livewire\Agency\MonthlyTargets;
 use App\Http\Controllers\AgencyBackupController;
 use App\Livewire\Agency\InvoicesReview;
 use App\Livewire\Agency\Reports\ProviderLedger;
+use App\Livewire\HR\EmployeeFileIndex;
 
 Route::get('/', fn() => view('welcome'));
 
@@ -197,8 +198,15 @@ Route::prefix('agency')
         Route::get('/employees', EmployeeIndex::class)->name('employees.index');
         Route::get('/employees/create', EmployeeCreate::class)->name('employees.create');
         Route::get('/employees/edit/{employee}', EmployeeEdit::class)->name('employees.edit');
+        Route::get('/employee-files', EmployeeFileIndex::class)->name('employee-files');
     });
 
+    Route::get('/provider-invoices', \App\Livewire\Agency\ProviderDetailedInvoices::class)
+        ->name('provider-detailed-invoices');
+
+    Route::get('/provider-invoices/{provider}', \App\Livewire\Agency\ProviderInvoiceOverview::class)
+        ->name('provider-invoice-overview');
+        
     Route::get('/policies', AgencyPolicies::class)->name('policies');
     Route::get('/policies/view', \App\Livewire\Agency\PoliciesView::class)->name('policies.view');
 

@@ -17,7 +17,7 @@ class Accounts extends Component
 
     // فلاتر
     public $date_from, $date_to;
-    public $group_by = 'service_type'; // service_type|customer|provider|employee|none
+    public $group_by = 'none'; // service_type|customer|provider|employee|none
     public $service_type_id = null;
     public $customer_id = null;
     public $provider_id = null;
@@ -149,22 +149,24 @@ class Accounts extends Component
         $grp = $this->groupColumn();
         $q = $this->salesBase();
 
-        if ($grp) {
-            return $q->selectRaw("{$grp['column']} as key_id,
-                                  COUNT(*) as row_count,
-                                  SUM(usd_sell) as total,
-                                  SUM(usd_buy)  as cost,
-                                  SUM(commission) as commission")
-                     ->groupBy($grp['column'])
-                     ->paginate(10);
-        }
+       if ($grp) {
+                return $q->selectRaw("{$grp['column']} as key_id,
+                                    COUNT(*) as row_count,
+                                    SUM(usd_sell) as total,
+                                    SUM(usd_buy)  as cost,
+                                    SUM(commission) as commission,
+                                    SUM(usd_sell - usd_buy) as net_profit")
+                        ->groupBy($grp['column'])
+                        ->paginate(10);
+            }
 
-        // بدون تجميع: اعرض أسماء العلاقات
-        return $q->with(['service:id,label','customer:id,name','provider:id,name'])
-                 ->select('id','sale_date','service_type_id','customer_id','provider_id',
-                          'usd_sell as total','usd_buy as cost','commission')
-                 ->orderByDesc('sale_date')->orderByDesc('id')
-                 ->paginate(10);
+            return $q->with(['service:id,label','customer:id,name','provider:id,name'])
+                    ->selectRaw("id, sale_date, service_type_id, customer_id, provider_id,
+                                usd_sell as total, usd_buy as cost, commission,
+                                (usd_sell - usd_buy) as net_profit")
+                    ->orderByDesc('sale_date')->orderByDesc('id')
+                    ->paginate(10);
+
     }
 
     public function render()
@@ -201,6 +203,13 @@ class Accounts extends Component
         $this->serviceTypeLabel = $this->service_type_id ? ($this->serviceTypeOptions[$this->service_type_id] ?? null) : null;
         $this->customerLabel    = $this->customer_id     ? ($this->customerOptions[$this->customer_id]       ?? null) : null;
         $this->providerLabel    = $this->provider_id     ? ($this->providerOptions[$this->provider_id]       ?? null) : null;
+
+       if ($this->group_by !== 'none') {
+            $salesGrouped->getCollection()->transform(function ($row) use ($keyLabels) {
+                $row->key_label = $keyLabels[$row->key_id] ?? $row->key_id;
+                return $row;
+            });
+        }
 
         return view('livewire.agency.audit.accounts', compact('kpis','salesGrouped','keyLabels'))
             ->layout('layouts.agency');
