@@ -50,17 +50,18 @@ class InvoicesReview extends Component
 
     private function baseQuery()
     {
-        $agency = Auth::user()->agency;
-        $agencyIds = $agency->parent_id ? [$agency->id] : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
+        $agencyId = Auth::user()->agency_id;
 
         return Invoice::with(['user','agency','sales.service'])
             ->withCount('sales')
+            ->where('agency_id', $agencyId)
             ->when($this->numberSearch, fn($q)=>$q->where('invoice_number','like','%'.$this->numberSearch.'%'))
             ->when($this->entitySearch, fn($q)=>$q->where('entity_name','like','%'.$this->entitySearch.'%'))
             ->when($this->userFilter !== '' && $this->userFilter !== null, fn($q)=>$q->where('user_id',(int)$this->userFilter))
             ->when($this->startDate, fn($q)=>$q->whereDate('date','>=',$this->startDate))
             ->when($this->endDate,   fn($q)=>$q->whereDate('date','<=',$this->endDate));
     }
+
 
 
     public function sortBy($field)
