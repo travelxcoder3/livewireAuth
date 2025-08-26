@@ -55,11 +55,7 @@ $columns = SalesTable::columns();
     <span>{{ number_format($userCommission, 2) }} {{ $currency }}</span>
 </div>
 
-<!-- العمولة المستحقة (بناءً على المبيعات المحصلة) -->
-<div class="flex flex-col items-center px-1 w-full sm:w-auto">
-    <span class="text-[rgb(var(--primary-600))]">العمولة المستحقة</span>
-    <span>{{ number_format($userCommissionDue, 2) }} {{ $currency }}</span>
-</div>
+
         </div>
     </div>
 
