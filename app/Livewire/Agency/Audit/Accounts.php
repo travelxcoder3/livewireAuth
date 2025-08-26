@@ -10,10 +10,16 @@ use App\Models\Customer;
 use App\Models\Provider;
 use App\Models\DynamicListItem as ServiceType;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class Accounts extends Component
 {
     use WithPagination;
+
+    private function agencyId(): int
+    {
+        return Auth::user()->agency_id;
+    }
 
     // فلاتر
     public $date_from, $date_to;
@@ -45,13 +51,16 @@ class Accounts extends Component
         $this->date_from ??= now()->startOfMonth()->toDateString();
         $this->date_to   ??= now()->endOfDay()->toDateString();
 
-        // تحميل خيارات القوائم
-        $this->serviceTypeOptions = ServiceType::whereHas('list', fn($q)=>$q->where('name','قائمة الخدمات'))
-            ->orderBy('label')->pluck('label','id')->toArray();
+     $this->serviceTypeOptions = ServiceType::whereHas('list', fn($q)=>$q->where('name','قائمة الخدمات'))
+    ->orderBy('label')->pluck('label','id')->toArray();
 
-        $this->customerOptions = Customer::orderBy('name')->pluck('name','id')->toArray();
 
-        $this->providerOptions = Provider::orderBy('name')->pluck('name','id')->toArray();
+        $this->customerOptions = Customer::where('agency_id', $this->agencyId())
+            ->orderBy('name')->pluck('name','id')->toArray();
+
+        $this->providerOptions = Provider::where('agency_id', $this->agencyId())
+            ->orderBy('name')->pluck('name','id')->toArray();
+
 
         // تسميات مختارة إن كانت الفلاتر فيها قيم
         $this->serviceTypeLabel = $this->service_type_id ? ($this->serviceTypeOptions[$this->service_type_id] ?? null) : null;
@@ -87,12 +96,14 @@ class Accounts extends Component
 
     protected function salesBase()
     {
-        return $this->salesDateRange(Sale::query())
+       return $this->salesDateRange(Sale::query())
+            ->where('agency_id', $this->agencyId())
             ->where('status','!=','Void')
             ->when($this->service_type_id, fn($q)=>$q->where('service_type_id',$this->service_type_id))
             ->when($this->customer_id,    fn($q)=>$q->where('customer_id',$this->customer_id))
             ->when($this->provider_id,    fn($q)=>$q->where('provider_id',$this->provider_id))
             ->when($this->employee_id,    fn($q)=>$q->where('user_id',$this->employee_id));
+
     }
 
     // KPIs
@@ -113,6 +124,7 @@ class Accounts extends Component
         // التحصيلات (انتبه لتأهيل created_at باسم الجدول لتفادي التعارض)
         $collections = DB::table('collections')
             ->join('sales','collections.sale_id','=','sales.id')
+            ->where('sales.agency_id', $this->agencyId())
             ->when($this->service_type_id, fn($q)=>$q->where('sales.service_type_id',$this->service_type_id))
             ->when($this->customer_id,    fn($q)=>$q->where('sales.customer_id',$this->customer_id))
             ->when($this->provider_id,    fn($q)=>$q->where('sales.provider_id',$this->provider_id))
@@ -122,6 +134,7 @@ class Accounts extends Component
                 Carbon::parse($this->date_to)->endOfDay(),
             ])
             ->sum('collections.amount');
+
 
         $positiveSales = (clone $salesBase)->where('usd_sell','>',0)->sum('usd_sell');
         $amountPaid    = (clone $salesBase)->where('usd_sell','>',0)->sum('amount_paid');
@@ -177,24 +190,29 @@ class Accounts extends Component
         // تحويل مفاتيح التجميع إلى أسماء لعرضها في الواجهة
         $keyLabels = [];
         switch ($this->group_by) {
-            case 'service_type':
-                $keyLabels = ServiceType::whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
-                    ->pluck('label','id')->toArray();
-                break;
-            case 'customer':
-                $keyLabels = Customer::whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
-                    ->pluck('name','id')->toArray();
-                break;
-            case 'provider':
-                $keyLabels = Provider::whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
-                    ->pluck('name','id')->toArray();
-                break;
-            case 'employee':
-                // إظهار اسم المستخدم
-                $userMap = DB::table('users')->whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
-                    ->pluck('name','id')->toArray();
-                $keyLabels = $userMap;
-                break;
+           case 'service_type':
+            $keyLabels = ServiceType::whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
+                ->where('agency_id', $this->agencyId()) // إن كان متوفرًا
+                ->pluck('label','id')->toArray();
+            break;
+        case 'customer':
+            $keyLabels = Customer::whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
+                ->where('agency_id', $this->agencyId())
+                ->pluck('name','id')->toArray();
+            break;
+        case 'provider':
+            $keyLabels = Provider::whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
+                ->where('agency_id', $this->agencyId())
+                ->pluck('name','id')->toArray();
+            break;
+        case 'employee':
+            $userMap = DB::table('users')
+                ->whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
+                ->where('agency_id', $this->agencyId())
+                ->pluck('name','id')->toArray();
+            $keyLabels = $userMap;
+            break;
+
             default:
                 $keyLabels = [];
         }

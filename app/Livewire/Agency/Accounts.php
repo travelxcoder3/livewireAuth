@@ -88,11 +88,13 @@ class Accounts extends Component
 
     private function baseSalesQuery()
     {
-         $agencyId = Auth::user()->agency_id;
+        $agency = Auth::user()->agency;
+        $agencyIds = $agency->parent_id
+            ? [$agency->id]
+            : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
         return Sale::with(['service','provider','account','customer','collections','user'])
-            ->where('agency_id', $agencyId)
-
+            ->whereIn('agency_id', $agencyIds)
             ->when($this->employeeSearch, function ($q) {
                 $s = '%'.$this->employeeSearch.'%';
                 $q->whereHas('user', fn($uq) => $uq->where('name','like',$s));
