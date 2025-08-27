@@ -53,6 +53,7 @@ class Index extends Component
     public bool $commissionReadOnly = false;
     public array $statusOptions = [];
     public $original_user_id = null;
+    public int $sale_edit_hours = 72;
 
     // 👇 إضافة scope
     public $filters = [
@@ -648,6 +649,10 @@ class Index extends Component
             $p = Provider::find($this->provider_id);
             $this->providerLabel = $p->name ?? '';
         }
+
+        $this->sale_edit_hours = (int) (auth()->user()->agency->sale_edit_hours
+    ?? config('agency.defaults.sale_edit_hours', 72));
+
     }
 
     protected function getListeners()
@@ -704,13 +709,15 @@ class Index extends Component
                 'nullable',
                 'numeric',
                 function ($attribute, $value, $fail) {
-                    if (in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void'])) {
-                        if ($value >= 0) {
-                            $fail('المبلغ المسترد يجب أن يكون سالبًا.');
+                    // بعد: اسمح بـ null أو 0 في الاسترداد، وامنع القيم السالبة دائمًا
+                        if (in_array($this->status, ['Refund-Full','Refund-Partial','Void'])) {
+                            if (!is_null($value) && (float)$value !== 0.0) {
+                                $fail('في الاسترداد يجب أن يكون amount_paid فارغًا أو 0.');
+                            }
+                        } elseif ($value < 0) {
+                            $fail('المبلغ المدفوع لا يمكن أن يكون سالبًا.');
                         }
-                    } elseif ($value < 0) {
-                        $fail('المبلغ المدفوع لا يمكن أن يكون سالبًا.');
-                    }
+
                 },
             ],
             'depositor_name' => $this->payment_method !== 'all' ? 'required|string|max:255' : 'nullable',
@@ -775,7 +782,7 @@ class Index extends Component
         'sale_date.before_or_equal' => 'تاريخ البيع يجب أن يكون اليوم أو تاريخ سابق.',
         'usd_buy.min'      => 'سعر الشراء لا يمكن أن يكون سالبًا إلا في حالات الاسترداد أو الإلغاء.',
         'usd_sell.min'     => 'سعر البيع لا يمكن أن يكون سالبًا إلا في حالات الاسترداد أو الإلغاء.',
-        'amount_paid.min'  => 'المبلغ المدفوع لا يمكن أن يكون سالبًا إلا في حالات الاسترداد أو الإلغاء.',
+'amount_paid.min'  => 'المبلغ المدفوع لا يمكن أن يكون سالبًا.',
     ];
 
     public function toggleBuySellSigns()
@@ -824,9 +831,9 @@ class Index extends Component
             }
         }
 
-        if ($this->payment_method === 'all') {
-            $this->amount_paid = 0;
-        }
+       if ($this->payment_method === 'all') {
+    $this->amount_paid = null; // اتركها null
+}
 
        $sale = Sale::create([
             'beneficiary_name' => $this->beneficiary_name,
@@ -849,7 +856,6 @@ class Index extends Component
             'payment_type' => $this->payment_type,
             'receipt_number' => $this->receipt_number,
             'phone_number' => $this->phone_number,
-            'customer_via' => $this->customer_via,
             'user_id' => $this->original_user_id ?? Auth::id(),
             'duplicated_by' => $this->isDuplicated ? Auth::id() : null,
             'agency_id' => Auth::user()->agency_id,
@@ -858,24 +864,26 @@ class Index extends Component
             'sale_group_id' => $this->sale_group_id,
         ]);
 
-// 1) زامن عمولة العميل أولاً (يضيف 10 في حالتك على نفس المجموعة)
-app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
-
-// 2) إن كانت Refund أودِع الاسترداد للمحفظة
+// 1) إن كانت Refund: إيداع الاسترداد أولاً ثم تصفية الدين من الرصيد
 if ($this->customer_id && (
     in_array($sale->status, ['Refund-Full','Refund-Partial']) || (float)$sale->usd_sell < 0
 )) {
-app(\App\Services\CustomerCreditService::class)
-    ->autoDepositToWallet(
-        (int)$this->customer_id,
-        Auth::user()->agency_id,
-        'sales-auto|group:'.($sale->sale_group_id ?: $sale->id)
-    );
-
+    app(\App\Services\CustomerCreditService::class)
+        ->autoDepositToWallet(
+            (int)$this->customer_id,
+            Auth::user()->agency_id,
+            'sales-auto|group:'.($sale->sale_group_id ?: $sale->id)
+        );
 }
 
-// 3) أخيراً نفّذ السداد من المحفظة مرة واحدة فقط
-app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+// 2) بعد الإيداع والتصفية: زامن العمولة
+app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
+
+// 3) السداد التلقائي من المحفظة يُتخطّى عند الـRefund
+if (!str_contains(mb_strtolower((string)$sale->status), 'refund')) {
+    app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+}
+
 
 
 // 🔔 بلّغ المحفظة لتتحدث فوراً
@@ -1112,17 +1120,24 @@ $this->original_user_id = null;
 
         $this->dispatch('$refresh');
     }
+    private function editWindowExpired(\App\Models\Sale $sale): bool
+{
+    $limit = $this->sale_edit_hours;
+    return $limit > 0 && $sale->created_at->diffInHours(now()) >= $limit;
+}
+ 
 
     public function update()
     {
         $this->validate();
 
         $sale = Sale::findOrFail($this->editingSale);
-
-        if ($sale->created_at->diffInHours(now()) >= 72) {
-            $this->addError('general', 'لا يمكن تعديل العملية بعد مرور 3 ساعات.');
+        if ($this->editWindowExpired($sale)) {
+            $this->addError('general', "لا يمكن تعديل العملية بعد مرور {$this->sale_edit_hours} ساعة.");
             return;
         }
+
+
 
         $sale->update([
             'beneficiary_name' => $this->beneficiary_name,
@@ -1153,12 +1168,8 @@ $this->original_user_id = null;
 
 $sale->refresh();
 
-$sale->refresh();
 
-// 1) زامن عمولة العميل أولاً
-app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
-
-// 2) إيداع الاسترداد إن وُجد
+// 1) إن كان Refund: أودِع أولاً ثم صفِّ الدين فوراً من الرصيد
 if ($sale->customer_id && (
     in_array($sale->status, ['Refund-Full','Refund-Partial']) || (float)$sale->usd_sell < 0
 )) {
@@ -1166,8 +1177,14 @@ if ($sale->customer_id && (
         ->autoDepositToWallet((int)$sale->customer_id, Auth::user()->agency_id, 'sales-auto|group:'.($sale->sale_group_id ?: $sale->id));
 }
 
-// 3) ثم السداد من المحفظة مرة واحدة فقط
-app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+// 2) بعد ذلك فقط: مزامنة العمولة
+app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
+
+// 3) لا تسدد من المحفظة في حالات Refund
+if (!str_contains(mb_strtolower((string)$sale->status), 'refund')) {
+    app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
+}
+
 
 
 // 4) (كما هو) إعادة حساب عمولات الموظف

@@ -74,6 +74,7 @@ use App\Http\Controllers\AgencyBackupController;
 use App\Livewire\Agency\InvoicesReview;
 use App\Livewire\Agency\Reports\ProviderLedger;
 use App\Livewire\HR\EmployeeFileIndex;
+use App\Livewire\Agency\Settings\SaleEditWindow;
 
 Route::get('/', fn() => view('welcome'));
 
@@ -278,3 +279,13 @@ Route::middleware(['auth','mustChangePassword','active.user','agency.scope'])
     ->get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice) {
         return (new App\Livewire\Agency\Accounts())->downloadBulkInvoicePdf($invoice->id);
     })->name('invoices.download');
+
+
+
+    
+Route::middleware(['auth']) // أضف صلاحياتك إن وجدت
+    ->prefix('agency/settings')
+    ->name('agency.settings.')
+    ->group(function () {
+        Route::get('sale-edit-window', SaleEditWindow::class)->name('sale-edit-window');
+    });

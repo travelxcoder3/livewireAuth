@@ -417,6 +417,10 @@
                     <x-navbar.buttons.dropdown-link : href="{{ route('agency.backups.index') }}"
                         icon="fas fa-database" label="نسح واستعاده" :show="true" />
                 @endif
+
+                <x-navbar.buttons.dropdown-link :href="route('agency.settings.sale-edit-window')"
+    icon="fas fa-clock" label="مهلة تعديل المبيعات" :show="true" />
+
             </div>
         </div>
     @endif

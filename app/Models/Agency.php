@@ -31,12 +31,14 @@ class Agency extends Model
         'theme_color',
         'parent_id',
         'password',
+        'sale_edit_hours',
     ];
 
     protected $casts = [
         'license_expiry_date' => 'date',
         'subscription_start_date' => 'date',
         'subscription_end_date' => 'date',
+        'sale_edit_hours' => 'integer',
     ];
 
     public function admin()

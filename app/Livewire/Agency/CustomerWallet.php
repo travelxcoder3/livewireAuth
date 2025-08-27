@@ -96,6 +96,7 @@ public function submit()
             'running_balance'  => $newBalance,
             'reference'        => $this->reference ?: null,
             'note'             => $this->note ?: null,
+            'performed_by_name'=> auth()->user()->name ?? 'system',
         ]);
 
         $wallet->update(['balance' => $newBalance]);

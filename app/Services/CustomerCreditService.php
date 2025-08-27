@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\{Sale, Customer, Wallet, Collection, WalletTransaction};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str; // أعلى الملف
 
 class CustomerCreditService
 {   
@@ -13,10 +14,10 @@ class CustomerCreditService
     private const WALLET_METHOD = 3;
     public function computeAvailableCredit(int $customerId, int $agencyId): float
     {
-        $sales = Sale::with('collections')
-            ->where('agency_id', $agencyId)
-            ->where('customer_id', $customerId)
-            ->get();
+        $sales = Sale::withSum('collections','amount')
+    ->where('agency_id', $agencyId)
+    ->where('customer_id', $customerId)
+    ->get();
 
         $byGroup = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
 
@@ -51,7 +52,7 @@ $remaining = $group->sum(function ($s) use ($getEffectiveTotal) {
     // لا تسمح بأي مبالغ سالبة تُحسب كمدفوعات
     $paid      = max(0.0, (float) ($s->amount_paid ?? 0));
     // احسب كل التحصيلات بما فيها "wallet" حتى نعيد ما سُحب من المحفظة عند الاسترداد
-    $collected = max(0.0, (float) $s->collections()->sum('amount'));
+$collected = max(0.0, (float) ($s->collections_sum_amount ?? 0));
 
 
     return $totalDue - $paid - $collected;
@@ -85,31 +86,47 @@ if ($remaining < 0) {
         return max(0, $rawCredit - $usedFromCollections - $usedFromWallet);
     }
 
-    public function autoDepositToWallet(int $customerId, int $agencyId, string $who = 'sales-auto'): ?float
-    {
+public function autoDepositToWallet(int $customerId, int $agencyId, string $who = 'sales-auto'): ?float
+{
+    // إن كان استرداداً لمجموعة، أودِع "مبلغ الاسترداد الفعلي" لتلك المجموعة فقط
+    if (str_starts_with($who, 'sales-auto|group:')) {
+        $gid = Str::after($who, 'sales-auto|group:');
+        $amount = $this->undepositedRefundForGroup($customerId, (string)$gid);
+    } else {
+        // غير ذلك: استخدم الصافي العام
         $amount = round($this->computeAvailableCredit($customerId, $agencyId), 2);
-        if ($amount <= 0) return null;
-
-        DB::transaction(function () use ($customerId, $agencyId, $amount, $who) {
-            $customer = Customer::where('agency_id', $agencyId)->findOrFail($customerId);
-            $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
-
-            $wallet->balance = bcadd($wallet->balance, $amount, 2);
-            $wallet->save();
-
-            WalletTransaction::create([
-                'wallet_id'         => $wallet->id,
-                'type'              => 'deposit',
-                'amount'            => $amount,
-                'running_balance'   => $wallet->balance,
-                'reference'         => $who,
-                'note'              => 'تسوية تلقائية من المبيعات',
-                'performed_by_name' => Auth::user()->name ?? 'system',
-            ]);
-        });
-
-        return $amount;
     }
+
+    if ($amount <= 0) return null;
+
+    DB::transaction(function () use ($customerId, $agencyId, $amount, $who) {
+        $customer = \App\Models\Customer::where('agency_id', $agencyId)->findOrFail($customerId);
+        $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
+
+        $wallet->balance = bcadd($wallet->balance, $amount, 2);
+        $wallet->save();
+
+        \App\Models\WalletTransaction::create([
+            'wallet_id'       => $wallet->id,
+            'type'            => 'deposit',
+            'amount'          => $amount,
+            'running_balance' => $wallet->balance,
+            'reference'       => $who,
+            'note'            => 'تسوية استرداد',
+            'performed_by_name'=> auth()->user()->name ?? 'system',
+        ]);
+    });
+
+    // بعد الإيداع صفِّ الدين تلقائياً
+    // بعد الإيداع: صفِّ فوراً المتبقي فقط واترك الفائض رصيداً
+$customer = \App\Models\Customer::where('agency_id', $agencyId)->findOrFail($customerId);
+$this->autoPayAllFromWallet($customer); // يستهلك حتى يصل الدين للصفر ويُبقي الباقي
+
+
+    return $amount;
+}
+
+
 
     /** خصم تلقائي من رصيد العميل لتغطية المتبقي في البيع الجزئي */
    public function autoPayFromWallet(Sale $sale): void
@@ -137,8 +154,8 @@ $remaining = max(0.0, $totalDue - $totalPaid - $collected);
 
     DB::transaction(function () use ($sale, $remaining) {
         // احصل على المحفظة عبر علاقة العميل (بدون agency_id)
-        $customer = Customer::findOrFail($sale->customer_id);
-        $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
+$customer = Customer::where('agency_id', $sale->agency_id)
+    ->findOrFail($sale->customer_id);        $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
 
         $available = (float) $wallet->balance;
         if ($available <= 0) return;
@@ -252,8 +269,8 @@ public function syncCustomerCommission(Sale $sale): void
         $ref     = 'commission:group:' . $groupId;
 
         // اقفل المحفظة
-        $customer = Customer::findOrFail($sale->customer_id);
-        $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
+$customer = Customer::where('agency_id', $sale->agency_id)
+    ->findOrFail($sale->customer_id);        $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
 
         // كل سجلات نفس المجموعة
         $groupSales = Sale::where(function ($q) use ($groupId) {
@@ -264,17 +281,19 @@ public function syncCustomerCommission(Sale $sale): void
             ->orderBy('id') // التسلسل الزمني
             ->get();
 
-        // وجود استرداد كلي يلغي أي عمولة
-        $hasFullRefund = $groupSales->contains(function ($s) {
-            return strcasecmp((string)$s->status, 'Refund-Full') === 0;
-        });
+      // بعد
+        $hasFullRefund = $groupSales->contains(fn($s) => strcasecmp((string)$s->status, 'Refund-Full') === 0);
+        $hasPartialRefund = $groupSales->contains(fn($s) => strcasecmp((string)$s->status, 'Refund-Partial') === 0);
 
-        // صافي ما قُيِّد سابقاً لهذه العمولة (إيداع - سحب)
+        // احسب الصافي أولًا
         $deposited = (float) WalletTransaction::where('wallet_id', $wallet->id)
             ->where('reference', $ref)->where('type', 'deposit')->sum('amount');
         $withdrawn = (float) WalletTransaction::where('wallet_id', $wallet->id)
             ->where('reference', $ref)->where('type', 'withdraw')->sum('amount');
         $net = $deposited - $withdrawn;
+
+     
+
 
         if ($hasFullRefund) {
             // صفّر الصافي إن وجد
@@ -334,6 +353,29 @@ public function syncCustomerCommission(Sale $sale): void
         }
         // إن كان desired == net فلا إجراء
     });
+}
+
+private function undepositedRefundForGroup(int $customerId, string $gid): float
+{
+    $sales = \App\Models\Sale::where(function($q) use ($gid){
+            $q->where('sale_group_id', $gid)->orWhere('id', $gid);
+        })
+        ->where('customer_id', $customerId)
+        ->get();
+
+    $refunds = $sales->filter(fn($s) => str_contains(mb_strtolower((string)$s->status), 'refund'))
+        ->sum(function($s){
+            $amt = (float)($s->refund_amount ?? 0);
+            return $amt > 0 ? $amt : abs((float)($s->usd_sell ?? 0));
+        });
+
+    $already = \App\Models\WalletTransaction::whereHas('wallet', fn($q)=>
+                    $q->where('customer_id', $customerId))
+                ->where('type','deposit')
+                ->where('reference', 'sales-auto|group:'.$gid)
+                ->sum('amount');
+
+    return max(0.0, round($refunds - $already, 2));
 }
 
 
