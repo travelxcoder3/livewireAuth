@@ -52,7 +52,6 @@ class SalesTable
             ['key' => 'commission', 'label' => 'عمولة العميل', 'format' => 'money'],
             ['key' => 'duplicatedBy.name', 'label' => 'تم التكرار بواسطة'],
             ['key' => 'user.name', 'label' => 'الموظف'],
-
         ];
 
         // 2) عمود الإجراءات
@@ -67,8 +66,8 @@ class SalesTable
             $actionsColumn['buttons'] = ['pdf'];
         }
 
-        // 4) إذا لم يتم طلب إخفاء زر التكرار
-       if (!$hideDuplicate) {
+        // 4) أزرار التكرار والتعديل
+        if (!$hideDuplicate) {
             $actionsColumn['actions'] = [
                 [
                     'type' => 'duplicate',
@@ -84,19 +83,35 @@ class SalesTable
                     'icon' => 'fas fa-edit',
                     'can' => auth()->user()->can('sales.edit'),
                     'class' => 'text-[rgb(var(--primary-200))] hover:text-[rgb(var(--primary-500))]',
-                    'showIf' => fn($row) => 
-                        $row->agency_id == auth()->user()->agency_id &&
-                        \Carbon\Carbon::parse($row->created_at)->diffInHours(now()) < 3,
+                    'showIf' => function ($row) {
+                        // نافذة التعديل بالدقائق من سياسة الوكالة. افتراضي 180.
+                        $winMins = (int) (auth()->user()->agency?->editSaleWindowMinutes() ?? 180);
+                        $winMins = max(0, $winMins);
+
+                        // إخفاء الزر عند وكالات مختلفة
+                        if ($row->agency_id != auth()->user()->agency_id) {
+                            return false;
+                        }
+
+                        // إذا النافذة 0 دقيقة فالتعديل ممنوع دائمًا
+                        if ($winMins === 0) {
+                            return false;
+                        }
+
+                        // السماح فقط إذا لم تتجاوز مدة الإنشاء النافذة المحددة
+                        $ageInMinutes = \Carbon\Carbon::parse($row->created_at)->diffInMinutes(now());
+                        return $ageInMinutes < $winMins;
+                    },
                     'wireClick' => fn($row) => "edit({$row->id})",
                 ],
             ];
-}
-
+        }
 
         $columns[] = $actionsColumn;
 
         return $columns;
     }
+
     public static function customerFollowUpColumns(): array
     {
         return [
@@ -106,7 +121,7 @@ class SalesTable
             ['key' => 'service.label', 'label' => 'الخدمة'],
             ['key' => 'provider.name', 'label' => 'المزود'],
             ['key' => 'service_date', 'label' => 'تاريخ الخدمة', 'format' => 'date'],
-            ['key' => 'status', 'label' => 'حالة العملية', 'format' => 'status'], // ✅ السطر المضاف
+            ['key' => 'status', 'label' => 'حالة العملية', 'format' => 'status'],
             [
                 'key' => 'actions',
                 'label' => 'الإجراءات',
@@ -115,5 +130,4 @@ class SalesTable
             ],
         ];
     }
-
 }

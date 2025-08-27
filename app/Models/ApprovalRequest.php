@@ -21,6 +21,9 @@ class ApprovalRequest extends Model
         'agency_id', // تمت الإضافة هنا
     ];
 
+    protected $dates = ['used_at'];
+
+
     // علاقة مع المستخدم الذي أنشأ الطلب
     public function requestedBy()
     {

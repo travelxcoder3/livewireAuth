@@ -20,6 +20,11 @@ use Illuminate\Support\Str;
 use App\Models\CommissionProfile;
 use App\Models\EmployeeMonthlyTarget;
 use Carbon\Carbon;
+use App\Models\ApprovalSequenceUser;
+use App\Models\ApprovalRequest;
+use App\Models\ApprovalSequence;
+use Illuminate\Support\Facades\Schema;
+use App\Notifications\SaleEditApprovalPending;
 
 class Index extends Component
 {
@@ -100,6 +105,72 @@ class Index extends Component
     public string $customerLabel = '';
     public string $providerLabel = '';
     public int $formKey = 0;
+
+    public $successMessage;
+
+    private function editWindowMinutes(): int
+    {
+        return (int)(Auth::user()->agency?->editSaleWindowMinutes() ?? 180);
+    }
+
+    private function findValidEditApproval(int $saleId): ?ApprovalRequest
+    {
+        $minutes = $this->editWindowMinutes();
+        return ApprovalRequest::where('model_type', Sale::class)
+            ->where('model_id', $saleId)
+            ->where('status', 'approved')
+            ->when(Schema::hasColumn('approval_requests', 'agency_id'), function ($q) {
+    $q->where('agency_id', Auth::user()->agency_id);
+})
+            ->where('created_at', '>=', now()->subMinutes($minutes))
+            ->latest()
+            ->first();
+    }
+
+    private function createEditApprovalRequest(Sale $sale): void
+{
+    $sequence = ApprovalSequence::where('agency_id', Auth::user()->agency_id)
+        ->where('action_type', 'sale_edit') // ✅ مهم
+        ->first();
+
+    if (!$sequence) return;
+
+    $alreadyPending = ApprovalRequest::where('model_type', Sale::class)
+        ->where('model_id', $sale->id)
+        ->where('status', 'pending')
+        ->when(Schema::hasColumn('approval_requests', 'agency_id'), fn($q) =>
+            $q->where('agency_id', Auth::user()->agency_id)
+        )
+        ->exists();
+
+    if ($alreadyPending) return;
+
+    $data = [
+        'approval_sequence_id' => $sequence->id,
+        'model_type'           => Sale::class,
+        'model_id'             => $sale->id,
+        'status'               => 'pending',
+        'requested_by'         => Auth::id(),
+        'agency_id'            => Auth::user()->agency_id,
+    ];
+
+    // لو عندك عمود notes فعلاً:
+    if (Schema::hasColumn('approval_requests', 'notes')) {
+        $data['notes'] = 'طلب تعديل عملية بيع #'.$sale->id;
+    }
+
+    ApprovalRequest::create($data);
+}
+
+    private function remainingEditableMinutesFor(Sale $sale): int
+    {
+        $approval = $this->findValidEditApproval($sale->id);
+        if (!$approval) {
+            return 0;
+        }
+        $deadline = $approval->created_at->copy()->addMinutes($this->editWindowMinutes());
+        return max(0, now()->diffInMinutes($deadline, false));
+    }
 
     public function refreshCustomerOptions()
     {
@@ -616,8 +687,6 @@ class Index extends Component
         }
     }
 
-    public $successMessage;
-
     public function mount()
     {
         logger('FILTER INPUTS INITIAL:', $this->filterInputs);
@@ -1063,6 +1132,11 @@ $this->original_user_id = null;
     public function edit($id)
     {
         $sale = Sale::findOrFail($id);
+        if ($this->remainingEditableMinutesFor($sale) <= 0) {
+            $this->createEditApprovalRequest($sale);
+            $this->addError('general', 'تم إرسال طلب تعديل لهذه العملية وبانتظار الموافقة. لا يمكنك التعديل الآن.');
+            return;
+        }
         $this->editingSale = $sale->id;
 
         $this->beneficiary_name = $sale->beneficiary_name;
@@ -1132,8 +1206,9 @@ $this->original_user_id = null;
         $this->validate();
 
         $sale = Sale::findOrFail($this->editingSale);
-        if ($this->editWindowExpired($sale)) {
-            $this->addError('general', "لا يمكن تعديل العملية بعد مرور {$this->sale_edit_hours} ساعة.");
+        if ($this->remainingEditableMinutesFor($sale) <= 0) {
+            $this->createEditApprovalRequest($sale);
+            $this->addError('general', 'لا يمكن التحديث: انتهت/غير موجودة موافقة صالحة. تم إرسال طلب موافقة جديد.');
             return;
         }
 

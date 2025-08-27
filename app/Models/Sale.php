@@ -53,6 +53,13 @@ class Sale extends Model
         });
     }
 
+    public function remainingEditableMinutes(): int
+{
+    $window = optional($this->agency)->editSaleWindowMinutes() ?? 180;
+    $deadline = $this->created_at->copy()->addMinutes($window);
+    return max(0, now()->diffInMinutes($deadline, false));
+}
+
     public function agency()
     {
         return $this->belongsTo(Agency::class);

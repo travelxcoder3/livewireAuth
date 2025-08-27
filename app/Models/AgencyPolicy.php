@@ -7,13 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class AgencyPolicy extends Model
 {
-    use HasFactory;
+    protected $fillable = ['key','title','content','agency_id'];
 
-    protected $fillable = [
-        'agency_id',
-        'title',
-        'content',
-    ];
+    public function scopeKey($q, string $key){ return $q->where('key',$key); }
+
 
     public function agency()
     {

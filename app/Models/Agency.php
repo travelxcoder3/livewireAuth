@@ -31,14 +31,12 @@ class Agency extends Model
         'theme_color',
         'parent_id',
         'password',
-        'sale_edit_hours',
     ];
 
     protected $casts = [
         'license_expiry_date' => 'date',
         'subscription_start_date' => 'date',
         'subscription_end_date' => 'date',
-        'sale_edit_hours' => 'integer',
     ];
 
     public function admin()
@@ -86,6 +84,8 @@ class Agency extends Model
         return $this->hasMany(ServiceType::class);
     }
 
+    
+
     public function policies()
     {
         return $this->hasMany(AgencyPolicy::class);
@@ -132,6 +132,16 @@ class Agency extends Model
     {
         return $this->hasMany(\App\Models\CommissionProfile::class, 'agency_id');
     }
+
+    public function editSaleWindowMinutes(): int
+{
+    // ترجع القيمة من جدول السياسات
+    $val = $this->policies()
+        ->where('key', 'sales_edit_window_minutes')
+        ->value('content');
+
+    return max(0, (int) ($val ?? 180));
+}
 
 
 }

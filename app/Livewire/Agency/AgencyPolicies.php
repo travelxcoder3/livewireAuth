@@ -12,9 +12,12 @@ class AgencyPolicies extends Component
     public $title, $content;
     public $editingPolicy = null;
     public $showModal = false;
-    public $showDeleteModal = false; // أضفنا هذا المتغير
+    public $showDeleteModal = false;
     public $isEdit = false;
-    public $policyToDelete = null; // أضفنا هذا المتغير لتخزين السياسة المحددة للحذف
+    public $policyToDelete = null;
+
+    /** الإعداد الخاص بنافذة تعديل المبيعات (بالدقائق) */
+    public int $salesEditWindowMinutes = 180;
 
     public function mount()
     {
@@ -23,7 +26,17 @@ class AgencyPolicies extends Component
 
     public function loadPolicies()
     {
-        $this->policies = Auth::user()->agency->policies()->latest()->get();
+        $agency = Auth::user()->agency;
+
+        // قائمة السياسات النصية كالمعتاد
+        $this->policies = $agency->policies()->latest()->get();
+
+        // قراءة قيمة مدة السماح من سياسة بمفتاح sales_edit_window_minutes
+        $this->salesEditWindowMinutes = (int) (
+            $agency->policies()
+                ->where('key', 'sales_edit_window_minutes')
+                ->value('content') ?? 180
+        );
     }
 
     public function create()
@@ -54,7 +67,7 @@ class AgencyPolicies extends Component
         AgencyPolicy::findOrFail($this->policyToDelete)->delete();
         $this->showDeleteModal = false;
         $this->loadPolicies();
-         session()->flash('message', 'تم حذف السياسة بنجاح');
+        session()->flash('message', 'تم حذف السياسة بنجاح');
         session()->flash('type', 'success');
     }
 
@@ -67,23 +80,48 @@ class AgencyPolicies extends Component
 
         if ($this->isEdit && $this->editingPolicy) {
             $this->editingPolicy->update([
-                'title' => $this->title,
+                'title'   => $this->title,
                 'content' => $this->content,
             ]);
-               session()->flash('message',  'تم تحديث السياسة بنجاح');
-        session()->flash('type', 'success');
+            session()->flash('message', 'تم تحديث السياسة بنجاح');
+            session()->flash('type', 'success');
         } else {
             Auth::user()->agency->policies()->create([
-                'title' => $this->title,
-                'content' => $this->content,
+                'title'     => $this->title,
+                'content'   => $this->content,
+                // لو لديك عمود key وتريد سياسة نصية عامة اتركه null
+                'key'       => null,
             ]);
-               session()->flash('message', 'تم إضافة السياسة بنجاح');
-        session()->flash('type', 'success');
+            session()->flash('message', 'تم إضافة السياسة بنجاح');
+            session()->flash('type', 'success');
         }
 
         $this->resetFields();
         $this->loadPolicies();
         $this->showModal = false;
+    }
+
+    /** حفظ قيمة مدة السماح لتعديل المبيعات بالدقائق */
+    public function saveSalesEditWindow()
+    {
+        $this->validate([
+            'salesEditWindowMinutes' => 'required|integer|min:0|max:14400', // حتى 10 أيام
+        ]);
+
+        $agency = Auth::user()->agency;
+
+        $agency->policies()->updateOrCreate(
+            ['key' => 'sales_edit_window_minutes'],
+            [
+                'title'   => 'مدة السماح لتعديل المبيعات (بالدقائق)',
+                'content' => (string) $this->salesEditWindowMinutes,
+            ]
+        );
+
+        session()->flash('message', 'تم حفظ مدة السماح لتعديل المبيعات.');
+        session()->flash('type', 'success');
+
+        $this->loadPolicies();
     }
 
     public function resetFields()

@@ -21,6 +21,7 @@ class ApprovalSequences extends Component
         'manage_provider' => 'طلب إنشاء مزود',
         'manage_account' => 'طلب إنشاء حساب',
         'manage_service' => 'طلب إنشاء خدمة',
+        'sale_edit' => 'طلب تعديل عملية بيع',
     ];
     
 

@@ -127,19 +127,16 @@
 <th class="p-2 text-right">البيان</th>
 <th class="p-2 text-right">له</th>
 <th class="p-2 text-right">عليه</th>
-<th class="p-2 text-right">الرصيد بعد العملية</th>
 <th class="p-2 text-right">مرجع</th>
 <th class="p-2 text-right">منفّذ</th>
-...
+
 @foreach($this->unifiedLedger as $row)
 <tr class="{{ ($row['credit']??0) > 0 ? 'bg-emerald-50' : (($row['debit']??0) > 0 ? 'bg-red-50' : '') }}">
   <td class="p-2">{{ $row['ts'] }}</td>
   <td class="p-2">{{ $row['label'] }}</td>
   <td class="p-2 text-right">{{ number_format($row['credit'] ?? 0,2) }}</td>
   <td class="p-2 text-right">{{ number_format($row['debit']  ?? 0,2) }}</td>
-  <td class="p-2 text-right">
-    {{ isset($row['running']) ? number_format($row['running'], 2) : '—' }}
-  </td>
+ 
   <td class="p-2">{{ $row['reference'] ?? '' }}</td>
   <td class="p-2">{{ $row['performed'] ?? '' }}</td>
 </tr>
