@@ -1,112 +1,259 @@
-<div>
-    {{-- توست نجاح بنفس صفحة المبيعات --}}
-    @if(!empty($successMessage))
-        <div x-data="{ show: true }"
-             x-init="setTimeout(() => show = false, 2000)"
-             x-show="show"
-             x-transition
-             class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm z-50"
-             style="background-color: rgb(var(--primary-500));">
-            {{ $successMessage }}
-        </div>
-    @endif
+<div x-data="{ tab: @entangle('tab') }">
 
-    {{-- العنوان + أدوات الشهر --}}
-    <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 lg:gap-4 items-center">
-        <div class="col-span-12 md:col-span-4 lg:col-span-3 flex items-center justify-start">
-            <h1 class="text-2xl font-bold text-[rgb(var(--primary-700))]">أهداف الموظفين الشهرية</h1>
-        </div>
+    <x-toast :message="$successMessage" :type="$toastType ?? 'success'" />
 
-        <div class="col-span-12 md:col-span-8 lg:col-span-6">
-            <div class="bg-white border shadow rounded-xl px-2 py-2 flex flex-wrap justify-center gap-x-2 gap-y-2 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
-                <input type="number" min="2000" wire:model.lazy="year"
-                       class="w-24 rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none" />
-                <input type="number" min="1" max="12" wire:model.lazy="month"
-                       class="w-16 rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none" />
+    <div class="bg-white rounded-2xl shadow ring-1 ring-black/5 p-3">
+        <nav class="flex gap-6 border-b">
+            <button x-on:click="tab='emp'" class="relative py-3 px-1 text-sm font-semibold"
+                    :class="tab==='emp' ? 'text-[rgb(var(--primary-700))]' : 'text-gray-500'">
+                تهيئة عمولات الموظفين
+            </button>
+            <button x-on:click="tab='collector'" class="relative py-3 px-1 text-sm font-semibold"
+                    :class="tab==='collector' ? 'text-[rgb(var(--primary-700))]' : 'text-gray-500'">
+                قواعد التحصيل الشهرية
+            </button>
+        </nav>
 
-                <button wire:click="loadRows"
-                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-2 rounded-xl shadow transition duration-300 text-sm">
-                    تحميل
-                </button>
+        {{-- تبويب 1: عمولات الموظفين --}}
+        <div x-show="tab==='emp'" x-cloak class="space-y-4 pt-4">
+            <div class="flex items-center gap-3">
+                <label class="text-sm text-gray-700">٪ عمولة الموظف (تُثبت مرة واحدة)</label>
+                <div class="relative">
+                    <input type="number" step="0.01" min="0" class="w-24 border border-gray-300 rounded-lg px-3 py-2 text-right"
+                        wire:model.lazy="employeeRateFixed" @disabled($employeeRateLocked)>
+                    <span class="absolute inset-y-0 left-2 grid place-items-center text-gray-500 text-xs">%</span>
+                </div>
 
-                <button wire:click="copyFromPrev"
-                        class="text-white font-bold px-3 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, #f59e0b 0%, #d97706 100%);">
-                    نسخ من الشهر السابق
-                </button>
+                @if(!$employeeRateLocked)
+                    <x-primary-button type="button" :gradient="true" wire:click="fixEmployeeRate">تثبيت نهائي</x-primary-button>
+                @else
+                    <span class="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-600">مقفول</span>
+                @endif
+            </div>
 
-                <button wire:click="saveAll"
-                        class="text-white font-bold px-3 py-2 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-sm"
-                        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                    حفظ الكل
-                </button>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <div class="flex items-center gap-2">
+    <input type="number" min="2000" wire:model.lazy="empYear"  class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+    <input type="number" min="1" max="12" wire:model.lazy="empMonth" class="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+  </div>
+  <div class="flex items-center gap-2">
+<button type="button"
+        class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-xl text-sm"
+        wire:click="copyEmpFromPrev">
+  نسخ من الشهر السابق
+</button>
+
+  </div>
+</div>
+
+
+
+
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
+                        <thead class="bg-gray-100 text-gray-600">
+                        <tr>
+                            <th class="px-2 py-1">الموظف</th>
+                            <th class="px-2 py-1">الهدف الأساسي</th>
+                            <th class="px-2 py-1">هدف المقارنة</th>
+                            <th class="px-2 py-1">العمولة الخاصة للموظف</th>
+                            <th class="px-2 py-1 text-center">قفل</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                        @forelse($rows as $i => $r)
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-2 py-1 font-medium text-gray-800">{{ $r['name'] }}</td>
+                                <td class="px-2 py-1">
+                                    <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.main_target"
+                                        class="w-36 rounded-lg border border-gray-300 px-2 py-1 text-xs" @disabled($r['locked'])>
+                                </td>
+                                <td class="px-2 py-1">
+                                    <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.sales_target"
+                                        class="w-36 rounded-lg border border-gray-300 px-2 py-1 text-xs" @disabled($r['locked'])>
+                                </td>
+                                <td class="px-2 py-1">
+                                    <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.override_rate"
+                                        class="w-28 rounded-lg border border-gray-300 px-2 py-1 text-xs" @disabled($r['locked'])>
+                                </td>
+                                <td class="px-2 py-1 text-center">
+                                    <span class="px-3 py-1 rounded-xl text-xs font-bold {{ $r['locked'] ? 'bg-gray-100 text-gray-600' : 'bg-[rgb(var(--primary-600))] text-white' }}">
+                                        {{ $r['locked'] ? 'مقفول' : 'مفتوح' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="text-center py-4 text-gray-400">لا توجد بيانات</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <x-primary-button type="button" :gradient="true" wire:click="saveAll">حفظ الكل لمرة واحدة</x-primary-button>
             </div>
         </div>
 
-        <div class="col-span-12 md:col-span-4 lg:col-span-3"></div>
+        {{-- تبويب 2: قواعد التحصيل الشهرية --}}
+        <div x-show="tab==='collector'" x-cloak class="space-y-6 pt-4">
+
+            {{-- (أ) القواعد الأساسية – تُثبت مرة واحدة --}}
+            <div class="rounded-xl bg-white p-4 ring-1 ring-black/5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-semibold">قواعد التحصيل الأساسية (تُثبت مرة واحدة)</h3>
+                        <p class="text-xs text-gray-500">هذه هي القيم المرجعية لجميع الأشهر. بعد التثبيت تُقفل نهائيًا.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        @if(!$collectorBaselinesLocked)
+                            <x-primary-button type="button" :gradient="true" wire:click="fixCollectorBaselines">
+                                تثبيت نهائي
+                            </x-primary-button>
+                        @else
+                            <span class="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-600">مقفول</span>
+                        @endif
+                    </div>
+                </div>
+
+                @php
+                    $labels = [
+                        1=>'مباشر عبر المحصّل',2=>'غير مباشر متابعة الموظف',3=>'عبر الموظف مباشرة',
+                        4=>'متعثر مباشر',5=>'متعثر غير مباشر',6=>'شبه معدوم مباشر',7=>'شبه معدوم غير مباشر',8=>'معدوم مباشر'
+                    ];
+                    $typeOptions=['percent'=>'نسبة %','fixed'=>'مبلغ ثابت'];
+                    $basisOptions=['collected_amount'=>'من المبلغ المُحصَّل','net_margin'=>'من صافي الربح','employee_commission'=>'من عمولة الموظف'];
+                @endphp
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+  @foreach([1,2,3,4,5,6,7,8] as $m)
+    <div class="rounded-lg border border-gray-300 bg-white p-2 shadow-sm">
+      <div class="flex items-center justify-between mb-1">
+        <div class="font-semibold text-[13px]">{{ $labels[$m] }}</div>
+            <span class="text-[10px] px-2 py-0.5 rounded {{ $collectorBaselinesLocked ? 'bg-gray-100 text-gray-600' : 'bg-[rgb(var(--primary-500))] text-white' }}">
+            {{ $collectorBaselinesLocked ? 'مقفول' : 'قابل للتثبيت' }}
+            </span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs">
+<x-select-field
+    label=""
+    :options="$typeOptions"
+    wire-model="collectorBaselines.{{ $m }}.type"
+    placeholder="نوع العمولة"
+    container-class="relative m-0"
+    :disabled="$collectorBaselinesLocked"
+    compact
+/>
+
+
+
+        <input type="number" step="0.0001" min="0"
+               class="rounded-lg border border-gray-300 px-2 py-1.5 text-right"
+               wire:model.lazy="collectorBaselines.{{ $m }}.value"
+               @disabled($collectorBaselinesLocked)>
+
+<x-select-field
+    label=""
+    :options="$basisOptions"
+    wire-model="collectorBaselines.{{ $m }}.basis"
+    placeholder="الأساس"
+    container-class="relative col-span-2 m-0"
+    :disabled="$collectorBaselinesLocked"
+    compact
+/>
+
+
+      </div>
     </div>
+  @endforeach
+</div>
 
-    {{-- الجدول بنفس تصميم x-data-table (المبيعات) --}}
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-                <thead class="bg-gray-100 text-gray-600">
-                    <tr>
-                        <th class="px-2 py-1">الموظف</th>
-                        <th class="px-2 py-1">الهدف الأساسي</th>
-                        <th class="px-2 py-1">هدف المقارنة</th>
-                        <th class="px-2 py-1">العموله الخاصة للموظف </th>
-                        <th class="px-2 py-1 text-center">قفل</th>
-                    </tr>
-                </thead>
+            </div>
 
-                <tbody class="bg-white divide-y divide-gray-100">
-                    @forelse($rows as $i => $r)
-                        <tr class="hover:bg-gray-50">
-                            {{-- الموظف --}}
-                            <td class="px-2 py-1 font-medium text-gray-800">
-                                {{ $r['name'] }}
-                            </td>
+{{-- شريط التحكم لهذا الشهر (داخل تبويب التحصيل وفوق الجدول) --}}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+  <div class="flex items-center gap-2">
+    <input type="number" min="2000" wire:model.lazy="colYear"  class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+    <input type="number" min="1" max="12" wire:model.lazy="colMonth" class="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+  </div>
+  <div class="flex items-center gap-2">
+    <button type="button"
+            class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-xl text-sm"
+            wire:click="copyCollectorFromPrev">
+    نسخ من الشهر السابق
+    </button>
 
-                            {{-- الهدف الأساسي --}}
-                            <td class="px-2 py-1">
-                                <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.main_target"
-                                       class="w-36 rounded-lg border border-gray-300 px-2 py-1 text-xs bg-white focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none"
-                                       @disabled($r['locked'])>
-                            </td>
+    <x-primary-button type="button" :gradient="true" wire:click="createCollectorForMonth">
+      إنشاء ضبط هذا الشهر وقفله
+    </x-primary-button>
+  </div>
+</div>
 
-                            {{-- هدف المقارنة --}}
-                            <td class="px-2 py-1">
-                                <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.sales_target"
-                                       class="w-36 rounded-lg border border-gray-300 px-2 py-1 text-xs bg-white focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none"
-                                       @disabled($r['locked'])>
-                            </td>
 
-                            {{-- Override --}}
-                            <td class="px-2 py-1">
-                                <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.override_rate"
-                                       class="w-28 rounded-lg border border-gray-300 px-2 py-1 text-xs bg-white focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none"
-                                       @disabled($r['locked'])>
-                            </td>
 
-                            {{-- قفل --}}
-                            <td class="px-2 py-1 text-center">
-                                <button wire:click="toggleLock({{ $r['user_id'] }})"
-                                        class="px-3 py-1 rounded-xl text-xs font-bold shadow transition
-                                               {{ $r['locked'] ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
-                                    {{ $r['locked'] ? 'مقفول' : 'مفتوح' }}
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-gray-400">لا توجد بيانات</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                <div class="overflow-x-auto rounded-xl ring-1 ring-black/5">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr class="text-right">
+                                <th class="px-3 py-2">طريقة التحصيل</th>
+                                <th class="px-3 py-2 w-40">نوع العمولة</th>
+                                <th class="px-3 py-2 w-40">القيمة</th>
+                                <th class="px-3 py-2 w-56">الأساس</th>
+                                <th class="px-3 py-2 w-24">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                            @foreach([1,2,3,4,5,6,7,8] as $m)
+                                @php $row = $collectorMonthly[$m]; @endphp
+                                <tr>
+                                    <td class="px-3 py-2 font-medium">{{ $labels[$m] }}</td>
+                                    <td class="px-3 py-2">
+<x-select-field
+    label=""
+    :options="$typeOptions"
+    wire-model="collectorMonthly.{{ $m }}.type"
+    placeholder="نوع العمولة"
+    container-class="relative m-0"
+    :disabled="$row['exists']"
+    compact
+/>
+
+
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <input type="number" step="0.0001" min="0" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-right"
+                                               wire:model.lazy="collectorMonthly.{{ $m }}.value"
+                                               @disabled($row['exists'])>
+                                    </td>
+                                    <td class="px-3 py-2">
+<x-select-field
+    label=""
+    :options="$basisOptions"
+    wire-model="collectorMonthly.{{ $m }}.basis"
+    placeholder="الأساس"
+    container-class="relative m-0"
+    :disabled="$row['exists']"
+    compact
+/>
+
+
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <span class="text-xs px-2 py-1 rounded-lg {{ $row['exists'] ? 'bg-gray-100 text-gray-600' : 'bg-[rgb(var(--primary-600))] text-white' }}">
+                                            {{ $row['exists'] ? 'مقفول' : 'جديد' }}
+                                        </span>
+
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
-
-        {{-- ليست صفحة مُرقّمة هنا، لذا لا نعرض روابط صفحات --}}
     </div>
 </div>

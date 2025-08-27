@@ -11,6 +11,7 @@
     'searchKey' => '',
     'optionsWire' => null,        // اسم خاصية Livewire (مثلاً: customerOptions / providerOptions)
     'selectedLabelWire' => null,
+    'compact' => false,
 ])
 
 @php
@@ -129,12 +130,12 @@ x-effect="
                 $nextTick(() => { menuWidth = $refs.trigger?.offsetWidth || 0 })
             }"
     x-ref="trigger"
-        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs cursor-pointer flex justify-between items-center peer"
-        :class="{ 'bg-gray-100 cursor-not-allowed': {{ $disabled ? 'true' : 'false' }} }"
+          class="w-full rounded-lg border border-gray-300 px-3 {{ $compact ? 'py-1.5 text-sm' : 'py-2 text-xs' }} focus:ring-2  focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white cursor-pointer flex items-center justify-between peer"
+  :class="{ 'bg-gray-100 cursor-not-allowed': {{ $disabled ? 'true' : 'false' }} }"
     >
-        <span
-            class="truncate"
-            x-text="selectedLabel || (options && options[selected]) || '{{ $placeholder }}'">
+<span class="flex-1 min-w-0 truncate"
+      x-text="selectedLabel || (options && options[selected]) || '{{ $placeholder }}'"></span>
+
         </span>
         <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
              viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"
@@ -192,9 +193,12 @@ x-effect="
 
     <input type="hidden" name="{{ $name }}" :value="selected">
 
-    <span class="text-xs block min-h-[0.75rem] leading-tight mt-0.5">
-        @error($errorName ?: $wireModel)
-            <span class="text-red-600">{{ $message }}</span>
-        @enderror
-    </span>
+        @unless($compact)
+        <span class="text-xs block min-h-[0.75rem] leading-tight mt-0.5">
+            @error($errorName ?: $wireModel)
+                <span class="text-red-600">{{ $message }}</span>
+            @enderror
+        </span>
+        @endunless
+
 </div>

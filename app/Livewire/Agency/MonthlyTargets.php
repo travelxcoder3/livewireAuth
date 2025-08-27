@@ -7,26 +7,159 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\EmployeeMonthlyTarget;
+use Illuminate\Support\Facades\Schema;
 
 class MonthlyTargets extends Component
 {
-    public int $year;
-    public int $month;
+    public int $empYear, $empMonth;   // لتبويب الموظفين
+    public int $colYear, $colMonth;   // لتبويب التحصيل
     public ?string $successMessage = null;
+    public ?string $toastType = null; // success | error | warning | info
 
-    /** @var array<int,array{row_id:?int,user_id:int,name:string,main_target:float,sales_target:float,override_rate:?float,locked:bool}> */
+
+    public string $tab = 'emp'; // emp | collector
+
+    /** جدول الأهداف */
     public array $rows = [];
+
+    /** رأس الصفحة: تثبيت % عمولة الموظف مرة واحدة من هنا */
+    public ?float $employeeRateFixed = null;      // يعرض قيمة profile->employee_rate
+    public bool  $employeeRateLocked = false;     // من commission_profiles.employee_rate_locked
+
+    /** تبويب قواعد التحصيل الشهرية */
+    public array $collectorBaselines = [];        // من CommissionCollectorRule (الـ8)
+    public bool  $collectorBaselinesLocked = false;
+
+    public array $collectorMonthly = [];          // للعرض فقط لكل طريقة في هذا الشهر
 
     public function mount(): void
     {
         $now = now();
-        $this->year  = (int) $now->year;
-        $this->month = (int) $now->month;
+        $this->empYear = $this->colYear  = (int)$now->year;
+        $this->empMonth= $this->colMonth = (int)$now->month;
+
+        $profile = \App\Models\CommissionProfile::where('agency_id', auth()->user()->agency_id)
+            ->where('is_active', true)->with('collectorRules')->first();
+
+        $this->employeeRateFixed        = $profile?->employee_rate ?? 0;
+        $this->employeeRateLocked       = (bool)($profile?->employee_rate_locked ?? false);
+        $this->collectorBaselinesLocked = (bool)($profile?->collector_baselines_locked ?? false);
+
+        $this->collectorBaselines = [];
+        foreach ([1,2,3,4,5,6,7,8] as $m) {
+            $r = optional($profile?->collectorRules->firstWhere('method',$m));
+            $this->collectorBaselines[$m] = [
+                'type'=>$r?->type ?? 'percent',
+                'value'=>$r?->value !== null ? (float)$r->value : 0,
+                'basis'=>$r?->basis ?? 'collected_amount',
+            ];
+        }
+
+        $this->loadRows();              // يعتمد الآن على empYear/empMonth
+        $this->loadCollectorMonthly();  // يعتمد الآن على colYear/colMonth
+    }
+  
+    public function loadMonth(): void
+    {
         $this->loadRows();
+        $this->loadCollectorMonthly();
     }
 
-    public function updatedYear()  { $this->loadRows(); }
-    public function updatedMonth() { $this->loadRows(); }
+    private function monthHasSales(): bool
+    {
+        $agencyId = auth()->user()->agency_id;
+        return \App\Models\Sale::where('agency_id',$agencyId)
+            ->whereYear('sale_date', $this->empYear)
+            ->whereMonth('sale_date',$this->empMonth)
+            ->exists();
+    }
+
+    private function monthHasCollections(): bool
+    {
+        $agencyId = auth()->user()->agency_id;
+        return \DB::table('collections')
+            ->where('agency_id', $agencyId)
+            ->whereYear('payment_date', $this->colYear)
+            ->whereMonth('payment_date',$this->colMonth)
+            ->exists();
+    }
+
+    public function fixEmployeeRate(): void
+    {
+        if ($this->employeeRateLocked) { return; }
+
+        // ممنوع التعديل إن وُجدت مبيعات في الشهر الجاري المختار
+        if ($this->monthHasSales()) {
+            $this->toastType = 'error';
+$this->successMessage = 'مرفوض: يوجد عمليات بيع في هذا الشهر، لا يمكن تثبيت/تعديل النسبة.';            return;
+        }
+
+        \DB::transaction(function () {
+            $profile = \App\Models\CommissionProfile::firstOrCreate(
+                ['agency_id'=>auth()->user()->agency_id, 'is_active'=>true],
+                ['name'=>'الافتراضي','employee_rate'=>0]
+            );
+
+            // ثبّت القيمة لأول مرة ثم اقفلها
+            $profile->employee_rate = (float)$this->employeeRateFixed;
+            $profile->employee_rate_locked = true;
+            $profile->save();
+        });
+
+        $this->employeeRateLocked = true;
+        $this->toastType = 'success';   
+        $this->successMessage = 'تم تثبيت نسبة عمولة الموظف نهائياً.';
+    }
+
+
+    public function updatedEmpYear()  { $this->clearToast(); $this->loadRows(); }
+    public function updatedEmpMonth() { $this->clearToast(); $this->loadRows(); }
+
+    public function updatedColYear()  { $this->clearToast(); $this->loadCollectorMonthly(); }
+    public function updatedColMonth() { $this->clearToast(); $this->loadCollectorMonthly(); }
+
+    
+    public function copyCollectorFromPrev(): void
+    {
+        // ممنوع إذا كان هذا الشهر مُنشأ ومقفول أو فيه تحصيلات
+        if ($this->monthHasCollections()) {
+            $this->toastType = 'error';
+$this->successMessage = 'مرفوض: توجد تحصيلات في هذا الشهر.';            return;
+        }
+        $agencyId = auth()->user()->agency_id;
+
+        $exists = \App\Models\CommissionCollectorMonthly::where([
+            'agency_id'=>$agencyId,
+            'year' =>$this->colYear,
+            'month'=>$this->colMonth,
+        ])->exists();
+
+        if ($exists) {
+            $this->toastType = 'error';
+$this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقاً.';
+            return;
+        }
+
+
+        $prev = now()->setDate($this->colYear, $this->colMonth, 1)->subMonth();
+
+
+        $prevRows = \App\Models\CommissionCollectorMonthly::where([
+            'agency_id'=>$agencyId,'year'=>$prev->year,'month'=>$prev->month,
+        ])->get()->keyBy('method');
+
+        foreach ([1,2,3,4,5,6,7,8] as $m) {
+            if ($r = $prevRows->get($m)) {
+                $this->collectorMonthly[$m]['type']  = $r->type;
+                $this->collectorMonthly[$m]['value'] = (float)$r->value;
+                $this->collectorMonthly[$m]['basis'] = $r->basis;
+            }
+            // إن لم يوجد في السابق نبقى على القاعدة الأساسية المحمّلة مسبقًا
+        }
+        $this->toastType = 'success';  
+        $this->successMessage = 'تم نسخ قواعد التحصيل من الشهر السابق (غير محفوظة بعد).';
+    }
+
 
     public function loadRows(): void
     {
@@ -49,10 +182,11 @@ class MonthlyTargets extends Component
         }
 
         $targets = EmployeeMonthlyTarget::whereIn('user_id', $users->pluck('id'))
-            ->where('year',  $this->year)
-            ->where('month', $this->month)
+            ->where('year',  $this->empYear)
+            ->where('month', $this->empMonth)
             ->get()
             ->keyBy('user_id');
+
 
      $this->rows = $users->map(function ($u) use ($targets) {
     $t = $targets->get($u->id); // قد يكون null
@@ -67,19 +201,19 @@ class MonthlyTargets extends Component
         'override_rate'=> ($t?->override_rate !== null) ? (float)$t->override_rate : null,
         'locked'       => (bool)($t?->locked ?? false),
     ];
-})->values()->all();
-
+        })->values()->all();
+        $this->clearToast();
     }
 
-    public function copyFromPrev(): void
+    public function copyEmpFromPrev(): void
     {
-        $prev = now()->setDate($this->year, $this->month, 1)->subMonth();
-
+        $prev = now()->setDate($this->empYear, $this->empMonth, 1)->subMonth();
         $prevTargets = EmployeeMonthlyTarget::whereIn('user_id', collect($this->rows)->pluck('user_id'))
             ->where('year',  $prev->year)
             ->where('month', $prev->month)
             ->get()
             ->keyBy('user_id');
+
 
         foreach ($this->rows as &$r) {
             if ($r['locked'] ?? false) continue;
@@ -89,52 +223,194 @@ class MonthlyTargets extends Component
                 $r['override_rate'] = $p->override_rate !== null ? (float)$p->override_rate : null;
             }
         }
+        $this->toastType = 'success';
         $this->successMessage = 'تم نسخ أهداف الشهر السابق';
     }
 
     public function saveAll(): void
     {
+        if ($this->monthHasSales()) {
+            $this->toastType = 'error';
+$this->successMessage = 'مرفوض: توجد مبيعات في هذا الشهر؛ لا يُسمح بتعديل الأهداف أو العمولة الشهرية.';            return;
+        }
+
         $agencyId = Auth::user()->agency_id;
 
         DB::transaction(function () use ($agencyId) {
             foreach ($this->rows as &$r) {
                 if ($r['locked'] ?? false) continue;
 
-                $rec = EmployeeMonthlyTarget::firstOrNew([
-                    'agency_id' => $agencyId,
-                    'user_id'   => $r['user_id'],
-                    'year'      => $this->year,
-                    'month'     => $this->month,
-                ]);
+        $rec = EmployeeMonthlyTarget::firstOrNew([
+            'agency_id' => $agencyId,
+            'user_id'   => $r['user_id'],
+            'year'      => $this->empYear,
+            'month'     => $this->empMonth,
+        ]);
+
+
+                // إذا كان موجوداً مسبقاً نمنع أي تعديل عليه (ثابت للشهر)
+                if ($rec->exists) { continue; }
 
                 $rec->main_target   = (float)($r['main_target'] ?? 0);
                 $rec->sales_target  = (float)($r['sales_target'] ?? 0);
                 $rec->override_rate = $r['override_rate'] !== null ? (float)$r['override_rate'] : null;
+                $rec->locked        = true; // يُنشأ مقفول
                 $rec->updated_by    = Auth::id();
-                if (!$rec->exists) $rec->created_by = Auth::id();
+                $rec->created_by    = Auth::id();
                 $rec->save();
 
                 $r['row_id'] = $rec->id;
+                $r['locked'] = true;
             }
         });
 
         $this->loadRows();
-        $this->successMessage = 'تم حفظ الأهداف بنجاح';
+        $this->toastType = 'success'; 
+        $this->successMessage = 'تم إنشاء الأهداف لهذا الشهر وقفلها.';
+    }
+
+    public function loadCollectorMonthly(): void
+    {
+        $this->collectorMonthly = [];
+
+        // لو الجدول غير موجود لا تستعلم عنه
+        if (!Schema::hasTable('commission_collector_monthlies')) {
+            foreach ([1,2,3,4,5,6,7,8] as $m) {
+                $b = $this->collectorBaselines[$m];
+                $this->collectorMonthly[$m] = [
+                    'exists'=>false,'type'=>$b['type'],'value'=>$b['value'],'basis'=>$b['basis'],'locked'=>false,
+                ];
+            }
+            return;
+        }
+
+        $agencyId = auth()->user()->agency_id;
+            $rows = \App\Models\CommissionCollectorMonthly::where([
+                'agency_id'=>auth()->user()->agency_id,
+                'year' =>$this->colYear,
+                'month'=>$this->colMonth,
+            ])->get()->keyBy('method');
+
+
+        foreach ([1,2,3,4,5,6,7,8] as $m) {
+            $rec = $rows->get($m); $b = $this->collectorBaselines[$m];
+            $this->collectorMonthly[$m] = [
+                'exists'=>(bool)$rec,
+                'type'  =>$rec->type  ?? $b['type'],
+                'value' =>$rec->value ?? $b['value'],
+                'basis' =>$rec->basis ?? $b['basis'],
+                'locked'=>(bool)($rec->locked ?? false),
+            ];
+        }
+        $this->clearToast();
+    }
+
+
+    /** إنشاء ضبط الشهر لأول مرة فقط ثم يُقفل نهائياً */
+    public function createCollectorForMonth(): void
+    {
+        if ($this->monthHasCollections()) {
+            $this->toastType = 'error';
+$this->successMessage = 'مرفوض: توجد تحصيلات في هذا الشهر؛ لا يمكن إنشاء أو تعديل قواعد التحصيل.';
+            return;
+        }
+
+        $agencyId = auth()->user()->agency_id;
+
+        // لا نسمح إن كانت موجودة
+        $exists = \App\Models\CommissionCollectorMonthly::where([
+            'agency_id'=>$agencyId,
+            'year' =>$this->colYear,
+            'month'=>$this->colMonth,
+        ])->exists();
+
+        if ($exists) {
+            $this->toastType = 'error';
+$this->successMessage = 'هذه القواعد موجودة ومقفولة سلفاً.';
+            return;
+        }
+
+        \DB::transaction(function () use ($agencyId) {
+            foreach ([1,2,3,4,5,6,7,8] as $m) {
+                \App\Models\CommissionCollectorMonthly::create([
+                    'agency_id'=>$agencyId,
+                    'year' =>$this->colYear,
+                    'month'=>$this->colMonth,
+                    'method'=>$m,
+                    'type'=>$this->collectorMonthly[$m]['type'],
+                    'value'=>$this->collectorMonthly[$m]['value'],
+                    'basis'=>$this->collectorMonthly[$m]['basis'],
+                    'locked'=>true,
+                ]);
+
+            }
+        });
+
+        $this->loadCollectorMonthly();
+        $this->toastType = 'success'; 
+        $this->successMessage = 'تم إنشاء قواعد التحصيل للشهر وقفلها.';
+    }
+
+    public function fixCollectorBaselines(): void
+    {
+        if ($this->collectorBaselinesLocked) { return; }
+
+        \DB::transaction(function () {
+            $profile = \App\Models\CommissionProfile::firstOrCreate(
+                ['agency_id'=>auth()->user()->agency_id, 'is_active'=>true],
+                ['name'=>'الافتراضي']
+            );
+
+            // اكتب القواعد الأساسية الثمانية
+            \App\Models\CommissionCollectorRule::where('profile_id', $profile->id)->delete();
+
+            $rows = [];
+            foreach ([1,2,3,4,5,6,7,8] as $m) {
+                $b = $this->collectorBaselines[$m] ?? ['type'=>null,'value'=>null,'basis'=>null];
+                $rows[] = [
+                    'profile_id' => $profile->id,
+                    'method'     => $m,
+                    'type'       => $b['type'] ?? null,
+                    'value'      => $b['value'] ?? null,
+                    'basis'      => $b['basis'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            if ($rows) {
+                \App\Models\CommissionCollectorRule::insert($rows);
+            }
+
+            // اقفلها نهائيًا
+            $profile->collector_baselines_locked = true;
+            $profile->save();
+        });
+
+        $this->collectorBaselinesLocked = true;
+        $this->toastType = 'success';
+        $this->successMessage = 'تم تثبيت قواعد التحصيل الأساسية نهائياً.';
     }
 
     public function toggleLock(int $userId): void
     {
         $rec = EmployeeMonthlyTarget::where([
             'user_id' => $userId,
-            'year'    => $this->year,
-            'month'   => $this->month,
+            'year'    => $this->empYear,
+            'month'   => $this->empMonth,
         ])->first();
+
 
         if ($rec) {
             $rec->locked = !$rec->locked;
             $rec->save();
             $this->loadRows();
         }
+    }
+
+    private function clearToast(): void
+    {
+        $this->successMessage = null;
+        $this->toastType = null;
     }
 
     public function render()

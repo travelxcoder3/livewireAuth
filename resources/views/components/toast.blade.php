@@ -21,8 +21,9 @@
 
 @if ($message)
     <div 
+        wire:key="toast-{{ uniqid() }}"   {{-- يجبر إعادة التركيب كل ريندر --}}
         x-data="{ show: true }"
-        x-init="setTimeout(() => show = false, 3000)"
+        x-init="show = true; setTimeout(() => show = false, 3000)"
         x-show="show"
         x-transition
         class="fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 {{ $bgColors[$type] ?? 'bg-[rgb(var(--primary-600))] text-white' }}"
@@ -31,3 +32,4 @@
         <span class="flex-1">{{ $message }}</span>
     </div>
 @endif
+
