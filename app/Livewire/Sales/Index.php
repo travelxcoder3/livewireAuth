@@ -565,47 +565,40 @@ Notify::toUsers(
         $accounts = Account::select('id','name')->orderBy('name')->get();
 
         // إجماليات الموظف الحالي
-        $employeeRows = (clone $salesQuery)
-            ->where('user_id', Auth::id())
-            ->where('status','!=','Void')
-            ->withSum('collections','amount')
-            ->select('id','usd_sell','amount_paid','sale_profit','sale_group_id')
-            ->get();
+     // كون موحّد للمجموعات لموظفك وعلى نفس فلاتر الجدول
+$groupUniverse = (clone $salesQuery)
+    ->where('user_id', Auth::id())
+    ->where('status','!=','Void')
+    ->withSum('collections','amount')
+    ->get(['id','sale_group_id','usd_sell','amount_paid','sale_profit']);
 
-        $grouped = $employeeRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+// اجمع حسب sale_group_id فقط، وإن كان null ادمجه على مفتاح اصطناعي لكل مجموعة
+$byGroup = $groupUniverse->groupBy(function($s){
+    return $s->sale_group_id ?: ('solo:'.$s->id); // يمنع دمج سطور غير مرتبطة خطأً
+});
 
-        $totalAmount          = 0.0;
-        $totalReceived        = 0.0;
-        $totalPending         = 0.0;
-        $totalProfit          = 0.0;
-        $totalCollectedProfit = 0.0;
+$totalAmount = $totalReceived = $totalPending = $totalProfit = 0.0;
 
-        foreach ($grouped as $group) {
-            $netSell = (float) $group->sum('usd_sell');
-            if ($netSell <= 0) {
-                continue;
-            }
+foreach ($byGroup as $g) {
+    $sell = (float) $g->sum('usd_sell');
+    if ($sell <= 0) continue;                        // تجاهل السالب/الصفري
+    $collected = (float) $g->sum('amount_paid') +    // مدفوع مباشر
+                 (float) $g->sum('collections_sum_amount'); // تحصيلات
 
-            $netCollected = (float) $group->sum('amount_paid')
-                + (float) $group->sum('collections_sum_amount');
+    $profit = (float) $g->sum('sale_profit');
 
-            $groupProfit = (float) $group->sum('sale_profit');
+    $totalAmount   += $sell;
+    $totalReceived += min($collected, $sell);        // سقف عند البيع
+    $totalProfit   += $profit;
+}
 
-            $totalAmount   += $netSell;
-            $totalReceived += min($netCollected, $netSell);
-            $totalProfit   += $groupProfit;
+$totalPending = max($totalAmount - $totalReceived, 0);
 
-            if ($netCollected + 0.01 >= $netSell) {
-                $totalCollectedProfit += $groupProfit;
-            }
-        }
+$this->totalAmount   = $totalAmount;
+$this->totalReceived = $totalReceived;
+$this->totalPending  = $totalPending;
+$this->totalProfit   = $totalProfit;
 
-        $totalPending = max($totalAmount - $totalReceived, 0);
-
-        $this->totalAmount   = $totalAmount;
-        $this->totalReceived = $totalReceived;
-        $this->totalPending  = $totalPending;
-        $this->totalProfit   = $totalProfit;
 
         // تحديد شهر المرجع من الفلاتر إن كانت داخل نفس الشهر، وإلا شهر اليوم
         $ref = now();
