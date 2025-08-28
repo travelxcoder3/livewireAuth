@@ -75,6 +75,8 @@ use App\Livewire\Agency\InvoicesReview;
 use App\Livewire\Agency\Reports\ProviderLedger;
 use App\Livewire\HR\EmployeeFileIndex;
 use App\Livewire\Agency\Settings\SaleEditWindow;
+use App\Livewire\Agency\NotificationsIndex;
+
 
 Route::get('/', fn() => view('welcome'));
 
@@ -250,6 +252,9 @@ Route::prefix('agency')
         // تقارير عروض الأسعار
         Route::get('/quotations', QuotationsReport::class)->name('reports.quotations');
         Route::get('/quotations/pdf', [QuotationReportsController::class, 'quotationsPdf'])->name('reports.quotations.pdf');
+
+        Route::get('notifications', NotificationsIndex::class)
+        ->name('notifications.index');
     });
     Route::prefix('{agency}/backups')->group(function () {
     // عرض القائمة عبر Livewire

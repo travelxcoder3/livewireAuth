@@ -4,44 +4,39 @@ namespace App\Livewire\Agency;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
+use App\Models\AppNotification;
 
 class NotificationsBell extends Component
 {
     public $lastNotificationId = null;
-
     protected $listeners = ['refreshNotifications' => '$refresh'];
 
     public function render()
     {
-        $notifications = Auth::user()->unreadNotifications()->latest()->take(10)->get();
+        $notifications = AppNotification::forUser(Auth::id())
+            ->unread()->latest('id')->take(5)->get();
 
-        // إذا كان هناك إشعار جديد لم يكن ظاهرًا من قبل
-        if ($notifications->count() > 0) {
-            $latestId = $notifications->first()->id;
+        if ($notifications->count()) {
+            $latestId = (string)$notifications->first()->id;
             if ($this->lastNotificationId && $latestId !== $this->lastNotificationId) {
-                // أطلق حدث Toast
-                $message = $notifications->first()->data['message'] ?? 'لديك إشعار جديد';
-                $this->dispatch('new-notification-toast', [
-                    'message' => $message,
-                ]);
+                $msg = $notifications->first()->title ?? 'إشعار جديد';
+                $this->dispatch('new-notification-toast', ['message' => $msg]);
             }
             $this->lastNotificationId = $latestId;
         }
 
-        return view('livewire.agency.notifications-bell', [
-            'notifications' => $notifications,
-        ]);
+        return view('livewire.agency.notifications-bell', compact('notifications'));
     }
 
-    public function markAsRead($notificationId)
-    {
-        $notification = Auth::user()->unreadNotifications()->find($notificationId);
-        if ($notification) {
-            $url = $notification->data['url'] ?? null;
-            $notification->markAsRead();
-            if ($url) {
-                $this->dispatch('redirect-to-url', ['url' => $url]);
-            }
-        }
+    public function markAsRead($id)
+{
+    $n = AppNotification::forUser(Auth::id())->find($id);
+    if ($n) {
+        $n->update(['is_read'=>true,'read_at'=>now()]);
+        $this->dispatch('redirect-to-url', [
+            'url' => $n->url ?: route('agency.notifications.index')
+        ]);
+        $this->dispatch('refreshNotifications');
     }
-} 
+}
+}

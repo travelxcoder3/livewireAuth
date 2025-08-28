@@ -67,6 +67,7 @@ class MonthlyTargets extends Component
 
     private function monthHasSales(): bool
     {
+        // تبقى كما هي لاستخدامها في تثبيت النسبة العامة (ملف التعريف)
         $agencyId = auth()->user()->agency_id;
         return \App\Models\Sale::where('agency_id',$agencyId)
             ->whereYear('sale_date', $this->empYear)
@@ -84,6 +85,38 @@ class MonthlyTargets extends Component
             ->exists();
     }
 
+    /** إرجاع IDs الموظفين الذين لديهم مبيعات في شهر empYear/empMonth */
+    private function saleUserIdsForMonth(): array
+    {
+        $agency = Auth::user()->agency;
+        $agencyId = $agency->id;
+
+        if ($agency->parent_id === null) {
+            $branchIds = $agency->branches()->pluck('id')->toArray();
+            $allAgencyIds = array_merge([$agencyId], $branchIds);
+        } else {
+            $allAgencyIds = [$agencyId];
+        }
+
+        // نقيّد بالمستخدمين الفعّالين ضمن نطاق الوكالة/الفروع
+        $userIds = User::whereIn('agency_id', $allAgencyIds)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        return \App\Models\Sale::whereIn('agency_id', $allAgencyIds)
+            ->whereIn('user_id', $userIds)
+            ->whereYear('sale_date', $this->empYear)
+            ->whereMonth('sale_date', $this->empMonth)
+            ->pluck('user_id')->unique()->values()->all();
+    }
+
+    /** فحص سريع لموظف واحد */
+    private function employeeMonthHasSales(int $userId): bool
+    {
+        return in_array($userId, $this->saleUserIdsForMonth(), true);
+    }
+
+
     public function fixEmployeeRate(): void
     {
         if ($this->employeeRateLocked) { return; }
@@ -91,7 +124,7 @@ class MonthlyTargets extends Component
         // ممنوع التعديل إن وُجدت مبيعات في الشهر الجاري المختار
         if ($this->monthHasSales()) {
             $this->toastType = 'error';
-$this->successMessage = 'مرفوض: يوجد عمليات بيع في هذا الشهر، لا يمكن تثبيت/تعديل النسبة.';            return;
+            $this->successMessage = 'مرفوض: يوجد عمليات بيع في هذا الشهر، لا يمكن تثبيت/تعديل النسبة.';            return;
         }
 
         \DB::transaction(function () {
@@ -188,20 +221,28 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
             ->keyBy('user_id');
 
 
-     $this->rows = $users->map(function ($u) use ($targets) {
-    $t = $targets->get($u->id); // قد يكون null
+    // IDs الموظفين الذين لديهم مبيعات في شهر الموظفين المحدد
+    $saleUserIds = \App\Models\Sale::whereIn('user_id', $users->pluck('id'))
+        ->whereYear('sale_date', $this->empYear)
+        ->whereMonth('sale_date', $this->empMonth)
+        ->pluck('user_id')->unique()->toArray();
 
-    return [
-        'row_id'       => $t?->id,
-        'user_id'      => $u->id,
-        'name'         => $u->name,
-        // إن لم يوجد سجل شهري خذ القيمة من user كافتراضي
-        'main_target'  => (float)($t?->main_target ?? $u->main_target ?? 0),
-        'sales_target' => (float)($t?->sales_target ?? $u->sales_target ?? 0),
-        'override_rate'=> ($t?->override_rate !== null) ? (float)$t->override_rate : null,
-        'locked'       => (bool)($t?->locked ?? false),
-    ];
-        })->values()->all();
+    $this->rows = $users->map(function ($u) use ($targets, $saleUserIds) {
+        $t = $targets->get($u->id); // قد يكون null
+        $lockedBySales = in_array($u->id, $saleUserIds, true);
+
+        return [
+            'row_id'       => $t?->id,
+            'user_id'      => $u->id,
+            'name'         => $u->name,
+            'main_target'  => (float)($t?->main_target ?? $u->main_target ?? 0),
+            'sales_target' => (float)($t?->sales_target ?? $u->sales_target ?? 0),
+            'override_rate'=> ($t?->override_rate !== null) ? (float)$t->override_rate : null,
+            // القفل النهائي = إن كان السجل الشهري مقفول أو توجد مبيعات لهذا الموظف في هذا الشهر
+            'locked'       => (bool)($t?->locked ?? false) || $lockedBySales,
+        ];
+    })->values()->all();
+
         $this->clearToast();
     }
 
@@ -229,45 +270,72 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
 
     public function saveAll(): void
     {
-        if ($this->monthHasSales()) {
-            $this->toastType = 'error';
-$this->successMessage = 'مرفوض: توجد مبيعات في هذا الشهر؛ لا يُسمح بتعديل الأهداف أو العمولة الشهرية.';            return;
-        }
-
         $agencyId = Auth::user()->agency_id;
 
-        DB::transaction(function () use ($agencyId) {
+        $saleUserIds = $this->saleUserIdsForMonth();
+        $skippedBySales = [];
+        $skippedExisting = [];
+        $createdCount = 0;
+
+        DB::transaction(function () use ($agencyId, $saleUserIds, &$skippedBySales, &$skippedExisting, &$createdCount) {
             foreach ($this->rows as &$r) {
-                if ($r['locked'] ?? false) continue;
+                // ممنوع إن لدى هذا الموظف مبيعات في الشهر
+                if (in_array($r['user_id'], $saleUserIds, true)) {
+                    $skippedBySales[] = $r['name'];
+                    continue;
+                }
 
-        $rec = EmployeeMonthlyTarget::firstOrNew([
-            'agency_id' => $agencyId,
-            'user_id'   => $r['user_id'],
-            'year'      => $this->empYear,
-            'month'     => $this->empMonth,
-        ]);
+                // إن كان الصف مقفولاً مسبقاً لا نعدّل
+                if ($r['locked'] ?? false) {
+                    $skippedExisting[] = $r['name'];
+                    continue;
+                }
 
+                $rec = EmployeeMonthlyTarget::firstOrNew([
+                    'agency_id' => $agencyId,
+                    'user_id'   => $r['user_id'],
+                    'year'      => $this->empYear,
+                    'month'     => $this->empMonth,
+                ]);
 
-                // إذا كان موجوداً مسبقاً نمنع أي تعديل عليه (ثابت للشهر)
-                if ($rec->exists) { continue; }
+                // إن كان موجوداً مسبقاً نعتبره متخطّى
+                if ($rec->exists) {
+                    $skippedExisting[] = $r['name'];
+                    continue;
+                }
 
                 $rec->main_target   = (float)($r['main_target'] ?? 0);
                 $rec->sales_target  = (float)($r['sales_target'] ?? 0);
                 $rec->override_rate = $r['override_rate'] !== null ? (float)$r['override_rate'] : null;
-                $rec->locked        = true; // يُنشأ مقفول
+                $rec->locked        = true;
                 $rec->updated_by    = Auth::id();
                 $rec->created_by    = Auth::id();
                 $rec->save();
 
                 $r['row_id'] = $rec->id;
                 $r['locked'] = true;
+                $createdCount++;
             }
         });
 
         $this->loadRows();
-        $this->toastType = 'success'; 
-        $this->successMessage = 'تم إنشاء الأهداف لهذا الشهر وقفلها.';
+
+        // رسالة دقيقة حسب ما حصل
+        if ($createdCount > 0 && empty($skippedBySales) && empty($skippedExisting)) {
+            $this->toastType = 'success';
+            $this->successMessage = 'تم إنشاء الأهداف لهذا الشهر وقفلها.';
+        } else {
+            // أعطِها أحمر عند أي تخطّي حتى تكون واضحة
+            $this->toastType = ($skippedBySales || $skippedExisting) ? 'error' : 'success';
+            $parts = [];
+            if ($createdCount > 0)      $parts[] = "تم إنشاء {$createdCount}";
+            if ($skippedBySales)        $parts[] = 'تخطِّي بسبب مبيعات: ' . implode('، ', $skippedBySales);
+            if ($skippedExisting)       $parts[] = 'تخطِّي سجلات موجودة/مقفولة: ' . implode('، ', $skippedExisting);
+            $this->successMessage = implode(' | ', $parts) ?: 'لا تغييرات.';
+        }
+
     }
+
 
     public function loadCollectorMonthly(): void
     {
@@ -393,12 +461,18 @@ $this->successMessage = 'هذه القواعد موجودة ومقفولة سل�
 
     public function toggleLock(int $userId): void
     {
+        // إن لدى الموظف مبيعات في هذا الشهر نمنع فك القفل أو تغييره
+        if ($this->employeeMonthHasSales($userId)) {
+            $this->toastType = 'error';
+            $this->successMessage = 'مرفوض: لدى هذا الموظف مبيعات في هذا الشهر.';
+            return;
+        }
+
         $rec = EmployeeMonthlyTarget::where([
             'user_id' => $userId,
             'year'    => $this->empYear,
             'month'   => $this->empMonth,
         ])->first();
-
 
         if ($rec) {
             $rec->locked = !$rec->locked;
@@ -406,6 +480,7 @@ $this->successMessage = 'هذه القواعد موجودة ومقفولة سل�
             $this->loadRows();
         }
     }
+
 
     private function clearToast(): void
     {

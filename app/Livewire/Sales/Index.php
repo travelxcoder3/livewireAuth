@@ -25,6 +25,8 @@ use App\Models\ApprovalRequest;
 use App\Models\ApprovalSequence;
 use Illuminate\Support\Facades\Schema;
 use App\Notifications\SaleEditApprovalPending;
+use App\Services\Notify;
+use Illuminate\Support\Facades\DB;
 
 class Index extends Component
 {
@@ -127,39 +129,65 @@ class Index extends Component
             ->first();
     }
 
-    private function createEditApprovalRequest(Sale $sale): void
+private function createEditApprovalRequest(Sale $sale): void
 {
-    $sequence = ApprovalSequence::where('agency_id', Auth::user()->agency_id)
-        ->where('action_type', 'sale_edit') // ✅ مهم
+    // 1) جلب تسلسل الموافقة الصحيح
+    $sequence = \App\Models\ApprovalSequence::where('agency_id', \Auth::user()->agency_id)
+        ->where('action_type', 'sale_edit') // تأكد أن النوع يطابق ما في القاعدة
         ->first();
 
-    if (!$sequence) return;
+    if (!$sequence) {
+        return;
+    }
 
-    $alreadyPending = ApprovalRequest::where('model_type', Sale::class)
+    // 2) منع تكرار طلبات قيد الانتظار لنفس العملية
+    $alreadyPending = \App\Models\ApprovalRequest::where('model_type', \App\Models\Sale::class)
         ->where('model_id', $sale->id)
         ->where('status', 'pending')
-        ->when(Schema::hasColumn('approval_requests', 'agency_id'), fn($q) =>
-            $q->where('agency_id', Auth::user()->agency_id)
-        )
+        ->when(\Schema::hasColumn('approval_requests', 'agency_id'), function ($q) {
+            $q->where('agency_id', \Auth::user()->agency_id);
+        })
         ->exists();
 
-    if ($alreadyPending) return;
+    if ($alreadyPending) {
+        return;
+    }
 
+    // 3) إنشاء الطلب مع الحقول المتوفرة في الجدول فقط
     $data = [
         'approval_sequence_id' => $sequence->id,
-        'model_type'           => Sale::class,
+        'model_type'           => \App\Models\Sale::class,
         'model_id'             => $sale->id,
         'status'               => 'pending',
-        'requested_by'         => Auth::id(),
-        'agency_id'            => Auth::user()->agency_id,
+        'requested_by'         => \Auth::id(),
     ];
 
-    // لو عندك عمود notes فعلاً:
-    if (Schema::hasColumn('approval_requests', 'notes')) {
+    if (\Schema::hasColumn('approval_requests', 'agency_id')) {
+        $data['agency_id'] = \Auth::user()->agency_id;
+    }
+    if (\Schema::hasColumn('approval_requests', 'notes')) {
         $data['notes'] = 'طلب تعديل عملية بيع #'.$sale->id;
     }
 
-    ApprovalRequest::create($data);
+    \App\Models\ApprovalRequest::create($data);
+
+    // 4) إشعار جميع الموافقين في هذا التسلسل (نظام الإشعارات المبسّط)
+    try {
+        $approverIds = ApprovalSequenceUser::where('approval_sequence_id', $sequence->id)
+    ->pluck('user_id')->all();
+
+Notify::toUsers(
+    $approverIds,
+    'طلب تعديل عملية بيع',
+    "هناك طلب تعديل للعملية رقم #{$sale->id}",
+    route('agency.approvals.index'),
+    'sale_edit',
+    Auth::user()->agency_id
+);
+        
+    } catch (\Throwable $e) {
+        \Log::warning('Notify approvers failed: '.$e->getMessage());
+    }
 }
 
     private function remainingEditableMinutesFor(Sale $sale): int
