@@ -361,13 +361,37 @@
 
 
 
-        @if (Auth::user()->hasRole('agency-admin'))
-            {{-- طلبات الموافقة --}}
-            <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">
-                <x-navbar.buttons.icon-button icon="fas fa-clipboard-check" tooltip="طلبات الموافقة" label="طلبات الموافقة"
-                    href="{{ route('agency.approvals.index') }}" :active="false" />
-            </div>
-        @endif
+        @php
+    use Illuminate\Support\Facades\DB;
+    use App\Models\ApprovalRequest;
+
+    // جميع تسلسلات المستخدم في وكالته
+    $mySequenceIds = DB::table('approval_sequence_users as asu')
+        ->join('approval_sequences as s','s.id','=','asu.approval_sequence_id')
+        ->where('asu.user_id', Auth::id())
+        ->where('s.agency_id', Auth::user()->agency_id)
+        ->pluck('asu.approval_sequence_id');
+
+    // عدد الطلبات المعلّقة التي تنتظر موافقته
+    $pendingApprovalsForMe = ApprovalRequest::where('status', 'pending')
+        ->whereIn('approval_sequence_id', $mySequenceIds)
+        ->count();
+@endphp
+
+@can('approvals.access')
+    <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10">
+        <x-navbar.buttons.icon-button
+            icon="fas fa-clipboard-check"
+            tooltip="طلبات الموافقة"
+            label="طلبات الموافقة"
+            href="{{ route('agency.approvals.index') }}"
+            :active="request()->routeIs('agency.approvals.index')"
+            :has-notification="$pendingApprovalsForMe > 0"
+            :notification-count="$pendingApprovalsForMe"
+        />
+    </div>
+@endcan
+
 
         {{-- إعدادات الشركة --}}
         @php

@@ -115,90 +115,130 @@ class Index extends Component
         return (int)(Auth::user()->agency?->editSaleWindowMinutes() ?? 180);
     }
 
-    private function findValidEditApproval(int $saleId): ?ApprovalRequest
-    {
-        $minutes = $this->editWindowMinutes();
-        return ApprovalRequest::where('model_type', Sale::class)
-            ->where('model_id', $saleId)
-            ->where('status', 'approved')
-            ->when(Schema::hasColumn('approval_requests', 'agency_id'), function ($q) {
-    $q->where('agency_id', Auth::user()->agency_id);
-})
-            ->where('created_at', '>=', now()->subMinutes($minutes))
-            ->latest()
-            ->first();
-    }
-
-private function createEditApprovalRequest(Sale $sale): void
+    private function findValidEditApproval(int $saleId): ?\App\Models\ApprovalRequest
 {
-    // 1) جلب تسلسل الموافقة الصحيح
-    $sequence = \App\Models\ApprovalSequence::where('agency_id', \Auth::user()->agency_id)
-        ->where('action_type', 'sale_edit') // تأكد أن النوع يطابق ما في القاعدة
-        ->first();
+    $minutes = $this->editWindowMinutes();
 
-    if (!$sequence) {
-        return;
-    }
-
-    // 2) منع تكرار طلبات قيد الانتظار لنفس العملية
-    $alreadyPending = \App\Models\ApprovalRequest::where('model_type', \App\Models\Sale::class)
-        ->where('model_id', $sale->id)
-        ->where('status', 'pending')
-        ->when(\Schema::hasColumn('approval_requests', 'agency_id'), function ($q) {
-            $q->where('agency_id', \Auth::user()->agency_id);
+    return \App\Models\ApprovalRequest::where('model_type', \App\Models\Sale::class)
+        ->where('model_id', $saleId)
+        ->where('status', 'approved')
+        ->when(\Illuminate\Support\Facades\Schema::hasColumn('approval_requests','agency_id'), function ($q) {
+            $q->where('agency_id', auth()->user()->agency_id);
         })
-        ->exists();
-
-    if ($alreadyPending) {
-        return;
-    }
-
-    // 3) إنشاء الطلب مع الحقول المتوفرة في الجدول فقط
-    $data = [
-        'approval_sequence_id' => $sequence->id,
-        'model_type'           => \App\Models\Sale::class,
-        'model_id'             => $sale->id,
-        'status'               => 'pending',
-        'requested_by'         => \Auth::id(),
-    ];
-
-    if (\Schema::hasColumn('approval_requests', 'agency_id')) {
-        $data['agency_id'] = \Auth::user()->agency_id;
-    }
-    if (\Schema::hasColumn('approval_requests', 'notes')) {
-        $data['notes'] = 'طلب تعديل عملية بيع #'.$sale->id;
-    }
-
-    \App\Models\ApprovalRequest::create($data);
-
-    // 4) إشعار جميع الموافقين في هذا التسلسل (نظام الإشعارات المبسّط)
-    try {
-        $approverIds = ApprovalSequenceUser::where('approval_sequence_id', $sequence->id)
-    ->pluck('user_id')->all();
-
-Notify::toUsers(
-    $approverIds,
-    'طلب تعديل عملية بيع',
-    "هناك طلب تعديل للعملية رقم #{$sale->id}",
-    route('agency.approvals.index'),
-    'sale_edit',
-    Auth::user()->agency_id
-);
-        
-    } catch (\Throwable $e) {
-        \Log::warning('Notify approvers failed: '.$e->getMessage());
-    }
+        ->where('created_at', '>=', now()->subMinutes($minutes)) // موافقة حديثة ضمن النافذة
+        ->latest('id')
+        ->first();
 }
 
+    
     private function remainingEditableMinutesFor(Sale $sale): int
-    {
-        $approval = $this->findValidEditApproval($sale->id);
-        if (!$approval) {
-            return 0;
-        }
-        $deadline = $approval->created_at->copy()->addMinutes($this->editWindowMinutes());
-        return max(0, now()->diffInMinutes($deadline, false));
+{
+    $window = max(0, $this->editWindowMinutes()); // من سياسة الوكالة (مثلاً 180)
+    if ($window === 0) {
+        return 0;
     }
+
+    // (1) نافذة الإنشاء الأولى
+    $createdDeadline   = $sale->created_at->copy()->addMinutes($window);
+    $fromCreationLeft  = max(0, now()->diffInMinutes($createdDeadline, false));
+
+    // (2) نافذة آخر موافقة على طلب تعديل (إن وُجد)
+    $approval = $this->findValidEditApproval($sale->id); // تستخدم الدالة الموجودة لديك
+    $fromApprovalLeft = 0;
+    if ($approval) {
+        $approvalDeadline  = $approval->created_at->copy()->addMinutes($window);
+        $fromApprovalLeft  = max(0, now()->diffInMinutes($approvalDeadline, false));
+    }
+
+    // المسموح = أكبر المتبقّيَين
+    return max($fromCreationLeft, $fromApprovalLeft);
+}
+
+    private function createEditApprovalRequest(Sale $sale): void
+    {
+        $sequence = ApprovalSequence::where('agency_id', Auth::user()->agency_id)
+            ->where('action_type', 'sale_edit')
+            ->first();
+
+        if (!$sequence) return;
+
+        $alreadyPending = ApprovalRequest::where('model_type', Sale::class)
+            ->where('model_id', $sale->id)
+            ->where('status', 'pending')
+            ->when(Schema::hasColumn('approval_requests', 'agency_id'), function ($q) {
+                $q->where('agency_id', Auth::user()->agency_id);
+            })
+            ->exists();
+
+        if ($alreadyPending) return;
+
+        $data = [
+            'approval_sequence_id' => $sequence->id,
+            'model_type'           => Sale::class,
+            'model_id'             => $sale->id,
+            'status'               => 'pending',
+            'requested_by'         => Auth::id(),
+        ];
+        if (Schema::hasColumn('approval_requests', 'agency_id')) {
+            $data['agency_id'] = Auth::user()->agency_id;
+        }
+        if (Schema::hasColumn('approval_requests', 'notes')) {
+            $data['notes'] = 'طلب تعديل عملية بيع #'.$sale->id;
+        }
+
+        ApprovalRequest::create($data);
+
+        // إشعار الموافقين (AppNotification)
+        $approverIds = ApprovalSequenceUser::where('approval_sequence_id', $sequence->id)
+            ->pluck('user_id')->all();
+
+        if (!empty($approverIds)) {
+            Notify::toUsers(
+                $approverIds,
+                'طلب تعديل عملية بيع',
+                "هناك طلب تعديل للعملية رقم #{$sale->id}",
+                route('agency.approvals.index'),
+                'sale_edit',
+                Auth::user()->agency_id
+            );
+        }
+    }
+
+    // اطلب موافقة تعديل لعملية معيّنة
+public function request_edit(int $saleId): void
+{
+    $sale = \App\Models\Sale::findOrFail($saleId);
+
+    // لو مازالت نافذة التعديل سارية: لا حاجة لطلب موافقة
+    if ($this->remainingEditableMinutesFor($sale) > 0) {
+        $this->addError('general', 'لا حاجة لطلب تعديل: ما زالت مدة التعديل مفتوحة.');
+        return;
+    }
+
+    // إنشاء طلب الموافقة + إشعار الموافقين
+    $this->createEditApprovalRequest($sale);
+    // تغذية راجعة للمستخدم وتحديث الجرس
+    session()->flash('message', 'تم إرسال طلب تعديل لهذه العملية وبانتظار الموافقة.');
+    $this->dispatch('refreshNotifications');
+}
+
+// Alias احتياطي إن كان الواجهة تستدعي camelCase
+// ➋ طلب تعديل يدوي عند انتهاء المهلة
+public function requestEdit(int $id): void
+{
+    $sale = \App\Models\Sale::findOrFail($id);
+
+    // لو مازالت المهلة سارية، وجّه المستخدم للتعديل مباشرة
+    if ($this->remainingEditableMinutesFor($sale) > 0) {
+        $this->addError('general', 'التعديل متاح الآن، اضغط "تعديل" مباشرة.');
+        return;
+    }
+
+    $this->createEditApprovalRequest($sale);
+
+    $this->successMessage = 'تم إرسال طلب التعديل وبانتظار الموافقة.';
+    $this->dispatch('approval-state-updated'); // يحدّث الجدول فورًا
+}
 
     public function refreshCustomerOptions()
     {
@@ -748,7 +788,10 @@ $this->totalProfit   = $totalProfit;
     protected function getListeners()
     {
         return [
-            'payment-collected' => 'refreshSales',
+            'payment-collected'       => 'refreshSales',
+            'approval-state-updated'  => 'refreshSales', // عند الموافقة/الرفض/إنشاء الطلب
+            'sales-tick'              => 'refreshSales', // نبض كل X ثواني
+            
         ];
     }
 

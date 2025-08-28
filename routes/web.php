@@ -253,6 +253,10 @@ Route::prefix('agency')
         Route::get('/quotations', QuotationsReport::class)->name('reports.quotations');
         Route::get('/quotations/pdf', [QuotationReportsController::class, 'quotationsPdf'])->name('reports.quotations.pdf');
 
+        Route::get('/approval-requests', \App\Livewire\Agency\ApprovalRequests::class)
+        ->name('approvals.index')
+        ->middleware('can:approvals.access');
+        
         Route::get('notifications', NotificationsIndex::class)
         ->name('notifications.index');
     });

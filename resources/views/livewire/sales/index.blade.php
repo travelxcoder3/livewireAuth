@@ -599,9 +599,12 @@ $columns = SalesTable::columns();
 
         
         <!-- جدول المبيعات -->
+        <div wire:poll.20s.keep-alive>  <!-- يحدّث كل 20 ثانية -->
         <div class="overflow-x-auto mt-2">
         <x-data-table :rows="$sales" :columns="$columns" />
         </div>
+                </div>
+
         <!-- نافذة تعديل الاسترداد -->
 @if($showRefundModal)
 <div class="fixed inset-0 z-50 bg-black/40 flex items-start justify-center pt-24 backdrop-blur-sm">
@@ -942,6 +945,10 @@ document.addEventListener('livewire:init', () => {
         closeFilterModal();
     });
 });
+// نبض إضافي كل 30 ثانية لتحديث الأزرار بدقّة زمنية حتى لو لم يصل حدث
+  setInterval(() => {
+      window.Livewire && window.Livewire.dispatch('sales-tick');
+  }, 30000);
 
 function openPreviewModal() {
     document.getElementById('previewModal').classList.remove('hidden');

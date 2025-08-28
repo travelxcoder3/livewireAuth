@@ -13,7 +13,7 @@ class SalesTable
      */
     public static function columns(bool $hideDuplicate = false, bool $showPdf = false): array
     {
-        // 1) تعريف جميع الأعمدة
+        // 1) الأعمدة
         $columns = [
             ['key' => 'sale_date', 'label' => 'تاريخ البيع', 'format' => 'date'],
             ['key' => 'beneficiary_name', 'label' => 'اسم المستفيد'],
@@ -27,15 +27,15 @@ class SalesTable
             ['key' => 'sale_profit', 'label' => 'الربح', 'format' => 'money', 'color' => 'primary-700'],
             ['key' => 'amount_paid', 'label' => 'المدفوع', 'format' => 'money'],
             [
-                'key' => 'total_paid',
+                'key'   => 'total_paid',
                 'label' => 'المتحصل',
-                'format' => 'money',
+                'format'=> 'money',
                 'color' => fn($value) => $value > 0 ? 'green-600' : 'gray-500',
             ],
             [
-                'key' => 'remaining_payment',
+                'key'   => 'remaining_payment',
                 'label' => 'الباقي',
-                'format' => 'money',
+                'format'=> 'money',
                 'color' => fn($value) => ($value ?? 0) > 0 ? 'red-600' : 'green-700',
             ],
             ['key' => 'expected_payment_date', 'label' => 'تاريخ السداد المتوقع', 'format' => 'date'],
@@ -56,53 +56,130 @@ class SalesTable
 
         // 2) عمود الإجراءات
         $actionsColumn = [
-            'key' => 'actions',
+            'key'   => 'actions',
             'label' => 'الإجراءات',
-            'format' => 'custom',
+            'format'=> 'custom',
         ];
 
-        // 3) إذا مطلوب عرض زر PDF فقط
+        // 3) زر PDF فقط إن لزم
         if ($showPdf) {
             $actionsColumn['buttons'] = ['pdf'];
         }
 
-        // 4) أزرار التكرار والتعديل
+        // 4) أزرار (تكرار/تعديل/طلب تعديل) + شارة انتظار
         if (!$hideDuplicate) {
             $actionsColumn['actions'] = [
+                // تكرار
                 [
-                    'type' => 'duplicate',
-                    'label' => 'تكرار',
-                    'icon' => 'fa fa-copy',
-                    'can' => auth()->user()->can('sales.edit'),
-                    'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
-                    'showIf' => fn($row) => $row->agency_id == auth()->user()->agency_id,
+                    'type'      => 'duplicate',
+                    'label'     => 'تكرار',
+                    'icon'      => 'fa fa-copy',
+                    'can'       => auth()->user()->can('sales.edit'),
+                    'class'     => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
+                    'showIf'    => fn($row) => $row->agency_id == auth()->user()->agency_id,
+                    'wireClick' => fn($row) => "duplicate({$row->id})",
                 ],
+
+                // تعديل: داخل نافذة الإنشاء أو خلال نافذة من آخر موافقة "حديثة" + لا يوجد طلب pending
                 [
-                    'type' => 'edit',
-                    'label' => 'تعديل',
-                    'icon' => 'fas fa-edit',
-                    'can' => auth()->user()->can('sales.edit'),
-                    'class' => 'text-[rgb(var(--primary-200))] hover:text-[rgb(var(--primary-500))]',
-                    'showIf' => function ($row) {
-                        // نافذة التعديل بالدقائق من سياسة الوكالة. افتراضي 180.
-                        $winMins = (int) (auth()->user()->agency?->editSaleWindowMinutes() ?? 180);
+                    'type'      => 'edit',
+                    'label'     => 'تعديل',
+                    'icon'      => 'fas fa-edit',
+                    'can'       => auth()->user()->can('sales.edit'),
+                    'class'     => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
+                    'showIf'    => function ($row) {
+                        $user = auth()->user();
+                        if (!$user || $row->agency_id != $user->agency_id) return false;
+
+                        $winMins = (int) ($user->agency?->editSaleWindowMinutes() ?? 180);
                         $winMins = max(0, $winMins);
 
-                        // إخفاء الزر عند وكالات مختلفة
-                        if ($row->agency_id != auth()->user()->agency_id) {
-                            return false;
-                        }
+                        // pending؟
+                        $hasPending = \App\Models\ApprovalRequest::where('model_type', \App\Models\Sale::class)
+                            ->where('model_id', $row->id)
+                            ->when(\Illuminate\Support\Facades\Schema::hasColumn('approval_requests', 'agency_id'), function ($q) use ($user) {
+                                $q->where('agency_id', $user->agency_id);
+                            })
+                            ->where('status', 'pending')
+                            ->exists();
+                        if ($hasPending) return false;
 
-                        // إذا النافذة 0 دقيقة فالتعديل ممنوع دائمًا
-                        if ($winMins === 0) {
-                            return false;
-                        }
-
-                        // السماح فقط إذا لم تتجاوز مدة الإنشاء النافذة المحددة
+                        // داخل نافذة الإنشاء؟
                         $ageInMinutes = \Carbon\Carbon::parse($row->created_at)->diffInMinutes(now());
-                        return $ageInMinutes < $winMins;
+                        if ($winMins > 0 && $ageInMinutes < $winMins) return true;
+
+                        // موافقة "حديثة" خلال نفس النافذة؟
+                        $hasRecentApproval = \App\Models\ApprovalRequest::where('model_type', \App\Models\Sale::class)
+                            ->where('model_id', $row->id)
+                            ->when(\Illuminate\Support\Facades\Schema::hasColumn('approval_requests', 'agency_id'), function ($q) use ($user) {
+                                $q->where('agency_id', $user->agency_id);
+                            })
+                            ->where('status', 'approved')
+                            ->where('created_at', '>=', now()->subMinutes($winMins))
+                            ->exists();
+
+                        return $hasRecentApproval;
                     },
                     'wireClick' => fn($row) => "edit({$row->id})",
+                ],
+
+                // طلب تعديل: خارج النافذة ولا يوجد pending ولا موافقة حديثة
+                [
+                    'type'      => 'request_edit',
+                    'label'     => 'طلب تعديل',
+                    'icon'      => 'fas fa-paper-plane',
+                    'can'       => auth()->user()->can('sales.edit'),
+                    'class'     => 'text-amber-600 hover:text-amber-700',
+                    'showIf'    => function ($row) {
+                        $user = auth()->user();
+                        if (!$user || $row->agency_id != $user->agency_id) return false;
+
+                        $winMins = (int) ($user->agency?->editSaleWindowMinutes() ?? 180);
+                        $winMins = max(0, $winMins);
+
+                        $hasPending = \App\Models\ApprovalRequest::where('model_type', \App\Models\Sale::class)
+                            ->where('model_id', $row->id)
+                            ->when(\Illuminate\Support\Facades\Schema::hasColumn('approval_requests', 'agency_id'), function ($q) use ($user) {
+                                $q->where('agency_id', $user->agency_id);
+                            })
+                            ->where('status', 'pending')
+                            ->exists();
+                        if ($hasPending) return false;
+
+                        $ageInMinutes = \Carbon\Carbon::parse($row->created_at)->diffInMinutes(now());
+                        $insideCreationWindow = ($winMins > 0 && $ageInMinutes < $winMins);
+                        if ($insideCreationWindow) return false;
+
+                        $hasRecentApproval = \App\Models\ApprovalRequest::where('model_type', \App\Models\Sale::class)
+                            ->where('model_id', $row->id)
+                            ->when(\Illuminate\Support\Facades\Schema::hasColumn('approval_requests', 'agency_id'), function ($q) use ($user) {
+                                $q->where('agency_id', $user->agency_id);
+                            })
+                            ->where('status', 'approved')
+                            ->where('created_at', '>=', now()->subMinutes($winMins))
+                            ->exists();
+
+                        return !$hasRecentApproval;
+                    },
+                    'wireClick' => fn($row) => "requestEdit({$row->id})",
+                ],
+
+                // شارة "بانتظار الموافقة"
+                [
+                    'type'   => 'pending_badge',
+                    'label'  => 'بانتظار الموافقة',
+                    'icon'   => 'fa fa-hourglass-half',
+                    'class'  => 'text-gray-400 cursor-not-allowed',
+                    'showIf' => function ($row) {
+                        $user = auth()->user();
+                        return \App\Models\ApprovalRequest::where('model_type', \App\Models\Sale::class)
+                            ->where('model_id', $row->id)
+                            ->when(\Illuminate\Support\Facades\Schema::hasColumn('approval_requests', 'agency_id'), function ($q) use ($user) {
+                                $q->where('agency_id', $user->agency_id);
+                            })
+                            ->where('status', 'pending')
+                            ->exists();
+                    },
                 ],
             ];
         }
@@ -123,10 +200,10 @@ class SalesTable
             ['key' => 'service_date', 'label' => 'تاريخ الخدمة', 'format' => 'date'],
             ['key' => 'status', 'label' => 'حالة العملية', 'format' => 'status'],
             [
-                'key' => 'actions',
-                'label' => 'الإجراءات',
+                'key'    => 'actions',
+                'label'  => 'الإجراءات',
                 'format' => 'custom',
-                'buttons' => ['pdf']
+                'buttons'=> ['pdf']
             ],
         ];
     }
