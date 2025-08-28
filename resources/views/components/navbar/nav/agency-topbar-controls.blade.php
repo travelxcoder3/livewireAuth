@@ -44,23 +44,19 @@
         </div>
     </div>
 
-    {{-- زر الإشعارات --}}
-    <div class="relative" @mouseenter="openDropdown = 'notifications'" @mouseleave="openDropdown = ''">
-        <x-navbar.buttons.icon-button icon="fas fa-bell" label="الإشعارات" tooltip="الإشعارات" :has-notification="$pendingApprovalsCount > 0"
-            :notification-count="$pendingApprovalsCount" />
-        <div x-show="openDropdown === 'notifications'" x-transition
-            class="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50 w-[320px] max-h-[400px] overflow-y-auto">
-            @if ($notifications->count() > 0)
-                @livewire('agency.notifications-bell')
-            @else
-                <div class="px-4 py-6 text-center text-gray-500 text-gray-400">
-                    <i class="fas fa-bell-slash text-2xl mb-2"></i>
-                    <p>لا توجد إشعارات جديدة</p>
-                </div>
-            @endif
-        </div>
-    </div>
+  <div class="relative">
+    <a href="{{ route('agency.notifications.index') }}">
+        <x-navbar.buttons.icon-button
+            icon="fas fa-bell"
+            label="الإشعارات"
+            tooltip="الإشعارات"
+            :has-notification="false"
+        />
+    </a>
 
+    {{-- عدّاد غير المقروء من app_notifications --}}
+    @livewire('agency.bell-counter')
+</div>
     {{-- زر اللغة --}}
     <div class="relative" @mouseenter="openDropdown = 'lang'" @mouseleave="openDropdown = ''">
         <x-navbar.buttons.icon-button icon="fas fa-globe" label="تغيير اللغة" tooltip="تغيير اللغة" :has-notification="false" />
