@@ -335,6 +335,56 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
         }
 
     }
+    
+    public function saveRow(int $i): void
+    {
+        $r = $this->rows[$i] ?? null;
+        if (!$r) { return; }
+
+        $agencyId = Auth::user()->agency_id;
+
+        // منع الحفظ إن لدى الموظف مبيعات في هذا الشهر
+        if ($this->employeeMonthHasSales((int)$r['user_id'])) {
+            $this->toastType = 'error';
+            $this->successMessage = 'مرفوض: لدى هذا الموظف مبيعات في هذا الشهر.';
+            return;
+        }
+
+        // إن كان الصف مقفولاً لا نعدل
+        if ($r['locked'] ?? false) {
+            $this->toastType = 'error';
+            $this->successMessage = 'هذا الصف مقفول.';
+            return;
+        }
+
+        $rec = EmployeeMonthlyTarget::firstOrNew([
+            'agency_id' => $agencyId,
+            'user_id'   => (int)$r['user_id'],
+            'year'      => $this->empYear,
+            'month'     => $this->empMonth,
+        ]);
+
+        if ($rec->exists) {
+            $this->toastType = 'error';
+            $this->successMessage = 'تم إنشاء سجل لهذا الموظف مسبقاً لهذا الشهر.';
+            return;
+        }
+
+        $rec->main_target   = (float)($r['main_target'] ?? 0);
+        $rec->sales_target  = (float)($r['sales_target'] ?? 0);
+        $rec->override_rate = $r['override_rate'] !== null ? (float)$r['override_rate'] : null;
+        $rec->locked        = true;
+        $rec->updated_by    = Auth::id();
+        $rec->created_by    = Auth::id();
+        $rec->save();
+
+        // حدث الصف محلياً لتنعكس الحالة فوراً
+        $this->rows[$i]['row_id'] = $rec->id;
+        $this->rows[$i]['locked'] = true;
+
+        $this->toastType = 'success';
+        $this->successMessage = 'تم حفظ هذا الموظف وقفل صفه.';
+    }
 
 
     public function loadCollectorMonthly(): void

@@ -60,6 +60,7 @@
                             <th class="px-2 py-1">هدف المقارنة</th>
                             <th class="px-2 py-1">العمولة الخاصة للموظف</th>
                             <th class="px-2 py-1 text-center">قفل</th>
+                            <th class="px-2 py-1 w-24 text-center">حفظ</th>
                         </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-100">
@@ -67,15 +68,15 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-2 py-1 font-medium text-gray-800">{{ $r['name'] }}</td>
                                 <td class="px-2 py-1">
-                                    <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.main_target"
+                                    <input type="number" step="0.01" wire:model.defer="rows.{{ $i }}.main_target"
                                         class="w-36 rounded-lg border border-gray-300 px-2 py-1 text-xs" @disabled($r['locked'])>
                                 </td>
                                 <td class="px-2 py-1">
-                                    <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.sales_target"
+                                    <input type="number" step="0.01" wire:model.defer="rows.{{ $i }}.sales_target"
                                         class="w-36 rounded-lg border border-gray-300 px-2 py-1 text-xs" @disabled($r['locked'])>
                                 </td>
                                 <td class="px-2 py-1">
-                                    <input type="number" step="0.01" wire:model.lazy="rows.{{ $i }}.override_rate"
+                                    <input type="number" step="0.01" wire:model.defer="rows.{{ $i }}.override_rate"
                                         class="w-28 rounded-lg border border-gray-300 px-2 py-1 text-xs" @disabled($r['locked'])>
                                 </td>
                                 <td class="px-2 py-1 text-center">
@@ -83,6 +84,17 @@
                                         {{ $r['locked'] ? 'مقفول' : 'مفتوح' }}
                                     </span>
                                 </td>
+                                    <td class="px-2 py-1 text-center">
+                                        <x-primary-button type="button"
+                                            :gradient="true"
+                                            wire:click="saveRow({{ $i }})"
+                                            :disabled="$r['locked']"
+                                            class="px-3 py-1 text-xs h-auto">
+                                            حفظ
+                                        </x-primary-button>
+                                    </td>
+
+
                             </tr>
                         @empty
                             <tr><td colspan="5" class="text-center py-4 text-gray-400">لا توجد بيانات</td></tr>
