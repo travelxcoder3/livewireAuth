@@ -77,6 +77,8 @@ use App\Livewire\HR\EmployeeFileIndex;
 use App\Livewire\Agency\Settings\SaleEditWindow;
 use App\Livewire\Agency\NotificationsIndex;
 use App\Livewire\Agency\SalesReview;
+use App\Livewire\Agency\Reports\ProviderSalesReport;
+use App\Livewire\Agency\Reports\CustomerSalesReport;
 
 
 Route::get('/', fn() => view('welcome'));
@@ -244,6 +246,21 @@ Route::prefix('agency')
         Route::get('/employee-sales/pdf', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'exportToPdf'])->name('reports.employee-sales.pdf');
         Route::get('/employee-sales/excel', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'exportToExcel'])->name('reports.employee-sales.excel');
         Route::get('/employee-sales/print/{sale}', [\App\Livewire\Agency\Reports\EmployeeSalesReport::class, 'printPdf'])->name('reports.employee-sales.sale-pdf');
+
+        Route::get('/provider-sales', ProviderSalesReport::class)->name('reports.provider-sales');
+        Route::get('providers-sales/pdf', [ProviderSalesReport::class, 'exportToPdf'])
+            ->name('reports.provider-sales.pdf');
+        Route::get('providers-sales/excel', [ProviderSalesReport::class, 'exportToExcel'])
+            ->name('reports.provider-sales.excel');
+
+        Route::get('customers-sales', CustomerSalesReport::class)
+            ->name('reports.customer-sales');
+
+        Route::get('customers-sales/pdf', [CustomerSalesReport::class, 'exportToPdf'])
+            ->name('reports.customer-sales.pdf');
+
+        Route::get('customers-sales/excel', [CustomerSalesReport::class, 'exportToExcel'])
+            ->name('reports.customer-sales.excel');
 
         Route::get('/provider-accounts', ProviderAccounts::class)->name('reports.provider-accounts');
         Route::get('/provider-accounts/{id}/details', ProviderAccountDetails::class)->name('reports.provider-accounts.details');

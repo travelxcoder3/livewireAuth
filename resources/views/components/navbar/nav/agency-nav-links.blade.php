@@ -186,7 +186,7 @@
                                 <x-navbar.buttons.dropdown-link
                                 :href="route('agency.statements.customers')"
                                 icon="fas fa-chart-line"
-                                label=" كشف حساب  العميل "
+                                label=" كشف حساب العميل "
                                 :show="true" />
 
                             <x-navbar.buttons.dropdown-link
@@ -328,7 +328,7 @@
                             :show="true" />
 
                         <x-navbar.buttons.dropdown-link
-                            :href="route('agency.customer-detailed-invoices')"  
+                            :href="route('agency.reports.customer-sales')"  
                             icon="fas fa-list-check"
                             label="عمليات العملاء"
                             :show="true" />
@@ -338,7 +338,7 @@
 
                             @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
                                 <x-navbar.buttons.dropdown-link
-                                    href="#"
+                                    :href="route('agency.reports.provider-sales')"
                                     icon="fas fa-user-tie"
                                     label=" تقارير المزودين "
                                     :show="true" />
