@@ -14,18 +14,18 @@
         </h2>
 
         <div class="flex items-center gap-2">
-@if (count($selectedGroups) > 0)
-    <x-primary-button
-        type="button"
-        wire:click="exportSelected"
-        wire:loading.attr="disabled"
-        wire:loading.class="opacity-60 cursor-not-allowed"
-        wire:target="toggleSelectAll,applyFilters,exportSelected"
-        class="flex items-center gap-2"
-    >
-        طباعة فواتير محددة
-    </x-primary-button>
-@endif
+            @if (count($selectedGroups) > 0)
+                <x-primary-button
+                    type="button"
+                    wire:click="exportSelected"
+                    wire:loading.attr="disabled"
+                    wire:loading.class="opacity-60 cursor-not-allowed"
+                    wire:target="toggleSelectAll,applyFilters,exportSelected"
+                    class="flex items-center gap-2"
+                >
+                    طباعة فواتير محددة
+                </x-primary-button>
+            @endif
 
 
             <a href="{{ route('agency.customer-detailed-invoices') }}"
@@ -99,10 +99,12 @@
         "
         class="overflow-x-auto rounded-xl shadow bg-white"
     >
-        <table class="min-w-full divide-y text-sm text-right">
-            <thead class="bg-gray-100 text-gray-700">
+       <div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
+            <thead class="bg-gray-100 text-gray-600">
                 <tr>
-                    <th class="px-3 py-2 text-center">
+                    <th class="px-2 py-1 text-center">
                         <input type="checkbox"
                             x-ref="selectAll"
                             @click.prevent="$wire.toggleSelectAll()"
@@ -110,20 +112,23 @@
                             style="accent-color: rgb(var(--primary-500));"
                             title="تحديد/إلغاء تحديد الكل">
                     </th>
-                    <th class="px-3 py-2">اسم المستفيد</th>
-                    <th class="px-3 py-2">تاريخ البيع</th>
-                    <th class="px-3 py-2">الخدمة</th>
-                    <th class="px-3 py-2">سعر الخدمة (أصل)</th>
-                    <th class="px-3 py-2">الاستردادات</th>
-                    <th class="px-3 py-2">المحصل (إجمالي)</th>
-                    <th class="px-3 py-2">المتبقي / رصيد للعميل</th>
-                    <th class="px-3 py-2">الإجراء</th>
+                    <th class="px-2 py-1">اسم المستفيد</th>
+                    <th class="px-2 py-1">تاريخ البيع</th>
+                    <th class="px-2 py-1">الخدمة</th>
+                    <th class="px-2 py-1">سعر الخدمة (أصل)</th>
+                    <th class="px-2 py-1">الاستردادات</th>
+                    <th class="px-2 py-1">المحصل (إجمالي)</th>
+                    <th class="px-2 py-1">المتبقي / رصيد للعميل</th>
+                    <th class="px-2 py-1">الإجراء</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+
+            <tbody class="bg-white divide-y divide-gray-100">
+                @php $currency = Auth::user()->agency->currency ?? 'USD'; @endphp
+
                 @forelse($collections as $index => $item)
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 text-center">
+                        <td class="px-2 py-1 text-center">
                             <input type="checkbox"
                                    wire:key="cb-{{ (string)$item->group_key }}"
                                    wire:model.live="selectedGroups"
@@ -131,36 +136,53 @@
                                    class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
                                    style="accent-color: rgb(var(--primary-500));">
                         </td>
-                        <td class="px-3 py-2">{{ $item->beneficiary_name }}</td>
-                        <td class="px-3 py-2">{{ $item->sale_date }}</td>
-                        <td class="px-3 py-2">{{ $item->service_label }}</td>
-                        @php $currency = Auth::user()->agency->currency ?? 'USD'; @endphp
-                        <td class="px-3 py-2 text-blue-700">{{ number_format($item->invoice_total_true, 2) }} {{ $currency }}</td>
-                        <td class="px-3 py-2 text-rose-700">{{ number_format($item->refund_total, 2) }} {{ $currency }}</td>
-                        <td class="px-3 py-2 text-green-700">{{ number_format($item->total_collected, 2) }} {{ $currency }}</td>
 
-                        <td class="px-3 py-2">
+                        <td class="px-2 py-1">{{ $item->beneficiary_name }}</td>
+                        <td class="px-2 py-1">{{ $item->sale_date }}</td>
+                        <td class="px-2 py-1">{{ $item->service_label }}</td>
+
+                        <td class="px-2 py-1 text-blue-700">
+                            {{ number_format($item->invoice_total_true, 2) }} {{ $currency }}
+                        </td>
+                        <td class="px-2 py-1 text-rose-700">
+                            {{ number_format($item->refund_total, 2) }} {{ $currency }}
+                        </td>
+                        <td class="px-2 py-1 text-green-700">
+                            {{ number_format($item->total_collected, 2) }} {{ $currency }}
+                        </td>
+
+                        <td class="px-2 py-1">
                             @if ($item->remaining_for_customer > 0)
-                                <span class="text-red-600">مدين: {{ number_format($item->remaining_for_customer, 2) }} {{ $currency }}</span>
+                                <span class="text-red-600">
+                                    مدين: {{ number_format($item->remaining_for_customer, 2) }} {{ $currency }}
+                                </span>
                             @elseif ($item->remaining_for_company > 0)
-                                <span class="text-green-600">للعميل: {{ number_format($item->remaining_for_company, 2) }} {{ $currency }}</span>
+                                <span class="text-green-600">
+                                    للعميل: {{ number_format($item->remaining_for_company, 2) }} {{ $currency }}
+                                </span>
                             @else
                                 <span class="text-gray-500">تم السداد بالكامل</span>
                             @endif
                         </td>
 
-                        <td class="px-3 py-2">
-                            <button wire:click="showDetails({{ $index }})"
-                                    class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition duration-200">
+                        <td class="px-2 py-1">
+                            <button
+                                wire:click="showDetails({{ $index }})"
+                                class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
                                 تفاصيل
                             </button>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="text-center text-gray-400 py-6">لا توجد نتائج مطابقة للبحث.</td></tr>
+                    <tr>
+                        <td colspan="9" class="text-center text-gray-400 py-6">لا توجد نتائج مطابقة للبحث.</td>
+                    </tr>
                 @endforelse
             </tbody>
         </table>
+    </div>
+</div>
+
     </div>
 
     <!-- ✅ المودال -->

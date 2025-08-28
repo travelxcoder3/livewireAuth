@@ -3,11 +3,25 @@
 @endphp
 
 <div class="space-y-6">
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold"
-            style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
-            كشف حساب مفصل للمزوّد: {{ $provider->name }}
-        </h2>
+   <div class="flex justify-between items-center mb-4"
+     x-data="{ sel: @entangle('selectedGroups') }">
+
+    <h2 class="text-2xl font-bold"
+        style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
+        كشف حساب مفصل للمزوّد: {{ $provider->name }}
+    </h2>
+
+    <div class="flex items-center gap-2">
+        <!-- يظهر فقط عند وجود تحديد -->
+        <template x-if="Array.isArray(sel) && sel.length > 0">
+            <x-primary-button type="button" wire:click="exportSelected"
+                              wire:loading.attr="disabled"
+                              wire:loading.class="opacity-60 cursor-not-allowed"
+                              wire:target="toggleSelectAll,applyFilters,exportSelected"
+                              class="flex items-center gap-2">
+                تصدير PDF
+            </x-primary-button>
+        </template>
 
         <a href="{{ route('agency.provider-detailed-invoices') }}"
            class="flex items-center gap-2 px-4 py-2 rounded-lg border transition text-sm font-medium
@@ -18,6 +32,8 @@
             <span>رجوع</span>
         </a>
     </div>
+</div>
+
 
     <!-- فلاتر -->
     <div class="bg-white rounded-xl shadow-md p-4">
@@ -41,44 +57,47 @@
     </div>
 
     <!-- جدول المجموعات -->
-    <div
-        x-data="{ groupsSel: @entangle('selectedGroups') }"
-        x-init="
-            const h = $refs.selectAll;
-            const sync = () => {
-                const len = Array.isArray(groupsSel) ? groupsSel.length : (groupsSel?.length ?? 0);
-                const rows = {{ count($groups ?? []) }};
-                h.checked       = (len > 0 && len === rows);
-                h.indeterminate = (len > 0 && len < rows);
-            };
-            sync(); $watch('groupsSel', sync);
-        "
-        class="overflow-x-auto rounded-xl shadow bg-white"
-    >
-        <table class="min-w-full divide-y text-sm text-right">
-            <thead class="bg-gray-100 text-gray-700">
+ <div
+    x-data="{ groupsSel: @entangle('selectedGroups') }"
+    x-init="
+        const h = $refs.selectAll;
+        const sync = () => {
+            const len  = Array.isArray(groupsSel) ? groupsSel.length : (groupsSel?.length ?? 0);
+            const rows = {{ count($groups ?? []) }};
+            h.checked       = (len > 0 && len === rows);
+            h.indeterminate = (len > 0 && len < rows);
+        };
+        sync();
+        $watch('groupsSel', sync);
+    "
+    class="bg-white rounded-xl shadow-md overflow-hidden"
+>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
+            <thead class="bg-gray-100 text-gray-600">
                 <tr>
-                    <th class="px-3 py-2 text-center">
+                    <th class="px-2 py-1 text-center">
                         <input type="checkbox"
-                            x-ref="selectAll"
-                            @click.prevent="$wire.toggleSelectAll()"
-                            class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
-                            style="accent-color: rgb(var(--primary-500));"
-                            title="تحديد/إلغاء تحديد الكل">
+                               x-ref="selectAll"
+                               @click.prevent="$wire.toggleSelectAll()"
+                               class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
+                               style="accent-color: rgb(var(--primary-500));"
+                               title="تحديد/إلغاء تحديد الكل">
                     </th>
-                    <th class="px-3 py-2">اسم المستفيد</th>
-                    <th class="px-3 py-2">تاريخ البيع</th>
-                    <th class="px-3 py-2">الخدمة</th>
-                    <th class="px-3 py-2">تكلفة الخدمة (أصل)</th>
-                    <th class="px-3 py-2">الاستردادات</th>
-                    <th class="px-3 py-2">صافي مستحق للمزوّد</th>
-                    <th class="px-3 py-2">الإجراء</th>
+                    <th class="px-2 py-1">اسم المستفيد</th>
+                    <th class="px-2 py-1">تاريخ البيع</th>
+                    <th class="px-2 py-1">الخدمة</th>
+                    <th class="px-2 py-1">تكلفة الخدمة (أصل)</th>
+                    <th class="px-2 py-1">الاستردادات</th>
+                    <th class="px-2 py-1">صافي مستحق للمزوّد</th>
+                    <th class="px-2 py-1">الإجراء</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+
+            <tbody class="bg-white divide-y divide-gray-100">
                 @forelse($groups as $index => $g)
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 text-center">
+                        <td class="px-2 py-1 text-center">
                             <input type="checkbox"
                                    wire:key="cb-{{ (string)$g->group_key }}"
                                    wire:model.live="selectedGroups"
@@ -86,25 +105,39 @@
                                    class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
                                    style="accent-color: rgb(var(--primary-500));">
                         </td>
-                        <td class="px-3 py-2">{{ $g->beneficiary_name }}</td>
-                        <td class="px-3 py-2">{{ $g->sale_date }}</td>
-                        <td class="px-3 py-2">{{ $g->service_label }}</td>
-                        <td class="px-3 py-2 text-blue-700">{{ number_format($g->cost_total_true, 2) }} {{ $currency }}</td>
-                        <td class="px-3 py-2 text-rose-700">{{ number_format($g->refund_total, 2) }} {{ $currency }}</td>
-                        <td class="px-3 py-2 text-emerald-700 font-semibold">{{ number_format($g->net_cost, 2) }} {{ $currency }}</td>
-                        <td class="px-3 py-2">
-                            <button wire:click="showDetails({{ $index }})"
-                                    class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold">
+
+                        <td class="px-2 py-1">{{ $g->beneficiary_name }}</td>
+                        <td class="px-2 py-1">{{ $g->sale_date }}</td>
+                        <td class="px-2 py-1">{{ $g->service_label }}</td>
+
+                        <td class="px-2 py-1 text-blue-700">
+                            {{ number_format($g->cost_total_true, 2) }} {{ $currency }}
+                        </td>
+                        <td class="px-2 py-1 text-rose-700">
+                            {{ number_format($g->refund_total, 2) }} {{ $currency }}
+                        </td>
+                        <td class="px-2 py-1 text-emerald-700 font-semibold">
+                            {{ number_format($g->net_cost, 2) }} {{ $currency }}
+                        </td>
+
+                        <td class="px-2 py-1">
+                            <button
+                                wire:click="showDetails({{ $index }})"
+                                class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
                                 تفاصيل
                             </button>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="text-center text-gray-400 py-6">لا توجد نتائج مطابقة.</td></tr>
+                    <tr>
+                        <td colspan="8" class="text-center text-gray-400 py-6">لا توجد نتائج مطابقة.</td>
+                    </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+</div>
+
 
     <!-- مودال التفاصيل -->
     @if ($activeRow)

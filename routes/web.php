@@ -285,6 +285,9 @@ Route::middleware(['auth','mustChangePassword','active.user','agency.scope'])
         return (new App\Livewire\Agency\Accounts())->downloadBulkInvoicePdf($invoice->id);
     })->name('invoices.download');
 
+// routes/web.php
+Route::get('/agency/provider-invoices/{provider}/export', [\App\Http\Controllers\ProviderInvoiceExportController::class, 'export'])
+    ->name('agency.provider-invoices.export');
 
 
     

@@ -118,15 +118,11 @@
                         
                     />
                     <!-- نوع الخدمة -->
-                    <x-select-field
-                        label="نوع الخدمة"
-                        wireModel="service_item_id"
-                        :options="$services->pluck('label', 'id')->toArray()"
-                        placeholder="اسم الخدمة"
-                        containerClass="relative mt-1"
-                        errorName="service_item_id"
-                    />
-
+<x-multi-check-dropdown
+    label="أنواع الخدمة"
+    wireModel="service_item_ids"
+    :options="$services->map(fn($s)=> ['id'=>(string)$s->id,'label'=>$s->label])->values()->toArray()"
+/>
 
                     <div class="flex justify-end gap-3 pt-4">
                         <button type="button" wire:click="$set('showModal', false)"

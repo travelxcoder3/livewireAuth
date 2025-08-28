@@ -18,7 +18,7 @@ class Providers extends Component
     public $providerId;
     public $name;
     public $type;
-    public $service_item_id;
+    public $service_item_ids = []; // اختيارات متعددة
     public $services = [];
 
     public $search = '';
@@ -27,10 +27,11 @@ class Providers extends Component
 
     
     protected $rules = [
-        'name' => 'required|string|max:255',
-        'type' => 'nullable|string|max:255',
-        'contact_info' => 'nullable|regex:/^[0-9]+$/|min:7|max:20',
-        'service_item_id' => 'nullable|exists:dynamic_list_items,id',
+    'name' => 'required|string|max:255',
+    'type' => 'nullable|string|max:255',
+    'contact_info' => 'nullable|regex:/^[0-9]+$/|min:7|max:20',
+    'service_item_ids' => 'array',
+    'service_item_ids.*' => 'exists:dynamic_list_items,id',
     ];
     
     protected $listeners = ['providerStatusUpdated' => 'fetchProviders'];
@@ -57,10 +58,11 @@ class Providers extends Component
 
     public function fetchProviders()
     {
-        $this->providers = \App\Models\Provider::with('service')
+        $this->providers = Provider::with('services')
             ->where('agency_id', Auth::user()->agency_id)
             ->latest()
             ->get();
+
     }
     
 
@@ -78,7 +80,7 @@ class Providers extends Component
         $this->name = $provider->name;
         $this->type = $provider->type;
         $this->contact_info = $provider->contact_info;
-        $this->service_item_id = $provider->service_item_id;
+        $this->service_item_ids = $provider->services()->pluck('dynamic_list_items.id')->toArray();
         $this->editMode = true;
         $this->showModal = true;
 
@@ -94,25 +96,37 @@ class Providers extends Component
         if ($this->editMode && $this->providerId) {
             // تحديث المزود الحالي
             $provider = Provider::findOrFail($this->providerId);
-            $provider->update([
+                $provider->update([
                 'name' => $this->name,
                 'type' => $this->type,
                 'contact_info' => $this->contact_info,
-                'service_item_id' => $this->service_item_id,
-                // لا تغير agency_id أو status هنا إلا إذا أردت منطق خاص
-            ]);
+                ]);
+
+                // مزامنة الخدمات المختارة
+                $provider->services()->sync($this->service_item_ids);
+
+                // توافق خلفي: اجعل العمود القديم يساوي أول اختيار أو null
+                $provider->update([
+                'service_item_id' => collect($this->service_item_ids)->first(),
+                ]);
+
         } else {
             // منطق الإضافة كما هو عندك
             if ($agency->parent_id) {
                 // المستخدم في فرع: إضافة المزود بحالة pending + طلب موافقة
-                $provider = Provider::create([
+                    $provider = Provider::create([
                     'agency_id' => $agency->id,
                     'name' => $this->name,
                     'type' => $this->type,
                     'contact_info' => $this->contact_info,
-                    'service_item_id' => $this->service_item_id,
-                    'status' => 'pending',
-                ]);
+                    'status' => $agency->parent_id ? 'pending' : 'approved',
+                    ]);
+
+                    $provider->services()->sync($this->service_item_ids);
+                    $provider->update([
+                    'service_item_id' => collect($this->service_item_ids)->first(),
+                    ]);
+
 
                 // جلب الوكالة الرئيسية
                 $mainAgency = $agency->parent;
@@ -146,15 +160,23 @@ class Providers extends Component
                     \Log::info('لا يوجد تسلسل موافقات');
                 }
             } else {
-                Provider::create([
-                    'agency_id' => $agency->id,
-                    'name' => $this->name,
-                    'type' => $this->type,
-                    'contact_info' => $this->contact_info,
-                    'service_item_id' => $this->service_item_id,
-                    'status' => 'approved',
-                ]);
-            }
+    $provider = Provider::create([
+        'agency_id' => $agency->id,
+        'name' => $this->name,
+        'type' => $this->type,
+        'contact_info' => $this->contact_info,
+        'status' => 'approved',
+    ]);
+
+    // ربط الخدمات المختارة
+    $provider->services()->sync($this->service_item_ids);
+
+    // توافق خلفي: أول اختيار فقط
+    $provider->update([
+        'service_item_id' => collect($this->service_item_ids)->first(),
+    ]);
+}
+
         }
         $this->showModal = false;
         $this->fetchProviders();
@@ -171,32 +193,35 @@ session()->flash('type', 'success');
     $this->name = '';
     $this->type = '';
     $this->contact_info = '';
-    $this->service_item_id = '';
+    $this->service_item_ids = [];
 
 }
 
   public function render()
-{
-    $query = Provider::query()->where('agency_id', auth()->user()->agency_id);
+    {
+        $query = Provider::with('services')->where('agency_id', auth()->user()->agency_id);
 
-    if ($this->search) {
-        $query->where('name', 'like', '%' . $this->search . '%');
+        if ($this->search) {
+            $query->where('name', 'like', '%' . $this->search . '%');
+        }
+
+        if ($this->typeFilter) {
+            $query->where('type', 'like', '%' . $this->typeFilter . '%');
+        }
+
+        if ($this->serviceFilter) {
+            $query->whereHas('services', function($q) {
+                $q->where('dynamic_list_items.id', $this->serviceFilter);
+            });
+        }
+
+
+        $providers = $query->latest()->paginate(10);
+
+        return view('livewire.agency.providers', compact('providers'))
+            ->layout('layouts.agency')
+            ->title('إدارة المزودين');
     }
-
-    if ($this->typeFilter) {
-        $query->where('type', 'like', '%' . $this->typeFilter . '%');
-    }
-
-    if ($this->serviceFilter) {
-        $query->where('service_item_id', $this->serviceFilter);
-    }
-
-    $providers = $query->latest()->paginate(10);
-
-    return view('livewire.agency.providers', compact('providers'))
-        ->layout('layouts.agency')
-        ->title('إدارة المزودين');
-}
 
 
     public function resetFilters()

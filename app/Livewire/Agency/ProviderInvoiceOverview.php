@@ -5,6 +5,7 @@ namespace App\Livewire\Agency;
 use Livewire\Component;
 use App\Models\Provider;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Browsershot\Browsershot;
 
 class ProviderInvoiceOverview extends Component
 {
@@ -157,5 +158,22 @@ class ProviderInvoiceOverview extends Component
             'provider' => $this->provider,
             'groups'   => $this->groups,
         ])->layout('layouts.agency');
+    }
+
+
+      public function exportSelected()
+    {
+        if (empty($this->selectedGroups)) {
+            return;
+        }
+
+        // حوّل المفاتيح إلى سلسلة ids=1,2,3
+        $ids = implode(',', array_map('strval', $this->selectedGroups));
+
+        // توجيه لمسار التصدير ليتولّى إنشاء وتنزيل الـ PDF
+        return redirect()->route(
+            'agency.provider-invoices.export',   // غيّر الاسم إذا لزم
+            ['provider' => $this->provider->id, 'ids' => $ids]
+        );
     }
 }

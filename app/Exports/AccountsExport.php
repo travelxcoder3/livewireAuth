@@ -124,7 +124,6 @@ class AccountsExport implements FromCollection, WithHeadings
             'USD Sell',
             'المزوّد',
             'العميل',
-            'الحساب',
         ];
 
         if (!$this->fields) {
