@@ -20,7 +20,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <h2 class="text-xl sm:text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
-            مراجعة المبيعات
+           فواتير المبيعات
         </h2>
 
         <div class="flex items-center gap-2 order-last sm:order-none w-full sm:w-auto">
@@ -84,13 +84,6 @@
                 إعادة تعيين الفلاتر
             </button>
 
-            @can('accounts.export')
-                <x-primary-button type="button" @click="open('excel')">تقرير Excel</x-primary-button>
-            @endcan
-
-            @can('accounts.print')
-                <x-primary-button type="button" @click="open('pdf')">تقرير PDF</x-primary-button>
-            @endcan
         </div>
 
         @if ($sales->isEmpty())
@@ -403,67 +396,6 @@
         </div>
     @endif
 
-    {{-- ======= نوافذ التقارير ======= --}}
-    <div
-        x-cloak
-        x-show="showReport"
-        class="fixed inset-0 z-40 bg-black/10 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative">
-            <button @click="close()" class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
-            <h3 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">اختر نوع التقرير</h3>
-            <div class="flex flex-col gap-4">
-                <x-primary-button type="button" @click="generateFull()" padding="px-6 py-3">تقرير كامل</x-primary-button>
-                <x-primary-button type="button" @click="openFields()" padding="px-6 py-3">تقرير مخصص</x-primary-button>
-                <button type="button" @click="close()"
-                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-3 rounded-xl shadow transition duration-300 text-sm mt-4">
-                    إلغاء
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div
-        x-cloak
-        x-show="showFields"
-        class="fixed inset-0 z-40 bg-black/10 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative">
-            <button @click="closeFields()" class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
-            <h3 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">اختر حقول التقرير</h3>
-            <form id="customReportForm" method="GET" target="_blank" @submit="prepareCustom">
-                <div class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto p-2">
-                    @foreach ([
-                        'sale_date' => 'تاريخ البيع',
-                        'beneficiary_name' => 'اسم المستفيد',
-                        'customer' => 'العميل',
-                        'serviceType' => 'الخدمة',
-                        'provider' => 'المزود',
-                        'usd_buy' => 'USD Buy',
-                        'usd_sell' => 'USD Sell',
-                        'amount_received' => 'المبلغ',
-                        'account' => 'الحساب',
-                        'reference' => 'المرجع',
-                        'pnr' => 'PNR',
-                        'route' => 'Route',
-                        'user' => 'اسم الموظف',
-                    ] as $field => $label)
-                        <label class="flex items-center space-x-2 space-x-reverse cursor-pointer">
-                            <input type="checkbox" name="fields[]" value="{{ $field }}" checked
-                                   class="h-4 w-4 rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]">
-                            <span class="text-gray-700 text-sm">{{ $label }}</span>
-                        </label>
-                    @endforeach
-                </div>
-                <div class="mt-6 flex justify-center gap-3">
-                    <button type="button" @click="closeFields()"
-                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-2 rounded-xl shadow transition duration-300 text-sm">
-                        رجوع
-                    </button>
-                    <x-primary-button type="submit" padding="px-6 py-2">تحميل التقرير</x-primary-button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <style>
         @media print {
             body * { visibility: hidden; }
@@ -474,72 +406,3 @@
 </div>
 
 {{-- ======= سكربت Alpine لربط الفلاتر الحية وإرسالها ======= --}}
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('reportBox', () => ({
-            // ربط حي مع Livewire
-            employeeSearch: @entangle('employeeSearch'),
-            serviceType:    @entangle('serviceTypeFilter'),
-            provider:       @entangle('providerFilter'),
-            account:        @entangle('accountFilter'),
-            startDate:      @entangle('startDate'),
-            endDate:        @entangle('endDate'),
-            pnr:            @entangle('pnrFilter'),
-            reference:      @entangle('referenceFilter'),
-
-            currentReportType: '',
-            showReport: false,
-            showFields: false,
-
-            open(type){ this.currentReportType = type; this.showReport = true; },
-            close(){ this.showReport = false; },
-            openFields(){ this.showReport = false; this.showFields = true; },
-            closeFields(){ this.showFields = false; this.showReport = true; },
-
-            params() {
-                const o = {
-                    employeeSearch: this.employeeSearch,
-                    service_type:   this.serviceType,
-                    provider:       this.provider,
-                    account:        this.account,
-                    start_date:     this.startDate,
-                    end_date:       this.endDate,
-                    pnr:            this.pnr,
-                    reference:      this.reference,
-                };
-                const p = new URLSearchParams();
-                Object.entries(o).forEach(([k,v])=>{
-                    if(v!==null && v!==undefined && String(v).trim()!=='') p.append(k, v);
-                });
-                return p.toString();
-            },
-
-            generateFull() {
-                const base = this.currentReportType === 'pdf'
-                    ? '/agency/accounts/report/pdf'
-                    : '/agency/accounts/report/excel';
-                window.open(`${base}?${this.params()}`, '_blank');
-                this.close();
-            },
-
-            prepareCustom(e){
-                e.preventDefault();
-                const form = document.getElementById('customReportForm');
-                [...form.querySelectorAll('input[type=hidden]')].forEach(n=>n.remove());
-                const add = (k,v)=>{ if(v!==null && v!==undefined && String(v).trim()!==''){ 
-                    const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i);
-                }};
-                const q = Object.fromEntries(new URLSearchParams(this.params()));
-                Object.entries(q).forEach(([k,v])=>add(k,v));
-                form.action = this.currentReportType === 'pdf'
-                    ? '/agency/accounts/report/pdf'
-                    : '/agency/accounts/report/excel';
-                form.submit();
-                this.showFields = false;
-            },
-
-            // اختياري: عند تغيير نوع الخدمة امسح فلتر الموظف لتجنب لبس النتائج
-            // $watch('serviceType', () => { this.employeeSearch = ''; }),
-        }));
-    });
-</script>

@@ -36,7 +36,7 @@ use App\Http\Controllers\SystemSettingsController;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
-use App\Livewire\Agency\Accounts;
+use App\Livewire\Agency\SalesInvoices;
 use App\Livewire\Agency\AgencyPolicies;
 
 use App\Livewire\Agency\Commissions;
@@ -76,6 +76,7 @@ use App\Livewire\Agency\Reports\ProviderLedger;
 use App\Livewire\HR\EmployeeFileIndex;
 use App\Livewire\Agency\Settings\SaleEditWindow;
 use App\Livewire\Agency\NotificationsIndex;
+use App\Livewire\Agency\SalesReview;
 
 
 Route::get('/', fn() => view('welcome'));
@@ -170,7 +171,7 @@ Route::prefix('agency')
     Route::get('/statements/customers/{customer}/pdf', [StatementPdfController::class, 'download'])->name('statements.customer.pdf');
     Route::get('/statements/customers/{customer}', CustomerStatement::class)->name('statements.customer');
 
-    Route::get('/accounts', Accounts::class)->name('accounts');
+    Route::get('/sales-invoices', SalesInvoices::class)->name('sales-invoices');
     // قسم التهيئة للهدف المبيعي والاساسي للموظف
     Route::get('/monthly-targets', MonthlyTargets::class)->name('monthly-targets');
     // ============================
@@ -216,6 +217,8 @@ Route::prefix('agency')
     Route::get('/quotation', ShowQuotation::class)->name('quotation');
     Route::post('/quotation/pdf', [QuotationController::class, 'download'])->name('quotation.pdf');
 
+    Route::get('/sales-review', SalesReview::class)
+        ->name('sales-review');
     // === رابط الموافقات للوكالة (جديد) ===
     Route::get('/approval-requests', \App\Livewire\Agency\ApprovalRequests::class)->name('approvals.index');
 
@@ -256,7 +259,7 @@ Route::prefix('agency')
         Route::get('/approval-requests', \App\Livewire\Agency\ApprovalRequests::class)
         ->name('approvals.index')
         ->middleware('can:approvals.access');
-        
+
         Route::get('notifications', NotificationsIndex::class)
         ->name('notifications.index');
     });
@@ -286,7 +289,7 @@ Route::middleware(['auth','mustChangePassword','active.user','agency.scope'])
 
 Route::middleware(['auth','mustChangePassword','active.user','agency.scope'])
     ->get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice) {
-        return (new App\Livewire\Agency\Accounts())->downloadBulkInvoicePdf($invoice->id);
+        return (new App\Livewire\Agency\SalesInvoices())->downloadBulkInvoicePdf($invoice->id);
     })->name('invoices.download');
 
 // routes/web.php

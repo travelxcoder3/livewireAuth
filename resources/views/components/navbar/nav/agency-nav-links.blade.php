@@ -42,7 +42,7 @@
         @if ($showAccountsDropdown)
             <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
                 <x-navbar.buttons.icon-button icon="fas fa-wallet" tooltip="الحسابات" label="الحسابات" href="#"
-                    class="!px-2 !py-1" :active="request()->routeIs('agency.accounts') ||
+                    class="!px-2 !py-1" :active="request()->routeIs('agency.sales-invoices') ||
                         request()->routeIs('agency.providers') ||
                         request()->routeIs('agency.customers.add')" dropdown="true" />
                 <div
@@ -64,7 +64,7 @@
                         {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
                         <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
                             <x-navbar.buttons.dropdown-link
-                            :href="route('agency.accounts')"     
+                            :href="route('agency.sales-review')"     
                                 icon="fas fa-chart-line"
                                 label="مراجعة المبيعات"
                                 :show="true" />
@@ -99,21 +99,27 @@
 
                         {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
                         <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
+                        <x-navbar.buttons.dropdown-link
+                            :href="route('agency.sales-invoices')"     
+                                icon="fas fa-file-invoice-dollar"
+                                label="فواتير المبيعات"
+                                :show="true" />
+
                             <x-navbar.buttons.dropdown-link
                                 :href="route('agency.customer-detailed-invoices')"     
-                                icon="fas fa-chart-line"
+                                icon="fas fa-file-invoice"
                                 label="فواتير العملاء "
                                 :show="true" />
 
                             <x-navbar.buttons.dropdown-link
                                 :href="route('agency.provider-detailed-invoices')"
-                                icon="fas fa-wallet"
+                                icon="fas fa-file-contract"
                                 label="فواتير المزودين "
                                 :show="true" />
 
                             <x-navbar.buttons.dropdown-link
                             :href="route('agency.quotation')" 
-                                icon="fas fa-file-invoice"
+                                icon="fas fa-file-signature"
                                 label="عرض السعر  "
                                 :show="true" />
                         </div>

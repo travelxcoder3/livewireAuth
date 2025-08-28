@@ -15,7 +15,7 @@ use App\Models\Account;
 use App\Models\Invoice;
 use Spatie\Browsershot\Browsershot;
 
-class Accounts extends Component
+class SalesInvoices  extends Component
 {
     use WithPagination;
 
@@ -452,7 +452,7 @@ class Accounts extends Component
 
         $this->visibleSaleIds = $this->exportSales->pluck('id')->toArray();
 
-        return view('livewire.agency.accounts', [
+        return view('livewire.agency.sales-invoices', [
             'customers'  => $customers,
             'sales'      => $this->sales,
             'totalSales' => $totalSales,

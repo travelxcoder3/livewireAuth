@@ -61,7 +61,7 @@
 
                 @if(Auth::user()->hasRole('agency-admin') || Auth::user()->can('accounts.view'))
                 <div x-show="open" class="rtl:pr-4 ltr:pl-4">
-                    <a href="{{ route('agency.accounts') }}" @click="mobileSidebarOpen = false"
+                    <a href="{{ route('agency.sales-invoices') }}" @click="mobileSidebarOpen = false"
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                         <i class="fas fa-file-invoice-dollar"></i>
                         <span>مراجعة الحسابات</span>
