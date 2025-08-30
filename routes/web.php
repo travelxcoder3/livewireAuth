@@ -80,6 +80,7 @@ use App\Livewire\Agency\SalesReview;
 use App\Livewire\Agency\Reports\ProviderSalesReport;
 use App\Livewire\Agency\Reports\CustomerSalesReport;
 use App\Http\Controllers\Agency\InvoicePrintController; // تأكد من هذا الـ use بالأعلى
+use App\Http\Controllers\Agency\Statements\EmployeeStatementPdfController;
 
 
 Route::get('/', fn() => view('welcome'));
@@ -295,8 +296,12 @@ Route::prefix('agency')
 
     Route::get('/invoices', InvoicesReview::class)->name('invoices.review'); 
 
-
-
+Route::get('/statements/employees', \App\Livewire\Agency\Statements\EmployeesList::class)
+    ->name('statements.employees');
+Route::get('/statements/employee/{user}', \App\Livewire\Agency\Statements\EmployeeStatement::class)
+    ->name('statements.employee');
+Route::get('statements/employee/{user}/pdf', [EmployeeStatementPdfController::class, 'show'])
+    ->name('statements.employee.pdf');
 Route::get('/customer-invoices-pdf/{customer}/print', [InvoicePrintController::class, 'printSelected'])->name('customer-invoices-pdf.print');
  Route::get(
         '/customer-invoices-bulk/{customer}/print',
