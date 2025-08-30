@@ -1082,12 +1082,14 @@ $this->original_user_id = null;
             $this->receipt_number = null;
             $this->showCustomerField = true;
             $this->depositor_name = null;
-        } elseif ($value === 'kash') {
-            if (!$this->isDuplicated) {
+       } elseif ($value === 'kash') {
+            $this->showCustomerField = true;
+
+            // لا تُخفِ العمولة أثناء التعديل. اسمح بالإخفاء فقط عند الإضافة/التكرار.
+            if (!$this->isDuplicated && !$this->editingSale) {
                 $this->commission = null;
                 $this->showCommission = false;
             }
-            $this->showCustomerField = true;
         } else {
             $this->showCustomerField = true;
         }

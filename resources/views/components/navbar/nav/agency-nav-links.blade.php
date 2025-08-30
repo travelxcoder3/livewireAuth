@@ -383,7 +383,7 @@
 
                             @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
                                 <x-navbar.buttons.dropdown-link
-                                    href="#"
+                                    :href="route('agency.reports.employee-sales')"   
                                     icon="fas fa-user-tie"
                                     label=" تقارير الموظفين "
                                     :show="true" />
