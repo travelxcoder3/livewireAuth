@@ -33,17 +33,9 @@
         $base = -abs($base);
     }
 
-    if ($invoice) {
-        // إن كان لديك عمود base_amount في جدول الفواتير استخدمه
-        if (isset($invoice->base_amount)) {
-            $base = (float) $invoice->base_amount;
-        }
-        $tax = (float) ($invoice->tax_amount ?? 0.0);
-        $net = $base + $tax;
-    } else {
-        $tax = isset($tax) ? (float)$tax : 0.0;
-        $net = isset($net) ? (float)$net : ($base + $tax);
-    }
+   $tax = (float)($tax ?? 0.0);
+$net = (float)($net ?? ($base + $tax));
+
 
     $hasTax   = abs($tax) > 0.00001;
     $grossVal = $hasTax ? $net : $base;

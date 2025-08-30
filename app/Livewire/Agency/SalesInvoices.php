@@ -19,11 +19,9 @@ class SalesInvoices  extends Component
 {
     use WithPagination;
 
-    /** حسابات */
     public $name, $account_number, $currency, $balance = 0, $note;
     public $editingId = null;
 
-    /** فلاتر/فرز */
     public $employeeSearch = '';
     public $serviceTypes = [];
     public $providers = [];
@@ -37,11 +35,9 @@ class SalesInvoices  extends Component
     public $pnrFilter = '';
     public $referenceFilter = '';
 
-    /** حذف */
     public $confirmingDeletion = false;
     public $accountToDelete = null;
 
-    /** فاتورة فردية */
     public bool $showInvoiceModal = false;
     public $selectedSale = null; // كائن بسيط لتفادي Hydration
     public float $taxAmount = 0.0;
@@ -51,7 +47,6 @@ class SalesInvoices  extends Component
     public array $invoiceTotals = ['base' => 0.0, 'tax' => 0.0, 'net' => 0.0];
     public bool $isCreditNote = false;
 
-    /** فاتورة مجمّعة */
     public $selectAll = false;
     public $selectedSales = [];
     public array $visibleSaleIds = [];
@@ -84,7 +79,6 @@ class SalesInvoices  extends Component
         'sortDirection'     => ['except' => 'desc'],
     ];
 
-    /* ================= Helpers ================= */
 
     private function baseSalesQuery()
     {

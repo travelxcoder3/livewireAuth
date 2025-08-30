@@ -475,16 +475,11 @@
                             :show="true" />
                     @endif
                                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('commissions-setup.view'))
-                        <x-navbar.buttons.dropdown-link href="{{ route('agency.commissions') }}"  icon="fas fa-percent"
-                            label="تهيئة العمولات" :show="true" />
+                       
                     @endif
                     {{-- داخل dropdown-settings --}}
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('commission-policies.view'))
-                        <x-navbar.buttons.dropdown-link
-                            :href="route('agency.commission-policies')"
-                            icon="fas fa-user-cog"
-                            label="تهيئة عمولات الموظفين"
-                            :show="true" />
+                       
                     @endif
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('policies.view'))
                         <x-navbar.buttons.dropdown-link :href="route('agency.policies')"   icon="fas fa-file-contract"

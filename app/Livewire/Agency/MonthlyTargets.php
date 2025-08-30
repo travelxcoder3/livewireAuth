@@ -16,6 +16,47 @@ class MonthlyTargets extends Component
     public ?string $successMessage = null;
     public ?string $toastType = null; // success | error | warning | info
 
+    public $sim = [
+        'employee_id' => null,
+        'sale' => 0.0,
+        'cost' => 0.0,
+        'method' => null,
+        'collected' => 0.0,
+        'result' => null,
+    ];
+
+    public $daysToDebt = 30;
+    public $debtBehavior = 'deduct_commission_until_paid';
+
+
+public function simulate()
+{
+    $netMargin = max((float)$this->sim['sale'] - (float)$this->sim['cost'], 0);
+
+    // حساب عمولة الموظف
+    $employeeCommission = $netMargin * ($this->employeeRateFixed / 100);
+    
+    // حساب عمولة المحصل (مثال مبسط)
+    $collectorCommission = 0;
+    if ($this->sim['method'] && isset($this->collectorBaselines[$this->sim['method']])) {
+        $rule = $this->collectorBaselines[$this->sim['method']];
+        if ($rule['type'] === 'percent') {
+            $collectorCommission = $employeeCommission * ($rule['value'] / 100);
+        } else {
+            $collectorCommission = $rule['value'];
+        }
+    }
+    
+    $employeeCommissionNet = max($employeeCommission - $collectorCommission, 0);
+    $companyShare = max($netMargin - $employeeCommission, 0);
+
+    $this->sim['result'] = [
+        'net_margin'            => number_format($netMargin, 2),
+        'employee_commission'   => number_format($employeeCommissionNet, 2),
+        'collector_commission'  => number_format($collectorCommission, 2),
+        'company_share'         => number_format($companyShare, 2),
+    ];
+}
 
     public string $tab = 'emp'; // emp | collector
 
@@ -31,9 +72,21 @@ class MonthlyTargets extends Component
     public bool  $collectorBaselinesLocked = false;
 
     public array $collectorMonthly = [];          // للعرض فقط لكل طريقة في هذا الشهر
-
+    public $employeeOptions = [];
+    public $methodOptions = [
+        'percent' => 'نسبة %',
+        'fixed' => 'مبلغ ثابت'
+    ];
     public function mount(): void
     {
+            // استرجاع قائمة الموظفين من قاعدة البيانات
+    $this->employeeOptions = User::where('agency_id', auth()->user()->agency_id)
+                                  ->pluck('name', 'id')
+                                  ->toArray();
+
+    // المتغيرات الأخرى
+    $this->empYear = $this->colYear  = (int)now()->year;
+    $this->empMonth = $this->colMonth = (int)now()->month;
         $now = now();
         $this->empYear = $this->colYear  = (int)$now->year;
         $this->empMonth= $this->colMonth = (int)$now->month;
@@ -44,7 +97,9 @@ class MonthlyTargets extends Component
         $this->employeeRateFixed        = $profile?->employee_rate ?? 0;
         $this->employeeRateLocked       = (bool)($profile?->employee_rate_locked ?? false);
         $this->collectorBaselinesLocked = (bool)($profile?->collector_baselines_locked ?? false);
-
+    // تحميل سياسة الدين
+    $this->daysToDebt = $profile?->days_to_debt ?? 30;
+    $this->debtBehavior = $profile?->debt_behavior ?? 'deduct_commission_until_paid';
         $this->collectorBaselines = [];
         foreach ([1,2,3,4,5,6,7,8] as $m) {
             $r = optional($profile?->collectorRules->firstWhere('method',$m));
@@ -385,6 +440,30 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
         $this->toastType = 'success';
         $this->successMessage = 'تم حفظ هذا الموظف وقفل صفه.';
     }
+
+public function saveDebtPolicy()
+{
+    // التحقق من البيانات المدخلة قبل حفظها
+    $this->validate([
+        'daysToDebt'   => 'required|integer|min:0',
+        'debtBehavior' => 'required|in:deduct_commission_until_paid,hold_commission',
+    ]);
+
+    // حفظ سياسة الدين في جدول commission_profiles
+    DB::transaction(function () {
+        $profile = \App\Models\CommissionProfile::firstOrCreate(
+            ['agency_id' => Auth::user()->agency_id, 'is_active' => true],
+            ['name' => 'الافتراضي']
+        );
+        
+        $profile->days_to_debt = $this->daysToDebt;
+        $profile->debt_behavior = $this->debtBehavior;
+        $profile->save();
+    });
+
+    $this->toastType = 'success';
+    $this->successMessage = 'تم حفظ سياسة الدين بنجاح.';
+}
 
 
     public function loadCollectorMonthly(): void

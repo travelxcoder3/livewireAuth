@@ -4,16 +4,19 @@
 
     <div class="bg-white rounded-2xl shadow ring-1 ring-black/5 p-3">
         <nav class="flex gap-6 border-b">
-            <button x-on:click="tab='emp'" class="relative py-3 px-1 text-sm font-semibold"
-                    :class="tab==='emp' ? 'text-[rgb(var(--primary-700))]' : 'text-gray-500'">
+            <button x-on:click="tab='emp'" class="relative py-3 px-1 text-sm font-semibold" :class="tab==='emp' ? 'text-[rgb(var(--primary-700))]' : 'text-gray-500'">
                 تهيئة عمولات الموظفين
             </button>
-            <button x-on:click="tab='collector'" class="relative py-3 px-1 text-sm font-semibold"
-                    :class="tab==='collector' ? 'text-[rgb(var(--primary-700))]' : 'text-gray-500'">
+            <button x-on:click="tab='collector'" class="relative py-3 px-1 text-sm font-semibold" :class="tab==='collector' ? 'text-[rgb(var(--primary-700))]' : 'text-gray-500'">
                 قواعد التحصيل الشهرية
             </button>
+            <button x-on:click="tab='debt'" class="relative py-3 px-1 text-sm font-semibold" :class="tab==='debt' ? 'text-[rgb(var(--primary-700))]' : 'text-gray-500'">
+                سياسة دين الموظف
+            </button>
+            <button x-on:click="tab='sim'" class="relative py-3 px-1 text-sm font-semibold" :class="tab==='sim' ? 'text-[rgb(var(--primary-700))]' : 'text-gray-500'">
+                المحاكي
+            </button>
         </nav>
-
         {{-- تبويب 1: عمولات الموظفين --}}
         <div x-show="tab==='emp'" x-cloak class="space-y-4 pt-4">
             <div class="flex items-center gap-3">
@@ -31,26 +34,28 @@
                 @endif
             </div>
 
-<div class="flex flex-wrap items-center justify-between gap-2">
-  <div class="flex items-center gap-2">
-    <input type="number" min="2000" wire:model.lazy="empYear"  class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-    <input type="number" min="1" max="12" wire:model.lazy="empMonth" class="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-  </div>
-  <div class="flex items-center gap-2">
-<button type="button"
-        class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-xl text-sm"
-        wire:click="copyEmpFromPrev">
-  نسخ من الشهر السابق
-</button>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <div class="flex items-center gap-2">
+                    <input type="number" min="2000" wire:model.lazy="empYear"  class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                    <input type="number" min="1" max="12" wire:model.lazy="empMonth" class="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button"
+                        class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-xl text-sm"
+                        wire:click="copyEmpFromPrev">
+                        نسخ من الشهر السابق
+                    </button>
 
-  </div>
-</div>
+                    <!-- زر "حفظ الكل لمرة واحدة" تم نقله هنا بجانب زر "نسخ من الشهر السابق" -->
+                    <x-primary-button type="button" :gradient="true" wire:click="saveAll">
+                        حفظ الكل لمرة واحدة
+                    </x-primary-button>
+                </div>
+            </div>
+        </div>
+            <div x-show="tab==='emp'" x-cloak class="space-y-4 pt-4">
+                            <div class="bg-white rounded-xl shadow-md overflow-hidden">
 
-
-
-
-
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
                         <thead class="bg-gray-100 text-gray-600">
@@ -102,10 +107,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <div class="flex gap-2">
-                <x-primary-button type="button" :gradient="true" wire:click="saveAll">حفظ الكل لمرة واحدة</x-primary-button>
             </div>
         </div>
 
@@ -166,18 +167,6 @@
                class="rounded-lg border border-gray-300 px-2 py-1.5 text-right"
                wire:model.lazy="collectorBaselines.{{ $m }}.value"
                @disabled($collectorBaselinesLocked)>
-
-<x-select-field
-    label=""
-    :options="$basisOptions"
-    wire-model="collectorBaselines.{{ $m }}.basis"
-    placeholder="الأساس"
-    container-class="relative col-span-2 m-0"
-    :disabled="$collectorBaselinesLocked"
-    compact
-/>
-
-
       </div>
     </div>
   @endforeach
@@ -213,7 +202,6 @@
                                 <th class="px-3 py-2">طريقة التحصيل</th>
                                 <th class="px-3 py-2 w-40">نوع العمولة</th>
                                 <th class="px-3 py-2 w-40">القيمة</th>
-                                <th class="px-3 py-2 w-56">الأساس</th>
                                 <th class="px-3 py-2 w-24">الحالة</th>
                             </tr>
                         </thead>
@@ -240,18 +228,6 @@
                                                wire:model.lazy="collectorMonthly.{{ $m }}.value"
                                                @disabled($row['exists'])>
                                     </td>
-                                    <td class="px-3 py-2">
-<x-select-field
-    label=""
-    :options="$basisOptions"
-    wire-model="collectorMonthly.{{ $m }}.basis"
-    placeholder="الأساس"
-    container-class="relative m-0"
-    :disabled="$row['exists']"
-    compact
-/>
-
-
                                     </td>
                                     <td class="px-3 py-2">
                                         <span class="text-xs px-2 py-1 rounded-lg {{ $row['exists'] ? 'bg-gray-100 text-gray-600' : 'bg-[rgb(var(--primary-600))] text-white' }}">
@@ -265,6 +241,138 @@
                     </table>
                 </div>
             </div>
+<!-- تبويب سياسة دين الموظف -->
+<div x-show="tab==='debt'" x-cloak class="p-4">
+    <div class="grid md:grid-cols-3 gap-4">
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+            <x-input-field
+                type="number" min="0"
+                wireModel="daysToDebt"
+                name="daysToDebt"
+                label="الأيام حتى تحويل العمولة لدَين على الموظف"
+                placeholder="0"
+            />
+        </div>
+
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+            <x-select-field
+                wireModel="debtBehavior"
+                name="debtBehavior"
+                label="سلوك الدين"
+                placeholder="اختر السلوك"
+                :options="[ 
+                    'deduct_commission_until_paid' => 'خصم العمولة حتى السداد', 
+                    'hold_commission' => 'تعليق العمولة حتى السداد'
+                ]"
+            />
+        </div>
+
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5 flex items-end">
+            <x-primary-button
+                type="button"
+                :gradient="false"
+                color="rgb(var(--primary-600))"
+                padding="px-3"
+                fontSize="text-xs"
+                rounded="rounded-lg"
+                width="w-full"
+                class="h-10"
+                wire:click="saveDebtPolicy">
+                حفظ الإعدادات
+            </x-primary-button>
+        </div>
+    </div>
+</div>
+<!-- تبويب المحاكي -->
+<div x-show="tab==='sim'" x-cloak class="p-4 space-y-4">
+    <div class="grid md:grid-cols-6 gap-3">
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+            <x-select-field
+                wireModel="sim.employee_id"
+                name="sim_employee_id"
+                label="الموظف"
+                placeholder="— لأي موظف —"
+                :options="$employeeOptions"
+            />
+        </div>
+
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+            <x-input-field
+                type="number" step="0.01"
+                wireModel="sim.cost"
+                name="sim_cost"
+                label="سعر الشراء"
+                placeholder="0.00"
+            />
+        </div>
+
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+            <x-input-field
+                type="number" step="0.01"
+                wireModel="sim.sale"
+                name="sim_sale"
+                label="سعر البيع"
+                placeholder="0.00"
+            />
+        </div>
+
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+            <x-select-field
+                wireModel="sim.method"
+                name="sim_method"
+                label="طريقة التحصيل"
+                placeholder="اختر الطريقة"
+                :options="$methodOptions"
+            />
+        </div>
+
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+            <x-input-field
+                type="number" step="0.01"
+                wireModel="sim.collected"
+                name="sim_collected"
+                label="المبلغ المُحصَّل"
+                placeholder="0.00"
+            />
+        </div>
+
+        <div class="rounded-xl bg-white p-4 ring-1 ring-black/5 flex items-end">
+            <x-primary-button
+                type="button"
+                :gradient="false"
+                color="rgb(var(--primary-600))"
+                padding="px-3"           
+                fontSize="text-xs"     
+                rounded="rounded-lg"     
+                width="w-full"            
+                class="h-10"              
+                wire:click="simulate">
+                احسب
+            </x-primary-button>
+        </div>
+    </div>
+
+    @if($sim['result'])
+        <div class="grid md:grid-cols-4 gap-4">
+            <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+                <div class="text-xs text-gray-500">صافي الربح</div>
+                <div class="text-xl font-semibold mt-1">{{ $sim['result']['net_margin'] }}</div>
+            </div>
+            <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+                <div class="text-xs text-gray-500">عمولة الموظف</div>
+                <div class="text-xl font-semibold mt-1">{{ $sim['result']['employee_commission'] }}</div>
+            </div>
+            <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+                <div class="text-xs text-gray-500">عمولة المُحصّل</div>
+                <div class="text-xl font-semibold mt-1">{{ $sim['result']['collector_commission'] }}</div>
+            </div>
+            <div class="rounded-xl bg-white p-4 ring-1 ring-black/5">
+                <div class="text-xs text-gray-500">نصيب الشركة</div>
+                <div class="text-xl font-semibold mt-1">{{ $sim['result']['company_share'] }}</div>
+            </div>
+        </div>            
+    @endif
+</div>
 
         </div>
     </div>
