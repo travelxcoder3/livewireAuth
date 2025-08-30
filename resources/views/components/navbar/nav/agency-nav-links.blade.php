@@ -78,7 +78,7 @@
                             <x-navbar.buttons.dropdown-link
                                 :href="route('agency.invoices.review')"    
                                 icon="fas fa-file-invoice"
-                                label="مراجعة الفواتير"
+                                label="مراجعة فواتير المبيعات"
                                 :show="true" />
                         </div>
                     </div>
@@ -175,18 +175,11 @@
 
                         {{-- القائمة الفرعية (تفتح يسار القائمة الرئيسية) --}}
                         <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
-                            <x-navbar.buttons.dropdown-link
-                                :href="route('agency.reports.customer-accounts')"
-                                icon="fas fa-chart-line"
-                                label=" كشف حساب  العملاء "
-                                :show="true" />
-
-                                
 
                                 <x-navbar.buttons.dropdown-link
                                 :href="route('agency.statements.customers')"
                                 icon="fas fa-chart-line"
-                                label=" كشف حساب العميل "
+                                label=" كشف حساب العملاء "
                                 :show="true" />
 
                             <x-navbar.buttons.dropdown-link
@@ -195,11 +188,6 @@
                                 label="كشف حساب المزودين   "
                                 :show="true" />
 
-                            <x-navbar.buttons.dropdown-link
-                                :href="route('agency.reports.employee-sales')" 
-                                icon="fas fa-file-invoice"
-                                label="كشف حساب  الموظفين    "
-                                :show="true" />
                         </div>
                     </div>
 
@@ -346,7 +334,7 @@
 
                             @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
                                 <x-navbar.buttons.dropdown-link
-                                    href="#"
+                                    :href="route('agency.reports.employee-sales')" 
                                     icon="fas fa-user-tie"
                                     label=" تقارير الموظفين "
                                     :show="true" />
@@ -459,8 +447,7 @@
                             icon="fas fa-database" label="نسح واستعاده" :show="true" />
                     @endif
 
-                    <x-navbar.buttons.dropdown-link :href="route('agency.settings.sale-edit-window')"
-            icon="fas fa-clock" label="مهلة تعديل المبيعات" :show="true" />
+             
 
                     </div>
                 </div>

@@ -192,21 +192,7 @@ $refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses)
         $this->activeSale = null;
     }
 
-    // ✅ يوجّه لراوت الطباعة مع تحميل المجموعات المختارة Base64
-    public function exportSelected()
-    {
-        if (empty($this->selectedGroups)) {
-            $this->dispatch('notify', type: 'warning', message: 'اختر مستفيدًا واحدًا على الأقل.');
-            return;
-        }
-
-        $payload = base64_encode(json_encode($this->selectedGroups));
-        return redirect()->route('agency.customer-invoices.print', [
-            'customer' => $this->customer->id,
-            'sel'      => $payload,
-        ]);
-    }
-
+  
     /** تحديد/إلغاء تحديد الكل (للصفوف الظاهرة فقط) */
     public function toggleSelectAll()
     {
@@ -265,5 +251,104 @@ $refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses)
 
         $this->applyFilters();
     }
+
+  
+
+    public function exportSingle(string $groupKey)
+{
+    $payload = base64_encode(json_encode([(string)$groupKey]));
+
+    return redirect()->route('agency.customer-invoices-pdf.print', [
+        'customer' => $this->customer->id,
+        'sel'      => $payload, // أرسل المجموعة المفردة فقط
+    ]);
+}
+
+public function exportSelected()
+{
+    if (empty($this->selectedGroups)) {
+        $this->dispatch('notify', type: 'warning', message: 'اختر مستفيدًا واحدًا على الأقل.');
+        return;
+    }
+
+    $payload = base64_encode(json_encode($this->selectedGroups));
+
+    return redirect()->route('agency.customer-invoices-bulk.print', [
+        'customer' => $this->customer->id,
+        'sel'      => $payload,
+    ]);
+}
+
+
+
+// App/Livewire/Agency/CustomerInvoiceOverview.php
+
+// حالة الضريبة (فردي)
+public bool $showSingleTaxModal = false;
+public string $singleTaxGroupKey = '';
+public string $singleTaxAmount = '';
+public bool $singleTaxIsPercent = true;
+
+// حالة الضريبة (مجمّع)
+public bool $showBulkTaxModal = false;
+public string $bulkTaxAmount = '';
+public bool $bulkTaxIsPercent = true;
+public float $bulkSubtotal = 0.0;
+
+// افتح مودال فردي
+public function askSingleTax(string $groupKey)
+{
+    $this->singleTaxGroupKey = (string)$groupKey;
+    $this->singleTaxAmount   = '';
+    $this->singleTaxIsPercent = true;
+    $this->showSingleTaxModal = true;
+}
+
+// أكد ونزّل فردي
+public function confirmSingleTax()
+{
+    $amt = (float)($this->singleTaxAmount ?: 0);
+    $payload = base64_encode(json_encode([(string)$this->singleTaxGroupKey]));
+    $this->showSingleTaxModal = false;
+
+    return redirect()->route('agency.customer-invoices-pdf.print', [
+        'customer'   => $this->customer->id,
+        'sel'        => $payload,
+        'tax'        => $amt,
+        'is_percent' => $this->singleTaxIsPercent ? 1 : 0,
+    ]);
+}
+
+// افتح مودال مجمّع
+public function askBulkTax()
+{
+    if (empty($this->selectedGroups)) {
+        $this->dispatch('notify', type: 'warning', message: 'اختر مستفيدًا واحدًا على الأقل.');
+        return;
+    }
+
+    // احسب Subtotal تقريبي من العناصر الظاهرة المختارة
+    $this->bulkSubtotal = collect($this->collections)
+        ->filter(fn($r)=>in_array((string)$r->group_key, $this->selectedGroups, true))
+        ->sum(fn($r)=>(float)($r->usd_sell ?? $r->net_total ?? 0)); // توافقًا مع بنائك
+    $this->bulkTaxAmount   = '';
+    $this->bulkTaxIsPercent = true;
+    $this->showBulkTaxModal = true;
+}
+
+// أكد ونزّل مجمّع
+public function confirmBulkTax()
+{
+    $payload = base64_encode(json_encode(array_values($this->selectedGroups)));
+    $this->showBulkTaxModal = false;
+
+    return redirect()->route('agency.customer-invoices-bulk.print', [
+        'customer'   => $this->customer->id,
+        'sel'        => $payload,
+        'tax'        => (float)($this->bulkTaxAmount ?: 0),
+        'is_percent' => $this->bulkTaxIsPercent ? 1 : 0,
+    ]);
+}
+
 
 }

@@ -10,22 +10,41 @@
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
-            كشف حساب مفصل للعميل: {{ $customer->name }}
+              فاتورة العميل: {{ $customer->name }}
         </h2>
+         @php
+        $currency    = Auth::user()->agency->currency ?? 'USD';
+        $rows        = collect($collections ?? []);
+        $sumBase     = $rows->sum('invoice_total_true');   // سعر الخدمة (أصل)
+        $sumRefund   = $rows->sum('refund_total');         // الاستردادات
+        $sumCollected= $rows->sum('total_collected');      // المحصل
+        $netTotal    = $sumBase - $sumRefund - $sumCollected; // الصافي
+        $netClass    = $netTotal > 0 ? 'text-rose-700 border-rose-300'
+                        : ($netTotal < 0 ? 'text-green-700 border-green-300' : 'text-gray-700 border-gray-300');
+    @endphp
 
-        <div class="flex items-center gap-2">
-            @if (count($selectedGroups) > 0)
-                <x-primary-button
-                    type="button"
-                    wire:click="exportSelected"
-                    wire:loading.attr="disabled"
-                    wire:loading.class="opacity-60 cursor-not-allowed"
-                    wire:target="toggleSelectAll,applyFilters,exportSelected"
-                    class="flex items-center gap-2"
-                >
-                    طباعة فواتير محددة
-                </x-primary-button>
-            @endif
+
+        <div class="flex items-center gap-3">
+        <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
+        <input type="text"
+               value="{{ number_format($netTotal, 2) }} {{ $currency }}"
+               readonly
+               class="bg-white border rounded px-3 py-1 text-sm w-36 text-center font-bold {{ $netClass }}">
+
+             
+
+                   <x-primary-button
+                        type="button"
+                        wire:click="askBulkTax"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-60 cursor-not-allowed"
+                        wire:target="toggleSelectAll,applyFilters,askBulkTax"
+                        class="flex items-center gap-2">
+                        إصدار فاتورة مجمّعة
+                    </x-primary-button>
+
+              
+
 
 
             <a href="{{ route('agency.customer-detailed-invoices') }}"
@@ -165,13 +184,28 @@
                             @endif
                         </td>
 
-                        <td class="px-2 py-1">
-                            <button
-                                wire:click="showDetails({{ $index }})"
-                                class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
-                                تفاصيل
-                            </button>
-                        </td>
+                            <td class="px-2 py-1">
+                                <div class="flex items-center gap-2">
+                                    {{-- تفاصيل --}}
+                                    <button
+                                        wire:click="showDetails({{ $index }})"
+                                        class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
+                                        تفاصيل
+                                    </button>
+                                    <span class="mx-1 text-gray-300">|</span>
+
+                                    {{-- فاتورة فردية PDF --}}
+                                   <button type="button"
+                                    wire:click="askSingleTax('{{ (string)$item->group_key }}')"
+                                    wire:loading.attr="disabled"
+                                    wire:target="askSingleTax"
+                                    class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
+                                    فاتورة PDF
+                                </button>
+
+                                </div>
+                            </td>
+
                     </tr>
                 @empty
                     <tr>
@@ -251,5 +285,76 @@
             </div>
         </div>
     @endif
+    @if($showSingleTaxModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+        <button wire:click="$set('showSingleTaxModal', false)"
+            class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+        <h2 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">إدخال ضريبة الفاتورة</h2>
+
+        <div class="mb-4">
+        <label class="block text-sm font-semibold mb-1">
+            الضريبة
+            <span class="text-gray-500 text-xs">({{ $singleTaxIsPercent ? '%' : ($agencyCurrency ?? 'USD') }})</span>
+        </label>
+        <div class="flex gap-2">
+            <input type="number" step="0.01" min="0" wire:model.defer="singleTaxAmount"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select wire:model="singleTaxIsPercent"
+                    class="rounded-lg border border-gray-300 px-2 py-2 text-sm">
+            <option value="1">%</option>
+            <option value="0">{{ $agencyCurrency ?? 'USD' }}</option>
+            </select>
+        </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-2">
+        <button type="button" wire:click="$set('showSingleTaxModal', false)"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">إلغاء</button>
+        <x-primary-button wire:click="confirmSingleTax" wire:loading.attr="disabled">تنزيل PDF</x-primary-button>
+        </div>
+    </div>
+    </div>
+    @endif
+
+    @if($showBulkTaxModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+        <button wire:click="$set('showBulkTaxModal', false)"
+            class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+        <h2 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">إصدار فاتورة مجمّعة</h2>
+
+        <div class="mb-4">
+        <label class="block text-sm font-semibold mb-1">
+            الضريبة (للفاتورة المجمّعة)
+            <span class="text-gray-500 text-xs">({{ $bulkTaxIsPercent ? '%' : ($agencyCurrency ?? 'USD') }})</span>
+        </label>
+        <div class="flex gap-2">
+            <input type="number" step="0.01" min="0" wire:model.defer="bulkTaxAmount"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select wire:model="bulkTaxIsPercent"
+                    class="rounded-lg border border-gray-300 px-2 py-2 text-sm">
+            <option value="1">%</option>
+            <option value="0">{{ $agencyCurrency ?? 'USD' }}</option>
+            </select>
+        </div>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-3 text-sm mb-4">
+        <div class="flex justify-between"><span>Subtotal:</span><span>{{ number_format($bulkSubtotal,2) }} {{ $agencyCurrency ?? 'USD' }}</span></div>
+        @php $__tax = $bulkTaxIsPercent ? round($bulkSubtotal * ((float)$bulkTaxAmount/100),2) : (float)$bulkTaxAmount; @endphp
+        <div class="flex justify-between"><span>Tax:</span><span>{{ number_format($__tax,2) }} {{ $agencyCurrency ?? 'USD' }}</span></div>
+        <div class="flex justify-between font-semibold"><span>Grand:</span><span>{{ number_format($bulkSubtotal + $__tax,2) }} {{ $agencyCurrency ?? 'USD' }}</span></div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-2">
+        <button type="button" wire:click="$set('showBulkTaxModal', false)"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">إلغاء</button>
+        <x-primary-button wire:click="confirmBulkTax" wire:loading.attr="disabled">تنزيل PDF</x-primary-button>
+        </div>
+    </div>
+    </div>
+    @endif
+
 
 </div>

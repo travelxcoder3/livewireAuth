@@ -107,6 +107,9 @@ class Index extends Component
     public string $customerLabel = '';
     public string $providerLabel = '';
     public int $formKey = 0;
+    public array $commissionExceptions = [
+        // 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    ];
 
     public $successMessage;
 
@@ -673,21 +676,40 @@ $this->totalProfit   = $totalProfit;
             ->whereYear('sale_date', $year)
             ->whereMonth('sale_date', $month)
             ->withSum('collections','amount')
-            ->get(['id','usd_sell','amount_paid','sale_profit','sale_group_id']);
+->get(['id','usd_sell','amount_paid','sale_profit','sale_group_id','status']);
 
         $groupedM = $monthRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
 
         $monthProfit = 0.0;
-        $monthCollectedProfit = 0.0;
-        foreach ($groupedM as $g) {
-            $netSell      = (float) $g->sum('usd_sell');
-            $netCollected = (float) $g->sum('amount_paid') + (float) $g->sum('collections_sum_amount');
-            $gProfit      = (float) $g->sum('sale_profit');
-            $monthProfit += $gProfit;
-            if ($netCollected + 0.01 >= $netSell) {
-                $monthCollectedProfit += $gProfit;
-            }
-        }
+$monthCollectedProfit = 0.0;
+
+foreach ($groupedM as $g) {
+    $netSell      = (float) $g->sum('usd_sell');
+    $netCollected = (float) $g->sum('amount_paid') + (float) $g->sum('collections_sum_amount');
+    $gProfit      = (float) $g->sum('sale_profit');
+
+    // هل بالمجموعة سطر استرداد؟ نكتشفه بالحالة أو بقيمة بيع سالبة
+    $hasRefund = $g->contains(function ($row) {
+        $st = mb_strtolower((string)($row->status ?? ''));
+        return str_contains($st, 'refund') || (float)$row->usd_sell < 0;
+    });
+
+    // الربح المتوقع: إن وُجد Refund تجاهل السالب وخذ الإيجابي فقط
+    if ($hasRefund) {
+        $positiveOnly = (float) $g->filter(fn($row) => (float)$row->sale_profit > 0)
+                                  ->sum('sale_profit');
+        $monthProfit += max($positiveOnly, 0.0);
+    } else {
+        $monthProfit += $gProfit;
+    }
+
+    // الربح المستحق يبقى بالحساب الواقعي دون أي استثناء
+    if ($netCollected + 0.01 >= $netSell) {
+        $monthCollectedProfit += $gProfit;
+    }
+}
+
+
 
         $this->userCommission    = max(($monthProfit - $target) * $rate, 0);
         $this->userCommissionDue = max(($monthCollectedProfit - $target) * $rate, 0);

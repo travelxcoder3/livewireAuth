@@ -22,7 +22,10 @@ class CustomerStatement extends Component
 
     /** @var array<int,array{no:int,date:string,desc:string,status:string,debit:float,credit:float,balance:float}> */
     public array $statement = [];
-
+    // إجماليات التذييل
+    public float $sumDebit = 0.0;   // إجمالي عليه
+    public float $sumCredit = 0.0;  // إجمالي له
+    public float $net = 0.0;        // الصافي = عليه - له
     private function statusArabicLabel(string $st): string
     {
         $s = mb_strtolower(trim($st));
@@ -181,7 +184,7 @@ private function rebuild(): void
 
         $rows[] = [
             'no'=>0,'date'=>$evt,
-            'desc'=>$label . ($tx->reference ? " (#{$tx->reference})" : ''),
+            'desc'=>$label,
             'status'=>'محفظة',
             'debit'=>$debit,'credit'=>$credit,'balance'=>0.0,
             '_grp'=>$evt,'_evt'=>$evt,'_ord'=>5,'_impact'=>$walletAffectsBalance,
@@ -204,6 +207,10 @@ private function rebuild(): void
     unset($r);
 
     $this->statement    = $rows;
+    // حساب الإجماليات للتذييل
+    $this->sumDebit  = round(array_sum(array_column($rows, 'debit')), 2);
+    $this->sumCredit = round(array_sum(array_column($rows, 'credit')), 2);
+    $this->net       = round($this->sumCredit - $this->sumDebit, 2);
     $this->selectedRows = [];
 }
 

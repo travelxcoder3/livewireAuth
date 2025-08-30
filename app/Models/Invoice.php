@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;   // ← أضِف هذا السطر
 
 class Invoice extends Model
 {
@@ -40,5 +41,25 @@ protected $with = ['sales'];
             ->withTimestamps();
     }
 
+    // داخل class Invoice
+    protected function entityName(): Attribute
+    {
+        return Attribute::get(function ($value) {
+            $firstSale = $this->sales->first();
+
+            // فاتورة فردية ⇒ استخدم المستفيد أولاً بغضّ النظر عمّا هو مخزَّن
+            if ($this->sales->count() === 1 && $firstSale) {
+                $beneficiary = trim((string)($firstSale->beneficiary_name ?? ''));
+                if ($beneficiary !== '') {
+                    return $beneficiary;
+                }
+                // إن لم يوجد مستفيد نرجع للاسم المخزَّن أو اسم العميل
+                return $value ?: (optional($firstSale->customer)->name ?? null);
+            }
+
+            // فواتير مجمّعة تبقى كما هي
+            return $value;
+        });
+    }
 
 }

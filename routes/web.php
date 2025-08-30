@@ -79,6 +79,7 @@ use App\Livewire\Agency\NotificationsIndex;
 use App\Livewire\Agency\SalesReview;
 use App\Livewire\Agency\Reports\ProviderSalesReport;
 use App\Livewire\Agency\Reports\CustomerSalesReport;
+use App\Http\Controllers\Agency\InvoicePrintController; // تأكد من هذا الـ use بالأعلى
 
 
 Route::get('/', fn() => view('welcome'));
@@ -293,6 +294,14 @@ Route::prefix('agency')
 });
 
     Route::get('/invoices', InvoicesReview::class)->name('invoices.review'); 
+
+
+
+Route::get('/customer-invoices-pdf/{customer}/print', [InvoicePrintController::class, 'printSelected'])->name('customer-invoices-pdf.print');
+ Route::get(
+        '/customer-invoices-bulk/{customer}/print',
+        [InvoicePrintController::class, 'printBulk']
+    )->name('customer-invoices-bulk.print');
 
 });
 

@@ -11,6 +11,10 @@ class CustomerInvoiceTable
                 'key' => 'name',
                 'label' => 'اسم العميل',
             ],
+             [
+                'key' => 'phone',
+                'label' => 'رقم الهاتف',
+            ],
             [
                 'key' => 'actions',
                 'label' => 'الإجراء',

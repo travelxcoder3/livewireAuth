@@ -22,7 +22,7 @@ class AccountTable
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
             ['key' => 'duplicatedBy.name', 'label' => 'تم التكرار بواسطة'],
             ['key' => 'user.name', 'label' => 'الموظف'],
-            ['key' => 'actions', 'label' => 'الإجراءات', 'format' => 'custom','buttons' => ['pdf']],
+            // ['key' => 'actions', 'label' => 'الإجراءات', 'format' => 'custom','buttons' => ['pdf']],
         ];
 
         // إرجاع الأعمدة بعد التصفية (إذا تمت)
