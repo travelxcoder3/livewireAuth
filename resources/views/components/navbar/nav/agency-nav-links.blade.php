@@ -219,7 +219,7 @@
                         @endif
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('providers-statement.view'))
                             <x-navbar.buttons.dropdown-link
-                                :href="route('agency.reports.provider-ledger')"
+                                :href="route('agency.statements.providers')"
                                 icon="fas fa-wallet"
                                 label="كشف حساب المزودين   "
                                 :show="true" />

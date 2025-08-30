@@ -83,6 +83,9 @@ use App\Http\Controllers\Agency\InvoicePrintController; // تأكد من هذا 
 use App\Http\Controllers\Agency\Statements\EmployeeStatementPdfController;
 
 
+use App\Livewire\Agency\Statements\ProvidersList;
+use App\Livewire\Agency\Statements\ProviderStatement;
+use App\Http\Controllers\Agency\Statements\ProviderStatementPdfController;
 Route::get('/', fn() => view('welcome'));
 
 Route::get('/login', Login::class)->name('login');
@@ -307,6 +310,13 @@ Route::get('/customer-invoices-pdf/{customer}/print', [InvoicePrintController::c
         '/customer-invoices-bulk/{customer}/print',
         [InvoicePrintController::class, 'printBulk']
     )->name('customer-invoices-bulk.print');
+
+
+
+Route::get('statements/providers', ProvidersList::class)->name('statements.providers');
+Route::get('statements/provider/{provider}', ProviderStatement::class)->name('statements.provider');
+Route::get('statements/provider/{provider}/pdf', [ProviderStatementPdfController::class,'show'])
+    ->name('statements.provider.pdf');
 
 });
 
