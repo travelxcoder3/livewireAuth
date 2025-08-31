@@ -36,7 +36,7 @@ $rows = $sales->map(function($customer, $i) {
 <div class="space-y-6">
     <!-- عنوان الصفحة -->
     <h2 class="text-xl font-bold text-gray-700 border-b pb-2" style="color: rgb(var(--primary-700));">
-        تقرير المديونيات 
+        عرض التحصيلات  
     </h2>
 
     <!-- الفلاتر -->

@@ -12,7 +12,7 @@ class Collection extends Model
 
     protected $fillable = [
     'agency_id','sale_id','amount','payment_date','method','note','user_id',
-    'collector_user_id','collector_method' // جديد
+    'collector_user_id','collector_method' 
     ];
 
     public function collector()
@@ -63,14 +63,15 @@ class Collection extends Model
 
 
     public function getCleanNoteAttribute(): string
-{
-    $raw = trim((string) $this->note);
-    if ($raw === '') return '';
+    {
+        $raw = trim((string) $this->note);
+        if ($raw === '') return '';
 
-    if (preg_match('/سداد\s+محفظة\s+لمجموعة\s*#[-0-9a-fA-F]{36}\s*\(سجل\s*#\d+\)/u', $raw)) return '';
-    if (preg_match('/^سداد\s+محفظة/u', $raw)) return '';
+        if (preg_match('/سداد\s+محفظة\s+لمجموعة\s*#[-0-9a-fA-F]{36}\s*\(سجل\s*#\d+\)/u', $raw)) return '';
+        if (preg_match('/^سداد\s+محفظة/u', $raw)) return '';
 
-    return $raw;
-}
+        return $raw;
+    }
+
 
 }

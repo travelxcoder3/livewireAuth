@@ -5,6 +5,8 @@ namespace App\Livewire\Agency;
 use App\Models\Customer;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Spatie\Browsershot\Browsershot;
 
 class CustomerInvoiceOverview extends Component
 {
@@ -338,7 +340,6 @@ public function askSingleTax(string $groupKey)
     $this->showSingleTaxModal = true;
 }
 
-// أكد ونزّل فردي
 public function confirmSingleTax()
 {
     $this->clearToast();
@@ -353,6 +354,8 @@ public function confirmSingleTax()
         'is_percent' => $this->singleTaxIsPercent ? 1 : 0,
     ]);
 }
+
+
 
     // افتح مودال مجمّع
     public function askBulkTax()
@@ -378,20 +381,28 @@ public function confirmSingleTax()
         $this->clearToast();
     }
 
-    // أكد ونزّل مجمّع
-    public function confirmBulkTax()
-    {
-        $this->clearToast();
-        $payload = base64_encode(json_encode(array_values($this->selectedGroups)));
-        $this->showBulkTaxModal = false;
+public function confirmBulkTax()
+{
+    $this->clearToast();
 
-        return redirect()->route('agency.customer-invoices-bulk.print', [
-            'customer'   => $this->customer->id,
-            'sel'        => $payload,
-            'tax'        => (float)($this->bulkTaxAmount ?: 0),
-            'is_percent' => $this->bulkTaxIsPercent ? 1 : 0,
-        ]);
+    if (empty($this->selectedGroups)) {
+        $this->toastType = 'error';
+        $this->toastMessage = 'اختر مستفيدًا واحدًا على الأقل.';
+        return;
     }
+
+    $payload = base64_encode(json_encode(array_values($this->selectedGroups)));
+    $this->showBulkTaxModal = false;
+
+    return redirect()->route('agency.customer-invoices-bulk.print', [
+        'customer'   => $this->customer->id,
+        'sel'        => $payload,
+        'tax'        => (float)($this->bulkTaxAmount ?: 0),
+        'is_percent' => $this->bulkTaxIsPercent ? 1 : 0,
+    ]);
+}
+
+
 
 
 }

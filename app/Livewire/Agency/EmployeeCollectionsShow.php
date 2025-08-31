@@ -37,9 +37,18 @@ class EmployeeCollectionsShow extends Component
         $this->employee = $user->load(['department','position']);
     }
 
-    public function updatingSearchCustomer(){ $this->resetPage(); }
-    public function updatingLastPayFrom(){ $this->resetPage(); }
-    public function updatingLastPayTo(){ $this->resetPage(); }
+    public function updatingSearchCustomer()
+    { 
+        $this->resetPage();
+    }
+    public function updatingLastPayFrom()
+    { 
+        $this->resetPage(); 
+    }
+    public function updatingLastPayTo()
+    {
+         $this->resetPage(); 
+    }
 
     protected function baseSales()
     {
@@ -110,85 +119,87 @@ class EmployeeCollectionsShow extends Component
         $this->showPayModal = true;
     }
 
-  public function savePay()
-{
-    $this->validate([
-        'paid_now'          => 'required|numeric|min:0.01|max:'.$this->remaining,
-        'collector_method'  => 'required|integer|in:1,2,3,4,5,6,7,8', // الطرق المعرفة لديك
-    ]);
-    DB::transaction(function () {
-        $wallet = Wallet::firstOrCreate(
-            ['customer_id' => $this->currentCustomerId],
-            ['balance' => 0, 'status' => 'active']
-        );
-
-        $wallet = Wallet::where('id', $wallet->id)->lockForUpdate()->first();
-        $newBalance = (float)$wallet->balance + (float)$this->paid_now;
-        \Log::info('UI.savePay.input', [
-  'employee_id' => $this->employee->id,
-  'customer_id' => $this->currentCustomerId,
-  'collector_method' => $this->collector_method,
-  'paid_now' => $this->paid_now,
-]);
-       WalletTransaction::create([
-            'wallet_id'       => $wallet->id,
-            'type'            => 'deposit',
-            'amount'          => $this->paid_now,
-            'running_balance' => $newBalance,
-            'reference'       => 'employee-collections',
-            'note'            => trim('سداد عبر تحصيلات الموظفين'.($this->note ? ' - '.$this->note : '')),
-        ]);
-
-
-        $wallet->update(['balance' => $newBalance]);
-
-
-    });
-
-    // تسوية فورية لإنشاء قيود collections وتحديث آخر سداد
-$customer = \App\Models\Customer::findOrFail($this->currentCustomerId);
-app(\App\Services\AutoSettlementService::class)->autoSettle(
-    customer: $customer,
-    performedByName: 'employee-collections',
-    onlyEmployeeId: $this->employee->id,
-     collectorUserId: Auth::id(),
-    collectorMethod: ($this->collector_method !== null ? (int)$this->collector_method : null),
-);
-
-
-
-
-
-// تحديث الواجهة بدون استخدام $this->sale (غير موجود هنا)
-$this->showPayModal = false;
-$this->reset(['paid_now','note','currentDebtType','currentResponseType']);
-$this->resetPage();          // يعيد حساب القوائم
-$this->dispatch('$refresh'); // يجبر إعادة الرندر
-session()->flash('message','تم السداد وإنشاء قيود التحصيل وتحديث آخر سداد تلقائيًا.');
-}
-
-
-
+    
     public function render()
-    {
-        // لوائح الخيارات للحالة
-        $debtTypes = DynamicListItemSub::whereHas('parentItem',fn($q)=>$q->where('label','نوع المديونية'))->get();
-        $responseTypes = DynamicListItemSub::whereHas('parentItem',fn($q)=>$q->where('label','تجاوب العميل'))->get();
+   {
+                // لوائح الخيارات للحالة
+                $debtTypes = DynamicListItemSub::whereHas('parentItem',fn($q)=>$q->where('label','نوع المديونية'))->get();
+                $responseTypes = DynamicListItemSub::whereHas('parentItem',fn($q)=>$q->where('label','تجاوب العميل'))->get();
 
-        return view('livewire.agency.employee-collections-show',[
-            'rows'=>$this->customerRows,
-            'debtTypes'=>$debtTypes,
-            'responseTypes'=>$responseTypes,
-        ])->layout('layouts.agency')->title('تفاصيل تحصيلات: '.$this->employee->name);
+                return view('livewire.agency.employee-collections-show',[
+                    'rows'=>$this->customerRows,
+                    'debtTypes'=>$debtTypes,
+                    'responseTypes'=>$responseTypes,
+                ])->layout('layouts.agency')->title('تفاصيل تحصيلات: '.$this->employee->name);
     }
 
-    public function resetFilters()
-    {
-        $this->searchCustomer = '';
-        $this->lastPayFrom    = null;
-        $this->lastPayTo      = null;
+            public function resetFilters()
+            {
+                $this->searchCustomer = '';
+                $this->lastPayFrom    = null;
+                $this->lastPayTo      = null;
 
-        // أجبر مكونات التاريخ على مسح حالتها في الواجهة
-        $this->dispatch('filters-cleared');
-    }
+                // أجبر مكونات التاريخ على مسح حالتها في الواجهة
+                $this->dispatch('filters-cleared');
+            }
+  public function savePay()
+  {
+             $this->validate([
+                'paid_now'          => 'required|numeric|min:0.01|max:'.$this->remaining,
+                'collector_method'  => 'required|integer|in:1,2,3,4,5,6,7,8', // الطرق المعرفة لديك
+            ]);
+            DB::transaction(function () {
+                $wallet = Wallet::firstOrCreate(
+                    ['customer_id' => $this->currentCustomerId],
+                    ['balance' => 0, 'status' => 'active']
+                );
+
+                $wallet = Wallet::where('id', $wallet->id)->lockForUpdate()->first();
+                $newBalance = (float)$wallet->balance + (float)$this->paid_now;
+                \Log::info('UI.savePay.input', [
+            'employee_id' => $this->employee->id,
+            'customer_id' => $this->currentCustomerId,
+            'collector_method' => $this->collector_method,
+            'paid_now' => $this->paid_now,
+                ]);
+                    WalletTransaction::create([
+                            'wallet_id'       => $wallet->id,
+                            'type'            => 'deposit',
+                            'amount'          => $this->paid_now,
+                            'running_balance' => $newBalance,
+                            'reference'       => 'employee-collections',
+                            'note'            => trim('سداد عبر تحصيلات الموظفين'.($this->note ? ' - '.$this->note : '')),
+                        ]);
+
+
+                        $wallet->update(['balance' => $newBalance]);
+
+
+                    });
+
+            // تسوية فورية لإنشاء قيود collections وتحديث آخر سداد
+            $customer = \App\Models\Customer::findOrFail($this->currentCustomerId);
+            app(\App\Services\AutoSettlementService::class)->autoSettle(
+                customer: $customer,
+                performedByName: 'employee-collections',
+                onlyEmployeeId: $this->employee->id,
+                collectorUserId: Auth::id(),
+                collectorMethod: ($this->collector_method !== null ? (int)$this->collector_method : null),
+            );
+
+
+
+
+
+            // تحديث الواجهة بدون استخدام $this->sale (غير موجود هنا)
+            $this->showPayModal = false;
+            $this->reset(['paid_now','note','currentDebtType','currentResponseType']);
+            $this->resetPage();          // يعيد حساب القوائم
+            $this->dispatch('$refresh'); // يجبر إعادة الرندر
+            session()->flash('type', 'success'); // success | error | warning | info
+            session()->flash('message', 'تم السداد وإنشاء قيود التحصيل وتحديث آخر سداد تلقائيًا.');
+   }
+
+
+
 }

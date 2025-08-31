@@ -21,9 +21,10 @@
 
   <div>
     <div class="space-y-6">
-
+<x-toast /> 
       <div class="bg-white rounded-xl shadow overflow-hidden">
         <!-- رأس -->
+
         <div class="flex items-center justify-between px-5 py-3 page-head">
           <h2 class="text-xl md:text-2xl font-bold" style="color: rgb(var(--primary-700));">تفاصيل تحصيلات الموظف</h2>
           <a href="{{ url()->previous()!=url()->current()?url()->previous():route('agency.employee-collections') }}"
@@ -175,10 +176,6 @@
       </div>
     @endif
 
-    @if (session()->has('message'))
-      <div class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2">
-        {{ session('message') }}
-      </div>
-    @endif
+ 
   </div>
 </div>

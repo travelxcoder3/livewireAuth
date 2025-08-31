@@ -15,9 +15,18 @@
                    class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center">
 
             <?php if (count($groups ?? []) > 0) { ?>
-                <x-primary-button type="button" wire:click="openBulkInvoiceModal" class="px-3 py-2 text-sm rounded-lg">
+                <x-primary-button
+                    type="button"
+                    wire:click="openBulkInvoiceModal"
+                    :loading="true"
+                    target="openBulkInvoiceModal"
+                    busyText="جارٍ الفتح…"
+                    delay="shortest"
+                    class="px-3 py-2 text-sm rounded-lg"
+                >
                     إصدار فاتورة مجمعة
                 </x-primary-button>
+
             <?php } ?>
 
 
@@ -164,14 +173,15 @@
 
     <!-- مودال الفاتورة الفردية/إشعار الخصم -->
     <?php if (!empty($showInvoiceModal) && !empty($currentGroupKey)) { ?>
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" x-cloak>
+        <div class="fixed inset-0 z-50 flex items-start justify-center pt-24 backdrop-blur-sm bg-black/40" x-cloak>
             <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
                 <button wire:click="$set('showInvoiceModal', false)"
                         class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
 
                 <h2 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">
-                    {{ $isCreditNote ? 'إشعار خصم للمزوّد' : 'فاتورة المزوّد' }} (مجموعة {{ $currentGroupKey }})
+                    {{ $isCreditNote ? 'إشعار خصم للمزوّد' : 'فاتورة المزوّد' }}
                 </h2>
+
 
                 <div class="space-y-3">
                     <div>
@@ -197,11 +207,17 @@
 
                     <div class="flex justify-end gap-2 mt-2">
                         <x-primary-button wire:click="addTaxForGroup" wire:loading.attr="disabled">حفظ/تحديث</x-primary-button>
-                        @if($currentInvoiceId)
-    <x-primary-button wire:click="downloadSingleInvoicePdf">
-        تحميل PDF
-    </x-primary-button>
-@endif
+                            @if($currentInvoiceId)
+                                <x-primary-button
+                                    wire:click="downloadSingleInvoicePdf"
+                                    :loading="true"
+                                    target="downloadSingleInvoicePdf"
+                                    busyText="جاري إنشاء الملف…"
+                                    delay="longest"
+                                >
+                                    تحميل PDF
+                                </x-primary-button>
+                            @endif
                     </div>
                 </div>
             </div>
@@ -263,7 +279,15 @@
                                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">
                             إلغاء
                         </button>
-                        <x-primary-button type="submit" wire:loading.attr="disabled">تأكيد وإنشاء</x-primary-button>
+                            <x-primary-button
+                                type="submit"
+                                :loading="true"
+                                target="createBulkInvoice"
+                                busyText="جاري إنشاء الفاتورة…"
+                                delay="longest"
+                            >
+                                تأكيد وإنشاء
+                            </x-primary-button>
                     </div>
                 </form>
             </div>

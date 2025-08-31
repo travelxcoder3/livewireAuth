@@ -32,15 +32,17 @@
                readonly
                class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center">
 
-        <x-primary-button
-            type="button"
-            wire:click="askBulkTax"
-            wire:loading.attr="disabled"
-            wire:loading.class="opacity-60 cursor-not-allowed"
-            wire:target="toggleSelectAll,applyFilters,askBulkTax"
-            class="px-3 py-2 text-sm rounded-lg">
-            إصدار فاتورة مجمّعة
-        </x-primary-button>
+            <x-primary-button
+                type="button"
+                wire:click="askBulkTax"
+                :loading="true"
+                target="askBulkTax"
+                busyText="جارٍ الفتح"
+                delay="shortest"
+                class="px-3 py-2 text-sm rounded-lg">
+                إصدار فاتورة مجمّعة
+            </x-primary-button>
+
 
         <a href="{{ route('agency.customer-detailed-invoices') }}"
            class="flex items-center gap-2 px-4 py-2 rounded-lg border transition text-sm font-medium
@@ -306,7 +308,14 @@
         <div class="flex justify-end gap-2 mt-2">
         <button type="button" wire:click="$set('showSingleTaxModal', false)"
             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">إلغاء</button>
-        <x-primary-button wire:click="confirmSingleTax" wire:loading.attr="disabled">تنزيل PDF</x-primary-button>
+        <x-primary-button
+            wire:click="confirmSingleTax"
+            :loading="true"
+            target="confirmSingleTax"
+            busyText="جاري إنشاء الملف…"
+            delay="longest">
+            تنزيل PDF
+        </x-primary-button>
         </div>
     </div>
     </div>
@@ -346,7 +355,14 @@
         <div class="flex justify-end gap-2 mt-2">
         <button type="button" wire:click="$set('showBulkTaxModal', false)"
             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">إلغاء</button>
-        <x-primary-button wire:click="confirmBulkTax" wire:loading.attr="disabled">تنزيل PDF</x-primary-button>
+        <x-primary-button
+            wire:click="confirmBulkTax"
+            :loading="true"
+            target="confirmBulkTax"
+            busyText="جاري إنشاء الملف…"
+            delay="longest">
+            تنزيل PDF
+        </x-primary-button>
         </div>
     </div>
     </div>

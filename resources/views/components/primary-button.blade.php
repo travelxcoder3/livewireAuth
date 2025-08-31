@@ -11,10 +11,11 @@
     'gradient' => true,
     'icon' => null,
 
-    // جديد: دعم حالة التحميل الموجّهة لـ Livewire
-    'loading' => false,        // فعّل السبينر وتعطيل الزر أثناء الطلب
-    'target'  => null,         // اسم الميثود: مثال downloadSingleInvoicePdf
-    'busyText'=> null,         // نص أثناء التحميل
+    // التحميل الموجّه
+    'loading' => false,      // تفعيل حالة التحميل
+    'target'  => null,       // اسم/أسماء الميثود بدون بارامترات
+    'busyText'=> null,       // نص أثناء التحميل
+    'delay'   => 'auto',     // auto | shortest | default | longest
 ])
 
 @php
@@ -25,42 +26,56 @@
         $baseStyle = "background-color: {$color};";
     }
 
-    $classes = trim("{$padding} {$fontSize} font-bold text-{$textColor} {$rounded} {$shadow} transition duration-300 flex items-center gap-2 justify-center " . ($width ?? ''));
+    $classes = trim("{$padding} {$fontSize} font-bold text-{$textColor} {$rounded} {$shadow} transition duration-300 flex items-center gap-2 justify-center disabled:opacity-60 disabled:cursor-not-allowed " . ($width ?? ''));
+
+    // دعم target كمصفوفة أو نص
+    $targetList = is_array($target) ? implode(',', $target) : ($target ?: '');
+
+    // تحديد التأخير تلقائياً لو كان الإجراء ثقيل (PDF/Export…)
+    $isHeavy = $targetList && preg_match('/download|export|report|pdf|excel|generate|invoice/i', $targetList);
+    $delayKey = $delay === 'auto' ? ($isHeavy ? 'longest' : 'shortest') : $delay;
+
+    $delayAttr = match ($delayKey) {
+        'longest'  => 'wire:loading.delay.longest',
+        'default'  => 'wire:loading.delay',
+        'shortest' => 'wire:loading.delay.shortest',
+        default    => 'wire:loading.delay.shortest',
+    };
+
+    $showLoading = $loading && $targetList !== '';
+    $busy = $busyText ?: 'جاري التنفيذ…';
 @endphp
 
 @if ($href)
     <a href="{{ $href }}"
        {{ $attributes->merge(['class' => $classes, 'style' => $baseStyle]) }}>
-        @if (!is_null($icon))
-            {!! $icon !== '' ? $icon : $defaultIcon !!}
-        @endif
+        @if (!is_null($icon)) {!! $icon !== '' ? $icon : $defaultIcon !!} @endif
         <span>{{ $slot }}</span>
     </a>
 @else
     <button
         type="{{ $type }}"
         {{ $attributes->merge(['class' => $classes, 'style' => $baseStyle]) }}
-        @if($loading) wire:loading.attr="disabled" @endif
-        @if($loading && $target) wire:target="{{ $target }}" @endif
+        @if($showLoading) wire:loading.attr="disabled" wire:target="{{ $targetList }}" @endif
+        @if($showLoading) wire:loading.class="opacity-60 cursor-not-allowed" wire:target="{{ $targetList }}" @endif
+        aria-busy="{{ $showLoading ? 'true' : 'false' }}"
     >
-        @if (!is_null($icon))
-            {!! $icon !== '' ? $icon : $defaultIcon !!}
-        @endif
+        @if (!is_null($icon)) {!! $icon !== '' ? $icon : $defaultIcon !!} @endif
 
-        {{-- نص عادي أثناء السكون --}}
-        <span @if($loading) wire:loading.remove @if($target) wire:target="{{ $target }}" @endif @endif>
+        {{-- النص العادي --}}
+        <span @if($showLoading) wire:loading.remove wire:target="{{ $targetList }}" @endif>
             {{ $slot }}
         </span>
 
-        {{-- سبينر + نص أثناء التحميل --}}
-        @if($loading)
+        {{-- السبينر أثناء التحميل --}}
+        @if($showLoading)
             <span class="inline-flex items-center gap-2"
-                  wire:loading.delay.shortest @if($target) wire:target="{{ $target }}" @endif>
+                  {!! $delayAttr !!} @if($targetList) wire:target="{{ $targetList }}" @endif>
                 <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
                     <path d="M4 12a8 8 0 018-8" fill="currentColor" class="opacity-75"></path>
                 </svg>
-                <span>{{ $busyText ?? 'جاري المعالجة…' }}</span>
+                <span>{{ $busy }}</span>
             </span>
         @endif
     </button>
