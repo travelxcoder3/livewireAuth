@@ -26,6 +26,7 @@
         selectedLabel: '',    // ← نخزن نص الخيار المختار
         menuWidth: 0,
         searchQuery: '',
+        activeIndex: -1,      // ← إضافة مؤشر العنصر النشط
 
         // خيارات أول تحميل + placeholder
         options: Object.assign({ '': '{{ $placeholder }}' }, @js($options) || {}),
@@ -57,6 +58,52 @@ init() {
             this.selectedLabel = this.options[val];
         }
     });
+},
+
+handleArrowKeys(event) {
+    if (!this.open) return;
+    
+    const entries = this.filteredEntries;
+    if (entries.length === 0) return;
+    
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        this.activeIndex = (this.activeIndex + 1) % entries.length;
+        this.$nextTick(() => {
+            const activeElement = this.$refs[`option-${this.activeIndex}`];
+            if (activeElement) {
+                activeElement.scrollIntoView({ block: 'nearest' });
+            }
+        });
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        this.activeIndex = (this.activeIndex - 1 + entries.length) % entries.length;
+        this.$nextTick(() => {
+            const activeElement = this.$refs[`option-${this.activeIndex}`];
+            if (activeElement) {
+                activeElement.scrollIntoView({ block: 'nearest' });
+            }
+        });
+    } else if (event.key === 'Enter' && this.activeIndex >= 0) {
+        event.preventDefault();
+        this.selectActiveItem();
+    } else if (event.key === ' ' && this.activeIndex >= 0) { // ← إضافة معالجة Space
+        event.preventDefault();
+        this.selectActiveItem();
+    }
+},
+
+// 👈 إضافة دالة جديدة لاختيار العنصر النشط
+selectActiveItem() {
+    const entries = this.filteredEntries;
+    if (this.activeIndex >= 0 && this.activeIndex < entries.length) {
+        const [key, value] = entries[this.activeIndex];
+        this.selected = key;
+        this.selectedLabel = value;
+        this.$wire.set('{{ $wireModel }}', key);
+        this.open = false;
+        this.activeIndex = -1;
+    }
 },
 
 
@@ -127,12 +174,24 @@ x-effect="
 <div
     @click="if (!{{ $disabled ? 'true' : 'false' }}) { 
                 open = !open; 
+                activeIndex = -1;
                 $nextTick(() => { menuWidth = $refs.trigger?.offsetWidth || 0 })
             }"
+    @keydown.tab="open = false; activeIndex = -1;"
+    @keydown.enter.prevent="if (!{{ $disabled ? 'true' : 'false' }}) { open = !open; activeIndex = -1; }"
+    @keydown.space.prevent="if (!{{ $disabled ? 'true' : 'false' }}) { 
+    if (open && activeIndex >= 0) {
+        selectActiveItem(); 
+    } else {
+        open = !open; 
+        activeIndex = -1;
+    }
+}"    @keydown="handleArrowKeys($event)"
+    tabindex="0"
     x-ref="trigger"
-          class="w-full rounded-lg border border-gray-300 px-3 {{ $compact ? 'py-1.5 text-sm' : 'py-2 text-xs' }} focus:ring-2  focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white cursor-pointer flex items-center justify-between peer"
-  :class="{ 'bg-gray-100 cursor-not-allowed': {{ $disabled ? 'true' : 'false' }} }"
-    >
+    class="w-full rounded-lg border border-gray-300 px-3 {{ $compact ? 'py-1.5 text-sm' : 'py-2 text-xs' }} focus:ring-2  focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white cursor-pointer flex items-center justify-between peer"
+    :class="{ 'bg-gray-100 cursor-not-allowed': {{ $disabled ? 'true' : 'false' }} }"
+>
 <span class="flex-1 min-w-0 truncate"
       x-text="selectedLabel || (options && options[selected]) || '{{ $placeholder }}'"></span>
 
@@ -150,13 +209,14 @@ x-effect="
     </label>
 
     <!-- القائمة -->
-    <div
-        x-show="open"
-        x-transition
-    @click.outside="open = false; searchQuery = ''"
-        class="absolute z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-md max-h-60 overflow-auto"
-        :style="'width: ' + menuWidth + 'px'"
-    >
+        <div
+            x-show="open"
+            x-transition
+        @click.outside="open = false; searchQuery = ''; activeIndex = -1;"
+            class="absolute z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-md max-h-60 overflow-auto"
+            :style="'width: ' + menuWidth + 'px'"
+            @keydown.escape="open = false; activeIndex = -1;"
+        >
         @if($enableSearch)
             <div class="sticky top-0 bg-white p-2 border-b">
                 <input
@@ -166,25 +226,32 @@ x-effect="
                     placeholder="ابحث..."
                     class="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-[rgb(var(--primary-500))]"
                     @click.stop
-                    @keydown.escape="open = false"
+                    @keydown.escape="open = false; activeIndex = -1;"
+                    @keydown="handleArrowKeys($event)"
                 />
             </div>
         @endif
 
-        <template x-for="[key, value] in filteredEntries" :key="key">
-            <div
-                @click="
-                    selected = key;
-                    selectedLabel = value;             // ← ثبّت نص الخيار
-                    $wire.set('{{ $wireModel }}', key); // ← حدّث Livewire
-                    open = false;
-                "
-                class="px-3 py-2 hover:bg-[rgb(var(--primary-100))] text-sm text-gray-700 cursor-pointer transition"
-                :class="{ 'bg-[rgb(var(--primary-500))] text-white': selected === key }"
-            >
-                <span x-text="value"></span>
-            </div>
-        </template>
+<template x-for="[key, value, index] in filteredEntries.map((entry, i) => [...entry, i])" :key="key">
+    <div
+        @click="
+            selected = key;
+            selectedLabel = value;
+            $wire.set('{{ $wireModel }}', key);
+            open = false;
+            activeIndex = -1;
+        "
+        :class="{
+            'bg-[rgb(var(--primary-100))]': index === activeIndex,
+            'bg-[rgb(var(--primary-500))] text-white': selected === key
+        }"
+        class="px-3 py-2 text-sm text-gray-700 cursor-pointer transition"
+        x-ref="option-${index}"
+        x-bind:data-index="index"
+    >
+        <span x-text="value"></span>
+    </div>
+</template>
 
         <div x-show="filteredEntries.length === 0" class="px-3 py-2 text-sm text-gray-500">
             لا توجد نتائج مطابقة

@@ -40,6 +40,10 @@
     <!-- حقل العرض -->
     <div 
         @click.stop="open = !open"
+        @keydown.tab="open = false"
+        @keydown.enter.prevent="open = !open"
+        @keydown.space.prevent="open = !open"
+        tabindex="0"
         class="{{ $width }} {{ $height }} {{ $fieldClass }} cursor-pointer flex justify-between items-center"
     >
         <span x-text="date ? formatDate(date) : '{{ $placeholder }}'" class="truncate"></span>
@@ -60,6 +64,7 @@
         @click.outside="open = false"
         class="absolute z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-md p-2 w-64"
         @click.stop
+        @keydown.escape="open = false"
     >
         <div class="flex justify-between items-center mb-2">
             <button 
