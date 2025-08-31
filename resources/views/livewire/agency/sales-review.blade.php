@@ -76,13 +76,7 @@
                 إعادة تعيين الفلاتر
             </button>
 
-            @can('accounts.export')
-                <x-primary-button type="button" @click="open('excel')">تقرير Excel</x-primary-button>
-            @endcan
 
-            @can('accounts.print')
-                <x-primary-button type="button" @click="open('pdf')">تقرير PDF</x-primary-button>
-            @endcan
         </div>
 
         @if ($sales->isEmpty())
