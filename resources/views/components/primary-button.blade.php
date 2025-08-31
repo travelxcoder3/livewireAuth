@@ -10,6 +10,11 @@
     'shadow' => 'shadow transition duration-300 cursor-pointer hover:opacity-70',
     'gradient' => true,
     'icon' => null,
+
+    // جديد: دعم حالة التحميل الموجّهة لـ Livewire
+    'loading' => false,        // فعّل السبينر وتعطيل الزر أثناء الطلب
+    'target'  => null,         // اسم الميثود: مثال downloadSingleInvoicePdf
+    'busyText'=> null,         // نص أثناء التحميل
 ])
 
 @php
@@ -20,7 +25,7 @@
         $baseStyle = "background-color: {$color};";
     }
 
-    $classes = "{$padding} {$fontSize} font-bold text-{$textColor} {$rounded} {$shadow} transition duration-300 flex items-center gap-2 justify-center " . ($width ?? '');
+    $classes = trim("{$padding} {$fontSize} font-bold text-{$textColor} {$rounded} {$shadow} transition duration-300 flex items-center gap-2 justify-center " . ($width ?? ''));
 @endphp
 
 @if ($href)
@@ -29,15 +34,34 @@
         @if (!is_null($icon))
             {!! $icon !== '' ? $icon : $defaultIcon !!}
         @endif
-        {{ $slot }}
+        <span>{{ $slot }}</span>
     </a>
 @else
     <button
         type="{{ $type }}"
-        {{ $attributes->merge(['class' => $classes, 'style' => $baseStyle]) }}>
+        {{ $attributes->merge(['class' => $classes, 'style' => $baseStyle]) }}
+        @if($loading) wire:loading.attr="disabled" @endif
+        @if($loading && $target) wire:target="{{ $target }}" @endif
+    >
         @if (!is_null($icon))
             {!! $icon !== '' ? $icon : $defaultIcon !!}
         @endif
-        {{ $slot }}
+
+        {{-- نص عادي أثناء السكون --}}
+        <span @if($loading) wire:loading.remove @if($target) wire:target="{{ $target }}" @endif @endif>
+            {{ $slot }}
+        </span>
+
+        {{-- سبينر + نص أثناء التحميل --}}
+        @if($loading)
+            <span class="inline-flex items-center gap-2"
+                  wire:loading.delay.shortest @if($target) wire:target="{{ $target }}" @endif>
+                <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+                    <path d="M4 12a8 8 0 018-8" fill="currentColor" class="opacity-75"></path>
+                </svg>
+                <span>{{ $busyText ?? 'جاري المعالجة…' }}</span>
+            </span>
+        @endif
     </button>
 @endif

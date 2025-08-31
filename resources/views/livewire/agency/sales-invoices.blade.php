@@ -312,15 +312,18 @@
 
                     <div class="flex items-center justify-between print:hidden">
                         <button class="underline text-sm" wire:click="editTax">تعديل الضريبة</button>
-                        <button
-                            @disabled(! $currentInvoiceId)
+                        <x-primary-button
+                            :loading="true"
+                            target="downloadSingleInvoicePdf"
+                            busyText="جاري انشاء الملف…"
+                            :disabled="! $currentInvoiceId"   {{-- ← استخدم خاصية disabled عادية --}}
                             wire:click="downloadSingleInvoicePdf({{ $currentInvoiceId ?? 'null' }})"
-                            class="text-white px-3 py-1 rounded-lg text-sm shadow transition duration-200 disabled:opacity-50"
-                            style="background: linear-gradient(to right, rgb(var(--primary-500)), rgb(var(--primary-600)));"
+                            class="px-3 py-1 text-sm disabled:opacity-50"
                         >
                             تحميل PDF
-                        </button>
+                        </x-primary-button>
                     </div>
+
                 @endif
             </div>
         </div>
@@ -385,7 +388,14 @@
                             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">
                             إلغاء
                         </button>
-                        <x-primary-button type="submit" wire:loading.attr="disabled">تأكيد وإنشاء الفاتورة</x-primary-button>
+                        <x-primary-button
+                            type="submit"
+                            :loading="true"
+                            target="createBulkInvoice"
+                            busyText="جاري انشاء الملف…"
+                        >
+                            تأكيد وإنشاء الفاتورة
+                        </x-primary-button>
                     </div>
                 </form>
             </div>
@@ -400,5 +410,3 @@
         }
     </style>
 </div>
-
-{{-- ======= سكربت Alpine لربط الفلاتر الحية وإرسالها ======= --}}
