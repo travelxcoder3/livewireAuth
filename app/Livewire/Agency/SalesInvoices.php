@@ -170,6 +170,7 @@ class SalesInvoices  extends Component
 
     public function openInvoiceModal($saleId)
     {
+        $this->clearToast();
         $sale = Sale::with(['customer','provider','account','agency','user','collections'])
             ->findOrFail($saleId);
 
@@ -192,6 +193,7 @@ class SalesInvoices  extends Component
 
     public function addTax(): void
     {
+        $this->clearToast();
         $saleId = (int) data_get($this->selectedSale, 'id', 0);
         if ($saleId <= 0) return;
 
@@ -311,6 +313,7 @@ class SalesInvoices  extends Component
             $this->sortDirection = 'asc';
         }
         $this->sortField = $field;
+        $this->clearToast();
     }
 
     public function save()
@@ -418,6 +421,7 @@ class SalesInvoices  extends Component
         } else {
             $this->selectedSales[] = $saleId;
         }
+        $this->clearToast();
     }
 
     public function openBulkInvoiceModal()
@@ -427,7 +431,7 @@ class SalesInvoices  extends Component
             $this->toastMessage = 'اختر عملية بيع واحدة على الأقل لإصدار فاتورة مجمّعة.';
             return;
         }
-
+         $this->clearToast();
 
         $this->bulkTaxAmount = 0.0;
         $this->bulkTaxIsPercent = true;
@@ -497,6 +501,7 @@ class SalesInvoices  extends Component
 
     public function createBulkInvoice()
     {
+        $this->clearToast();
         $this->validate([
             'invoiceEntityName' => 'required|string|max:255',
             'invoiceDate' => 'required|date',
@@ -577,4 +582,10 @@ class SalesInvoices  extends Component
             return $this->downloadBulkInvoicePdf($invoice->id);
         });
     }
-}
+
+    public function updatedPage()
+    {
+        $this->clearToast(); // ← لما تغيّر صفحة الـ pagination
+    }
+
+    }

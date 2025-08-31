@@ -157,8 +157,17 @@ class ProviderInvoiceOverview extends Component
         $this->clearToast();
     }
 
-    public function showDetails($index) { $this->activeRow = $this->groups[$index] ?? null; }
-    public function closeModal() { $this->activeRow = null; }
+    public function showDetails($index)
+    {
+        $this->clearToast();
+        $this->activeRow = $this->groups[$index] ?? null;
+    }
+    public function closeModal()
+    {
+        $this->clearToast();
+        $this->activeRow = null;
+    }
+
 
     public function resetFilters(): void
     {
@@ -212,6 +221,7 @@ class ProviderInvoiceOverview extends Component
 
     public function openInvoiceModal(string $groupKey)
     {
+        $this->clearToast();
         $this->currentGroupKey = $groupKey;
         $this->taxAmount   = 0.0;
         $this->taxIsPercent= true;
@@ -225,6 +235,7 @@ class ProviderInvoiceOverview extends Component
 
     public function addTaxForGroup(): void
     {
+        $this->clearToast();
         if (!$this->currentGroupKey) return;
 
         $base = $this->groupNet($this->currentGroupKey);
@@ -362,7 +373,7 @@ class ProviderInvoiceOverview extends Component
                 $this->toastMessage = 'اختر مجموعة واحدة على الأقل لإصدار فاتورة مجمّعة.';
                 return;
             }
-
+        $this->clearToast();
         $this->bulkTaxAmount    = 0.0;
         $this->bulkTaxIsPercent = true;
 
@@ -382,6 +393,7 @@ class ProviderInvoiceOverview extends Component
 
     public function createBulkInvoice()
     {
+        $this->clearToast();
         $this->validate([
             'invoiceEntityName' => 'required|string|max:255',
             'invoiceDate'       => 'required|date',
@@ -484,6 +496,7 @@ class ProviderInvoiceOverview extends Component
 
     public function exportSelected()
     {
+        $this->clearToast();
         if (empty($this->selectedGroups)) return;
         $ids = implode(',', array_map('strval', $this->selectedGroups));
         return redirect()->route('agency.provider-invoices.export', ['provider' => $this->provider->id, 'ids' => $ids]);

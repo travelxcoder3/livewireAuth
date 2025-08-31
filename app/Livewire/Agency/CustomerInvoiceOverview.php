@@ -192,15 +192,18 @@ $refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses)
         } else {
             $this->selectedGroups[] = $key;
         }
+        $this->clearToast();
     }
 
     public function showDetails($index)
     {
+        $this->clearToast();
         $this->activeSale = $this->collections[$index];
     }
 
     public function closeModal()
     {
+        $this->clearToast();
         $this->activeSale = null;
     }
 
@@ -284,6 +287,7 @@ protected function sanitizeCollectionNote(?string $note): string
 
     public function exportSingle(string $groupKey)
 {
+    $this->clearToast();
     $payload = base64_encode(json_encode([(string)$groupKey]));
 
     return redirect()->route('agency.customer-invoices-pdf.print', [
@@ -294,6 +298,7 @@ protected function sanitizeCollectionNote(?string $note): string
 
 public function exportSelected()
 {
+    $this->clearToast();
     if (empty($this->selectedGroups)) {
         $this->dispatch('notify', type: 'warning', message: 'اختر مستفيدًا واحدًا على الأقل.');
         return;
@@ -326,6 +331,7 @@ public float $bulkSubtotal = 0.0;
 // افتح مودال فردي
 public function askSingleTax(string $groupKey)
 {
+    $this->clearToast(); 
     $this->singleTaxGroupKey = (string)$groupKey;
     $this->singleTaxAmount   = '';
     $this->singleTaxIsPercent = true;
@@ -335,6 +341,7 @@ public function askSingleTax(string $groupKey)
 // أكد ونزّل فردي
 public function confirmSingleTax()
 {
+    $this->clearToast();
     $amt = (float)($this->singleTaxAmount ?: 0);
     $payload = base64_encode(json_encode([(string)$this->singleTaxGroupKey]));
     $this->showSingleTaxModal = false;
@@ -355,6 +362,7 @@ public function confirmSingleTax()
             $this->toastMessage = 'اختر مستفيدًا واحدًا على الأقل لإصدار فاتورة مجمّعة.';
             return;
         }
+        $this->clearToast();
 
         // احسب Subtotal تقريبي من العناصر الظاهرة المختارة
         $this->bulkSubtotal = collect($this->collections)
@@ -373,6 +381,7 @@ public function confirmSingleTax()
     // أكد ونزّل مجمّع
     public function confirmBulkTax()
     {
+        $this->clearToast();
         $payload = base64_encode(json_encode(array_values($this->selectedGroups)));
         $this->showBulkTaxModal = false;
 

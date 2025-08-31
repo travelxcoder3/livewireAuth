@@ -177,7 +177,17 @@
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-3 py-2 text-green-700">{{ number_format($col->amount, 2) }} $</td>
                                     <td class="px-3 py-2">{{ $col->payment_date }}</td>
-                                    <td class="px-3 py-2">{{ $col->note ?? '-' }}</td>
+                                   @php
+    $raw = trim($col->note ?? '');
+
+    // حذف UUID + (سجل #..)
+    $clean = preg_replace('/#[-0-9a-fA-F]{36}/u', '', $raw);      // يحذف UUID
+    $clean = preg_replace('/\(سجل\s*#\d+\)/u', '', $clean);       // يحذف (سجل #11)
+    $clean = trim($clean);
+@endphp
+
+<td class="px-3 py-2">{{ $clean !== '' ? $clean : '-' }}</td>
+
                                 </tr>
                             @endforeach
                         </tbody>

@@ -21,18 +21,22 @@ class CustomerAccountsCpllectionsTable
             ],
 
             [
-                'key' => 'actions',
-                'label' => 'تفاصيل',
+                'key'     => 'actions',
+                'label'   => 'الإجراءات',
+                'format'  => 'custom',
                 'actions' => [
                     [
-                        'type' => 'link',
                         'label' => 'تفاصيل',
-                        'icon' => 'fas fa-eye',
-                        'url' => '/agency/customer-accounts/:id/history',
-                        'class' => 'text-blue-600 hover:text-blue-800',
+                        'icon'  => 'fas fa-eye',
+                        'url'   => '/agency/customer-accounts/:id/history',
+                        'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))] cursor-default',
                     ],
                 ],
             ],
+
+
+
+
         ];
     }
 }

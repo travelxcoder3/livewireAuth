@@ -27,10 +27,15 @@ class MonthlyTargets extends Component
 
     public $daysToDebt = 30;
     public $debtBehavior = 'deduct_commission_until_paid';
+public function updatedSim()
+{
+    $this->clearToast();
+}
 
 
 public function simulate()
 {
+    $this->clearToast();
     $netMargin = max((float)$this->sim['sale'] - (float)$this->sim['cost'], 0);
 
     // حساب عمولة الموظف
@@ -116,6 +121,7 @@ public function simulate()
   
     public function loadMonth(): void
     {
+        $this->clearToast();
         $this->loadRows();
         $this->loadCollectorMonthly();
     }
@@ -174,6 +180,7 @@ public function simulate()
 
     public function fixEmployeeRate(): void
     {
+        $this->clearToast();
         if ($this->employeeRateLocked) { return; }
 
         // ممنوع التعديل إن وُجدت مبيعات في الشهر الجاري المختار
@@ -209,6 +216,7 @@ public function simulate()
     
     public function copyCollectorFromPrev(): void
     {
+        $this->clearToast();
         // ممنوع إذا كان هذا الشهر مُنشأ ومقفول أو فيه تحصيلات
         if ($this->monthHasCollections()) {
             $this->toastType = 'error';
@@ -303,6 +311,7 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
 
     public function copyEmpFromPrev(): void
     {
+        $this->clearToast();
         $prev = now()->setDate($this->empYear, $this->empMonth, 1)->subMonth();
         $prevTargets = EmployeeMonthlyTarget::whereIn('user_id', collect($this->rows)->pluck('user_id'))
             ->where('year',  $prev->year)
@@ -325,6 +334,7 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
 
     public function saveAll(): void
     {
+        $this->clearToast();
         $agencyId = Auth::user()->agency_id;
 
         $saleUserIds = $this->saleUserIdsForMonth();
@@ -393,6 +403,7 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
     
     public function saveRow(int $i): void
     {
+        $this->clearToast();
         $r = $this->rows[$i] ?? null;
         if (!$r) { return; }
 
@@ -443,6 +454,7 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
 
 public function saveDebtPolicy()
 {
+    $this->clearToast();
     // التحقق من البيانات المدخلة قبل حفظها
     $this->validate([
         'daysToDebt'   => 'required|integer|min:0',
@@ -506,6 +518,7 @@ public function saveDebtPolicy()
     /** إنشاء ضبط الشهر لأول مرة فقط ثم يُقفل نهائياً */
     public function createCollectorForMonth(): void
     {
+        $this->clearToast();
         if ($this->monthHasCollections()) {
             $this->toastType = 'error';
 $this->successMessage = 'مرفوض: توجد تحصيلات في هذا الشهر؛ لا يمكن إنشاء أو تعديل قواعد التحصيل.';
@@ -550,6 +563,7 @@ $this->successMessage = 'هذه القواعد موجودة ومقفولة سل�
 
     public function fixCollectorBaselines(): void
     {
+        $this->clearToast();
         if ($this->collectorBaselinesLocked) { return; }
 
         \DB::transaction(function () {
@@ -590,6 +604,7 @@ $this->successMessage = 'هذه القواعد موجودة ومقفولة سل�
 
     public function toggleLock(int $userId): void
     {
+        $this->clearToast();
         // إن لدى الموظف مبيعات في هذا الشهر نمنع فك القفل أو تغييره
         if ($this->employeeMonthHasSales($userId)) {
             $this->toastType = 'error';
@@ -608,6 +623,11 @@ $this->successMessage = 'هذه القواعد موجودة ومقفولة سل�
             $rec->save();
             $this->loadRows();
         }
+    }
+
+    public function updatedTab()
+    {
+        $this->clearToast();
     }
 
 

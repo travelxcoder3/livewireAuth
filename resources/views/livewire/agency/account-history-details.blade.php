@@ -26,44 +26,43 @@
 
     <!-- جدول العمليات -->
     <div class="overflow-x-auto rounded-xl shadow-lg bg-white">
-        <table class="min-w-full divide-y divide-gray-200 text-sm text-right">
+        <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
             <thead class="bg-gray-100 text-gray-600">
                 <tr>
-                    <th class="px-3 py-2">اسم المستفيد</th>
-                    <th class="px-3 py-2">تاريخ البيع</th>
-                    <th class="px-3 py-2">الخدمة</th>
-                <th class="px-3 py-2">سعر الخدمة (أصل)</th>
-                <th class="px-3 py-2">الاستردادات</th>
-                <th class="px-3 py-2">المحصل (إجمالي)</th>
-                <th class="px-3 py-2">المتبقي / رصيد للعميل</th>
-
-                    <th class="px-3 py-2">الإجراء</th>
+                    <th class="px-2 py-1">اسم المستفيد</th>
+                    <th class="px-2 py-1">تاريخ البيع</th>
+                    <th class="px-2 py-1">الخدمة</th>
+                    <th class="px-2 py-1">سعر الخدمة (أصل)</th>
+                    <th class="px-2 py-1">الاستردادات</th>
+                    <th class="px-2 py-1">المحصل (إجمالي)</th>
+                    <th class="px-2 py-1">المتبقي / رصيد للعميل</th>
+                    <th class="px-2 py-1">الإجراء</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse($collections as $item)
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2">{{ $item->beneficiary_name }}</td>
-                        <td class="px-3 py-2">{{ $item->sale_date }}</td>
-                        <td class="px-3 py-2">{{ $item->service_label }}</td>
+                        <td class="px-2 py-1">{{ $item->beneficiary_name }}</td>
+                        <td class="px-2 py-1">{{ $item->sale_date }}</td>
+                        <td class="px-2 py-1">{{ $item->service_label }}</td>
                         <td class="px-3 py-2 text-blue-700">{{ number_format($item->invoice_total_true, 2) }}</td>
                         <td class="px-3 py-2 text-rose-700">{{ number_format($item->refund_total, 2) }}</td>
                         <td class="px-3 py-2 text-green-700">
                             {{ number_format($item->total_collected, 2) }}
                         </td>
 
-                    <td class="px-3 py-2">
-                        @if ($item->remaining_for_customer > 0)
-                            <span class="text-red-600">مدين: {{ number_format($item->remaining_for_customer, 2) }}</span>
-                        @elseif ($item->remaining_for_company > 0)
-                            <span class="text-green-600">للعميل: {{ number_format($item->remaining_for_company, 2) }}</span>
-                        @else
-                            <span class="text-gray-500">تم السداد بالكامل</span>
-                        @endif
-                    </td>
+                        <td class="px-2 py-1">
+                            @if ($item->remaining_for_customer > 0)
+                                <span class="text-red-600">مدين: {{ number_format($item->remaining_for_customer, 2) }}</span>
+                            @elseif ($item->remaining_for_company > 0)
+                                <span class="text-green-600">للعميل: {{ number_format($item->remaining_for_company, 2) }}</span>
+                            @else
+                                <span class="text-gray-500">تم السداد بالكامل</span>
+                            @endif
+                        </td>
 
 
-                        <td class="px-3 py-2">
+                        <td class="px-2 py-1">
                             <button wire:click="showDetails({{ $loop->index }})"
                                 class="transition duration-200 font-semibold" style="color: rgb(var(--primary-600));"
                                 onmouseover="this.style.color='rgb(var(--primary-700))'"
@@ -99,33 +98,40 @@
                 <!-- جدول تفاصيل العمليات -->
                 <div class="mb-6 overflow-x-auto rounded-xl shadow-sm bg-white">
                     <h4 class="font-medium text-gray-800 mb-2">تفاصيل العمليات للمستفيد</h4>
-                    <table class="min-w-full divide-y divide-gray-200 text-sm text-right">
+                    <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
                         <thead class="bg-gray-100 text-gray-600">
                             <tr>
-                                <th class="px-3 py-2">المرحلة</th>
-                                <th class="px-3 py-2">التاريخ</th>
-                                <th class="px-3 py-2">سعر الخدمة</th>
-                                <th class="px-3 py-2">المدفوع</th>
-                                <th class="px-3 py-2">الحالة</th>
-                                <th class="px-3 py-2">المرجع</th>
+                                <th class="px-2 py-1">المرحلة</th>
+                                <th class="px-2 py-1">التاريخ</th>
+                                <th class="px-2 py-1">سعر الخدمة</th>
+                                <th class="px-2 py-1">المدفوع</th>
+                                <th class="px-2 py-1">الحالة</th>
+                                <th class="px-2 py-1">المرجع</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @foreach ($activeSale->scenarios ?? [] as $index => $s)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-3 py-2">
+                                    <td class="px-2 py-1">
                                         @if ($index === 0)
                                             الحجز الأول
                                         @else
                                             {{ $s['status'] ?? 'تعديل' }}
                                         @endif
                                     </td>
-                                    <td class="px-3 py-2">{{ $s['date'] ?? '-' }}</td>
+                                    <td class="px-2 py-1">{{ $s['date'] ?? '-' }}</td>
                                     <td class="px-3 py-2 text-blue-700">${{ number_format($s['usd_sell'], 2) }}</td>
                                     <td class="px-3 py-2 text-green-700">${{ number_format($s['amount_paid'], 2) }}
                                     </td>
-                                    <td class="px-3 py-2">{{ $s['status'] ?? '-' }}</td>
-                                    <td class="px-3 py-2">{{ $s['note'] ?? '-' }}</td>
+                                    <td class="px-2 py-1">{{ $s['status'] ?? '-' }}</td>
+                                  @php
+                                    $raw = trim($s['note'] ?? '');
+                                    $clean = preg_replace('/#?[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}#?/u','',$raw);
+                                    $clean = preg_replace('/\(\s*سجل\s*#?\s*\d+\s*\)/u','',$clean);
+                                    $clean = trim(preg_replace('/\s{2,}/u',' ',$clean));
+                                    @endphp
+                                    <td class="px-2 py-1">{{ $clean !== '' ? $clean : '-' }}</td>
+
                                 </tr>
                             @endforeach
                         </tbody>
@@ -133,28 +139,26 @@
                 </div>
 
                 <!-- جدول سجل التحصيلات -->
-                <div class="overflow-x-auto rounded-xl shadow-sm bg-white">
-                    <h4 class="font-medium text-gray-800 mb-2">سجل التحصيلات</h4>
-                    <table class="min-w-full divide-y divide-gray-200 text-sm text-right">
-                        <thead class="bg-gray-100 text-gray-600">
-                            <tr>
-                                <th class="px-3 py-2">المبلغ</th>
-                                <th class="px-3 py-2">التاريخ</th>
-                                <th class="px-3 py-2">ملاحظات</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            @foreach ($activeSale->collections ?? [] as $col)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-3 py-2 text-green-700">{{ number_format($col['amount'], 2) }} $</td>
-                                    <td class="px-3 py-2">{{ $col['payment_date'] }}</td>
-                                    <td class="px-3 py-2">{{ $col['note'] ?? '-' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                @php
+                    $cols = [
+                        ['key' => 'amount',       'label' => 'المبلغ',  'format' => 'money', 'color' => 'green-700'],
+                        ['key' => 'payment_date', 'label' => 'التاريخ', 'format' => 'date'],
+                        ['key' => 'note',         'label' => 'ملاحظات', 'format' => function($v){
+                            $raw = trim((string)$v);
+                            $clean = preg_replace('/#?[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}#?/u','',$raw);
+                            $clean = preg_replace('/\(\s*سجل\s*#?\s*\d+\s*\)/u','',$clean);
+                            $clean = trim(preg_replace('/\s{2,}/u',' ',$clean));
+                            return $clean !== '' ? e($clean) : '-';
+                        }],
+                    ];
+                @endphp
+
+                <x-data-table :rows="$activeSale->collections" :columns="$cols" />
+
+
+
             </div>
         </div>
     @endif
+    
 </div>

@@ -61,4 +61,16 @@ class Collection extends Model
         return $this->belongsTo(User::class);
     }
 
+
+    public function getCleanNoteAttribute(): string
+{
+    $raw = trim((string) $this->note);
+    if ($raw === '') return '';
+
+    if (preg_match('/سداد\s+محفظة\s+لمجموعة\s*#[-0-9a-fA-F]{36}\s*\(سجل\s*#\d+\)/u', $raw)) return '';
+    if (preg_match('/^سداد\s+محفظة/u', $raw)) return '';
+
+    return $raw;
+}
+
 }

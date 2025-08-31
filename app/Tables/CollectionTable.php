@@ -9,22 +9,22 @@ class CollectionTable
     return [
         ['key' => 'index', 'label' => '#'],
         ['key' => 'name', 'label' => 'اسم العميل'],
-[
-    'key' => 'remaining_for_customer',
-    'label' => 'متبقي على العميل',
-    'format' => 'money',
-],
-[
-    'key' => 'remaining_for_company',
-    'label' => 'متبقي للعميل',
-    'format' => 'money',
-],
-[
-    'key' => 'net_due',
-    'label' => 'الفارق ',
-    'format' => 'money',
-    'color' => fn($value) => $value > 0 ? 'red-700' : ($value < 0 ? 'green-700' : 'gray-400'),
-],
+        [
+            'key' => 'remaining_for_customer',
+            'label' => 'متبقي على العميل',
+            'format' => 'money',
+        ],
+        [
+            'key' => 'remaining_for_company',
+            'label' => 'متبقي للعميل',
+            'format' => 'money',
+        ],
+    // [
+    //     'key' => 'net_due',
+    //     'label' => 'الفارق ',
+    //     'format' => 'money',
+    //     'color' => fn($value) => $value > 0 ? 'red-700' : ($value < 0 ? 'green-700' : 'gray-400'),
+    // ],
 
         ['key' => 'last_payment', 'label' => 'آخر سداد', 'format' => 'date'],
         ['key' => 'customer_type', 'label' => 'نوع العميل'],
