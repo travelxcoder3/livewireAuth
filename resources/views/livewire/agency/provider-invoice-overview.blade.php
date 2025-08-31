@@ -1,45 +1,29 @@
 <?php $currency = Auth::user()->agency->currency ?? 'USD'; ?>
 
-<style>
-/* تعديلات للموبايل فقط ≤640px */
-@media (max-width:640px){
-  .prov-head{flex-direction:column; align-items:flex-start; gap:.5rem}
-  .prov-head .btn-wrap{width:100%; display:flex; gap:.5rem; flex-wrap:wrap}
-  .prov-head .btn-wrap > *{flex:1 1 auto}
-  .prov-table{font-size:12px}
-  /* إخفاء أعمدة ثقيلة: الخدمة(4) + أصل التكلفة(5) + الاستردادات(6) */
-  .prov-table thead th:nth-child(4),
-  .prov-table tbody td:nth-child(4),
-  .prov-table thead th:nth-child(5),
-  .prov-table tbody td:nth-child(5),
-  .prov-table thead th:nth-child(6),
-  .prov-table tbody td:nth-child(6){display:none}
-  .prov-modal{align-items:center !important; padding-top:0 !important}
-}
-</style>
-
 <div class="space-y-6" x-data="{ sel: @entangle('selectedGroups') }">
-    <div class="flex justify-between items-center mb-1 prov-head">
+    <x-toast :message="$toastMessage" :type="$toastType ?? 'success'" />
+    <div class="flex justify-between items-center mb-1">
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
             فاتورة المزوّد   : {{ $provider->name }}
         </h2>
 
-        <div class="flex items-center gap-2 btn-wrap">
+        <div class="flex items-center gap-2">
             <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
             <?php $totalBuy = collect($groups ?? [])->sum('net_cost'); ?>
             <input type="text" value="{{ number_format($totalBuy, 2) }}" readonly
                    class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center">
 
             <?php if (count($groups ?? []) > 0) { ?>
-                <x-primary-button type="button" wire:click="openBulkInvoiceModal" class="px-3 py-2 text-sm rounded-lg w-full sm:w-auto">
+                <x-primary-button type="button" wire:click="openBulkInvoiceModal" class="px-3 py-2 text-sm rounded-lg">
                     إصدار فاتورة مجمعة
                 </x-primary-button>
             <?php } ?>
 
+
             <a href="{{ route('agency.provider-detailed-invoices') }}"
-               class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition text-sm font-medium
-                      bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] hover:shadow-md hover:text-[rgb(var(--primary-700))] w-full sm:w-auto">
+               class="flex items-center gap-2 px-4 py-2 rounded-lg border transition text-sm font-medium
+                      bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] hover:shadow-md hover:text-[rgb(var(--primary-700))]">
                 <svg class="h-5 w-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
@@ -50,13 +34,13 @@
 
     <!-- فلاتر -->
     <div class="bg-white rounded-xl shadow-md p-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div class="grid md:grid-cols-4 gap-4 items-end">
             <x-input-field name="beneficiary_search" label="بحث باسم المستفيد" wireModel="search" placeholder="مثال: أمير علي"/>
             <x-date-picker name="fromDate" label="من تاريخ" wireModel="fromDate" />
             <x-date-picker name="toDate"   label="إلى تاريخ" wireModel="toDate" />
-            <div class="mt-1 md:mt-3 flex md:justify-end">
+            <div class="mt-3 flex justify-end">
                 <button type="button" wire:click="resetFilters"
-                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm w-full md:w-auto">
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">
                     إعادة تعيين الفلاتر
                 </button>
             </div>
@@ -80,7 +64,7 @@
         class="bg-white rounded-xl shadow-md overflow-hidden"
     >
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-[11px] sm:text-xs text-right prov-table">
+            <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
                 <thead class="bg-gray-100 text-gray-600">
                     <tr>
                         <th class="px-2 py-1 text-center">
@@ -141,7 +125,7 @@
 
     <!-- مودال التفاصيل -->
     <?php if (!empty($activeRow)) { ?>
-        <div class="fixed inset-0 z-50 flex items-start sm:items-start prov-modal justify-center pt-24 sm:pt-24 backdrop-blur-sm bg-black/30">
+        <div class="fixed inset-0 z-50 flex items-start justify-center pt-24 backdrop-blur-sm bg-black/30">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl p-6 relative max-h-[80vh] overflow-y-auto">
                 <button wire:click="closeModal" class="absolute top-2 left-3 text-gray-500 hover:text-red-600 text-lg">&times;</button>
                 <h3 class="text-lg font-bold mb-4 text-[rgb(var(--primary-700))] border-b pb-2">
@@ -214,18 +198,21 @@
                     <div class="flex justify-end gap-2 mt-2">
                         <x-primary-button wire:click="addTaxForGroup" wire:loading.attr="disabled">حفظ/تحديث</x-primary-button>
                         @if($currentInvoiceId)
-                          <x-primary-button wire:click="downloadSingleInvoicePdf">تحميل PDF</x-primary-button>
-                        @endif
+    <x-primary-button wire:click="downloadSingleInvoicePdf">
+        تحميل PDF
+    </x-primary-button>
+@endif
                     </div>
                 </div>
             </div>
         </div>
     <?php } ?>
 
-    <!-- مودال الفاتورة المجمعة -->
-    <?php if (!empty($showBulkInvoiceModal)) { ?>
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" x-cloak>
-            <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+        <!-- مودال الفاتورة المجمعة -->
+        <?php if (!empty($showBulkInvoiceModal)) { ?>
+            <div class="fixed inset-0 z-50 flex items-start justify-center pt-24 backdrop-blur-sm bg-black/40" x-cloak>
+                <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+
                 <button wire:click="$set('showBulkInvoiceModal', false)"
                         class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
 
