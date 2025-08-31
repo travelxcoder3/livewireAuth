@@ -21,7 +21,7 @@
             class="flex items-center gap-2 text-white font-bold px-4 py-2 rounded-xl shadow-md transition text-sm hover:shadow-lg"
             style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
         <i class="fas fa-file-export"></i>
-        <span>تصدير</span>
+        <span>تصدير التقارير </span>
         <i class="fas fa-chevron-down text-xs" :class="{ 'rotate-180': open }"></i>
     </button>
 
@@ -61,7 +61,7 @@
 
             <button type="button" wire:click="resetFilters" 
                     class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm flex items-center gap-2 w-full sm:w-auto">
-                اعاده تعيين الحقول 
+                اعاده تعيين الفلاتر 
             </button>
 
             </div>

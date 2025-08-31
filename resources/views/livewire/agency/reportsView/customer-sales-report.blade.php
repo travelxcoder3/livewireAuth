@@ -51,38 +51,65 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-md p-4">
-        <div class="grid md:grid-cols-3 gap-4">
-            <x-select-field label="العميل" name="customer" wireModel="customerId"
-                :options="$customers->pluck('name','id')->toArray()" placeholder="جميع العملاء" />
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <x-select-field 
+            label="العميل" 
+            name="customer" 
+            wireModel="customerId"
+            :options="$customers->pluck('name','id')->toArray()" 
+            placeholder="جميع العملاء" 
+        />
 
-            <x-select-field label="نوع الخدمة" name="service_type" wireModel="serviceTypeFilter"
-                :options="$serviceTypes->pluck('label','id')->toArray()" placeholder="جميع الخدمات" />
+        <x-select-field 
+            label="نوع الخدمة" 
+            name="service_type" 
+            wireModel="serviceTypeFilter"
+            :options="$serviceTypes->pluck('label','id')->toArray()" 
+            placeholder="جميع الخدمات" 
+        />
 
-            <x-select-field label="المزوّد" name="provider" wireModel="providerFilter"
-                :options="$providers->pluck('name','id')->toArray()" placeholder="جميع المزودين" />
+        <x-select-field 
+            label="المزوّد" 
+            name="provider" 
+            wireModel="providerFilter"
+            :options="$providers->pluck('name','id')->toArray()" 
+            placeholder="جميع المزودين" 
+        />
 
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-semibold text-gray-600">من تاريخ</label>
-                <input type="date" wire:model="startDate" class="{{ $fieldClass }}">
-            </div>
-            <div class="flex flex-col gap-1">
-                <label class="text-sm font-semibold text-gray-600">إلى تاريخ</label>
-                <input type="date" wire:model="endDate" class="{{ $fieldClass }}">
-            </div>
+        <x-date-picker 
+            name="start_date" 
+            label="من تاريخ" 
+            placeholder="اختر التاريخ" 
+            wireModel="startDate" 
+            errorName="startDate"
+        />
 
-            <div class="flex flex-col gap-1 md:col-span-3">
-                <label class="text-sm font-semibold text-gray-600">بحث</label>
-                <input type="text" wire:model="search" class="{{ $fieldClass }}" placeholder="اسم المستفيد، PNR، المرجع...">
-            </div>
-        </div>
+        <x-date-picker 
+            name="end_date" 
+            label="إلى تاريخ" 
+            placeholder="اختر التاريخ" 
+            wireModel="endDate" 
+            errorName="endDate"
+        />
 
-        <div class="flex justify-end mt-4">
-            <button wire:click="resetFilters"
-                class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">
-                إعادة تعيين الفلاتر
-            </button>
-        </div>
+        <x-input-field 
+            name="search" 
+            label="بحث" 
+            wireModel="search"
+            placeholder="اسم المستفيد، PNR، المرجع..." 
+            fieldClass="{{ $fieldClass }}" 
+        />
     </div>
+
+    <div class="flex justify-end mt-4">
+        <button 
+            wire:click="resetFilters"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm"
+        >
+            إعادة تعيين الفلاتر
+        </button>
+    </div>
+</div>
 
     {{-- الوضع 1: ملخص لكل العملاء --}}
     @if (empty($this->customerId))
