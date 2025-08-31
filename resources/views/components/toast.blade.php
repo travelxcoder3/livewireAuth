@@ -6,9 +6,11 @@
 @php
     $bgColors = [
         'success' => 'bg-[rgb(var(--primary-600))] text-white',
-          'error' => 'bg-red-600 text-white',
-        'warning' => 'bg-[rgb(var(--warning-400),255,193,7)] text-black',
-        'info' => 'bg-[rgb(var(--info-600),59,130,246)] text-white',
+        'error' => 'bg-red-600 text-white',
+        'warning' => 'bg-[rgb(var(--primary-400))] text-white',
+        'info'    => 'bg-[rgb(var(--primary-500))] text-white',
+
+
     ];
 
     $svgs = [
@@ -26,7 +28,9 @@
         x-init="show = true; setTimeout(() => show = false, 3000)"
         x-show="show"
         x-transition
-        class="fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 {{ $bgColors[$type] ?? 'bg-[rgb(var(--primary-600))] text-white' }}"
+        class="fixed top-20 sm:top-6 right-6 z-[1000] px-4 py-3 rounded-2xl shadow-lg ring-1 ring-black/10
+           text-sm font-medium flex items-center gap-3 {{ $bgColors[$type] ?? 'bg-[rgb(var(--primary-600))] text-white' }}"
+
     >
         <span class="w-5 h-5" aria-hidden="true">{!! $svgs[$type] ?? $svgs['success'] !!}</span>
         <span class="flex-1">{{ $message }}</span>

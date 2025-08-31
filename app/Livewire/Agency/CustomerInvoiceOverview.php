@@ -26,6 +26,15 @@ class CustomerInvoiceOverview extends Component
     public string $fromDate = '';   // yyyy-mm-dd
     public string $toDate   = '';   // yyyy-mm-dd
 
+    public ?string $toastMessage = null;
+    public ?string $toastType    = null;
+
+    private function clearToast(): void
+    {
+        $this->toastMessage = null;
+        $this->toastType = null;
+    }
+
     public function mount(Customer $customer)
     {
         abort_unless($customer->agency_id === Auth::user()->agency_id, 403);
@@ -114,13 +123,15 @@ $refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses)
                     'note'        => $sale->reference ?? '-',
                 ];
             }),
-            'collections' => $sales->flatMap->collections->map(function ($col) {
-                return [
-                    'amount'       => $col->amount,
-                    'payment_date' => $col->payment_date,
-                    'note'         => $col->note,
-                ];
-            }),
+'collections' => $sales->flatMap->collections->map(function ($col) {
+    $note = $this->sanitizeCollectionNote($col->note);
+    return [
+        'amount'       => $col->amount,
+        'payment_date' => $col->payment_date,
+        'note'         => $note,
+    ];
+}),
+
         ];
     })->values();
 
@@ -157,6 +168,7 @@ $refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses)
         // حافظ على التحديد للعناصر الظاهرة فقط
         $visibleKeys = $filtered->pluck('group_key')->all();
         $this->selectedGroups = array_values(array_intersect($this->selectedGroups, $visibleKeys));
+        $this->clearToast(); // ← لا تعيد إظهار التوست بعد التبديل
     }
 
     public function updated($name, $value)
@@ -208,6 +220,7 @@ $refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses)
                 $allVisible
             )));
         }
+        $this->clearToast(); // ← لا تعيد إظهار التوست بعد التبديل
     }
     /** يطبع النص العربي للمقارنة: يحذف التمديد ويوحّد الألف/الياء/التاء المربوطة والهمزات */
     protected function normalize(string $s): string
@@ -231,6 +244,23 @@ $refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses)
         // تحويل إلى حروف صغيرة (يدعم العربية)
         return mb_strtolower($s);
     }
+// يزيل الزيادات مثل: "لمجموعة #<UUID> (سجل #12)" من الملاحظات المعروضة فقط
+protected function sanitizeCollectionNote(?string $note): string
+{
+    $n = (string)($note ?? '');
+
+    // احذف "لمجموعة #<uuid>"
+    $n = preg_replace('/\s*لمجموعة\s*#?[0-9a-fA-F-]{6,}\s*/u', ' ', $n);
+
+    // احذف "(سجل #123)" أو "(سجّل #123)"
+    $n = preg_replace('/\s*\((?:سجل|سجّل)\s*#\d+\)\s*/u', ' ', $n);
+
+    // نظّف المسافات والرموز المتبقية في النهاية
+    $n = trim(preg_replace('/\s{2,}/u', ' ', $n));
+    $n = preg_replace('/[\-\–:\.،]\s*$/u', '', $n);
+
+    return trim($n);
+}
 
     public function render()
     {
@@ -246,10 +276,8 @@ $refundTotal = $sales->filter(function ($x) use ($refundStatuses, $voidStatuses)
         $this->fromDate = '';
         $this->toDate   = '';
 
-        // لو تحب تلغي التحديد بعد التنظيف (اختياري)
-        // $this->selectedGroups = [];
-
         $this->applyFilters();
+        $this->clearToast(); // ← لا تعيد إظهار التوست بعد التبديل
     }
 
   
@@ -319,36 +347,42 @@ public function confirmSingleTax()
     ]);
 }
 
-// افتح مودال مجمّع
-public function askBulkTax()
-{
-    if (empty($this->selectedGroups)) {
-        $this->dispatch('notify', type: 'warning', message: 'اختر مستفيدًا واحدًا على الأقل.');
-        return;
+    // افتح مودال مجمّع
+    public function askBulkTax()
+    {
+        if (empty($this->selectedGroups)) {
+            $this->toastType = 'error';
+            $this->toastMessage = 'اختر مستفيدًا واحدًا على الأقل لإصدار فاتورة مجمّعة.';
+            return;
+        }
+
+        // احسب Subtotal تقريبي من العناصر الظاهرة المختارة
+        $this->bulkSubtotal = collect($this->collections)
+            ->filter(fn($r)=>in_array((string)$r->group_key, $this->selectedGroups, true))
+            ->sum(fn($r)=>(float)($r->usd_sell ?? $r->net_total ?? 0)); // توافقًا مع بنائك
+        $this->bulkTaxAmount   = '';
+        $this->bulkTaxIsPercent = true;
+        $this->showBulkTaxModal = true;
     }
 
-    // احسب Subtotal تقريبي من العناصر الظاهرة المختارة
-    $this->bulkSubtotal = collect($this->collections)
-        ->filter(fn($r)=>in_array((string)$r->group_key, $this->selectedGroups, true))
-        ->sum(fn($r)=>(float)($r->usd_sell ?? $r->net_total ?? 0)); // توافقًا مع بنائك
-    $this->bulkTaxAmount   = '';
-    $this->bulkTaxIsPercent = true;
-    $this->showBulkTaxModal = true;
-}
+    public function updatedSelectedGroups()
+    {
+        $this->clearToast();
+    }
 
-// أكد ونزّل مجمّع
-public function confirmBulkTax()
-{
-    $payload = base64_encode(json_encode(array_values($this->selectedGroups)));
-    $this->showBulkTaxModal = false;
+    // أكد ونزّل مجمّع
+    public function confirmBulkTax()
+    {
+        $payload = base64_encode(json_encode(array_values($this->selectedGroups)));
+        $this->showBulkTaxModal = false;
 
-    return redirect()->route('agency.customer-invoices-bulk.print', [
-        'customer'   => $this->customer->id,
-        'sel'        => $payload,
-        'tax'        => (float)($this->bulkTaxAmount ?: 0),
-        'is_percent' => $this->bulkTaxIsPercent ? 1 : 0,
-    ]);
-}
+        return redirect()->route('agency.customer-invoices-bulk.print', [
+            'customer'   => $this->customer->id,
+            'sel'        => $payload,
+            'tax'        => (float)($this->bulkTaxAmount ?: 0),
+            'is_percent' => $this->bulkTaxIsPercent ? 1 : 0,
+        ]);
+    }
 
 
 }

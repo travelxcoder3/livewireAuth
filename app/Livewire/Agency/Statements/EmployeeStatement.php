@@ -136,7 +136,8 @@ class EmployeeStatement extends Component
         $idx  = array_map('intval', $this->selectedRows);
         $rows = array_values(array_intersect_key($rows, array_flip($idx)));
         if (empty($rows)) {
-            $this->dispatch('notify', type: 'warning', message: 'اختر صفوفًا أولاً.');
+           session()->flash('message', 'اختر صفاً واحداً على الأقل.');
+           session()->flash('type', 'info');  
             return;
         }
     }
@@ -164,7 +165,8 @@ class EmployeeStatement extends Component
 public function exportPdfAuto()
 {
     if (empty($this->selectedRows)) {
-        $this->dispatch('notify', type: 'warning', message: 'اختر صفاً واحداً على الأقل.');
+       session()->flash('message', 'اختر صفاً واحداً على الأقل.');
+         session()->flash('type', 'info');  
         return;
     }
     return $this->exportPdf('selected');

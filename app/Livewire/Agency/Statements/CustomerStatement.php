@@ -65,154 +65,154 @@ class CustomerStatement extends Component
         catch (\Throwable $e) { return (string)$dt; }
     }
 
-private function rebuild(): void
-{
-    $from = ($this->fromDate ?: '0001-01-01') . ' 00:00:00';
-    $to   = ($this->toDate   ?: '9999-12-31') . ' 23:59:59';
-    $bn   = $this->normalize($this->beneficiary);
+    private function rebuild(): void
+    {
+        $from = ($this->fromDate ?: '0001-01-01') . ' 00:00:00';
+        $to   = ($this->toDate   ?: '9999-12-31') . ' 23:59:59';
+        $bn   = $this->normalize($this->beneficiary);
 
-    $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
-    $void   = ['void','cancel','canceled','cancelled'];
+        $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
+        $void   = ['void','cancel','canceled','cancelled'];
 
-    $rows = [];
+        $rows = [];
 
-    // 1) المشتريات
-    $sales = $this->customer->sales()
-        ->with(['service','customer'])
-        ->when($this->fromDate || $this->toDate, fn($q)=>$q->whereBetween('created_at', [$from, $to]))
-        ->orderBy('created_at')
-        ->get();
+        // 1) المشتريات
+        $sales = $this->customer->sales()
+            ->with(['service','customer'])
+            ->when($this->fromDate || $this->toDate, fn($q)=>$q->whereBetween('created_at', [$from, $to]))
+            ->orderBy('created_at')
+            ->get();
 
-    if ($bn !== '') {
-        $sales = $sales->filter(function ($s) use ($bn) {
-            $name = $this->normalize((string)($s->beneficiary_name ?? $s->customer->name ?? ''));
-            return mb_strpos($name, $bn) !== false;
-        });
-    }
+        if ($bn !== '') {
+            $sales = $sales->filter(function ($s) use ($bn) {
+                $name = $this->normalize((string)($s->beneficiary_name ?? $s->customer->name ?? ''));
+                return mb_strpos($name, $bn) !== false;
+            });
+        }
 
-    foreach ($sales as $sale) {
-        $st              = mb_strtolower(trim($sale->status ?? ''));
-        $serviceName     = (string)($sale->service->label ?? '-');
-        $beneficiaryName = (string)($sale->beneficiary_name ?? $this->customer->name);
-        $grpTs           = $this->fmtDate($sale->created_at);
+        foreach ($sales as $sale) {
+            $st              = mb_strtolower(trim($sale->status ?? ''));
+            $serviceName     = (string)($sale->service->label ?? '-');
+            $beneficiaryName = (string)($sale->beneficiary_name ?? $this->customer->name);
+            $grpTs           = $this->fmtDate($sale->created_at);
 
-        if (!in_array($st, $refund, true) && !in_array($st, $void, true)) {
-            $label = ($st === 'pending' || str_contains($st, 'submit'))
-                ? "قيد التقديم {$serviceName} لـ{$beneficiaryName}"
-                : "شراء {$serviceName} لـ{$beneficiaryName}";
+            if (!in_array($st, $refund, true) && !in_array($st, $void, true)) {
+                $label = ($st === 'pending' || str_contains($st, 'submit'))
+                    ? "قيد التقديم {$serviceName} لـ{$beneficiaryName}"
+                    : "شراء {$serviceName} لـ{$beneficiaryName}";
+                $rows[] = [
+                    'no'=>0,'date'=>$this->fmtDate($sale->created_at),'desc'=>$label,
+                    'status'=>$this->statusArabicLabel($st),'debit'=>(float)$sale->usd_sell,'credit'=>0.0,'balance'=>0.0,
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>1,
+                ];
+            }
+
+            if (in_array($st, $refund, true) || in_array($st, $void, true)) {
+                $label = $this->statusArabicLabel($st);
+                $rows[] = [
+                    'no'=>0,'date'=>$this->fmtDate($sale->created_at),
+                    'desc'=> "{$label} لـ{$serviceName} لـ{$beneficiaryName}",
+                    'status'=>$label,'debit'=>0.0,'credit'=>abs((float)$sale->usd_sell),'balance'=>0.0,
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>2,
+                ];
+            }
+
+            if ((float)$sale->amount_paid > 0) {
+                $statusLabel = ($sale->payment_method === 'kash' && (float)$sale->amount_paid >= (float)$sale->usd_sell)
+                    ? 'سداد كلي' : 'سداد جزئي';
+                $rows[] = [
+                    'no'=>0,'date'=>$this->fmtDate($sale->created_at),
+                    'desc'=> "{$statusLabel} {$serviceName} لـ{$beneficiaryName}",
+                    'status'=>$statusLabel,'debit'=>0.0,'credit'=>(float)$sale->amount_paid,'balance'=>0.0,
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>3,
+                ];
+            }
+        }
+
+        // 2) التحصيلات
+        $collections = \App\Models\Collection::with(['sale.service','sale.customer'])
+            ->whereHas('sale', fn($q)=>$q->where('customer_id', $this->customer->id))
+            ->whereBetween('created_at', [$from, $to])
+            ->orderBy('created_at')
+            ->get();
+
+        if ($bn !== '') {
+            $collections = $collections->filter(function ($c) use ($bn) {
+                $name = $this->normalize((string)($c->sale->beneficiary_name ?? $c->sale->customer->name ?? ''));
+                return mb_strpos($name, $bn) !== false;
+            });
+        }
+
+        foreach ($collections as $col) {
+            $serviceName     = (string)($col->sale->service->label ?? '-');
+            $beneficiaryName = (string)($col->sale->beneficiary_name ?? $col->sale->customer->name ?? $this->customer->name);
+            $evt             = $this->fmtDate($col->created_at ?? $col->payment_date);
+            $grpTs           = $this->fmtDate($col->sale->created_at);
+
             $rows[] = [
-                'no'=>0,'date'=>$this->fmtDate($sale->created_at),'desc'=>$label,
-                'status'=>$this->statusArabicLabel($st),'debit'=>(float)$sale->usd_sell,'credit'=>0.0,'balance'=>0.0,
-                '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>1,
+                'no'=>0,'date'=>$evt,
+                'desc'=>"سداد من التحصيل {$serviceName} لـ{$beneficiaryName}",
+                'status'=>'سداد من التحصيل','debit'=>0.0,'credit'=>(float)$col->amount,'balance'=>0.0,
+                '_grp'=>$grpTs,'_evt'=>$evt,'_ord'=>4,
             ];
         }
 
-        if (in_array($st, $refund, true) || in_array($st, $void, true)) {
-            $label = $this->statusArabicLabel($st);
+        // 3) حركات المحفظة
+        $walletAffectsBalance = false; // اجعلها true إذا أردتها تؤثر في الرصيد
+        $walletTx = \App\Models\WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id', $this->customer->id))
+            ->whereBetween('created_at', [$from, $to])
+            ->orderBy('created_at')
+            ->get();
+
+        foreach ($walletTx as $tx) {
+            $evt   = $this->fmtDate($tx->created_at);
+            $label = match($tx->type){
+                'deposit' => 'إيداع للمحفظة',
+                'withdraw'=> 'سحب من المحفظة',
+                'adjust'  => 'تعديل رصيد المحفظة',
+                default   => 'عملية محفظة',
+            };
+
+            $debit = $credit = 0.0;
+            if ($tx->type === 'deposit')       { $credit = (float)$tx->amount; }
+            elseif ($tx->type === 'withdraw')  { $debit  = (float)$tx->amount; }
+            elseif ($tx->type === 'adjust') {
+                $prev = max(0.0, (float)$tx->running_balance - (float)$tx->amount);
+                if ($tx->running_balance > $prev) { $credit = (float)$tx->amount; }
+                elseif ($tx->running_balance < $prev) { $debit = (float)$tx->amount; }
+            }
+
             $rows[] = [
-                'no'=>0,'date'=>$this->fmtDate($sale->created_at),
-                'desc'=> "{$label} لـ{$serviceName} لـ{$beneficiaryName}",
-                'status'=>$label,'debit'=>0.0,'credit'=>abs((float)$sale->usd_sell),'balance'=>0.0,
-                '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>2,
+                'no'=>0,'date'=>$evt,
+                'desc'=>$label,
+                'status'=>'محفظة',
+                'debit'=>$debit,'credit'=>$credit,'balance'=>0.0,
+                '_grp'=>$evt,'_evt'=>$evt,'_ord'=>5,'_impact'=>$walletAffectsBalance,
             ];
         }
 
-        if ((float)$sale->amount_paid > 0) {
-            $statusLabel = ($sale->payment_method === 'kash' && (float)$sale->amount_paid >= (float)$sale->usd_sell)
-                ? 'سداد كلي' : 'سداد جزئي';
-            $rows[] = [
-                'no'=>0,'date'=>$this->fmtDate($sale->created_at),
-                'desc'=> "{$statusLabel} {$serviceName} لـ{$beneficiaryName}",
-                'status'=>$statusLabel,'debit'=>0.0,'credit'=>(float)$sale->amount_paid,'balance'=>0.0,
-                '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>3,
-            ];
+        // الفرز
+        usort($rows, fn($a,$b)=>[$a['_grp'],$a['_evt'],$a['_ord']] <=> [$b['_grp'],$b['_evt'],$b['_ord']]);
+
+        // الرصيد التراكمي
+        $bal = 0.0; $i = 1;
+        foreach ($rows as &$r) {
+            if (($r['_impact'] ?? true) === true) {
+                $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
+            }
+            $r['balance'] = $bal;
+            $r['no'] = $i++;
+            unset($r['_grp'],$r['_evt'],$r['_ord'],$r['_impact']);
         }
+        unset($r);
+
+        $this->statement    = $rows;
+        // حساب الإجماليات للتذييل
+        $this->sumDebit  = round(array_sum(array_column($rows, 'debit')), 2);
+        $this->sumCredit = round(array_sum(array_column($rows, 'credit')), 2);
+        $this->net       = round($this->sumCredit - $this->sumDebit, 2);
+        $this->selectedRows = [];
     }
-
-    // 2) التحصيلات
-    $collections = \App\Models\Collection::with(['sale.service','sale.customer'])
-        ->whereHas('sale', fn($q)=>$q->where('customer_id', $this->customer->id))
-        ->whereBetween('created_at', [$from, $to])
-        ->orderBy('created_at')
-        ->get();
-
-    if ($bn !== '') {
-        $collections = $collections->filter(function ($c) use ($bn) {
-            $name = $this->normalize((string)($c->sale->beneficiary_name ?? $c->sale->customer->name ?? ''));
-            return mb_strpos($name, $bn) !== false;
-        });
-    }
-
-    foreach ($collections as $col) {
-        $serviceName     = (string)($col->sale->service->label ?? '-');
-        $beneficiaryName = (string)($col->sale->beneficiary_name ?? $col->sale->customer->name ?? $this->customer->name);
-        $evt             = $this->fmtDate($col->created_at ?? $col->payment_date);
-        $grpTs           = $this->fmtDate($col->sale->created_at);
-
-        $rows[] = [
-            'no'=>0,'date'=>$evt,
-            'desc'=>"سداد من التحصيل {$serviceName} لـ{$beneficiaryName}",
-            'status'=>'سداد من التحصيل','debit'=>0.0,'credit'=>(float)$col->amount,'balance'=>0.0,
-            '_grp'=>$grpTs,'_evt'=>$evt,'_ord'=>4,
-        ];
-    }
-
-    // 3) حركات المحفظة
-    $walletAffectsBalance = false; // اجعلها true إذا أردتها تؤثر في الرصيد
-    $walletTx = \App\Models\WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id', $this->customer->id))
-        ->whereBetween('created_at', [$from, $to])
-        ->orderBy('created_at')
-        ->get();
-
-    foreach ($walletTx as $tx) {
-        $evt   = $this->fmtDate($tx->created_at);
-        $label = match($tx->type){
-            'deposit' => 'إيداع للمحفظة',
-            'withdraw'=> 'سحب من المحفظة',
-            'adjust'  => 'تعديل رصيد المحفظة',
-            default   => 'عملية محفظة',
-        };
-
-        $debit = $credit = 0.0;
-        if ($tx->type === 'deposit')       { $credit = (float)$tx->amount; }
-        elseif ($tx->type === 'withdraw')  { $debit  = (float)$tx->amount; }
-        elseif ($tx->type === 'adjust') {
-            $prev = max(0.0, (float)$tx->running_balance - (float)$tx->amount);
-            if ($tx->running_balance > $prev) { $credit = (float)$tx->amount; }
-            elseif ($tx->running_balance < $prev) { $debit = (float)$tx->amount; }
-        }
-
-        $rows[] = [
-            'no'=>0,'date'=>$evt,
-            'desc'=>$label,
-            'status'=>'محفظة',
-            'debit'=>$debit,'credit'=>$credit,'balance'=>0.0,
-            '_grp'=>$evt,'_evt'=>$evt,'_ord'=>5,'_impact'=>$walletAffectsBalance,
-        ];
-    }
-
-    // الفرز
-    usort($rows, fn($a,$b)=>[$a['_grp'],$a['_evt'],$a['_ord']] <=> [$b['_grp'],$b['_evt'],$b['_ord']]);
-
-    // الرصيد التراكمي
-    $bal = 0.0; $i = 1;
-    foreach ($rows as &$r) {
-        if (($r['_impact'] ?? true) === true) {
-            $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
-        }
-        $r['balance'] = $bal;
-        $r['no'] = $i++;
-        unset($r['_grp'],$r['_evt'],$r['_ord'],$r['_impact']);
-    }
-    unset($r);
-
-    $this->statement    = $rows;
-    // حساب الإجماليات للتذييل
-    $this->sumDebit  = round(array_sum(array_column($rows, 'debit')), 2);
-    $this->sumCredit = round(array_sum(array_column($rows, 'credit')), 2);
-    $this->net       = round($this->sumCredit - $this->sumDebit, 2);
-    $this->selectedRows = [];
-}
 
 
     public function render()
@@ -231,8 +231,9 @@ private function rebuild(): void
             $idx  = array_map('intval', $this->selectedRows);
             $rows = array_values(array_intersect_key($rows, array_flip($idx)));
             if (empty($rows)) {
-                $this->dispatch('notify', type: 'warning', message: 'اختر صفوفًا أولاً.');
-                return;
+                  session()->flash('message', 'اختر صفوفًا أولاً.');
+                    session()->flash('type', 'warning');
+                    return;
             }
         }
 
@@ -255,8 +256,9 @@ private function rebuild(): void
     public function exportPdfAuto()
     {
         if (empty($this->selectedRows)) {
-            $this->dispatch('notify', type: 'warning', message: 'اختر صفاً واحداً على الأقل.');
-            return;
+         session()->flash('message', 'اختر صفاً واحداً على الأقل.');
+         session()->flash('type', 'info');  
+                  return;
         }
         return $this->exportPdf('selected');
     }

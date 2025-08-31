@@ -6,6 +6,7 @@
 @endphp
 
 <div class="space-y-6">
+        <x-toast />
 
     <!-- العنوان وزر الرجوع + التصدير -->
     <div class="flex justify-between items-center mb-4">

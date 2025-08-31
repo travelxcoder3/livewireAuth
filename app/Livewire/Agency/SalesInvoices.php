@@ -19,6 +19,9 @@ class SalesInvoices  extends Component
 {
     use WithPagination;
 
+    public ?string $toastMessage = null;
+    public ?string $toastType    = null;
+
     public $name, $account_number, $currency, $balance = 0, $note;
     public $editingId = null;
 
@@ -78,6 +81,12 @@ class SalesInvoices  extends Component
         'sortField'         => ['except' => 'created_at'],
         'sortDirection'     => ['except' => 'desc'],
     ];
+
+    private function clearToast(): void
+    {
+        $this->toastMessage = null;
+        $this->toastType = null;
+    }
 
 
     private function baseSalesQuery()
@@ -139,13 +148,16 @@ class SalesInvoices  extends Component
         } else {
             $this->selectedSales = array_values(array_unique(array_merge($this->selectedSales, $idsOnPage)));
         }
+        $this->clearToast(); // ← لا تُعد إظهار التوست بعد التغيير
     }
 
     public function updatedSelectedSales()
     {
         $sales = $this->getCurrentSales();
         $this->selectAll = count($this->selectedSales) === $sales->count();
+        $this->clearToast(); // ← امنع ظهور الرسالة مجدداً بعد تحديد صف
     }
+
 
     public function getCurrentSales()
     {
@@ -379,6 +391,7 @@ class SalesInvoices  extends Component
         $this->resetPage();
         $this->selectedSales = [];
         $this->selectAll = false;
+        $this->clearToast();
     }
 
     /** إعادة ضبط الصفحات عند تغيير أي فلتر/فرز */
@@ -393,6 +406,7 @@ class SalesInvoices  extends Component
             $this->selectedSales = [];
             $this->selectAll = false;
         }
+        $this->clearToast(); // ← امسح الرسالة عند أي تفاعل في الفلاتر
     }
 
     /* ================= Bulk Invoice ================= */
@@ -409,9 +423,11 @@ class SalesInvoices  extends Component
     public function openBulkInvoiceModal()
     {
         if (empty($this->selectedSales)) {
-            session()->flash('message', 'يرجى اختيار عمليات بيع أولاً');
+            $this->toastType = 'error'; // لا نستخدم warning
+            $this->toastMessage = 'اختر عملية بيع واحدة على الأقل لإصدار فاتورة مجمّعة.';
             return;
         }
+
 
         $this->bulkTaxAmount = 0.0;
         $this->bulkTaxIsPercent = true;
@@ -486,10 +502,13 @@ class SalesInvoices  extends Component
             'invoiceDate' => 'required|date',
         ]);
 
-        if (empty($this->selectedSales)) {
-            session()->flash('message', 'يرجى اختيار عمليات بيع');
-            return;
-        }
+                if (empty($this->selectedSales)) {
+                    $this->toastType = 'error';
+                    $this->toastMessage = 'اختر عملية بيع واحدة على الأقل قبل إنشاء الفاتورة المجمّعة.';
+                    return;
+                }
+
+
 
         return DB::transaction(function () {
             $user   = auth()->user();

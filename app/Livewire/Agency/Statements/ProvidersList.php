@@ -55,30 +55,29 @@ class ProvidersList extends Component
             ->orderByDesc('id');
     }
 
-   // app/Livewire/Agency/Statements/ProvidersList.php
 
-private function buildStats(Provider $p): array
-{
-    $currency = Auth::user()->agency->currency ?? 'USD';
+    private function buildStats(Provider $p): array
+    {
+        $currency = Auth::user()->agency->currency ?? 'USD';
 
-    $sales = \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
-        ->where('provider_id', $p->id)
-        ->get(['usd_sell','sale_date','created_at','id']);
+        $sales = \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
+            ->where('provider_id', $p->id)
+            ->get(['usd_sell','sale_date','created_at','id']);
 
-    $last = $sales->sortByDesc(fn($s)=>[$s->sale_date ?? $s->created_at, $s->id])->first();
-    $lastDate = $last?->sale_date ?? $last?->created_at;
+        $last = $sales->sortByDesc(fn($s)=>[$s->sale_date ?? $s->created_at, $s->id])->first();
+        $lastDate = $last?->sale_date ?? $last?->created_at;
 
-    // ✅ كل الرصيد للمزوّد = مجموع usd_sell
-    $totalForProvider = (float)$sales->sum('usd_sell');
+        // ✅ كل الرصيد للمزوّد = مجموع usd_sell
+        $totalForProvider = (float)$sales->sum('usd_sell');
 
-    return [
-        'currency'               => $currency,
-        'remaining_for_provider' => $totalForProvider, // له
-        'remaining_for_agency'   => 0.0,               // لا يوجد دفع مقابل
-        'net_balance'            => $totalForProvider, // >0 لصالح المزوّد دائمًا
-        'last_sale_date'         => $lastDate ? \Carbon\Carbon::parse($lastDate)->format('Y-m-d') : '-',
-    ];
-}
+        return [
+            'currency'               => $currency,
+            'remaining_for_provider' => $totalForProvider, // له
+            'remaining_for_agency'   => 0.0,               // لا يوجد دفع مقابل
+            'net_balance'            => $totalForProvider, // >0 لصالح المزوّد دائمًا
+            'last_sale_date'         => $lastDate ? \Carbon\Carbon::parse($lastDate)->format('Y-m-d') : '-',
+        ];
+    }
 
 
     private function passDateFilter(?string $lastSaleDate): bool
@@ -131,7 +130,7 @@ private function buildStats(Provider $p): array
             $this->totalRemainingForAgency   += $st['remaining_for_agency'];
         }
 
-       $employees = $query->paginate(10)->through(function($p) use ($stats){
+            $employees = $query->paginate(10)->through(function($p) use ($stats){
                 $st = $stats[$p->id];
                 $p->details_url       = route('agency.statements.provider', $p->id);
                 $p->currency          = $st['currency'];

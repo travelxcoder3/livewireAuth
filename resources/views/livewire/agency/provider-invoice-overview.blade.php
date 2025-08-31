@@ -1,6 +1,7 @@
 <?php $currency = Auth::user()->agency->currency ?? 'USD'; ?>
 
 <div class="space-y-6" x-data="{ sel: @entangle('selectedGroups') }">
+    <x-toast :message="$toastMessage" :type="$toastType ?? 'success'" />
     <div class="flex justify-between items-center mb-1">
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
@@ -207,10 +208,11 @@
         </div>
     <?php } ?>
 
-    <!-- مودال الفاتورة المجمعة -->
-    <?php if (!empty($showBulkInvoiceModal)) { ?>
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" x-cloak>
-            <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+        <!-- مودال الفاتورة المجمعة -->
+        <?php if (!empty($showBulkInvoiceModal)) { ?>
+            <div class="fixed inset-0 z-50 flex items-start justify-center pt-24 backdrop-blur-sm bg-black/40" x-cloak>
+                <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+
                 <button wire:click="$set('showBulkInvoiceModal', false)"
                         class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
 

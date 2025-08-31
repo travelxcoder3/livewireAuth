@@ -92,7 +92,8 @@ public function rebuild(): void
         if ($scope==='selected') {
             $idx = array_map('intval',$this->selectedRows);
             $rows = array_values(array_intersect_key($rows, array_flip($idx)));
-            if (empty($rows)) { $this->dispatch('notify', type:'warning', message:'اختر صفوفًا أولاً.'); return; }
+            if (empty($rows)) { session()->flash('message', 'اختر صفاً واحداً على الأقل.');
+         session()->flash('type', 'info');   return; }
         }
 
         $payload = base64_encode(json_encode([
@@ -108,7 +109,8 @@ public function rebuild(): void
         ]);
     }
 
-    public function exportPdfAuto(){ if(empty($this->selectedRows)) { $this->dispatch('notify', type:'warning', message:'اختر صفاً واحداً على الأقل.'); return; } return $this->exportPdf('selected'); }
+    public function exportPdfAuto(){ if(empty($this->selectedRows)) { session()->flash('message', 'اختر صفاً واحداً على الأقل.');
+         session()->flash('type', 'info');   return; } return $this->exportPdf('selected'); }
     public function toggleSelectAll(){ $t=count($this->statement); if($t===0) return; $this->selectedRows = count($this->selectedRows)===$t ? [] : array_keys($this->statement); }
     public function resetFilters(){ $this->fromDate=''; $this->toDate=''; $this->rebuild(); }
 

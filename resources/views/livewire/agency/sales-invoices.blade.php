@@ -15,6 +15,7 @@
 @endphp
 
 <div class="space-y-6" x-data="reportBox()">
+    <x-toast :message="$toastMessage" :type="$toastType ?? 'success'" />
     <style>[x-cloak]{display:none!important}</style>
 
     <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
@@ -196,13 +197,8 @@
         @endif
     </div>
 
-    @if (session()->has('message'))
-        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 2000)" x-show="show" x-transition
-            class="fixed bottom-4 right-4 text-white px-4 py-2 rounded-md shadow text-sm"
-            style="background-color: rgb(var(--primary-500));">
-            {{ session('message') }}
-        </div>
-    @endif
+    <x-toast />
+
 
     {{-- ======= فاتورة فردية / إشعار دائن ======= --}}
     @if ($showInvoiceModal && $selectedSale)

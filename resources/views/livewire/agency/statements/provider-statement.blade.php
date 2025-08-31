@@ -2,6 +2,8 @@
 
 <div class="space-y-6">
   <div class="flex justify-between items-center mb-4">
+            <x-toast />
+
     <h2 class="text-2xl font-bold" style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
       كشف حساب المزوّد: {{ $provider->name }}
     </h2>

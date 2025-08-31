@@ -9,18 +9,18 @@
 
     <!-- العنوان وزر الرجوع + التصدير -->
     <div class="flex justify-between items-center mb-4">
+        <x-toast />
         <h2 class="text-2xl font-bold"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
             كشف حساب العميل: {{ $customer->name }}
         </h2>
 
         <div class="flex items-center gap-2">
-            @if (!empty($selectedRows))
                 <x-primary-button type="button" wire:click="exportPdfAuto"
                                   class="flex items-center gap-2">
                     تصدير PDF
                 </x-primary-button>
-            @endif
+            
 
             <a href="{{ route('agency.statements.customers') }}"
                class="flex items-center gap-2 px-4 py-2 rounded-lg border transition text-sm font-medium

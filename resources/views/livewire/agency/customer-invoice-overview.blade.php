@@ -5,6 +5,7 @@
 @endphp
 
 <div class="space-y-6">
+    <x-toast :message="$toastMessage" :type="$toastType ?? 'success'" />
 
     <!-- العنوان وزر الرجوع + الطباعة -->
 <div class="flex items-center justify-between mb-1">
@@ -194,7 +195,7 @@
                                     wire:loading.attr="disabled"
                                     wire:target="askSingleTax"
                                     class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
-                                    فاتورة PDF
+                                    فاتورة فردية
                                 </button>
 
                                 </div>
@@ -312,8 +313,9 @@
     @endif
 
     @if($showBulkTaxModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+    <div class="fixed inset-0 z-50 flex items-start justify-center pt-24 backdrop-blur-sm bg-black/40">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
+
         <button wire:click="$set('showBulkTaxModal', false)"
             class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
         <h2 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">إصدار فاتورة مجمّعة</h2>

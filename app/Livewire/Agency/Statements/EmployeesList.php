@@ -157,21 +157,21 @@ class EmployeesList extends Component
         }
 
         // الجدول
-   $employees = $query->paginate(10)->through(function ($u) use ($statsById) {
-    $st = $statsById[$u->id] ?? [];
+        $employees = $query->paginate(10)->through(function ($u) use ($statsById) {
+            $st = $statsById[$u->id] ?? [];
 
-    return (object) [
-        'id'               => $u->id,
-        'name'             => $u->name ?? $u->user_name,
-        'account_type_text'=> $st['net_balance'] > 0 
-                                ? 'مدين' 
-                                : ($st['net_balance'] < 0 ? 'دائن' : 'متزن'),
-        'balance_total'    => abs($st['net_balance'] ?? 0),
-        'currency'         => $st['currency'] ?? 'USD',
-        'last_sale_date'   => $st['last_sale_date'] ?? '-',   // <== هنا نضمن القيمة
-        'details_url'      => route('agency.statements.employee', $u->id),
-    ];
-});
+            return (object) [
+                'id'               => $u->id,
+                'name'             => $u->name ?? $u->user_name,
+                'account_type_text'=> $st['net_balance'] > 0 
+                                        ? 'مدين' 
+                                        : ($st['net_balance'] < 0 ? 'دائن' : 'متزن'),
+                'balance_total'    => abs($st['net_balance'] ?? 0),
+                'currency'         => $st['currency'] ?? 'USD',
+                'last_sale_date'   => $st['last_sale_date'] ?? '-',   // <== هنا نضمن القيمة
+                'details_url'      => route('agency.statements.employee', $u->id),
+            ];
+        });
 
 
 

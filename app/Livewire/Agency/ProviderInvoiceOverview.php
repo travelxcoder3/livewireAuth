@@ -42,6 +42,15 @@ class ProviderInvoiceOverview extends Component
     public bool $bulkTaxIsPercent = true;
     public float $bulkSubtotal = 0.0;
 
+    public ?string $toastMessage = null;
+    public ?string $toastType    = null;
+
+    private function clearToast(): void
+    {
+        $this->toastMessage = null;
+        $this->toastType    = null;
+    }
+
     public function mount(Provider $provider)
     {
         abort_unless($provider->agency_id === Auth::user()->agency_id, 403);
@@ -127,6 +136,7 @@ class ProviderInvoiceOverview extends Component
 
         $visibleKeys = $filtered->pluck('group_key')->all();
         $this->selectedGroups = array_values(array_intersect($this->selectedGroups, $visibleKeys));
+        $this->clearToast();
     }
 
     public function updated($name, $value)
@@ -144,6 +154,7 @@ class ProviderInvoiceOverview extends Component
         } else {
             $this->selectedGroups = array_values(array_unique(array_merge($this->selectedGroups, $allVisible)));
         }
+        $this->clearToast();
     }
 
     public function showDetails($index) { $this->activeRow = $this->groups[$index] ?? null; }
@@ -155,6 +166,7 @@ class ProviderInvoiceOverview extends Component
         $this->fromDate = '';
         $this->toDate   = '';
         $this->applyFilters();
+        $this->clearToast();
     }
 
     /* ======= أدوات مساعدة للفواتير ======= */
@@ -345,7 +357,11 @@ class ProviderInvoiceOverview extends Component
 
     public function openBulkInvoiceModal()
     {
-        if (empty($this->selectedGroups)) return;
+            if (empty($this->selectedGroups)) {
+                $this->toastType = 'error';
+                $this->toastMessage = 'اختر مجموعة واحدة على الأقل لإصدار فاتورة مجمّعة.';
+                return;
+            }
 
         $this->bulkTaxAmount    = 0.0;
         $this->bulkTaxIsPercent = true;
@@ -357,6 +373,11 @@ class ProviderInvoiceOverview extends Component
         $this->invoiceEntityName = $this->provider->name;
         $this->invoiceDate = now()->toDateString();
         $this->showBulkInvoiceModal = true;
+    }
+
+    public function updatedSelectedGroups()
+    {
+        $this->clearToast();
     }
 
     public function createBulkInvoice()
