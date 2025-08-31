@@ -9,6 +9,8 @@ use App\Models\Sale;
 use App\Models\Customer;
 use App\Models\Provider;
 use App\Models\DynamicListItem as ServiceType;
+use App\Models\CommissionProfile;
+use App\Models\EmployeeMonthlyTarget;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -51,8 +53,15 @@ class Accounts extends Component
         $this->date_from ??= now()->startOfMonth()->toDateString();
         $this->date_to   ??= now()->endOfDay()->toDateString();
 
-     $this->serviceTypeOptions = ServiceType::whereHas('list', fn($q)=>$q->where('name','قائمة الخدمات'))
+$aid = $this->agencyId();
+$this->serviceTypeOptions = ServiceType::whereHas('list', fn($q)=>$q->where('name','قائمة الخدمات'))
+    ->where(function($q) use ($aid){
+        $q->where('created_by_agency', $aid)->orWhereNull('created_by_agency');
+    })
     ->orderBy('label')->pluck('label','id')->toArray();
+
+
+
 
 
         $this->customerOptions = Customer::where('agency_id', $this->agencyId())
@@ -140,7 +149,61 @@ class Accounts extends Component
         $amountPaid    = (clone $salesBase)->where('usd_sell','>',0)->sum('amount_paid');
         $customer_due  = max(0, ($positiveSales - $amountPaid - $collections) - $refunds);
 
-        $employeeComms = 0;
+// عمولة الموظف المتوقعة متأثرة بكل فلاتر الصفحة
+$ref = now();
+if (!empty($this->date_from) && !empty($this->date_to)) {
+    $s = Carbon::parse($this->date_from);
+    $e = Carbon::parse($this->date_to);
+    if ($s->isSameMonth($e)) { $ref = $s; }
+}
+$yr = (int)$ref->year;
+$mo = (int)$ref->month;
+
+// نطاق الموظفين: المفلتر محددًا أو كل موظفي الوكالة
+$empIds = $this->employee_id
+    ? [(int)$this->employee_id]
+    : DB::table('users')->where('agency_id', $this->agencyId())->pluck('id')->all();
+
+$employeeComms = 0.0;
+foreach ($empIds as $uid) {
+    // الهدف الشهري
+    $target = (float)(
+        EmployeeMonthlyTarget::where('user_id',$uid)->where('year',$yr)->where('month',$mo)->value('main_target')
+        ?? DB::table('users')->where('id',$uid)->value('main_target')
+        ?? 0
+    );
+
+    // نسبة العمولة
+    $override = EmployeeMonthlyTarget::where('user_id',$uid)->where('year',$yr)->where('month',$mo)->value('override_rate');
+    $ratePct = ($override !== null)
+        ? (float)$override
+        : (float)(CommissionProfile::where('agency_id',$this->agencyId())->where('is_active',true)->value('employee_rate') ?? 0);
+    $rate = $ratePct / 100.0;
+
+    // نفس فلاتر الصفحة + قيد الشهر
+    $rows = (clone $salesBase)->where('user_id',$uid)
+        ->whereYear('sale_date',$yr)->whereMonth('sale_date',$mo)
+        ->get(['id','usd_sell','sale_profit','sale_group_id','status']);
+
+    if ($rows->isEmpty()) continue;
+
+    // معالجة مجموعات الاسترداد مثل صفحة المبيعات
+    $groups = $rows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+    $monthProfit = 0.0;
+    foreach ($groups as $g) {
+        $gProfit = (float)$g->sum('sale_profit');
+        $hasRefund = $g->contains(fn($row) =>
+            str_contains(mb_strtolower((string)($row->status ?? '')),'refund')
+            || (float)$row->usd_sell < 0
+        );
+        $monthProfit += $hasRefund
+            ? max((float)$g->where('sale_profit','>',0)->sum('sale_profit'), 0.0)
+            : $gProfit;
+    }
+
+    $employeeComms += max(($monthProfit - $target) * $rate, 0);
+}
+
 
         return compact('sales','costs','commissions','employeeComms','net_profit','refunds','collections','customer_due');
     }
@@ -191,9 +254,17 @@ class Accounts extends Component
         $keyLabels = [];
         switch ($this->group_by) {
            case 'service_type':
-            $keyLabels = ServiceType::whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())
-                ->where('agency_id', $this->agencyId()) // إن كان متوفرًا
-                ->pluck('label','id')->toArray();
+$ids = collect($salesGrouped->items())->pluck('key_id')->filter()->unique();
+$aid = $this->agencyId();
+$keyLabels = ServiceType::whereIn('id', $ids)
+    ->whereHas('list', fn($q)=>$q->where('name','قائمة الخدمات'))
+    ->where(function($q) use ($aid){
+        $q->where('created_by_agency', $aid)->orWhereNull('created_by_agency');
+    })
+    ->pluck('label','id')->toArray();
+
+
+
             break;
         case 'customer':
             $keyLabels = Customer::whereIn('id', collect($salesGrouped->items())->pluck('key_id')->filter()->unique())

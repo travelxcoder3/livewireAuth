@@ -138,12 +138,16 @@
                                                     $confirm = $action['confirm'] ?? false;
                                                     $method = $action['method'] ?? ($action['type'] ?? '');
                                                     $url = $action['url'] ?? null;
-                                                    $actionUrl =
-                                                        $url ??
-                                                        (isset($action['type']) &&
-                                                        isset($row->{$action['type'] . '_url'})
-                                                            ? $row->{$action['type'] . '_url'}
-                                                            : null);
+                                                   $actionUrl = $url ??
+                                                    (isset($action['type']) && isset($row->{$action['type'].'_url'})
+                                                        ? $row->{$action['type'].'_url'}
+                                                        : null);
+
+                                                // دعم استبدال :id في الروابط المعرفة يدوياً
+                                                if ($actionUrl && str_contains($actionUrl, ':id')) {
+                                                    $actionUrl = str_replace(':id', $row->id, $actionUrl);
+}
+
                                                 @endphp
 
                                                 @if ($show)

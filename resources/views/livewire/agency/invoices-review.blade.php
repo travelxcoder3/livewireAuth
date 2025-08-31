@@ -72,7 +72,7 @@
             <div class="flex justify-end gap-2">
                 <button wire:click="resetFilters"
                     class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">
-                    إعادة تعيين
+          إعادة تعيين الفلاتر 
                 </button>
     </div>
 

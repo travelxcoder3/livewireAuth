@@ -17,23 +17,27 @@
         {{-- الفلاتر (باستخدام الـ components) --}}
         <div class="bg-white rounded-xl shadow-md p-4 space-y-3">
             <div class="grid md:grid-cols-6 items-end gap-3">
-                <x-input-field
+                <x-date-picker
                     name="date_from"
-                    type="date"
                     label="من تاريخ"
+                    placeholder="اختر التاريخ"
                     wireModel="date_from"
+                    width="w-full"
                     containerClass="relative"
-                    fieldClass="{{ $fieldClass }}"
+                    fieldClass="{{ $fieldClass }} peer"
                 />
 
-                <x-input-field
+
+                <x-date-picker
                     name="date_to"
-                    type="date"
                     label="إلى تاريخ"
+                    placeholder="اختر التاريخ"
                     wireModel="date_to"
+                    width="w-full"
                     containerClass="relative"
-                    fieldClass="{{ $fieldClass }}"
+                    fieldClass="{{ $fieldClass }} peer"
                 />
+
 
             <x-select-field
                     label="تجميع بحسب"
@@ -86,72 +90,68 @@
             <div class="flex justify-end gap-2">
             <button type="button" wire:click="resetFilters"
                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-xl shadow text-sm">
-                إعادة تعيين
+                إعادة تعيين الفلاتر
                 </button>
 
             </div>
         </div>
 
-        {{-- KPIs as compact single-row cards with colored borders --}}
-       @php
-        $card = 'bg-white rounded-xl shadow p-3 border-2 border-[rgb(var(--primary-500))] hover:border-[rgb(var(--primary-600))] transition-colors';
-        @endphp
+        {{-- KPIs strip — single container with vertical dividers --}}
+        <div class="bg-white rounded-xl shadow-md p-3">
+        <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 divide-x divide-[rgb(var(--primary-200))]">
 
-
-        <div class="overflow-x-auto">
-        <div class="grid grid-flow-col auto-cols-[minmax(130px,1fr)] gap-2">
-
-            <div class="{{ $card }}">
-            <div class="text-[11px] text-gray-500">المبيعات</div>
-            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+            <div class="px-3 py-2">
+            <dt class="text-[11px] text-gray-500">المبيعات</dt>
+            <dd class="mt-1 text-base sm:text-lg font-bold text-[rgb(var(--primary-700))]">
                 {{ number_format($kpis['sales'] ?? 0,2) }}
-            </div>
+            </dd>
             </div>
 
-            <div class="{{ $card }}">
-            <div class="text-[11px] text-gray-500">التكلفة</div>
-            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+            <div class="px-3 py-2">
+            <dt class="text-[11px] text-gray-500">التكلفة</dt>
+            <dd class="mt-1 text-base sm:text-lg font-bold text-[rgb(var(--primary-700))]">
                 {{ number_format($kpis['costs'] ?? 0,2) }}
-            </div>
+            </dd>
             </div>
 
-            <div class="{{ $card }}">
-            <div class="text-[11px] text-gray-500">عمولة الموظف</div>
-            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+            <div class="px-3 py-2">
+            <dt class="text-[11px] text-gray-500">عمولة الموظف</dt>
+            <dd class="mt-1 text-base sm:text-lg font-bold text-[rgb(var(--primary-700))]">
                 {{ number_format($kpis['employeeComms'] ?? 0,2) }}
-            </div>
+            </dd>
             </div>
 
-            <div class="{{ $card }}">
-            <div class="text-[11px] text-gray-500">عمولة العميل</div>
-            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+            <div class="px-3 py-2">
+            <dt class="text-[11px] text-gray-500">عمولة العميل</dt>
+            <dd class="mt-1 text-base sm:text-lg font-bold text-[rgb(var(--primary-700))]">
                 {{ number_format($kpis['commissions'] ?? 0,2) }}
-            </div>
+            </dd>
             </div>
 
-            <div class="{{ $card }} border-t-4" style="border-top-color: rgb(var(--primary-500));">
-            <div class="text-[11px] text-gray-500">صافي الربح</div>
-            <div class="mt-1 text-sm font-extrabold" style="color: rgb(var(--primary-700));">
+            <div class="px-3 py-2">
+            <dt class="text-[11px] text-gray-500">صافي الربح</dt>
+            <dd class="mt-1 text-base sm:text-lg font-extrabold text-[rgb(var(--primary-700))]">
                 {{ number_format($kpis['net_profit'] ?? 0,2) }}
-            </div>
+            </dd>
             </div>
 
-            <div class="{{ $card }}">
-            <div class="text-[11px] text-gray-500">الاسترجاعات</div>
-            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+            <div class="px-3 py-2">
+            <dt class="text-[11px] text-gray-500">الاستردادات</dt>
+            <dd class="mt-1 text-base sm:text-lg font-bold text-[rgb(var(--primary-700))]">
                 {{ number_format($kpis['refunds'] ?? 0,2) }}
-            </div>
+            </dd>
             </div>
 
-            <div class="{{ $card }}">
-            <div class="text-[11px] text-gray-500">التحصيلات</div>
-            <div class="mt-1 text-sm font-bold" style="color: rgb(var(--primary-700));">
+            <div class="px-3 py-2">
+            <dt class="text-[11px] text-gray-500">التحصيلات</dt>
+            <dd class="mt-1 text-base sm:text-lg font-bold text-[rgb(var(--primary-700))]">
                 {{ number_format($kpis['collections'] ?? 0,2) }}
-            </div>
+            </dd>
             </div>
 
+        </dl>
         </div>
-        </div>
+
 
         @php
             use App\Tables\AuditAccountsTable as T;
