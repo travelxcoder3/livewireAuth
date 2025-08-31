@@ -4,214 +4,186 @@
     $colors = ThemeService::getCurrentThemeColors($themeName);
 @endphp
 
+<!-- موبايل فقط ≤640px -->
+<style>
+@media (max-width:640px){
+  .cust-head{flex-direction:column; align-items:flex-start; gap:.5rem}
+  .cust-head .btn-wrap{width:100%; display:flex; gap:.5rem; flex-wrap:wrap}
+  .cust-head .btn-wrap > *{flex:1 1 auto}
+
+  .filters-grid{grid-template-columns:1fr !important}
+  .filters-grid .reset-wrap{margin-top:.25rem !important; justify-content:stretch !important}
+  .filters-grid .reset-wrap > button{width:100%}
+
+  .cust-table{font-size:12px}
+  /* إخفاء أعمدة ثقيلة على الموبايل: الخدمة(4) + الاستردادات(6) + المحصل(7) */
+  .cust-table thead th:nth-child(4),
+  .cust-table tbody td:nth-child(4),
+  .cust-table thead th:nth-child(6),
+  .cust-table tbody td:nth-child(6),
+  .cust-table thead th:nth-child(7),
+  .cust-table tbody td:nth-child(7){display:none}
+}
+</style>
+
 <div class="space-y-6">
-    <x-toast :message="$toastMessage" :type="$toastType ?? 'success'" />
 
     <!-- العنوان وزر الرجوع + الطباعة -->
-<div class="flex items-center justify-between mb-1">
-    <h2 class="text-2xl font-bold"
-        style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
-        فاتورة العميل: {{ $customer->name }}
-    </h2>
+    <div class="flex justify-between items-center mb-4 cust-head">
+        <h2 class="text-2xl font-bold"
+            style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: 0.5rem;">
+            فاتورة العميل: {{ $customer->name }}
+        </h2>
 
-    @php
-        $currency     = Auth::user()->agency->currency ?? 'USD';
-        $rows         = collect($collections ?? []);
-        $sumBase      = $rows->sum('invoice_total_true');
-        $sumRefund    = $rows->sum('refund_total');
-        $sumCollected = $rows->sum('total_collected');
-        $netTotal     = $sumBase - $sumRefund - $sumCollected;
-    @endphp
+        @php
+            $currency     = Auth::user()->agency->currency ?? 'USD';
+            $rows         = collect($collections ?? []);
+            $sumBase      = $rows->sum('invoice_total_true');
+            $sumRefund    = $rows->sum('refund_total');
+            $sumCollected = $rows->sum('total_collected');
+            $netTotal     = $sumBase - $sumRefund - $sumCollected;
+            $netClass     = $netTotal > 0 ? 'text-rose-700 border-rose-300'
+                          : ($netTotal < 0 ? 'text-green-700 border-green-300' : 'text-gray-700 border-gray-300');
+        @endphp
 
-    <!-- نجمع كل الأدوات في كتلة واحدة مثل صفحة المزوّدين -->
-    <div class="flex items-center gap-2">
-        <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
+        <div class="flex items-center gap-3 btn-wrap">
+            <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
+            <input type="text" value="{{ number_format($netTotal, 2) }} {{ $currency }}" readonly
+                   class="bg-white border rounded px-3 py-1 text-sm w-36 text-center font-bold {{ $netClass }}">
 
-        <input type="text"
-               value="{{ number_format($netTotal, 2) }}"
-               readonly
-               class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center">
+            <x-primary-button type="button"
+                              wire:click="askBulkTax"
+                              wire:loading.attr="disabled"
+                              wire:target="toggleSelectAll,applyFilters,askBulkTax"
+                              class="flex items-center justify-center gap-2 w-full sm:w-auto">
+                إصدار فاتورة مجمّعة
+            </x-primary-button>
 
-        <x-primary-button
-            type="button"
-            wire:click="askBulkTax"
-            wire:loading.attr="disabled"
-            wire:loading.class="opacity-60 cursor-not-allowed"
-            wire:target="toggleSelectAll,applyFilters,askBulkTax"
-            class="px-3 py-2 text-sm rounded-lg">
-            إصدار فاتورة مجمّعة
-        </x-primary-button>
-
-        <a href="{{ route('agency.customer-detailed-invoices') }}"
-           class="flex items-center gap-2 px-4 py-2 rounded-lg border transition text-sm font-medium
-                  bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] hover:shadow-md hover:text-[rgb(var(--primary-700))]">
-            <svg class="h-5 w-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>رجوع</span>
-        </a>
-    </div>
-</div>
-
-<!-- شريط الفلاتر -->
-<div class="bg-white rounded-xl shadow-md p-4">
-    <div class="grid md:grid-cols-4 gap-4 items-end">
-        {{-- بحث باسم المستفيد --}}
-        <x-input-field
-            name="beneficiary_search"
-            label="بحث باسم المستفيد"
-            wireModel="search"
-            placeholder="مثال: أمير علي"
-            containerClass="relative mt-1"
-            {{-- لو عندك متغيرات ستايل جاهزة استخدمها، وإلا اترك المكوّن يطبق الافتراضي --}}
-            />
-
-        {{-- من تاريخ --}}
-        <x-date-picker
-            name="fromDate"
-            label="من تاريخ"
-            placeholder="اختر التاريخ"
-            wireModel="fromDate"
-            />
-
-        {{-- إلى تاريخ --}}
-        <x-date-picker
-            name="toDate"
-            label="إلى تاريخ"
-            placeholder="اختر التاريخ"
-            wireModel="toDate"
-            />
-
-        {{-- زر مسح الفلاتر --}}
-        <div class="mt-3 flex justify-between">
-            <div></div>
-            <button type="button"
-                    wire:click="resetFilters"
-                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
-                إعادة تعيين الفلاتر
-            </button>
+            <a href="{{ route('agency.customer-detailed-invoices') }}"
+               class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition text-sm font-medium
+                      bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] hover:shadow-md hover:text-[rgb(var(--primary-700))] w-full sm:w-auto">
+                <svg class="h-5 w-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>رجوع</span>
+            </a>
         </div>
-
     </div>
-</div>
 
+    <!-- شريط الفلاتر -->
+    <div class="bg-white rounded-xl shadow-md p-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end filters-grid">
+            <x-input-field name="beneficiary_search" label="بحث باسم المستفيد" wireModel="search" placeholder="مثال: أمير علي"/>
+            <x-date-picker name="fromDate" label="من تاريخ" wireModel="fromDate" />
+            <x-date-picker name="toDate"   label="إلى تاريخ" wireModel="toDate" />
+            <div class="reset-wrap mt-1 md:mt-3 flex md:justify-end">
+                <button type="button" wire:click="resetFilters"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">
+                    إعادة تعيين الفلاتر
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- جدول المستفيدين -->
-    <div
-        x-data="{ groups: @entangle('selectedGroups') }"
-        x-init="
-            const total  = {{ count($collections) }};
+    <div x-data="{ groups: @entangle('selectedGroups') }"
+         x-init="
             const header = $refs.selectAll;
             const sync = () => {
-                const len = Array.isArray(groups) ? groups.length : (groups?.length ?? 0);
-                const rows = {{ count($collections) }};
-                header.checked       = (len > 0 && len === rows);
-                header.indeterminate = (len > 0 && len < rows);
+              const len  = Array.isArray(groups) ? groups.length : (groups?.length ?? 0);
+              const rows = {{ count($collections) }};
+              header.checked       = (len > 0 && len === rows);
+              header.indeterminate = (len > 0 && len < rows);
             };
-            sync();
-            $watch('groups', sync);
-        "
-        class="overflow-x-auto rounded-xl shadow bg-white"
-    >
-       <div class="bg-white rounded-xl shadow-md overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-            <thead class="bg-gray-100 text-gray-600">
-                <tr>
-                    <th class="px-2 py-1 text-center">
-                        <input type="checkbox"
-                            x-ref="selectAll"
-                            @click.prevent="$wire.toggleSelectAll()"
-                            class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
-                            style="accent-color: rgb(var(--primary-500));"
-                            title="تحديد/إلغاء تحديد الكل">
-                    </th>
-                    <th class="px-2 py-1">اسم المستفيد</th>
-                    <th class="px-2 py-1">تاريخ البيع</th>
-                    <th class="px-2 py-1">الخدمة</th>
-                    <th class="px-2 py-1">سعر الخدمة (أصل)</th>
-                    <th class="px-2 py-1">الاستردادات</th>
-                    <th class="px-2 py-1">المحصل (إجمالي)</th>
-                    <th class="px-2 py-1">المتبقي / رصيد للعميل</th>
-                    <th class="px-2 py-1">الإجراء</th>
-                </tr>
-            </thead>
+            sync(); $watch('groups', sync);
+         "
+         class="rounded-xl shadow bg-white overflow-hidden">
 
-            <tbody class="bg-white divide-y divide-gray-100">
-                @php $currency = Auth::user()->agency->currency ?? 'USD'; @endphp
-
-                @forelse($collections as $index => $item)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-2 py-1 text-center">
-                            <input type="checkbox"
-                                   wire:key="cb-{{ (string)$item->group_key }}"
-                                   wire:model.live="selectedGroups"
-                                   value="{{ (string)$item->group_key }}"
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-[11px] sm:text-xs text-right cust-table">
+                <thead class="bg-gray-100 text-gray-600">
+                    <tr>
+                        <th class="px-2 py-1 text-center">
+                            <input type="checkbox" x-ref="selectAll" @click.prevent="$wire.toggleSelectAll()"
                                    class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
-                                   style="accent-color: rgb(var(--primary-500));">
-                        </td>
+                                   style="accent-color: rgb(var(--primary-500));" title="تحديد/إلغاء تحديد الكل">
+                        </th>
+                        <th class="px-2 py-1">اسم المستفيد</th>
+                        <th class="px-2 py-1">تاريخ البيع</th>
+                        <th class="px-2 py-1">الخدمة</th>
+                        <th class="px-2 py-1">سعر الخدمة (أصل)</th>
+                        <th class="px-2 py-1">الاستردادات</th>
+                        <th class="px-2 py-1">المحصل (إجمالي)</th>
+                        <th class="px-2 py-1">المتبقي / رصيد للعميل</th>
+                        <th class="px-2 py-1">الإجراء</th>
+                    </tr>
+                </thead>
 
-                        <td class="px-2 py-1">{{ $item->beneficiary_name }}</td>
-                        <td class="px-2 py-1">{{ $item->sale_date }}</td>
-                        <td class="px-2 py-1">{{ $item->service_label }}</td>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    @php $currency = Auth::user()->agency->currency ?? 'USD'; @endphp
+                    @forelse($collections as $index => $item)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-2 py-1 text-center">
+                                <input type="checkbox"
+                                       wire:key="cb-{{ (string)$item->group_key }}"
+                                       wire:model.live="selectedGroups"
+                                       value="{{ (string)$item->group_key }}"
+                                       class="rounded border-gray-300 focus:ring-[rgb(var(--primary-500))]"
+                                       style="accent-color: rgb(var(--primary-500));">
+                            </td>
 
-                        <td class="px-2 py-1 text-blue-700">
-                            {{ number_format($item->invoice_total_true, 2) }} {{ $currency }}
-                        </td>
-                        <td class="px-2 py-1 text-rose-700">
-                            {{ number_format($item->refund_total, 2) }} {{ $currency }}
-                        </td>
-                        <td class="px-2 py-1 text-green-700">
-                            {{ number_format($item->total_collected, 2) }} {{ $currency }}
-                        </td>
+                            <td class="px-2 py-1">{{ $item->beneficiary_name }}</td>
+                            <td class="px-2 py-1">{{ $item->sale_date }}</td>
+                            <td class="px-2 py-1">{{ $item->service_label }}</td>
 
-                        <td class="px-2 py-1">
-                            @if ($item->remaining_for_customer > 0)
-                                <span class="text-red-600">
-                                    مدين: {{ number_format($item->remaining_for_customer, 2) }} {{ $currency }}
-                                </span>
-                            @elseif ($item->remaining_for_company > 0)
-                                <span class="text-green-600">
-                                    للعميل: {{ number_format($item->remaining_for_company, 2) }} {{ $currency }}
-                                </span>
-                            @else
-                                <span class="text-gray-500">تم السداد بالكامل</span>
-                            @endif
-                        </td>
+                            <td class="px-2 py-1 text-blue-700">
+                                {{ number_format($item->invoice_total_true, 2) }} {{ $currency }}
+                            </td>
+                            <td class="px-2 py-1 text-rose-700">
+                                {{ number_format($item->refund_total, 2) }} {{ $currency }}
+                            </td>
+                            <td class="px-2 py-1 text-green-700">
+                                {{ number_format($item->total_collected, 2) }} {{ $currency }}
+                            </td>
+
+                            <td class="px-2 py-1">
+                                @if ($item->remaining_for_customer > 0)
+                                    <span class="text-red-600">
+                                        مدين: {{ number_format($item->remaining_for_customer, 2) }} {{ $currency }}
+                                    </span>
+                                @elseif ($item->remaining_for_company > 0)
+                                    <span class="text-green-600">
+                                        للعميل: {{ number_format($item->remaining_for_company, 2) }} {{ $currency }}
+                                    </span>
+                                @else
+                                    <span class="text-gray-500">تم السداد بالكامل</span>
+                                @endif
+                            </td>
 
                             <td class="px-2 py-1">
                                 <div class="flex items-center gap-2">
-                                    {{-- تفاصيل --}}
-                                    <button
-                                        wire:click="showDetails({{ $index }})"
-                                        class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
+                                    <button wire:click="showDetails({{ $index }})"
+                                            class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
                                         تفاصيل
                                     </button>
                                     <span class="mx-1 text-gray-300">|</span>
-
-                                    {{-- فاتورة فردية PDF --}}
-                                   <button type="button"
-                                    wire:click="askSingleTax('{{ (string)$item->group_key }}')"
-                                    wire:loading.attr="disabled"
-                                    wire:target="askSingleTax"
-                                    class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
-                                    فاتورة فردية
-                                </button>
-
+                                    <button type="button"
+                                            wire:click="askSingleTax('{{ (string)$item->group_key }}')"
+                                            wire:loading.attr="disabled"
+                                            class="text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-700))] font-semibold transition">
+                                        فاتورة PDF
+                                    </button>
                                 </div>
                             </td>
-
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="9" class="text-center text-gray-400 py-6">لا توجد نتائج مطابقة للبحث.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
-
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="text-center text-gray-400 py-6">لا توجد نتائج مطابقة للبحث.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- ✅ المودال -->
@@ -313,9 +285,8 @@
     @endif
 
     @if($showBulkTaxModal)
-    <div class="fixed inset-0 z-50 flex items-start justify-center pt-24 backdrop-blur-sm bg-black/40">
-        <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
-
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6 relative">
         <button wire:click="$set('showBulkTaxModal', false)"
             class="absolute top-3 left-3 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
         <h2 class="text-xl font-bold mb-4 text-center" style="color: rgb(var(--primary-700));">إصدار فاتورة مجمّعة</h2>

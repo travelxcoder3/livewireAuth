@@ -410,18 +410,6 @@
                                 <i class="fas fa-project-diagram"></i><span>تسلسل الموافقات</span>
                             </a>
                         @endif
-                        @if ($user->hasRole('agency-admin') || $user->can('commissions-setup.view'))
-                            <a href="{{ route('agency.commissions') }}" @click="mobileSidebarOpen = false"
-                               class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
-                                <i class="fas fa-percent"></i><span>تهيئة العمولات</span>
-                            </a>
-                        @endif
-                        @if ($user->hasRole('agency-admin') || $user->can('commission-policies.view'))
-                            <a href="{{ route('agency.commission-policies') }}" @click="mobileSidebarOpen = false"
-                               class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
-                                <i class="fas fa-user-cog"></i><span>تهيئة عمولات الموظفين</span>
-                            </a>
-                        @endif
                         @if ($user->hasRole('agency-admin') || $user->can('policies.view'))
                             <a href="{{ route('agency.policies') }}" @click="mobileSidebarOpen = false"
                                class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
