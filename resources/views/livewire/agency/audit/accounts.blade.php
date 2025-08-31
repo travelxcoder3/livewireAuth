@@ -7,12 +7,21 @@
 
 <div class="space-y-6" x-data>
         {{-- العنوان --}}
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <h2 class="text-xl sm:text-2xl font-bold"
                 style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
                 مراجعة الحسابات
             </h2>
+
+            <div class="flex items-center gap-2 order-last sm:order-none w-full sm:w-auto">
+                <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
+                <input type="text"
+                    value="{{ number_format($kpis['sales'] ?? 0, 2) }}"
+                    readonly
+                    class="bg-gray-100 border border-gray-300 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm text-gray-700 w-24 sm:w-32 text-center">
+            </div>
         </div>
+
 
         {{-- الفلاتر (باستخدام الـ components) --}}
         <div class="bg-white rounded-xl shadow-md p-4 space-y-3">

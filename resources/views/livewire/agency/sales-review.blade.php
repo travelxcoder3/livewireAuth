@@ -51,17 +51,28 @@
             <x-select-field label="حساب العميل" name="account" wireModel="accountFilter" :options="$customers->pluck('name', 'id')->toArray()"
                 placeholder=" حساب العميل" containerClass="relative" />
 
-            <div class="relative mt-1">
-                <input type="date" name="start_date" id="start_date" wire:model.live="startDate" wire:change="$refresh"
-                    placeholder=" " class="peer {{ $fieldClass }}" />
-                <label for="start_date" class="{{ $labelClass }}">من تاريخ</label>
-            </div>
+                <x-date-picker
+                        name="start_date"
+                        label="من تاريخ"
+                        placeholder="اختر التاريخ"
+                        wireModel="startDate"
+                        width="w-full"
+                        containerClass="relative mt-1"
+                        fieldClass="{{ $fieldClass }} peer"
+                        labelClass="{{ $labelClass }}"
+                    />
 
-            <div class="relative mt-1">
-                <input type="date" name="end_date" id="end_date" wire:model.live="endDate" wire:change="$refresh"
-                    placeholder=" " class="peer {{ $fieldClass }}" />
-                <label for="end_date" class="{{ $labelClass }}">إلى تاريخ</label>
-            </div>
+                    <x-date-picker
+                        name="end_date"
+                        label="إلى تاريخ"
+                        placeholder="اختر التاريخ"
+                        wireModel="endDate"
+                        width="w-full"
+                        containerClass="relative mt-1"
+                        fieldClass="{{ $fieldClass }} peer"
+                        labelClass="{{ $labelClass }}"
+                    />
+
 
             <x-input-field name="pnr" label="PNR" wireModel="pnrFilter" placeholder="بحث بـ PNR"
                 containerClass="relative" fieldClass="{{ $fieldClass }}" />

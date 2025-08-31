@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Invoice;
 use Spatie\Browsershot\Browsershot;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class InvoicesReview extends Component
 {
@@ -128,11 +129,14 @@ class InvoicesReview extends Component
 
         $this->userLabel = $this->userFilter ? optional(User::find($this->userFilter))->name : null;
 
-        $invoices = $this->baseQuery()
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(10);
+        // ⬅️ جديد: حساب إجمالي الفواتير بعد تطبيق الفلاتر
+        $query = $this->baseQuery();
+        $totalInvoices = (clone $query)->sum(DB::raw('COALESCE(grand_total, COALESCE(subtotal,0) + COALESCE(tax_total,0))'));
 
-        return view('livewire.agency.invoices-review', compact('invoices'))
+        $invoices = $query->orderBy($this->sortField, $this->sortDirection)->paginate(10);
+
+        return view('livewire.agency.invoices-review', compact('invoices','totalInvoices'))
             ->layout('layouts.agency');
     }
+
 }

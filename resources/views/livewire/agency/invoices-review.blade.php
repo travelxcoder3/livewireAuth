@@ -14,8 +14,15 @@
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
             مراجعة الفواتير
         </h2>
-        
+
+        {{-- ⬅️ جديد: نفس نمط صفحة "مراجعة المبيعات" بدون عملة --}}
+        <div class="flex items-center gap-2 order-last sm:order-none w-full sm:w-auto">
+            <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
+            <input type="text" value="{{ number_format($totalInvoices, 2) }}" readonly
+                   class="bg-gray-100 border border-gray-300 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm text-gray-700 w-24 sm:w-32 text-center">
+        </div>
     </div>
+
 
     <div class="bg-white rounded-xl shadow-md p-4 space-y-3">
             <div class="grid md:grid-cols-5 items-end gap-3">
