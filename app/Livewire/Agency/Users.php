@@ -37,7 +37,7 @@ class Users extends Component
     'password' => 'required|string|min:6',
     'role' => 'required|exists:roles,name',
     'is_active' => 'boolean',
-];
+         ];
 
 
     public function mount()
@@ -81,10 +81,10 @@ class Users extends Component
         ]);
         
        $role = Role::where('name', $this->role)
-    ->where('guard_name', 'web')
-    ->where('agency_id', Auth::user()->agency_id)
-    ->firstOrFail();
-$user->assignRole($role);
+            ->where('guard_name', 'web')
+            ->where('agency_id', Auth::user()->agency_id)
+            ->firstOrFail();
+        $user->assignRole($role);
 
         // تحديث صلاحيات دور أدمن الوكالة إذا كان الدور هو agency-admin
         if ($this->role === 'agency-admin') {
@@ -146,10 +146,10 @@ $user->assignRole($role);
             $user->update(['password' => Hash::make($this->edit_password)]);
         }
         $role = Role::where('name', $this->edit_role)
-    ->where('guard_name', 'web')
-    ->where('agency_id', Auth::user()->agency_id)
-    ->firstOrFail();
-$user->syncRoles([$role]);
+            ->where('guard_name', 'web')
+            ->where('agency_id', Auth::user()->agency_id)
+            ->firstOrFail();
+        $user->syncRoles([$role]);
 
         if ($this->edit_role === 'agency-admin') {
             $agencyAdminRole = Role::where('name', 'agency-admin')
@@ -192,63 +192,63 @@ $user->syncRoles([$role]);
     }
 
     public function closeModal()
-{
-    $this->reset([
-        'name','email','password','role','is_active',
-        'edit_name','edit_email','edit_password','edit_role','edit_is_active',
-        'showAddModal','showEditModal','editingUser',
-    ]);
+    {
+        $this->reset([
+            'name','email','password','role','is_active',
+            'edit_name','edit_email','edit_password','edit_role','edit_is_active',
+            'showAddModal','showEditModal','editingUser',
+        ]);
 
-    $this->resetValidation();
-}
+        $this->resetValidation();
+    }
 
 
  
 
 
-    // أضف هذه الخصائص في بداية الكلاس
-public $search = '';
-public $role_filter = '';
-public $status_filter = '';
+        // أضف هذه الخصائص في بداية الكلاس
+    public $search = '';
+    public $role_filter = '';
+    public $status_filter = '';
 
-// عدل دالة render لتشمل الفلاتر
-public function render()
-{
-    $agency = Auth::user()->agency;
-    
-    $query = User::query()
-        ->with(['roles', 'agency'])
-        ->when($agency->parent_id === null, function ($query) use ($agency) {
-            $query->whereIn('agency_id', array_merge([$agency->id], $agency->branches()->pluck('id')->toArray()));
-        }, function ($query) use ($agency) {
-            $query->where('agency_id', $agency->id);
-        })
-        ->when($this->search, function ($query) {
-            $query->where(function ($q) {
-                $q->where('name', 'like', '%'.$this->search.'%')
-                  ->orWhere('email', 'like', '%'.$this->search.'%');
-            });
-        })
-        ->when($this->role_filter, function ($query) {
-            $query->whereHas('roles', function ($q) {
-                $q->where('name', $this->role_filter);
-            });
-        })
-        ->when($this->status_filter !== '', function ($query) {
-            $query->where('is_active', $this->status_filter);
-        })
-        ->latest();
+    // عدل دالة render لتشمل الفلاتر
+    public function render()
+    {
+        $agency = Auth::user()->agency;
+        
+        $query = User::query()
+            ->with(['roles', 'agency'])
+            ->when($agency->parent_id === null, function ($query) use ($agency) {
+                $query->whereIn('agency_id', array_merge([$agency->id], $agency->branches()->pluck('id')->toArray()));
+            }, function ($query) use ($agency) {
+                $query->where('agency_id', $agency->id);
+            })
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%'.$this->search.'%')
+                    ->orWhere('email', 'like', '%'.$this->search.'%');
+                });
+            })
+            ->when($this->role_filter, function ($query) {
+                $query->whereHas('roles', function ($q) {
+                    $q->where('name', $this->role_filter);
+                });
+            })
+            ->when($this->status_filter !== '', function ($query) {
+                $query->where('is_active', $this->status_filter);
+            })
+            ->latest();
 
-    $this->users = $query->get();
+        $this->users = $query->get();
 
-    return view('livewire.agency.users')
-        ->layout('layouts.agency')
-        ->title('إدارة المستخدمين - ' . $agency->name);
-}
+        return view('livewire.agency.users')
+            ->layout('layouts.agency')
+            ->title('إدارة المستخدمين - ' . $agency->name);
+    }
 
-// أضف دالة لإعادة تعيين الفلاتر
-public function resetFilters()
-{
-    $this->reset(['search', 'role_filter', 'status_filter']);
-}
+    // أضف دالة لإعادة تعيين الفلاتر
+    public function resetFilters()
+    {
+        $this->reset(['search', 'role_filter', 'status_filter']);
+    }
 } 

@@ -11,16 +11,19 @@ class EnsurePasswordIsChanged
     {
         $user = Auth::user();
 
-        // استثناء السوبر أدمن من تغيير كلمة المرور
-        if ($user && $user->hasRole('super-admin')) {
-            return $next($request);
-        }
+      // ✳️ عمومي لكل الأدوار: أي مستخدم عليه must_change_password يُحوّل لصفحة تغيير كلمة المرور
+if ($user && $user->must_change_password) {
+    if (
+        !$request->routeIs('change-password') &&      // اسم المسار العام الجديد
+        !$request->routeIs('password.*') &&           // نسمح بمسارات الاستعادة/إعادة التعيين
+        !$request->routeIs('logout') &&               // نسمح بتسجيل الخروج
+        !$request->is('agency/change-password')       // توافقًا مع المسار القديم داخل مجموعة agency
+    ) {
+        return redirect()->route('change-password');
+    }
+}
 
-        // فرض تغيير كلمة المرور فقط على أدمن الوكالة
-        if ($user && $user->hasRole('agency-admin') && $user->must_change_password && !$request->is('agency/change-password')) {
-            return redirect()->route('agency.change-password');
-        }
+return $next($request);
 
-        return $next($request);
     }
 }

@@ -88,11 +88,7 @@
         <x-data-table :rows="$invoices" :columns="$columns" />
     </div>
 
-    @if ($invoices->hasPages())
-        <div class="px-4 py-2 border-t border-gray-200">
-            {{ $invoices->links() }}
-        </div>
-    @endif
+
 </div>
 
     @if($showDetailsModal && $selectedInvoice)

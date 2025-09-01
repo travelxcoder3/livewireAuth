@@ -97,6 +97,9 @@ Route::get('/forgot-password', fn() => view('livewire.auth.forgot-password'))
     ->name('password.request');
 
 Route::get('/register', fn() => redirect('/')->with('error', 'إنشاء الحسابات يتم فقط عن طريق السوبر أدمن أو أدمن الوكالة.'));
+Route::get('/change-password', ChangePassword::class)
+    ->middleware(['auth'])
+    ->name('change-password');
 
 Route::post('/logout', function () {
     Auth::logout();
@@ -338,10 +341,10 @@ Route::get('/agency/provider-invoices/{provider}/export', [\App\Http\Controllers
     ->name('agency.provider-invoices.export');
 
 
-    
-Route::middleware(['auth']) // أضف صلاحياتك إن وجدت
+Route::middleware(['auth','mustChangePassword'])
     ->prefix('agency/settings')
     ->name('agency.settings.')
     ->group(function () {
+
         Route::get('sale-edit-window', SaleEditWindow::class)->name('sale-edit-window');
     });

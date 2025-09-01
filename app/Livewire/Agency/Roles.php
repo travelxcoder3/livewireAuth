@@ -39,13 +39,13 @@ class Roles extends Component
 
 
     public $showDeleteModal = false;
-public $roleToDelete;
+    public $roleToDelete;
 
-public function confirmDelete($roleId)
-{
-    $this->roleToDelete = $roleId;
-    $this->showDeleteModal = true;
-}
+    public function confirmDelete($roleId)
+    {
+        $this->roleToDelete = $roleId;
+        $this->showDeleteModal = true;
+    }
 
     protected function rules()
     {
@@ -278,25 +278,25 @@ public function confirmDelete($roleId)
     }
 
     public function delete()
-{
-    $role = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($this->roleToDelete);
+    {
+        $role = Role::where('agency_id', Auth::user()->agency_id)->findOrFail($this->roleToDelete);
 
-    if (in_array($role->name, ['super-admin', 'agency-admin'])) {
-        session()->flash('error', 'لا يمكن حذف الأدوار الأساسية');
-        return;
+        if (in_array($role->name, ['super-admin', 'agency-admin'])) {
+            session()->flash('error', 'لا يمكن حذف الأدوار الأساسية');
+            return;
+        }
+
+        if ($role->users()->count() > 0) {
+            session()->flash('error', 'لا يمكن حذف الدور لوجود مستخدمين مرتبطين به');
+            return;
+        }
+
+        $role->delete();
+        session()->flash('message', 'تم حذف الدور بنجاح');
+
+        $this->showDeleteModal = false;
+        $this->roleToDelete = null;
     }
-
-    if ($role->users()->count() > 0) {
-        session()->flash('error', 'لا يمكن حذف الدور لوجود مستخدمين مرتبطين به');
-        return;
-    }
-
-    $role->delete();
-    session()->flash('message', 'تم حذف الدور بنجاح');
-
-    $this->showDeleteModal = false;
-    $this->roleToDelete = null;
-}
 
 
     public function toggleModule($module)
@@ -308,11 +308,11 @@ public function confirmDelete($roleId)
     {
         $agencyId = Auth::user()->agency_id;
 
-$rolesQuery = Role::where('agency_id', $agencyId)
-    ->with('permissions')
-    ->withCount(['users as users_count' => function ($q) use ($agencyId) {
-        $q->where('users.agency_id', $agencyId);
-    }]);
+        $rolesQuery = Role::where('agency_id', $agencyId)
+            ->with('permissions')
+            ->withCount(['users as users_count' => function ($q) use ($agencyId) {
+                $q->where('users.agency_id', $agencyId);
+            }]);
 
         if (!empty($this->search)) {
             $rolesQuery->where(function($q) {

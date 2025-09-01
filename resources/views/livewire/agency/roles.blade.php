@@ -45,21 +45,22 @@
     </div>
 
     <!-- جدول الأدوار -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+<div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 text-xs text-right">
-            <thead class="bg-[rgb(var(--primary-50))] text-[rgb(var(--primary-700))]">
+            <thead class="bg-gray-100 text-gray-600">
                 <tr>
-                    <th class="px-3 py-2">اسم الدور</th>
-                    <th class="px-3 py-2">الصلاحيات</th>
+                    <th class="px-2 py-1">اسم الدور</th>
+                    <th class="px-2 py-1">الصلاحيات</th>
                     <th class="px-3 py-0 text-center" style="padding-top:2px; padding-bottom:2px; line-height:1.1; font-size:1.1em;">عدد المستخدمين</th>
-                    <th class="px-3 py-2">تاريخ الإنشاء</th>
-                    <th class="px-3 py-2">الإجراءات</th>
+                    <th class="px-2 py-1">تاريخ الإنشاء</th>
+                    <th class="px-2 py-1">الإجراءات</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-100">
                 @forelse($roles as $role)
-                <tr class="hover:bg-[rgb(var(--primary-50))] transition duration-200">
-                    <td class="px-3 py-2">
+                <tr class="hover:bg-gray-50">
+                    <td class="px-2 py-1">
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-sm">{{ $role->display_name ?? $role->name }}</span>
                             @if(in_array($role->name, ['super-admin', 'agency-admin']))
@@ -86,11 +87,11 @@
                         </x-primary-button>
                     </td>
 
-                    <td class="px-3 py-0 text-center" style="padding-top:2px; padding-bottom:2px; line-height:1.1; font-size:1.1em; vertical-align:top;">
+                    <td class="px-2 py-1 text-center align-top">
                         {{ $role->users_count ?? 0 }}
                     </td>
-                    <td class="px-3 py-2">{{ $role->created_at->format('Y-m-d') }}</td>
-                    <td class="px-3 py-2">
+                    <td class="px-2 py-1">{{ $role->created_at->format('Y-m-d') }}</td>
+                    <td class="px-2 py-1">
                         <div class="flex gap-2">
                             @can('roles.edit')
                                 @if ($role->name !== 'agency-admin')
@@ -124,6 +125,7 @@
         </table>
                    
         @if($roles->hasPages())
+        </div>
         <div class="px-4 py-2 border-t border-gray-200">
             {{ $roles->links() }}
         </div>
@@ -192,7 +194,7 @@
             </button>
 
             <!-- المحتوى القابل للتمرير مع الحفاظ على التنسيق الأصلي -->
-            <div class="overflow-y-auto p-6">
+            <div class="overflow-y-auto xl:overflow-visible p-6 relative">
                 <!-- العنوان الأصلي -->
                 <h3 class="text-xl font-bold mb-4 text-center text-[rgb(var(--primary-700))]">
                     {{ $editingRole ? 'تعديل الدور' : 'إضافة دور جديد' }}
@@ -291,7 +293,7 @@
                         @endphp
 
                         <!-- شبكة الأقسام -->
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 mb-3">
+                        <div class="grid grid-cols-2 xl:grid-cols-3 gap-2 mt-2 mb-3">
                             @foreach($grouped as $module => $perms)
                                 @php
                                     $modulePermissions = $perms->pluck('name')->toArray();
@@ -301,18 +303,15 @@
                                     $isFullySelected = $this->isModuleFullySelected($module);
                                     $isPartiallySelected = $this->isModulePartiallySelected($module);
                                 @endphp
-<button type="button" wire:click="toggleModule('{{ $module }}')"
-    class="relative z-50 w-full text-center px-3 py-2 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105 border-2
-        @if($isFullySelected)
-            bg-[rgb(var(--primary-500))] text-white border-[rgb(var(--primary-600))] shadow-lg
-
-                                        @elseif($isPartiallySelected)
-                                            bg-yellow-100 text-yellow-700 border-yellow-300 shadow-md
-                                        @else 
-                                            bg-white text-[rgb(var(--primary-600))] border-[rgb(var(--primary-300))] hover:border-[rgb(var(--primary-500))]
-                                        @endif">
-                                    <i class="fas {{ $iconMap[$module] ?? $iconMap['default'] }} ml-1 text-xs"></i>
+                                <button type="button" wire:click="toggleModule('{{ $module }}')"
+                                class="relative z-50 w-full text-center px-3 py-2 rounded-lg text-xs font-bold transition duration-200 transform hover:scale-105 border-2 min-w-0
+                                @if($isFullySelected) bg-[rgb(var(--primary-500))] text-white border-[rgb(var(--primary-600))] shadow-lg
+                                @elseif($isPartiallySelected) bg-yellow-100 text-yellow-700 border-yellow-300 shadow-md
+                                @else bg-white text-[rgb(var(--primary-600))] border-[rgb(var(--primary-300))] hover:border-[rgb(var(--primary-500))] @endif">
+                                <i class="fas {{ $iconMap[$module] ?? $iconMap['default'] }} ml-1 text-xs"></i>
+                                <span class="inline-block break-all sm:break-words whitespace-normal leading-5 max-w-full">
                                     {{ __(ucfirst($module)) }}
+                                </span>
                                     @if($selectedCount > 0)
                                         <div class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-md">
                                             {{ $selectedCount }}
@@ -323,11 +322,16 @@
                         </div>
 
                         <!-- لوحات الصلاحيات -->
-                        <div class="absolute top-0 right-[calc(100%+0.75rem)] z-40 bg-transparent space-y-3 max-h-[80vh] overflow-y-auto"
-                             wire:ignore.self>
+                        <!-- أزل الـ <div class="relative"> حول الشبكة إن وُجد -->
+                        <div class="fixed inset-x-3 md:inset-x-6 top-24 z-50 space-y-3 max-h-[70vh] overflow-y-auto
+                                    flex flex-col items-center
+                                    xl:block xl:items-start
+                                    xl:absolute xl:inset-auto xl:top-0
+                                    xl:right-[calc(100%+2rem)] 2xl:right-[calc(100%+2.5rem)]
+                                    xl:z-40 xl:max-h-[80vh]" wire:ignore.self>
                             @foreach($grouped as $module => $perms)
                                 @if(!empty($openModules[$module]))
-                                <div class="bg-white border border-gray-200 rounded-xl shadow p-4 w-[300px]">
+                                <div class="bg-white border border-gray-200 rounded-xl shadow p-4 w-[300px] mx-auto xl:mx-0">
                                     <!-- رأس -->
                                     <div class="flex justify-between items-center mb-2">
                                         <div class="flex items-center gap-2 font-bold text-[rgb(var(--primary-700))] text-sm">
@@ -417,10 +421,10 @@
                                     <div class="space-y-2 text-xs max-h-60 overflow-y-auto">
                                         @foreach($perms as $perm)
                                             <label class="flex items-center justify-between border-b pb-1 hover:bg-gray-50 p-1 rounded transition">
-                                                <span class="flex items-center gap-2 text-gray-700 font-medium">
-                                                    <i class="fas fa-circle text-gray-300 text-sm"></i>
-                                                    {{ $perm->name }}
-                                                </span>
+                                            <span class="flex items-center gap-2 text-gray-700 font-medium min-w-0 max-w-[75%] overflow-hidden whitespace-nowrap text-ellipsis">
+                                                <i class="fas fa-circle text-gray-300 text-sm"></i>
+                                                {{ $perm->name }}
+                                            </span>
                                                 <input type="checkbox" wire:model="selectedPermissions" value="{{ $perm->name }}"
                                                        class="h-4 w-4 border-gray-300 rounded accent-[rgb(var(--primary-500))] focus:ring-2 focus:ring-[rgb(var(--primary-500))] transition" />
                                             </label>
