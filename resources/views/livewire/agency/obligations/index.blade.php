@@ -22,19 +22,20 @@
     <div class="bg-white rounded-xl shadow-md p-4">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-bold" style="color: rgb(var(--primary-700));">قائمة الالتزامات</h2>
-
-            <button wire:click="create"
-                    class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                    style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
-                 إضافة التزام جديد
-            </button>
+                <x-primary-button wire:click="create" loading="true" target="create">
+                    إضافة التزام جديد
+                </x-primary-button>
         </div>
 
         <!-- حقل البحث -->
         <div class="mb-4">
-            <input type="text" wire:model.live="search" placeholder="ابحث في الالتزامات..." 
-            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]">        </div>
-
+            <x-input-field
+                name="search"
+                label="البحث"
+                placeholder="ابحث في الالتزامات..."
+                wireModel="search"
+            />
+        </div>
         <!-- جدول الالتزامات -->
        @php use App\Tables\ObligationTable; @endphp
 
@@ -70,32 +71,33 @@
                     @endphp
 
                     <!-- عنوان الالتزام -->
-                    <div class="{{ $containerClass }}">
-                        <input type="text" wire:model="title" id="title" class="{{ $fieldClass }}" placeholder="عنوان الالتزام" />
-                        <label for="title" class="{{ $labelClass }}">العنوان</label>
-                        @error('title') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    <x-input-field
+                        name="title"
+                        label="العنوان"
+                        placeholder="عنوان الالتزام"
+                        wireModel="title"
+                    />
 
                     <!-- وصف الالتزام -->
                     <div class="{{ $containerClass }}">
                         <textarea wire:model="description" id="description" rows="3" class="{{ $fieldClass }}" placeholder="وصف الالتزام"></textarea>
-                        <label for="description" class="{{ $labelClass }}">الوصف</label>
                         @error('description') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                     </div>
 
                     <!-- تواريخ الالتزام -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="{{ $containerClass }}">
-                            <input type="date" wire:model="start_date" id="start_date" class="{{ $fieldClass }}" />
-                            <label for="start_date" class="{{ $labelClass }}">تاريخ البدء</label>
-                            @error('start_date') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="{{ $containerClass }}">
-                            <input type="date" wire:model="end_date" id="end_date" class="{{ $fieldClass }}" />
-                            <label for="end_date" class="{{ $labelClass }}">تاريخ الانتهاء</label>
-                            @error('end_date') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
-                        </div>
+                        <x-date-picker
+                            name="start_date"
+                            label="تاريخ البدء"
+                            placeholder="اختر التاريخ"
+                            wireModel="start_date"
+                        />
+                        <x-date-picker
+                            name="end_date"
+                            label="تاريخ الانتهاء"
+                            placeholder="اختر التاريخ"
+                            wireModel="end_date"
+                        />
                     </div>
 
                     <!-- تطبيق على الجميع -->
@@ -109,14 +111,16 @@
     <div class="flex justify-between items-center mb-3">
       <span class="font-medium text-gray-700">الموظفون المعنيون</span>
       <!-- زر تحديد/إلغاء الكل بنمط الثيم -->
-      <button
-        type="button"
-        wire:click="toggleSelectAll"
-        class="text-white font-bold text-sm px-3 py-1 rounded-xl shadow-md transition duration-300"
-        style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);"
-      >
-        {{ count($selectedUsers) < $employees->count() ? 'تحديد الكل' : 'إلغاء التحديد' }}
-      </button>
+        <x-primary-button
+            type="button"
+            wire:click="toggleSelectAll"
+            fontSize="text-xs"
+            padding="px-3 py-1"
+            loading="true"
+            target="toggleSelectAll"
+        >
+            {{ count($selectedUsers) < $employees->count() ? 'تحديد الكل' : 'إلغاء التحديد' }}
+        </x-primary-button>
     </div>
 
     <ul class="space-y-2">
@@ -153,11 +157,14 @@
                                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
                             إلغاء
                         </button>
-                        <button type="submit"
-                                class="text-white font-bold px-4 py-2 rounded-xl shadow-md transition duration-300 text-sm"
-                                style="background: linear-gradient(to right, rgb(var(--primary-500)) 0%, rgb(var(--primary-600)) 100%);">
+                        <x-primary-button
+                            type="submit"
+                            loading="true"
+                            target="save"
+                            busyText="يتم الحفظ…"
+                        >
                             {{ $selectedObligation ? 'تحديث' : 'إضافة' }}
-                        </button>
+                        </x-primary-button>
                     </div>
                 </form>
             </div>

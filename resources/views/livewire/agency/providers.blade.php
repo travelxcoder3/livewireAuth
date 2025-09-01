@@ -129,9 +129,23 @@
                                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
                             إلغاء
                         </button>
-                        <x-primary-button type="submit" padding="px-4 py-2">
-                            {{ $editMode ? 'تحديث' : 'إضافة' }}
-                        </x-primary-button>
+                    <x-primary-button
+    type="button"
+    padding="px-4 py-2"
+    x-data
+    @click="window.dispatchEvent(new CustomEvent('confirm:open', { detail: {
+        title:       '{{ $editMode ? 'تأكيد تحديث المزود' : 'تأكيد إضافة المزود' }}',
+        message:     '{{ $editMode ? 'سيتم تحديث بيانات المزود. متابعة؟' : 'سيتم إضافة مزود جديد بالبيانات المدخلة. متابعة؟' }}',
+        icon:        '{{ $editMode ? 'info' : 'check' }}',
+        confirmText: '{{ $editMode ? 'تحديث' : 'إضافة' }}',
+        cancelText:  'إلغاء',
+        onConfirm:   'saveProvider',
+        payload:     null
+    }}))"
+>
+    {{ $editMode ? 'تحديث' : 'إضافة' }}
+</x-primary-button>
+
 
                     </div>
                 </form>
@@ -139,7 +153,7 @@
         </div>
     @endif
 
-
+<x-confirm-dialog />
     <style>
         .peer:placeholder-shown + label {
             top: 0.75rem;

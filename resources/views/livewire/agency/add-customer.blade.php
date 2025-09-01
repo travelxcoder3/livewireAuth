@@ -99,9 +99,23 @@
                             containerClass="mt-3 col-span-4" />
 
                         <div class="flex justify-center gap-4 pt-6">
-                            <x-primary-button type="submit">
-                                {{ $editingId ? 'تأكيد التعديل' : 'حفظ العميل' }}
-                            </x-primary-button>
+                       <x-primary-button
+  type="button"
+  x-data
+  @click="window.dispatchEvent(new CustomEvent('confirm:open',{ detail:{
+      title: '{{ $editingId ? 'تأكيد تعديل العميل' : 'تأكيد حفظ العميل' }}',
+      message: '{{ $editingId ? 'سيتم تحديث بيانات هذا العميل. متابعة؟' : 'سيتم حفظ بيانات العميل الجديد. متابعة؟' }}',
+      icon: '{{ $editingId ? 'info' : 'check' }}',
+      confirmText: '{{ $editingId ? 'تعديل' : 'حفظ' }}',
+      cancelText: 'إلغاء',
+      onConfirm: 'save',   // ← هنا
+      payload: null
+  }}))"
+>
+  {{ $editingId ? 'تأكيد التعديل' : 'حفظ العميل' }}
+</x-primary-button>
+
+
 
                             <x-primary-button type="button" wire:click="closeModal" color="bg-gray-200"
                                 textColor="text-gray-800" :gradient="false">
@@ -170,6 +184,6 @@
 
 @endif
 
-
+<x-confirm-dialog />
 
 </div>

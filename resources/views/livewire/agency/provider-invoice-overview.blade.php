@@ -2,17 +2,16 @@
 
 <div class="space-y-6" x-data="{ sel: @entangle('selectedGroups') }">
     <x-toast :message="$toastMessage" :type="$toastType ?? 'success'" />
-    <div class="flex justify-between items-center mb-1">
-        <h2 class="text-2xl font-bold"
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
+        <h2 class="order-1 sm:order-none w-full sm:w-auto text-xl sm:text-2xl font-bold text-center sm:text-right"
             style="color: rgb(var(--primary-700)); border-bottom: 2px solid rgba(var(--primary-200), 0.5); padding-bottom: .5rem;">
-            فاتورة المزوّد   : {{ $provider->name }}
+            فاتورة المزوّد : {{ $provider->name }}
         </h2>
-
-        <div class="flex items-center gap-2">
-            <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
+        <div class="order-2 sm:order-none flex items-center gap-2 flex-wrap justify-center sm:flex-nowrap sm:justify-end">
+            <label class="shrink-0 text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
             <?php $totalBuy = collect($groups ?? [])->sum('net_cost'); ?>
             <input type="text" value="{{ number_format($totalBuy, 2) }}" readonly
-                   class="bg-gray-100 border border-gray-300 rounded px-3 py-1 text-sm text-gray-700 w-32 text-center">
+                   class="shrink-0 bg-gray-100 border border-gray-300 rounded px-3 py-1 text-xs sm:text-sm text-gray-700 w-24 sm:w-32 text-center">
 
             <?php if (count($groups ?? []) > 0) { ?>
                 <x-primary-button
@@ -22,7 +21,7 @@
                     target="openBulkInvoiceModal"
                     busyText="جارٍ الفتح…"
                     delay="shortest"
-                    class="px-3 py-2 text-sm rounded-lg"
+                    class="shrink-0 px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm rounded-lg"
                 >
                     إصدار فاتورة مجمعة
                 </x-primary-button>
@@ -31,9 +30,9 @@
 
 
             <a href="{{ route('agency.provider-detailed-invoices') }}"
-               class="flex items-center gap-2 px-4 py-2 rounded-lg border transition text-sm font-medium
-                      bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] hover:shadow-md hover:text-[rgb(var(--primary-700))]">
-                <svg class="h-5 w-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               class="shrink-0 flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border transition text-xs sm:text-sm font-medium
+                    bg-white border-[rgb(var(--primary-500))] text-[rgb(var(--primary-600))] hover:shadow-md hover:text-[rgb(var(--primary-700))]">
+                <svg class="h-4 w-4 sm:h-5 sm:w-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
                 <span>رجوع</span>

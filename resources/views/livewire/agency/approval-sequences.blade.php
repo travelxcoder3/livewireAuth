@@ -99,7 +99,7 @@
 
     {{-- مودال الإضافة --}}
     <div x-show="openAddModal" x-cloak x-transition
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        class="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/50 backdrop-blur-sm p-4">
 
         <div @click.outside="closeAddModal()"
              class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6 border border-gray-200 transform transition-all duration-300"
