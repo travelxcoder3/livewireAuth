@@ -5,7 +5,7 @@
     $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
     $colors = ThemeService::getCurrentThemeColors($themeName);
 
-    $columns = AccountTable::columns();
+    $columns = AccountTable::columns(true);
     $fieldClass =
         'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
     $labelClass =

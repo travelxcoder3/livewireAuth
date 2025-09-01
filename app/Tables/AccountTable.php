@@ -1,11 +1,12 @@
 <?php
 
 namespace App\Tables;
+
 class AccountTable
 {
-    public static function columns()
+    // أضف بارامتر تحكم
+    public static function columns(bool $showActions = false): array
     {
-        // الأعمدة الأصلية
         $columns = [
             ['key' => 'created_at', 'label' => 'تاريخ الاجراء ', 'format' => 'date', 'sortable' => true],
             ['key' => 'sale_date', 'label' => 'تاريخ البيع', 'format' => 'date', 'sortable' => true],
@@ -22,12 +23,13 @@ class AccountTable
             ['key' => 'agency.name', 'label' => 'اسم الفرع/الوكالة'],
             ['key' => 'duplicatedBy.name', 'label' => 'تم التكرار بواسطة'],
             ['key' => 'user.name', 'label' => 'الموظف'],
-            // ['key' => 'actions', 'label' => 'الإجراءات', 'format' => 'custom','buttons' => ['pdf']],
-            ['key' => '__actions', 'label' => 'الإجراء', 'format' => 'custom'],
-
         ];
 
-        // إرجاع الأعمدة بعد التصفية (إذا تمت)
+        // أضف عمود الإجراءات فقط عند الطلب
+        if ($showActions) {
+            $columns[] = ['key' => '__actions', 'label' => 'الإجراء', 'format' => 'custom'];
+        }
+
         return $columns;
     }
 }

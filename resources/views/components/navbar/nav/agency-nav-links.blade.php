@@ -401,7 +401,7 @@
                     @endif
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('backup.view'))
                         <x-navbar.buttons.dropdown-link : href="{{ route('agency.backups.index') }}"
-                            icon="fas fa-database" label="نسح واستعاده" :show="true" />
+                            icon="fas fa-database" label="نسخ واستعاده" :show="true" />
                     @endif
 
                     </div>
