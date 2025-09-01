@@ -3,7 +3,7 @@
     <x-toast :message="$successMessage" :type="$toastType ?? 'success'" />
 
     <div class="bg-white rounded-2xl shadow ring-1 ring-black/5 p-3">
-        <!-- تبويبات: تحسين للموبايل فقط دون تغيير الديسكتوب -->
+        <!-- تبويبات -->
         <nav class="flex gap-3 sm:gap-6 border-b overflow-x-auto whitespace-nowrap px-1">
             <button x-on:click="tab='emp'"
                     class="relative py-2 px-2 sm:py-3 sm:px-1 text-[13px] sm:text-sm font-semibold"
@@ -39,7 +39,17 @@
                 </div>
 
                 @if(!$employeeRateLocked)
-                    <x-primary-button type="button" :gradient="true" class="w-full sm:w-auto" wire:click="fixEmployeeRate">تثبيت نهائي</x-primary-button>
+                    <x-primary-button type="button" :gradient="true" class="w-full sm:w-auto"
+                        @click="$dispatch('confirm:open',{
+                            title:'تثبيت نهائي لعمولة الموظف',
+                            message:'سيتم تثبيت نسبة عمولة الموظف نهائيًا ولن يمكن تعديلها لاحقًا. هل تريد المتابعة؟',
+                            confirmText:'نعم، ثبّت',
+                            cancelText:'إلغاء',
+                            onConfirm:'fixEmployeeRate',
+                            icon:'warn'
+                        })">
+                        تثبيت نهائي
+                    </x-primary-button>
                 @else
                     <span class="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-600">مقفول</span>
                 @endif
@@ -53,18 +63,33 @@
                 <div class="flex items-center gap-2">
                     <button type="button"
                         class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-xl text-sm w-full sm:w-auto"
-                        wire:click="copyEmpFromPrev">
+                        @click="$dispatch('confirm:open',{
+                            title:'نسخ أهداف الشهر السابق',
+                            message:'سيتم جلب أهداف الشهر السابق إلى القيم الحالية (لن تُحفظ تلقائيًا). متابعة؟',
+                            confirmText:'نعم، انسخ',
+                            cancelText:'إلغاء',
+                            onConfirm:'copyEmpFromPrev',
+                            icon:'info'
+                        })">
                         نسخ من الشهر السابق
                     </button>
 
-                    <x-primary-button type="button" :gradient="true" class="w-full sm:w-auto" wire:click="saveAll">
+                    <x-primary-button type="button" :gradient="true" class="w-full sm:w-auto"
+                        @click="$dispatch('confirm:open',{
+                            title:'حفظ الكل وقفل السجلات',
+                            message:'سيتم إنشاء أهداف هذا الشهر لكل الموظفين القابلين للحفظ مع قفلها. هل تريد المتابعة؟',
+                            confirmText:'نعم، احفظ الكل',
+                            cancelText:'إلغاء',
+                            onConfirm:'saveAll',
+                            icon:'check'
+                        })">
                         حفظ الكل لمرة واحدة
                     </x-primary-button>
                 </div>
             </div>
         </div>
 
-        <!-- نفس الكتلة الثانية كما هي مع تحسينات صغيرة للموبايل فقط -->
+        <!-- جدول الموظفين -->
         <div x-show="tab==='emp'" x-cloak class="space-y-4 pt-4">
             <div class="bg-white rounded-xl shadow-md overflow-hidden">
                 <div class="overflow-x-auto -mx-1 sm:mx-0">
@@ -103,9 +128,17 @@
                                 <td class="px-2 py-1 text-center">
                                     <x-primary-button type="button"
                                         :gradient="true"
-                                        wire:click="saveRow({{ $i }})"
                                         :disabled="$r['locked']"
-                                        class="px-3 py-1 text-xs h-auto w-full sm:w-auto">
+                                        class="px-3 py-1 text-xs h-auto w-full sm:w-auto"
+                                        @click="$dispatch('confirm:open',{
+                                            title:'حفظ صف الموظف',
+                                            message:'سيتم إنشاء هدف الشهر وقفل صف {{ addslashes($r['name']) }}. متابعة؟',
+                                            confirmText:'نعم، احفظ',
+                                            cancelText:'إلغاء',
+                                            onConfirm:'saveRow',
+                                            payload: {{ $i }},
+                                            icon:'check'
+                                        })">
                                         حفظ
                                     </x-primary-button>
                                 </td>
@@ -131,7 +164,15 @@
                     </div>
                     <div class="flex items-center gap-2">
                         @if(!$collectorBaselinesLocked)
-                            <x-primary-button type="button" :gradient="true" wire:click="fixCollectorBaselines">
+                            <x-primary-button type="button" :gradient="true"
+                                @click="$dispatch('confirm:open',{
+                                    title:'تثبيت نهائي لقواعد التحصيل الأساسية',
+                                    message:'سيتم تثبيت قواعد التحصيل الأساسية نهائيًا ولن يمكن تعديلها لاحقًا. هل تريد المتابعة؟',
+                                    confirmText:'نعم، ثبّت',
+                                    cancelText:'إلغاء',
+                                    onConfirm:'fixCollectorBaselines',
+                                    icon:'warn'
+                                })">
                                 تثبيت نهائي
                             </x-primary-button>
                         @else
@@ -188,11 +229,26 @@
               <div class="flex items-center gap-2">
                 <button type="button"
                         class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-xl text-sm w-full sm:w-auto"
-                        wire:click="copyCollectorFromPrev">
+                        @click="$dispatch('confirm:open',{
+                            title:'نسخ قواعد التحصيل من الشهر السابق',
+                            message:'سيتم جلب القواعد من الشهر السابق كمسودة لهذا الشهر (غير محفوظة). متابعة؟',
+                            confirmText:'نعم، انسخ',
+                            cancelText:'إلغاء',
+                            onConfirm:'copyCollectorFromPrev',
+                            icon:'info'
+                        })">
                   نسخ من الشهر السابق
                 </button>
 
-                <x-primary-button type="button" :gradient="true" class="w-full sm:w-auto" wire:click="createCollectorForMonth">
+                <x-primary-button type="button" :gradient="true" class="w-full sm:w-auto"
+                    @click="$dispatch('confirm:open',{
+                        title:'إنشاء قواعد هذا الشهر وقفلها',
+                        message:'سيتم إنشاء قواعد التحصيل لهذا الشهر وفق القيم الحالية ثم قفلها نهائيًا. متابعة؟',
+                        confirmText:'نعم، أنشئ واقفل',
+                        cancelText:'إلغاء',
+                        onConfirm:'createCollectorForMonth',
+                        icon:'warn'
+                    })">
                   إنشاء ضبط هذا الشهر وقفله
                 </x-primary-button>
               </div>
@@ -277,7 +333,14 @@
                         rounded="rounded-lg"
                         width="w-full"
                         class="h-10"
-                        wire:click="saveDebtPolicy">
+                        @click="$dispatch('confirm:open',{
+                            title:'حفظ سياسة الدين',
+                            message:'سيتم حفظ عدد الأيام وسلوك الدين في الملف التعريفي للعمولات. متابعة؟',
+                            confirmText:'نعم، احفظ',
+                            cancelText:'إلغاء',
+                            onConfirm:'saveDebtPolicy',
+                            icon:'check'
+                        })">
                         حفظ الإعدادات
                     </x-primary-button>
                 </div>
@@ -347,7 +410,14 @@
                         rounded="rounded-lg"
                         width="w-full"
                         class="h-10"
-                        wire:click="simulate">
+                        @click="$dispatch('confirm:open',{
+                            title:'تشغيل المحاكي',
+                            message:'سيتم حساب النتائج وفق المدخلات الحالية. متابعة؟',
+                            confirmText:'احسب الآن',
+                            cancelText:'إلغاء',
+                            onConfirm:'simulate',
+                            icon:'question'
+                        })">
                         احسب
                     </x-primary-button>
                 </div>
@@ -376,4 +446,7 @@
         </div>
 
     </div>
+
+    <!-- إدراج مكوّن التأكيد مرة واحدة -->
+    <x-confirm-dialog />
 </div>
