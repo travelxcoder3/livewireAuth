@@ -22,21 +22,16 @@
 
     // التحقق من الصلاحيات للمناطق المختلفة
     $showAccountsDropdown = $user->hasRole('agency-admin') ||
-        $user->can('review.view') ||
         $user->can('sales-review.view') ||
         $user->can('accounts-review.view') ||
         $user->can('invoices-review.view') ||
-        $user->can('invoices.view')||
         $user->can('sales-invoices.view') ||
         $user->can('customer-invoices.view') ||
         $user->can('provider-invoices.view') ||
         $user->can('providers.view') ||
         $user->can('customers.view')||
         $user->can('employees-manage.view') ||
-        $user->can('manage-account.view') ||
-        $user->can('account-statement.view') ||
         $user->can('customers-statement.view') ||
-        $user->can('customer-statement.view') ||
         $user->can('providers-statement.view') ||
         $user->can('employee-statement.view') ||
         $user->can('quotations.view');
@@ -140,7 +135,7 @@
 
                     <div x-show="open" class="rtl:pr-4 ltr:pl-4 space-y-1">
                         {{-- مراجعة --}}
-                        @if($user->hasRole('agency-admin') || $user->can('review.view') || $user->can('sales-review.view') || $user->can('accounts-review.view') || $user->can('invoices-review.view'))
+                        @if($user->hasRole('agency-admin') ||  $user->can('sales-review.view') || $user->can('accounts-review.view') || $user->can('invoices-review.view'))
                             <div class="px-3 pt-2 text-xs text-gray-500">مراجعة</div>
                             @if ($user->hasRole('agency-admin') || $user->can('sales-review.view'))
                                 <a href="{{ route('agency.sales-review') }}" @click="mobileSidebarOpen = false"
@@ -163,7 +158,7 @@
                         @endif
 
                         {{-- فواتير --}}
-                        @if($user->hasRole('agency-admin') || $user->can('invoices.view') || $user->can('sales-invoices.view') || $user->can('customer-invoices.view') || $user->can('provider-invoices.view') || $user->can('quotations.view'))
+                        @if($user->hasRole('agency-admin') ||  $user->can('sales-invoices.view') || $user->can('customer-invoices.view') || $user->can('provider-invoices.view') || $user->can('quotations.view'))
                             <div class="px-3 pt-3 text-xs text-gray-500">فواتير</div>
                             @if ($user->hasRole('agency-admin') || $user->can('sales-invoices.view'))
                                 <a href="{{ route('agency.sales-invoices') }}" @click="mobileSidebarOpen = false"
@@ -192,7 +187,7 @@
                         @endif
 
                         {{-- إدارة حسابات الشركة --}}
-                        @if ($user->hasRole('agency-admin') || $user->can('manage-account.view') || $user->can('customers.view') || $user->can('providers.view') || $user->can('employees-manage.view'))
+                        @if ($user->hasRole('agency-admin') ||  $user->can('customers.view') || $user->can('providers.view') || $user->can('employees-manage.view'))
                             <div class="px-3 pt-3 text-xs text-gray-500">إدارة حسابات الشركة</div>
                             @if ($user->hasRole('agency-admin') || $user->can('customers.view'))
                                 <a href="{{ route('agency.customers.add') }}" @click="mobileSidebarOpen = false"
@@ -215,15 +210,9 @@
                         @endif
 
                         {{-- كشف حساب --}}
-                        @if ($user->hasRole('agency-admin') || $user->can('account-statement.view') || $user->can('customers-statement.view') || $user->can('customer-statement.view') || $user->can('providers-statement.view') || $user->can('employee-statement.view'))
+                        @if ($user->hasRole('agency-admin')  || $user->can('customers-statement.view') || $user->can('providers-statement.view') || $user->can('employee-statement.view'))
                             <div class="px-3 pt-3 text-xs text-gray-500">كشف حساب</div>
                             @if ($user->hasRole('agency-admin') || $user->can('customers-statement.view'))
-                                <a href="{{ route('agency.reports.customer-accounts') }}" @click="mobileSidebarOpen = false"
-                                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
-                                    <i class="fas fa-address-book"></i><span>كشف حساب العملاء</span>
-                                </a>
-                            @endif
-                            @if ($user->hasRole('agency-admin') || $user->can('customer-statement.view'))
                                 <a href="{{ route('agency.statements.customers') }}" @click="mobileSidebarOpen = false"
                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                                     <i class="fas fa-user-check"></i><span>كشف حساب العميل</span>

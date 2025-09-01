@@ -46,6 +46,8 @@ class EmployeeCollectionsIndex extends Component
             $lastCol = $empSales->flatMap->collections->sortByDesc('payment_date')->first();
 
             return (object)[
+                    'id'                    => $emp?->id,            // ← أضفها
+
                 'employee_id'           => $emp?->id,
                 'employee_name'         => $emp?->name ?? 'غير معروف',
                 'remaining_total'       => $remaining,

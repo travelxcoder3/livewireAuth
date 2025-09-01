@@ -28,14 +28,12 @@
             <label class="text-xs sm:text-sm font-semibold text-gray-700">الإجمالي:</label>
             <input type="text" value="{{ number_format($totalSales, 2) }}" readonly
                    class="bg-gray-100 border border-gray-300 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm text-gray-700 w-24 sm:w-32 text-center">
-            @can('accounts.invoice')
                 @if ($sales->count())
                     <x-primary-button wire:click="openBulkInvoiceModal"
                         class="ml-0 sm:ml-2 px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm rounded-lg">
                         إصدار فاتورة مجمعة
                     </x-primary-button>
                 @endif
-            @endcan
         </div>
     </div>
 
@@ -164,7 +162,6 @@
                                         @break
 
                                         @case('custom')
-                                            @can('accounts.invoice')
                                                 @if($isRefund)
                                                     <span class="font-semibold text-red-400 cursor-not-allowed select-none" title="إشعار دائن للعرض فقط">
                                                         إشعار دائن
@@ -175,7 +172,6 @@
                                                         فاتورة فردية
                                                     </button>
                                                 @endif
-                                            @endcan
                                         @break
 
                                         @default

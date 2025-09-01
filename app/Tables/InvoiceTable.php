@@ -33,7 +33,6 @@ class InvoiceTable
                         'label'=>'PDF','icon'=>'fas fa-file-pdf',
                         'method'=>'downloadPdf',
                         'class'=>'text-[rgb(var(--primary-600))] hover:text-black font-medium text-xs',
-                        'can'=>auth()->user()->can('accounts.print'),
                     ],
                 ],
             ],

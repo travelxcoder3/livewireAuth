@@ -263,15 +263,33 @@
                         class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-lg shadow transition duration-300 text-sm">
                         إلغاء
                     </button>
-                  <x-primary-button type="submit" padding="px-6 py-2" rounded="rounded-lg">
-                    حفظ التعديلات
-                </x-primary-button>
+                 <x-primary-button
+    type="button"
+    padding="px-6 py-2"
+    rounded="rounded-lg"
+    x-data
+    @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+        title:'تأكيد حفظ التعديلات',
+        message:'سيتم حفظ تغييرات بيانات الوكالة. متابعة؟',
+        icon:'info',
+        confirmText:'حفظ',
+        cancelText:'إلغاء',
+        onConfirm:'update',
+        payload:null,
+        targetId:$wire.__instance.id
+    }}))"
+>
+    حفظ التعديلات
+</x-primary-button>
+
 
                 </div>
             </form>
         </div>
     </div>
     @endif
+
+    <x-confirm-dialog />
 </div>
 
 <!-- تحسين واجهة المستخدم -->

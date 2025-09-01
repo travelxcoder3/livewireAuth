@@ -25,7 +25,6 @@ class CustomerInvoiceTable
                         'icon' => 'fas fa-file-invoice',
                         'method' => 'showInvoiceDetails',
                         'class' => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
-                        'can' => auth()->user()->can('invoicesDeteials.view'),
                     ]
                 ]
             ],

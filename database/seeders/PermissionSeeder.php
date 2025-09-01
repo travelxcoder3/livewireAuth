@@ -36,14 +36,7 @@ class PermissionSeeder extends Seeder
         'customers.view',
         'customers.create',
         'customers.edit',
-       
-        // صلاحيات الملفات والمرفقات
-        'attachments.view',
-        'attachments.upload',
-        'attachments.delete',
       
-        // صلاحيات الحسابات المالية
-        'accounts.view',
         // صلاحيات التسلسلات
         'sequences.view',
         'sequences.create',
@@ -79,8 +72,28 @@ class PermissionSeeder extends Seeder
         'quotations.view',
         // فواتير
         'invoices.view',
-        'invoicesDeteials.view',
-        'statements.view'
+
+        
+            'collection.employee.view',
+            'reportProvider.view',
+            'commission-policies.view',
+            'reportQuotation.view',
+            'backup.view',
+            'month-goals.view',
+            'sales-review.view',
+            'accounts-review.view',
+            'invoices-review.view',
+            'sales-invoices.view',
+            'customer-invoices.view',
+            'provider-invoices.view',
+            'employees-manage.view',
+            'account-statement.view',
+            'customers-statement.view',
+            'providers-statement.view',
+            'employee-statement.view',
+            'reportCustomersSales.view',
+            'policies.view',
+            'obligations.view',
     ];
 
     /**

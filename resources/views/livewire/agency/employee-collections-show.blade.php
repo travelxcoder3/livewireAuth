@@ -168,7 +168,27 @@
               <x-input-field label="ملاحظة" wireModel="note" />
 
               <div class="mt-3">
-                <x-primary-button wire:click="savePay" class="w-full">موافق</x-primary-button>
+                <x-primary-button
+                    type="button"
+                    class="w-full"
+                    x-data
+                    @click="
+                      const amt = Number($wire.paid_now || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+                      const rem = Number($wire.remaining || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+                      window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+                        title:'تأكيد السداد',
+                        message:`سيتم تسجيل سداد بقيمة ${amt}. المتبقي الحالي ${rem}. متابعة؟`,
+                        icon:'check',
+                        confirmText:'موافق',
+                        cancelText:'إلغاء',
+                        onConfirm:'savePay',
+                        payload:null
+                      }}))
+                    "
+                  >
+                    موافق
+                  </x-primary-button>
+
               </div>
             </div>
           </div>
@@ -176,6 +196,6 @@
       </div>
     @endif
 
- 
+ <x-confirm-dialog />
   </div>
 </div>

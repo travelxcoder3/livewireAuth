@@ -24,7 +24,6 @@ class EmployeeFileTable
                         'label'  => 'حساب الموظف',
                         'icon'   => 'fa fa-wallet',
                         'method' => 'openWallet',
-                        'can'    => auth()->user()->can('employees.view'),
                         'showIf' => function ($row) {
                             return $row->agency_id == auth()->user()->agency_id;
                         },
