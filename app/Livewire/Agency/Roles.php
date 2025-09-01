@@ -306,9 +306,14 @@ public function confirmDelete($roleId)
 
     public function render()
     {
-        $rolesQuery = Role::where('agency_id', Auth::user()->agency_id)
-            ->with('permissions')
-            ->withCount('users');
+        $agencyId = Auth::user()->agency_id;
+
+$rolesQuery = Role::where('agency_id', $agencyId)
+    ->with('permissions')
+    ->withCount(['users as users_count' => function ($q) use ($agencyId) {
+        $q->where('users.agency_id', $agencyId);
+    }]);
+
         if (!empty($this->search)) {
             $rolesQuery->where(function($q) {
                 $q->where('name', 'like', '%' . $this->search . '%');

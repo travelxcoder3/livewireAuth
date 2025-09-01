@@ -80,7 +80,12 @@ class Users extends Component
             'is_active' => $this->is_active,
         ]);
         
-        $user->assignRole($this->role);
+       $role = Role::where('name', $this->role)
+    ->where('guard_name', 'web')
+    ->where('agency_id', Auth::user()->agency_id)
+    ->firstOrFail();
+$user->assignRole($role);
+
         // تحديث صلاحيات دور أدمن الوكالة إذا كان الدور هو agency-admin
         if ($this->role === 'agency-admin') {
             $agencyAdminRole = Role::where('name', 'agency-admin')
@@ -140,7 +145,12 @@ class Users extends Component
         if ($this->edit_password) {
             $user->update(['password' => Hash::make($this->edit_password)]);
         }
-        $user->syncRoles([$this->edit_role]);
+        $role = Role::where('name', $this->edit_role)
+    ->where('guard_name', 'web')
+    ->where('agency_id', Auth::user()->agency_id)
+    ->firstOrFail();
+$user->syncRoles([$role]);
+
         if ($this->edit_role === 'agency-admin') {
             $agencyAdminRole = Role::where('name', 'agency-admin')
                 ->where('agency_id', Auth::user()->agency_id)
