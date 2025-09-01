@@ -313,15 +313,26 @@
                     <div class="flex items-center justify-between print:hidden">
                         <button class="underline text-sm" wire:click="editTax">تعديل الضريبة</button>
                         <x-primary-button
-                            :loading="true"
-                            target="downloadSingleInvoicePdf"
-                            busyText="جاري انشاء الملف…"
-                            :disabled="! $currentInvoiceId"   {{-- ← استخدم خاصية disabled عادية --}}
-                            wire:click="downloadSingleInvoicePdf({{ $currentInvoiceId ?? 'null' }})"
-                            class="px-3 py-1 text-sm disabled:opacity-50"
-                        >
-                            تحميل PDF
-                        </x-primary-button>
+                        type="button"
+                        :loading="true"
+                        target="downloadSingleInvoicePdf"
+                        busyText="جاري انشاء الملف…"
+                        :disabled="! $currentInvoiceId"
+                        class="px-3 py-1 text-sm disabled:opacity-50"
+                        x-data
+                                @click="window.dispatchEvent(new CustomEvent('confirm:open', { detail: {
+                                    title: 'تأكيد تحميل PDF',
+                                    message: 'سيتم توليد الملف وبدء التحميل لهذه الفاتورة. المتابعة؟',
+                                    icon: 'info',
+                                    confirmText: 'تحميل',
+                                    cancelText: 'إلغاء',
+                                    onConfirm: 'downloadSingleInvoicePdf',
+                                    payload: {{ $currentInvoiceId ?? 'null' }}
+                                }}))"
+                            >
+                                تحميل PDF
+                            </x-primary-button>
+
                     </div>
 
                 @endif
@@ -389,13 +400,24 @@
                             إلغاء
                         </button>
                         <x-primary-button
-                            type="submit"
+                            type="button"
                             :loading="true"
                             target="createBulkInvoice"
                             busyText="جاري انشاء الملف…"
+                            x-data
+                            @click="window.dispatchEvent(new CustomEvent('confirm:open', { detail: {
+                                title: 'تأكيد إنشاء فاتورة مجمّعة',
+                                message: 'سيتم إنشاء فاتورة مجمّعة بالبيانات المدخلة للعمليات المحددة. المتابعة؟',
+                                icon: 'check',
+                                confirmText: 'إنشاء',
+                                cancelText: 'إلغاء',
+                                onConfirm: 'createBulkInvoice',
+                                payload: null
+                            }}))"
                         >
                             تأكيد وإنشاء الفاتورة
                         </x-primary-button>
+
                     </div>
                 </form>
             </div>
@@ -409,4 +431,6 @@
             .print-area { position: absolute; left: 0; top: 0; width: 100%; }
         }
     </style>
+    <x-confirm-dialog />
+
 </div>

@@ -760,6 +760,49 @@ foreach ($groupedM as $g) {
         }
     }
 
+    public function confirmDuplicate(int $id): void
+{
+    $sale = \App\Models\Sale::findOrFail($id);
+    $this->dispatch('confirm:open',
+        title: 'تأكيد تكرار العملية',
+        message: "سيتم إنشاء نسخة من العملية رقم {$sale->id} للمستفيد {$sale->beneficiary_name}. متابعة؟",
+        icon: 'check',
+        confirmText: 'تكرار',
+        cancelText: 'إلغاء',
+        onConfirm: 'duplicate',
+        payload: $id
+    );
+}
+
+public function confirmEdit(int $id): void
+{
+    $sale = \App\Models\Sale::findOrFail($id);
+    $this->dispatch('confirm:open',
+        title: 'تأكيد تعديل العملية',
+        message: "ستعدل بيانات العملية رقم {$sale->id}. المتابعة؟",
+        icon: 'info',
+        confirmText: 'تعديل',
+        cancelText: 'إلغاء',
+        onConfirm: 'edit',
+        payload: $id
+    );
+}
+
+public function confirmRequestEdit(int $id): void
+{
+    $sale = \App\Models\Sale::findOrFail($id);
+    $this->dispatch('confirm:open',
+        title: 'إرسال طلب تعديل',
+        message: "سيتم إرسال طلب تعديل للعملية رقم {$sale->id}. متابعة الإرسال؟",
+        icon: 'warn',
+        confirmText: 'إرسال الطلب',
+        cancelText: 'إلغاء',
+        onConfirm: 'requestEdit',
+        payload: $id
+    );
+}
+
+
     public function updated($propertyName)
     {
         if (in_array($propertyName, ['usd_buy', 'usd_sell'])) {

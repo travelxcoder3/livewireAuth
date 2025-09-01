@@ -206,17 +206,44 @@
                     </div>
 
                     <div class="flex justify-end gap-2 mt-2">
-                        <x-primary-button wire:click="addTaxForGroup" wire:loading.attr="disabled">حفظ/تحديث</x-primary-button>
+                        <x-primary-button
+    type="button"
+    x-data
+    @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+        title:'تأكيد حفظ الضريبة',
+        message:'سيتم حفظ/تحديث ضريبة الفاتورة لهذه المجموعة. متابعة؟',
+        icon:'info',
+        confirmText:'حفظ',
+        cancelText:'إلغاء',
+        onConfirm:'addTaxForGroup',
+        payload:null
+    }}))"
+    wire:loading.attr="disabled"
+>
+    حفظ/تحديث
+</x-primary-button>
+
                             @if($currentInvoiceId)
                                 <x-primary-button
-                                    wire:click="downloadSingleInvoicePdf"
-                                    :loading="true"
-                                    target="downloadSingleInvoicePdf"
-                                    busyText="جاري إنشاء الملف…"
-                                    delay="longest"
-                                >
-                                    تحميل PDF
-                                </x-primary-button>
+    type="button"
+    :loading="true"
+    target="downloadSingleInvoicePdf"
+    busyText="جاري إنشاء الملف…"
+    delay="longest"
+    x-data
+    @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+        title:'تأكيد تحميل PDF',
+        message:'سيتم توليد ملف PDF وبدء التحميل لهذه الفاتورة. متابعة؟',
+        icon:'info',
+        confirmText:'تحميل',
+        cancelText:'إلغاء',
+        onConfirm:'downloadSingleInvoicePdf',
+        payload:null   // اجعل دالة PHP تقبل معاملًا اختياريًا = null إن كانت بلا معامل
+    }}))"
+>
+    تحميل PDF
+</x-primary-button>
+
                             @endif
                     </div>
                 </div>
@@ -280,17 +307,29 @@
                             إلغاء
                         </button>
                             <x-primary-button
-                                type="submit"
-                                :loading="true"
-                                target="createBulkInvoice"
-                                busyText="جاري إنشاء الفاتورة…"
-                                delay="longest"
-                            >
-                                تأكيد وإنشاء
-                            </x-primary-button>
+    type="button"
+    :loading="true"
+    target="createBulkInvoice"
+    busyText="جاري إنشاء الفاتورة…"
+    delay="longest"
+    x-data
+    @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+        title:'تأكيد إنشاء فاتورة مجمّعة',
+        message:'سيتم إنشاء فاتورة مجمّعة للعمليات المحددة. متابعة؟',
+        icon:'check',
+        confirmText:'إنشاء',
+        cancelText:'إلغاء',
+        onConfirm:'createBulkInvoice',
+        payload:null
+    }}))"
+>
+    تأكيد وإنشاء
+</x-primary-button>
+
                     </div>
                 </form>
             </div>
         </div>
     <?php } ?>
+    <x-confirm-dialog />
 </div>

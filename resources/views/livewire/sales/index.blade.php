@@ -562,21 +562,27 @@ $columns = SalesTable::columns();
     </x-primary-button>
 @else
 <x-primary-button
-    type="submit"
+    type="button"
     textColor="white"
     width="w-full sm:w-auto"
-    wire:loading.attr="disabled"
-    wire:loading.class="opacity-60 cursor-not-allowed"
-    wire:target="{{ $editingSale ? 'update' : 'save' }}"
+    x-data
+    @click="
+      window.dispatchEvent(new CustomEvent('confirm:open', {
+        detail: {
+          title: '{{ $editingSale ? 'تأكيد تحديث البيع' : 'تأكيد تسجيل البيع' }}',
+          message: '{{ $editingSale ? 'سيتم تحديث بيانات عملية البيع الحالية. هل تريد المتابعة؟' : 'سيتم إنشاء عملية بيع جديدة وتثبيتها. هل تريد المتابعة؟' }}',
+          icon: '{{ $editingSale ? 'info' : 'check' }}',
+          confirmText: '{{ $editingSale ? 'تحديث' : 'تأكيد' }}',
+          cancelText: 'إلغاء',
+          onConfirm: '{{ $editingSale ? 'update' : 'save' }}',
+          payload: null
+        }
+      }))
+    "
 >
-    <span wire:loading.remove wire:target="{{ $editingSale ? 'update' : 'save' }}">
-        {{ $editingSale ? 'تحديث' : 'تأكيد' }}
-    </span>
-    <svg wire:loading wire:target="{{ $editingSale ? 'update' : 'save' }}" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10" opacity="0.25"></circle>
-        <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
-    </svg>
+  {{ $editingSale ? 'تحديث' : 'تأكيد' }}
 </x-primary-button>
+
 
 @endif
 
@@ -852,7 +858,10 @@ $columns = SalesTable::columns();
             </div>
         </form>
     </div>
+    
 </div>
+<x-confirm-dialog />
+
     
 <script>
     let currentReportType = '';

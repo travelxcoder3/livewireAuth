@@ -244,29 +244,60 @@
   <!-- الأزرار -->
   <div class="footer-buttons no-print" style="margin-top:16px;display:flex;gap:10px">
     @if(!$quotationId)
-        <x-primary-button id="saveBtn" wire:click="save">
+        <x-primary-button id="saveBtn" type="button"
+            x-data
+            @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+                title:'تأكيد حفظ عرض السعر',
+                message:'سيتم حفظ عرض السعر الحالي.',
+                icon:'check',
+                confirmText:'حفظ',
+                cancelText:'إلغاء',
+                onConfirm:'save',
+                payload:null
+            }}))">
             {{ $lang==='ar' ? 'حفظ عرض السعر' : 'Save Quotation' }}
         </x-primary-button>
     @endif
 
     @if($quotationId)
-        <a href="{{ route('agency.quotations.pdf', $quotationId) }}" target="_blank">
-            <x-primary-button>
-                {{ $lang==='ar' ? 'تنزيل PDF' : 'Download PDF' }}
-            </x-primary-button>
-        </a>
+        <x-primary-button type="button"
+            x-data
+            @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+                title:'تأكيد تنزيل PDF',
+                message:'سيتم توليد وتنزيل عرض السعر كملف PDF.',
+                icon:'info',
+                confirmText:'تنزيل',
+                cancelText:'إلغاء',
+                onConfirm:'downloadQuotationPdf',
+                payload: {{ (int) $quotationId }}
+            }}))">
+            {{ $lang==='ar' ? 'تنزيل PDF' : 'Download PDF' }}
+        </x-primary-button>
 
-        <a href="{{ route('agency.quotations.view', $quotationId) }}" target="_blank">
-            <x-primary-button>
-                {{ $lang==='ar' ? 'طباعة' : 'Print' }}
-            </x-primary-button>
-        </a>
+        <x-primary-button type="button"
+            x-data
+            @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+                title:'تأكيد فتح للطباعة',
+                message:'سيتم فتح عرض السعر في تبويب جديد للطباعة.',
+                icon:'info',
+                confirmText:'فتح',
+                cancelText:'إلغاء',
+                onConfirm:'openQuotationPrint',
+                payload: {{ (int) $quotationId }}
+            }}))">
+            {{ $lang==='ar' ? 'طباعة' : 'Print' }}
+        </x-primary-button>
     @endif
 
     <x-primary-button color="#7f8c8d" gradient="false" textColor="[rgb(var(--primary-500))]" wire:click.prevent="resetForm">
         {{ $lang==='ar' ? 'جديد' : 'New' }}
     </x-primary-button>
-  </div>
+</div>
+
+<script>
+window.addEventListener('open-url', e => { if(e?.detail?.url){ window.open(e.detail.url, '_blank'); }});
+</script>
+
 
   @if(!$quotationId)
     <div id="print-guard" aria-hidden="true">
@@ -391,4 +422,6 @@
       });
     })();
   </script>
+  <x-confirm-dialog />
+
 </div>

@@ -77,7 +77,8 @@ class SalesTable
                     'can'       => auth()->user()->can('sales.edit'),
                     'class'     => 'text-[rgb(var(--primary-600))] hover:text-[rgb(var(--primary-800))]',
                     'showIf'    => fn($row) => $row->agency_id == auth()->user()->agency_id,
-                    'wireClick' => fn($row) => "duplicate({$row->id})",
+                    'wireClick' => fn($row) => "confirmDuplicate({$row->id})",
+
                 ],
 
                 // تعديل: داخل نافذة الإنشاء أو خلال نافذة من آخر موافقة "حديثة" + لا يوجد طلب pending
@@ -120,7 +121,7 @@ class SalesTable
 
                         return $hasRecentApproval;
                     },
-                    'wireClick' => fn($row) => "edit({$row->id})",
+                        'wireClick' => fn($row) => "confirmEdit({$row->id})",
                 ],
 
                 // طلب تعديل: خارج النافذة ولا يوجد pending ولا موافقة حديثة
@@ -161,7 +162,8 @@ class SalesTable
 
                         return !$hasRecentApproval;
                     },
-                    'wireClick' => fn($row) => "requestEdit({$row->id})",
+                    'wireClick' => fn($row) => "confirmRequestEdit({$row->id})",
+
                 ],
 
                 // شارة "بانتظار الموافقة"

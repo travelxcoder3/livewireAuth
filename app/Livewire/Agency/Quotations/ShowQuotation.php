@@ -56,6 +56,16 @@ class ShowQuotation extends Component
         session(['quotation_lang'=>$this->lang]);
         $this->dispatch('lang-changed', lang:$this->lang);
     }
+
+    public function downloadQuotationPdf(int $id): void
+        {
+            $this->dispatch('open-url', url: route('agency.quotations.pdf', $id));
+        }
+
+    public function openQuotationPrint(int $id): void
+        {
+            $this->dispatch('open-url', url: route('agency.quotations.view', $id));
+        }
     public function addServiceRow()
     {
         $this->services[] = [

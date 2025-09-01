@@ -309,13 +309,24 @@
         <button type="button" wire:click="$set('showSingleTaxModal', false)"
             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">إلغاء</button>
         <x-primary-button
-            wire:click="confirmSingleTax"
-            :loading="true"
-            target="confirmSingleTax"
-            busyText="جاري إنشاء الملف…"
-            delay="longest">
-            تنزيل PDF
-        </x-primary-button>
+    type="button"
+    :loading="true"
+    target="confirmSingleTax"
+    busyText="جاري إنشاء الملف…"
+    delay="longest"
+    x-data
+    @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+        title:'تأكيد تنزيل PDF',
+        message:'سيتم توليد وتنزيل ملف PDF لهذه الفاتورة. متابعة؟',
+        icon:'check',
+        confirmText:'تنزيل',
+        cancelText:'إلغاء',
+        onConfirm:'confirmSingleTax',
+        payload:null
+    }}))">
+    تنزيل PDF
+</x-primary-button>
+
         </div>
     </div>
     </div>
@@ -356,17 +367,28 @@
         <button type="button" wire:click="$set('showBulkTaxModal', false)"
             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow text-sm">إلغاء</button>
         <x-primary-button
-            wire:click="confirmBulkTax"
-            :loading="true"
-            target="confirmBulkTax"
-            busyText="جاري إنشاء الملف…"
-            delay="longest">
-            تنزيل PDF
-        </x-primary-button>
+    type="button"
+    :loading="true"
+    target="confirmBulkTax"
+    busyText="جاري إنشاء الملف…"
+    delay="longest"
+    x-data
+    @click="window.dispatchEvent(new CustomEvent('confirm:open',{detail:{
+        title:'تأكيد تنزيل PDF المجمّع',
+        message:'سيتم توليد وتنزيل ملف PDF لضرائب الفاتورة المجمّعة. متابعة؟',
+        icon:'info',
+        confirmText:'تنزيل',
+        cancelText:'إلغاء',
+        onConfirm:'confirmBulkTax',
+        payload:null
+    }}))">
+    تنزيل PDF
+</x-primary-button>
+
         </div>
     </div>
     </div>
     @endif
-
+<x-confirm-dialog />
 
 </div>
