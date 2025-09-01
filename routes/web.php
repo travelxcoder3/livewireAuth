@@ -128,10 +128,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super-admin'])
 
 Route::prefix('agency')
     ->name('agency.')
-    ->middleware(['auth', 'mustChangePassword', 'active.user', 'agency.scope'])
+    ->middleware(['auth','mustChangePassword','active.user','agency.scope','auto_permission'])
     ->scopeBindings()
     ->group(function () {
-    Route::get('/dashboard', AgencyDashboard::class)->name('dashboard');
+   Route::get('/dashboard', AgencyDashboard::class)
+    ->name('dashboard')
+    ->withoutMiddleware('auto_permission');
+
     Route::get('/users', Users::class)->name('users');
     Route::get('/roles', Roles::class)->name('roles');
     Route::get('/permissions', Permissions::class)->name('permissions');
@@ -324,27 +327,32 @@ Route::get('statements/provider/{provider}/pdf', [ProviderStatementPdfController
 });
 
 Route::post('/update-theme', [ThemeController::class, 'updateTheme'])
-    ->middleware(['auth','mustChangePassword','active.user','agency.scope']);
+    ->middleware(['auth','mustChangePassword','active.user','agency.scope','auto_permission'])
+    ->name('agency.system.update-theme');
 
 
-Route::middleware(['auth','mustChangePassword','active.user','agency.scope'])
+
+Route::middleware(['auth','mustChangePassword','active.user','agency.scope','auto_permission'])
     ->get('/commissions', Commissions::class)->name('agency.commissions');
 
 
-Route::middleware(['auth','mustChangePassword','active.user','agency.scope'])
+
+Route::middleware(['auth','mustChangePassword','active.user','agency.scope','auto_permission'])
     ->get('/invoices/{invoice}/download', function (App\Models\Invoice $invoice) {
         return (new App\Livewire\Agency\SalesInvoices())->downloadBulkInvoicePdf($invoice->id);
-    })->name('invoices.download');
+    })->name('agency.invoices.download');
 
-// routes/web.php
-Route::get('/agency/provider-invoices/{provider}/export', [\App\Http\Controllers\ProviderInvoiceExportController::class, 'export'])
+
+Route::middleware(['auth','mustChangePassword','active.user','agency.scope','auto_permission'])
+    ->get('/agency/provider-invoices/{provider}/export', [\App\Http\Controllers\ProviderInvoiceExportController::class, 'export'])
     ->name('agency.provider-invoices.export');
 
 
-Route::middleware(['auth','mustChangePassword'])
+
+Route::middleware(['auth','mustChangePassword','active.user','agency.scope','auto_permission'])
     ->prefix('agency/settings')
     ->name('agency.settings.')
     ->group(function () {
-
         Route::get('sale-edit-window', SaleEditWindow::class)->name('sale-edit-window');
     });
+

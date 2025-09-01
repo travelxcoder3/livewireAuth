@@ -22,6 +22,7 @@
 
     // التحقق من الصلاحيات للمناطق المختلفة
     $showAccountsDropdown = $user->hasRole('agency-admin') ||
+        $user->can('review.view') ||
         $user->can('sales-review.view') ||
         $user->can('accounts-review.view') ||
         $user->can('invoices-review.view') ||

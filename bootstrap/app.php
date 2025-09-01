@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         'check.agency.subscription' => \App\Http\Middleware\CheckAgencySubscription::class,
         'active.user' => \App\Http\Middleware\UpdateLastActivity::class,
         'agency.scope' => \App\Http\Middleware\EnforceAgencyScope::class,
+        'auto_permission' => \App\Http\Middleware\AutoPermission::class,
+
 
     ]);
 })

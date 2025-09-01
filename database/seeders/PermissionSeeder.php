@@ -56,27 +56,22 @@ class PermissionSeeder extends Seeder
         'agency.profile.view',
         'collection.view',
         'collection.payment',
-        'collection.details.view',
         // صلاحيات إضافية للحسابات
         'accounts.export',
         'accounts.print',
         'accounts.invoice',
         'agency.profile.edit',
         //صلاحيات عرض صفحه التقارير
-        'reportsAccounts.view',
         'reportsSales.view',
-        'reportCustomers.view',
         'reportCustomerAccounts.view',
         'reportEmployeeSales.view',
         //عرض السعر
         'quotations.view',
         // فواتير
-        'invoices.view',
 
         
             'collection.employee.view',
             'reportProvider.view',
-            'commission-policies.view',
             'reportQuotation.view',
             'backup.view',
             'month-goals.view',
@@ -87,7 +82,6 @@ class PermissionSeeder extends Seeder
             'customer-invoices.view',
             'provider-invoices.view',
             'employees-manage.view',
-            'account-statement.view',
             'customers-statement.view',
             'providers-statement.view',
             'employee-statement.view',

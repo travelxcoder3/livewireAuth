@@ -42,6 +42,7 @@
                 Auth::user()->can('customers.view')||
                 Auth::user()->can('employees-manage.view') ||
                 Auth::user()->can('customers-statement.view') ||
+                Auth::user()->can('customer-statement.view') ||
                 Auth::user()->can('providers-statement.view') ||
                 Auth::user()->can('employee-statement.view') ||
                 Auth::user()->can('quotations.view');
@@ -59,7 +60,7 @@
             <div class="dropdown-accounts absolute right-0 top-full min-w-[200px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover:block transition-opacity duration-200">
 
                 {{-- مراجعة --}}
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('sales-review.view') || Auth::user()->can('accounts-review.view') || Auth::user()->can('invoices-reviewview'))
+                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('sales-review.view') || Auth::user()->can('accounts-review.view') || Auth::user()->can('invoices-review.view'))
                 <div class="relative group/audit">
                     <x-navbar.buttons.dropdown-link
                         href="#"
@@ -125,13 +126,13 @@
                 @endif
 
                 {{-- كشف حساب --}}
-                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers-statement.view')  || Auth::user()->can('providers-statement.view') || Auth::user()->can('employee-statement.view'))
+                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers-statement.view') || Auth::user()->can('customer-statement.view') || Auth::user()->can('providers-statement.view') || Auth::user()->can('employee-statement.view'))
                 <div class="relative group/audit">
                     <x-navbar.buttons.dropdown-link href="#" x-on:click.prevent icon="fas fa-clipboard-check" label="كشف حساب" :show="true" class="pr-8 cursor-default select-none" />
                     <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                     <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
-                        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers-statement.view'))
-                        <x-navbar.buttons.dropdown-link :href="route('agency.statements.customers')" icon="fas fa-chart-line" label="كشف حساب العملاء" :show="true" />
+                        @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customer-statement.view'))
+                        <x-navbar.buttons.dropdown-link :href="route('agency.statements.customers')" icon="fas fa-chart-line" label="كشف حساب العميل" :show="true" />
                         @endif
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('providers-statement.view'))
                         <x-navbar.buttons.dropdown-link :href="route('agency.statements.providers')" icon="fas fa-wallet" label="كشف حساب المزودين" :show="true" />
@@ -401,7 +402,7 @@
                     @endif
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('backup.view'))
                         <x-navbar.buttons.dropdown-link : href="{{ route('agency.backups.index') }}"
-                            icon="fas fa-database" label="نسخ واستعاده" :show="true" />
+                            icon="fas fa-database" label="نسح واستعاده" :show="true" />
                     @endif
 
                     </div>
