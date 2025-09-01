@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Schema;
 use App\Notifications\SaleEditApprovalPending;
 use App\Services\Notify;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class Index extends Component
 {
@@ -61,6 +62,7 @@ class Index extends Component
     public array $statusOptions = [];
     public $original_user_id = null;
     public int $sale_edit_hours = 72;
+    public bool $isSaving = false;
 
     // 👇 إضافة scope
     public $filters = [
@@ -970,6 +972,26 @@ foreach ($groupedM as $g) {
 
     public function save()
     {
+    if ($this->isSaving) { return; }
+    $this->isSaving = true;
+
+    $lock = Cache::lock('sales:inflight:'.Auth::id(), 10);
+    if (! $lock->get()) {
+        $this->isSaving = false;
+        $this->addError('general','طلب آخر قيد التنفيذ.');
+        return;
+    }
+
+    try {
+        // تطبيع قبل التحقق
+        if ($this->payment_method === 'all') {
+            $this->amount_paid = null; $this->payment_type = null;
+            $this->receipt_number = null; $this->depositor_name = null;
+        }
+        if (in_array($this->status,['Refund-Full','Refund-Partial','Void'])) {
+            $this->amount_paid = 0;
+        }
+
         $this->validate();
 
         if ($this->beneficiary_name && $this->phone_number) {
@@ -1063,7 +1085,16 @@ $this->updateStatusOptions();
 $this->status = 'Issued';
 $this->successMessage = 'تمت إضافة العملية بنجاح';
 $this->original_user_id = null;
-
+} catch (\Illuminate\Validation\ValidationException $ve) {
+    throw $ve; // دع Livewire يعرض رسائل الحقول
+} catch (\Throwable $e) {
+    report($e);
+    $this->addError('general', 'تعذّر إتمام العملية الآن.');
+} finally {
+    // فكّ القفل فورًا حتى لا يظل محجوز 10 ثواني
+    try { $lock->release(); } catch (\Throwable $e) {}
+    $this->isSaving = false;
+}
     }
 
     public function updatedPaymentMethod($value)
@@ -1291,6 +1322,26 @@ $this->original_user_id = null;
 
     public function update()
     {
+    if ($this->isSaving) { return; }
+    $this->isSaving = true;
+
+    $lock = Cache::lock('sales:inflight:'.Auth::id(), 10);
+    if (! $lock->get()) {
+        $this->isSaving = false;
+        $this->addError('general','طلب آخر قيد التنفيذ.');
+        return;
+    }
+
+    try {
+        // تطبيع قبل التحقق
+        if ($this->payment_method === 'all') {
+            $this->amount_paid = null; $this->payment_type = null;
+            $this->receipt_number = null; $this->depositor_name = null;
+        }
+        if (in_array($this->status,['Refund-Full','Refund-Partial','Void'])) {
+            $this->amount_paid = 0;
+        }
+
         $this->validate();
 
         $sale = Sale::findOrFail($this->editingSale);
@@ -1363,6 +1414,17 @@ if ($sale->customer_id) {
         $this->resetForm();
         $this->editingSale = null;
         $this->successMessage = 'تم تحديث العملية بنجاح';
+} catch (\Illuminate\Validation\ValidationException $ve) {
+    throw $ve; // دع Livewire يعرض رسائل الحقول
+} catch (\Throwable $e) {
+    report($e);
+    $this->addError('general', 'تعذّر إتمام العملية الآن.');
+} finally {
+    // فكّ القفل فورًا حتى لا يظل محجوز 10 ثواني
+    try { $lock->release(); } catch (\Throwable $e) {}
+    $this->isSaving = false;
+}
+
     }
 
     public function showWallet(int $customerId): void

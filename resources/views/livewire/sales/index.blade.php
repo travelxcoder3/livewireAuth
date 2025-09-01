@@ -165,7 +165,9 @@ $columns = SalesTable::columns();
         @can('sales.create')
         <!-- نموذج الإضافة -->
         <div class="bg-white rounded-xl shadow-md p-4">
-        <form wire:submit.prevent="{{ $editingSale ? 'update' : 'save' }}" class="space-y-4 text-sm" id="mainForm">
+        <form x-data x-on:submit.once
+      wire:submit.prevent="{{ $editingSale ? 'update' : 'save' }}"
+      class="space-y-4 text-sm" id="mainForm">
                 <!-- السطر الأول -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 lg:gap-3">
                 
@@ -560,12 +562,22 @@ $columns = SalesTable::columns();
     </x-primary-button>
 @else
 <x-primary-button
-        type="submit"
-        textColor="white"
-        width="w-full sm:w-auto"
-    >
+    type="submit"
+    textColor="white"
+    width="w-full sm:w-auto"
+    wire:loading.attr="disabled"
+    wire:loading.class="opacity-60 cursor-not-allowed"
+    wire:target="{{ $editingSale ? 'update' : 'save' }}"
+>
+    <span wire:loading.remove wire:target="{{ $editingSale ? 'update' : 'save' }}">
         {{ $editingSale ? 'تحديث' : 'تأكيد' }}
-    </x-primary-button>
+    </span>
+    <svg wire:loading wire:target="{{ $editingSale ? 'update' : 'save' }}" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" opacity="0.25"></circle>
+        <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+    </svg>
+</x-primary-button>
+
 @endif
 
 
