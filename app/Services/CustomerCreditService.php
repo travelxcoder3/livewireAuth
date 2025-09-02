@@ -264,13 +264,15 @@ public function syncCustomerCommission(Sale $sale): void
 {
     if (!$sale->customer_id) return;
 
-    DB::transaction(function () use ($sale) {
+    $depositedNow = 0.0;
+
+    DB::transaction(function () use ($sale, &$depositedNow) {
         $groupId = (string)($sale->sale_group_id ?: $sale->id);
         $ref     = 'commission:group:' . $groupId;
 
-        // اقفل المحفظة
-$customer = Customer::where('agency_id', $sale->agency_id)
-    ->findOrFail($sale->customer_id);        $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
+        $customer = Customer::where('agency_id', $sale->agency_id)
+            ->findOrFail($sale->customer_id);
+        $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
 
         // كل سجلات نفس المجموعة
         $groupSales = Sale::where(function ($q) use ($groupId) {
@@ -327,7 +329,7 @@ $customer = Customer::where('agency_id', $sale->agency_id)
 
         // اضبط الصافي الحالي ليطابق desired
         if ($desired > $net) {
-            $diff = $desired - $net; // إيداع زيادة
+            $diff = $desired - $net;           // ← إيداع جديد
             WalletTransaction::create([
                 'wallet_id'        => $wallet->id,
                 'type'             => 'deposit',
@@ -338,8 +340,9 @@ $customer = Customer::where('agency_id', $sale->agency_id)
                 'performed_by_name'=> auth()->user()->name ?? 'system',
             ]);
             $wallet->increment('balance', $diff);
+            $depositedNow = $diff;             // ← سجّل الإيداع
         } elseif ($desired < $net && $net > 0) {
-            $diff = $net - $desired; // سحب فرق
+            $diff = $net - $desired;
             WalletTransaction::create([
                 'wallet_id'        => $wallet->id,
                 'type'             => 'withdraw',
@@ -351,8 +354,15 @@ $customer = Customer::where('agency_id', $sale->agency_id)
             ]);
             $wallet->decrement('balance', $diff);
         }
-        // إن كان desired == net فلا إجراء
     });
+
+    // بعد اكتمال المعاملة: صَفِّ الديون الأقدم أولاً إذا وُجد إيداع
+    if ($depositedNow > 0 && $sale->customer_id) {
+        $customer = Customer::where('agency_id', $sale->agency_id)->find($sale->customer_id);
+        if ($customer) {
+            $this->autoPayAllFromWallet($customer);
+        }
+    }
 }
 
 private function undepositedRefundForGroup(int $customerId, string $gid): float

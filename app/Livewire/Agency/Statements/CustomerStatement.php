@@ -197,44 +197,58 @@ class CustomerStatement extends Component
             // 3) حركات المحفظة
 // 3) حركات المحفظة
 foreach ($walletTx as $tx) {
-    $evt = $this->fmtDate($tx->created_at);
-    $key = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
+$evt = $this->fmtDate($tx->created_at);
+$key = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
 
-    // إن وُجدت ميتا، فهذا زوج (عمولة ← سحب لسداد)
-    $meta = null;
-    if (isset($commissionPairMeta[$key]) && !empty($commissionPairMeta[$key])) {
-        $meta = array_shift($commissionPairMeta[$key]);
-        if (empty($commissionPairMeta[$key])) unset($commissionPairMeta[$key]);
+// NEW: مرجع العملية
+$refStr = \Illuminate\Support\Str::lower((string)($tx->reference ?? ''));
+$isCommissionRef = \Illuminate\Support\Str::startsWith($refStr, 'commission:group:');
+
+// إن وُجدت ميتا، فهذا زوج (تحصيل ↔ سحب للسداد)
+$meta = null;
+if (isset($commissionPairMeta[$key]) && !empty($commissionPairMeta[$key])) {
+    $meta = array_shift($commissionPairMeta[$key]);
+    if (empty($commissionPairMeta[$key])) unset($commissionPairMeta[$key]);
+}
+
+$debit = $credit = 0.0;
+$impact = $walletAffectsBalance; // false افتراضيًا
+
+$status = 'محفظة';
+$desc   = match($tx->type){
+    'deposit' => 'إيداع للمحفظة',
+    'withdraw'=> 'سحب من المحفظة',
+    'adjust'  => 'تعديل رصيد المحفظة',
+    default   => 'عملية محفظة',
+};
+
+if ($tx->type === 'deposit')      { $credit = (float)$tx->amount; }
+elseif ($tx->type === 'withdraw') { $debit  = (float)$tx->amount; }
+elseif ($tx->type === 'adjust') { /* كما هي */ }
+
+$ord = 5.0;
+
+// NEW: معاملات عمولة العميل تُحتسب دائمًا (سواء وُجد pairing أم لا)
+if ($isCommissionRef) {
+    if ($tx->type === 'deposit') {
+        $status = 'عمولة';
+        $desc   = "إضافة عمولة عميل له {$this->moneyKey($tx->amount)}";
+        $impact = true;      // ← تُضاف للمجاميع
+        $ord    = 5.00;
+    } elseif ($tx->type === 'withdraw') {
+        $status = 'عمولة';
+        $desc   = "خصم عمولة عميل عليه {$this->moneyKey($tx->amount)}";
+        $impact = true;      // ← تُخصم من المجاميع
+        $ord    = 5.05;
     }
-
-    $debit = $credit = 0.0;
-    $impact = $walletAffectsBalance;
-
-    $status = 'محفظة';
-    $desc   = match($tx->type){
-        'deposit' => 'إيداع للمحفظة',
-        'withdraw'=> 'سحب من المحفظة',
-        'adjust'  => 'تعديل رصيد المحفظة',
-        default   => 'عملية محفظة',
-    };
-
-    if ($tx->type === 'deposit')      { $credit = (float)$tx->amount; }
-    elseif ($tx->type === 'withdraw') { $debit  = (float)$tx->amount; }
-    elseif ($tx->type === 'adjust') {
-        $prev = max(0.0, (float)$tx->running_balance - (float)$tx->amount);
-        if ($tx->running_balance > $prev)      { $credit = (float)$tx->amount; }
-        elseif ($tx->running_balance < $prev)  { $debit  = (float)$tx->amount; }
-    }
-
-    // ترتيب مُحكم لزوج العمولة
-$ord = 5.0; // أساس معاملات المحفظة
-if ($meta) {
-    $kind = $meta['kind'] ?? 'collection'; // NEW
+// وإلا إن لم تكن عمولة وكان لدينا زوج من التحصيل نطبّق المنطق القديم
+} elseif ($meta) {
+    $kind = $meta['kind'] ?? 'collection';
     if ($tx->type === 'deposit') {
         if ($kind === 'commission') {
             $status = 'عمولة';
             $desc   = "إضافة عمولة عميل له {$this->moneyKey($tx->amount)}";
-        } else { // collection
+        } else {
             $status = 'تحصيل';
             $desc   = "سداد من التحصيل {$meta['service']} لـ{$meta['beneficiary']}";
         }

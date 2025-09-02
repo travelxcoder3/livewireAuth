@@ -1096,13 +1096,22 @@ if ($this->customer_id && (
         );
 }
 
-// 2) بعد الإيداع والتصفية: زامن العمولة
+// 2) مزامنة العمولة
 app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
 
-// 3) السداد التلقائي من المحفظة يُتخطّى عند الـRefund
+// 2.1) تصفية شاملة من المحفظة لإطفاء الديون الأقدم أولاً
+if ($sale->customer_id) {
+    $customer = \App\Models\Customer::where('agency_id', $sale->agency_id)->find($sale->customer_id);
+    if ($customer) {
+        app(\App\Services\CustomerCreditService::class)->autoPayAllFromWallet($customer);
+    }
+}
+
+// 3) أخيرًا: صَفِّ العملية الحالية إن تبقى عليها شيء
 if (!str_contains(mb_strtolower((string)$sale->status), 'refund')) {
     app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
 }
+
 
 
 
@@ -1434,13 +1443,22 @@ if ($sale->customer_id && (
         ->autoDepositToWallet((int)$sale->customer_id, Auth::user()->agency_id, 'sales-auto|group:'.($sale->sale_group_id ?: $sale->id));
 }
 
-// 2) بعد ذلك فقط: مزامنة العمولة
+// 2) مزامنة العمولة
 app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
 
-// 3) لا تسدد من المحفظة في حالات Refund
+// 2.1) تصفية شاملة تسبق تصفية العملية الحالية
+if ($sale->customer_id) {
+    $customer = \App\Models\Customer::where('agency_id', $sale->agency_id)->find($sale->customer_id);
+    if ($customer) {
+        app(\App\Services\CustomerCreditService::class)->autoPayAllFromWallet($customer);
+    }
+}
+
+// 3) تصفية العملية الحالية إن لزم
 if (!str_contains(mb_strtolower((string)$sale->status), 'refund')) {
     app(\App\Services\CustomerCreditService::class)->autoPayFromWallet($sale);
 }
+
 
 
 
