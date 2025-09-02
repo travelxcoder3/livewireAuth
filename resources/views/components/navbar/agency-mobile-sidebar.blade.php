@@ -49,7 +49,7 @@
         $user->can('reportCustomers.view') ||
         $user->can('reportCustomerAccounts.view')||
         $user->can('reportEmployeeSales.view')|| 
-        $user->can('reportProvidersSales.view')||
+        $user->can('reportProvider.view')||
         $user->can('reportQuotation.view')||
         $user->can('reportCustomersSales.view')||
         $user->can('reportProvider.view');
@@ -220,13 +220,13 @@
                                 </a>
                             @endif
                             @if ($user->hasRole('agency-admin') || $user->can('providers-statement.view'))
-                                <a href="{{ route('agency.reports.provider-ledger') }}" @click="mobileSidebarOpen = false"
+                                <a href="{{ route('agency.statements.providers') }}" @click="mobileSidebarOpen = false"
                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                                     <i class="fas fa-file-contract"></i><span>كشف حساب المزودين</span>
                                 </a>
                             @endif
                             @if ($user->hasRole('agency-admin') || $user->can('employee-statement.view'))
-                                <a href="{{ route('agency.reports.employee-sales') }}" @click="mobileSidebarOpen = false"
+                                <a href="{{ route('agency.statements.employees') }}" @click="mobileSidebarOpen = false"
                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                                     <i class="fas fa-user-tie"></i><span>كشف حساب الموظفين</span>
                                 </a>
@@ -334,7 +334,7 @@
                             @endif
                         @endif
 
-                        @if ($user->hasRole('agency-admin') || $user->can('reportProvidersSales.view'))
+                        @if ($user->hasRole('agency-admin') || $user->can('reportProvider.view'))
                             <a href="{{ route('agency.reports.provider-sales') }}" @click="mobileSidebarOpen = false"
                                class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-800 hover:bg-gray-100">
                                 <i class="fas fa-user-tie"></i><span>تقارير المزودين</span>
