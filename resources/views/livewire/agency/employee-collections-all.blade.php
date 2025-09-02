@@ -99,7 +99,6 @@ $rows = $sales->map(function($customer, $i) {
 
   <!-- ديسكتوب/تابلت: صف يمين -->
   <div class="hidden md:flex justify-end flex-wrap gap-2">
-    @can('collection.details.view')
     <x-primary-button href="{{ route('agency.collections.all') }}" class="text-sm" gradient>
         حركة العمليات
     </x-primary-button>
@@ -109,7 +108,7 @@ $rows = $sales->map(function($customer, $i) {
     <x-primary-button href="{{ route('agency.customer-accounts') }}" class="text-sm" gradient>
       عرض عمليات العملاء
     </x-primary-button>
-    @endcan
+    
     <button wire:click="resetFilters"
         class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
         إعادة تعيين الفلاتر

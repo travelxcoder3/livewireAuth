@@ -1,5 +1,6 @@
 <!-- لوحة التحكم المخصصة لمدير الصلاحيات -->
 @php $stats = $this->permissionsStats; @endphp
+<div class="space-y-8">
 
 <!-- إحصائيات الصلاحيات -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -148,4 +149,5 @@
             <p class="font-semibold">{{ $this->agencyInfo->license_expiry_date->format('Y-m-d') }}</p>
         </div>
     </div>
+</div> 
 </div> 

@@ -75,6 +75,22 @@ class CustomerStatement extends Component
         $void   = ['void','cancel','canceled','cancelled'];
 
         $rows = [];
+        $seq  = 0; 
+
+        // NEW: حمّل معاملات المحفظة مُبكرًا وابنِ فهرسًا للسحوبات حسب (الدقيقة+المبلغ)
+        $walletAffectsBalance = false;
+        $walletTx = WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id', $this->customer->id))
+            ->whereBetween('created_at', [$from, $to])
+            ->orderBy('created_at')
+            ->get();
+
+        $walletWithdrawAvail = [];
+        foreach ($walletTx as $t) {
+            if ($t->type === 'withdraw') {
+                $k = $this->minuteKey($t->created_at).'|'.$this->moneyKey($t->amount);
+                $walletWithdrawAvail[$k] = ($walletWithdrawAvail[$k] ?? 0) + 1;
+            }
+        }
 
         // 1) المشتريات
         $sales = $this->customer->sales()
@@ -103,7 +119,7 @@ class CustomerStatement extends Component
                 $rows[] = [
                     'no'=>0,'date'=>$this->fmtDate($sale->created_at),'desc'=>$label,
                     'status'=>$this->statusArabicLabel($st),'debit'=>(float)$sale->usd_sell,'credit'=>0.0,'balance'=>0.0,
-                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>1,
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>1,'_seq'=>++$seq,
                 ];
             }
 
@@ -113,7 +129,7 @@ class CustomerStatement extends Component
                     'no'=>0,'date'=>$this->fmtDate($sale->created_at),
                     'desc'=> "{$label} لـ{$serviceName} لـ{$beneficiaryName}",
                     'status'=>$label,'debit'=>0.0,'credit'=>abs((float)$sale->usd_sell),'balance'=>0.0,
-                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>2,
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>2,'_seq'=>++$seq,
                 ];
             }
 
@@ -124,7 +140,7 @@ class CustomerStatement extends Component
                     'no'=>0,'date'=>$this->fmtDate($sale->created_at),
                     'desc'=> "{$statusLabel} {$serviceName} لـ{$beneficiaryName}",
                     'status'=>$statusLabel,'debit'=>0.0,'credit'=>(float)$sale->amount_paid,'balance'=>0.0,
-                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>3,
+                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>3,'_seq'=>++$seq,
                 ];
             }
         }
@@ -142,76 +158,129 @@ class CustomerStatement extends Component
                 return mb_strpos($name, $bn) !== false;
             });
         }
-
+        $commissionPairMeta = [];
         foreach ($collections as $col) {
             $serviceName     = (string)($col->sale->service->label ?? '-');
             $beneficiaryName = (string)($col->sale->beneficiary_name ?? $col->sale->customer->name ?? $this->customer->name);
             $evt             = $this->fmtDate($col->created_at ?? $col->payment_date);
             $grpTs           = $this->fmtDate($col->sale->created_at);
 
-            $rows[] = [
-                'no'=>0,'date'=>$evt,
-                'desc'=>"سداد من التحصيل {$serviceName} لـ{$beneficiaryName}",
-                'status'=>'سداد من التحصيل','debit'=>0.0,'credit'=>(float)$col->amount,'balance'=>0.0,
-                '_grp'=>$grpTs,'_evt'=>$evt,'_ord'=>4,
-            ];
-        }
+            $keyC = $this->minuteKey($evt).'|'.$this->moneyKey($col->amount);
 
-        // 3) حركات المحفظة
-        $walletAffectsBalance = false; // اجعلها true إذا أردتها تؤثر في الرصيد
-        $walletTx = \App\Models\WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id', $this->customer->id))
-            ->whereBetween('created_at', [$from, $to])
-            ->orderBy('created_at')
-            ->get();
+            // NEW: محاولة دقيقة لتحديد المصدر من حقول Collection الشائعة
+            $isCommission = (bool) (data_get($col, 'is_commission')
+                ?? (Str::contains(Str::lower((string) data_get($col, 'source', '')), 'commission'))
+                ?? (Str::contains(Str::lower((string) data_get($col, 'notes',  '')), 'commission')));
 
-        foreach ($walletTx as $tx) {
-            $evt   = $this->fmtDate($tx->created_at);
-            $label = match($tx->type){
-                'deposit' => 'إيداع للمحفظة',
-                'withdraw'=> 'سحب من المحفظة',
-                'adjust'  => 'تعديل رصيد المحفظة',
-                default   => 'عملية محفظة',
-            };
-
-            $debit = $credit = 0.0;
-            if ($tx->type === 'deposit')       { $credit = (float)$tx->amount; }
-            elseif ($tx->type === 'withdraw')  { $debit  = (float)$tx->amount; }
-            elseif ($tx->type === 'adjust') {
-                $prev = max(0.0, (float)$tx->running_balance - (float)$tx->amount);
-                if ($tx->running_balance > $prev) { $credit = (float)$tx->amount; }
-                elseif ($tx->running_balance < $prev) { $debit = (float)$tx->amount; }
+            // إذا وُجد سحب بالمفتاح نفسه نُحوّلها لزوج ونُمرّر نوعه
+            if (($walletWithdrawAvail[$keyC] ?? 0) > 0) {
+                $commissionPairMeta[$keyC][] = [
+                    'service'     => $serviceName,
+                    'beneficiary' => $beneficiaryName,
+                    'grp'         => $grpTs,
+                    'evt'         => $evt,
+                    'kind'        => $isCommission ? 'commission' : 'collection', // NEW
+                ];
+                continue; // لا تضف صف "سداد من التحصيل"
             }
 
-            $rows[] = [
-                'no'=>0,'date'=>$evt,
-                'desc'=>$label,
-                'status'=>'محفظة',
-                'debit'=>$debit,'credit'=>$credit,'balance'=>0.0,
-                '_grp'=>$evt,'_evt'=>$evt,'_ord'=>5,'_impact'=>$walletAffectsBalance,
-            ];
+
+        // الحالة العادية
+        $rows[] = [
+            'no'=>0,'date'=>$evt,
+            'desc'=>"سداد من التحصيل {$serviceName} لـ{$beneficiaryName}",
+            'status'=>'سداد من التحصيل','debit'=>0.0,'credit'=>(float)$col->amount,'balance'=>0.0,
+            '_grp'=>$grpTs,'_evt'=>$evt,'_ord'=>4,'_seq'=>++$seq,
+        ];
+    }
+
+            // 3) حركات المحفظة
+// 3) حركات المحفظة
+foreach ($walletTx as $tx) {
+    $evt = $this->fmtDate($tx->created_at);
+    $key = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
+
+    // إن وُجدت ميتا، فهذا زوج (عمولة ← سحب لسداد)
+    $meta = null;
+    if (isset($commissionPairMeta[$key]) && !empty($commissionPairMeta[$key])) {
+        $meta = array_shift($commissionPairMeta[$key]);
+        if (empty($commissionPairMeta[$key])) unset($commissionPairMeta[$key]);
+    }
+
+    $debit = $credit = 0.0;
+    $impact = $walletAffectsBalance;
+
+    $status = 'محفظة';
+    $desc   = match($tx->type){
+        'deposit' => 'إيداع للمحفظة',
+        'withdraw'=> 'سحب من المحفظة',
+        'adjust'  => 'تعديل رصيد المحفظة',
+        default   => 'عملية محفظة',
+    };
+
+    if ($tx->type === 'deposit')      { $credit = (float)$tx->amount; }
+    elseif ($tx->type === 'withdraw') { $debit  = (float)$tx->amount; }
+    elseif ($tx->type === 'adjust') {
+        $prev = max(0.0, (float)$tx->running_balance - (float)$tx->amount);
+        if ($tx->running_balance > $prev)      { $credit = (float)$tx->amount; }
+        elseif ($tx->running_balance < $prev)  { $debit  = (float)$tx->amount; }
+    }
+
+    // ترتيب مُحكم لزوج العمولة
+$ord = 5.0; // أساس معاملات المحفظة
+if ($meta) {
+    $kind = $meta['kind'] ?? 'collection'; // NEW
+    if ($tx->type === 'deposit') {
+        if ($kind === 'commission') {
+            $status = 'عمولة';
+            $desc   = "إضافة عمولة عميل له {$this->moneyKey($tx->amount)}";
+        } else { // collection
+            $status = 'تحصيل';
+            $desc   = "سداد من التحصيل {$meta['service']} لـ{$meta['beneficiary']}";
         }
+        $impact = true;
+        $ord    = 5.00;
+    } elseif ($tx->type === 'withdraw') {
+        $status = 'محفظة';
+        $desc   = "سحب من المحفظة لسداد مبلغ {$this->moneyKey($tx->amount)} من {$meta['service']} لـ{$meta['beneficiary']}";
+        $impact = false;
+        $ord    = 5.10;
+    }
+}
 
-        // الفرز
-        usort($rows, fn($a,$b)=>[$a['_grp'],$a['_evt'],$a['_ord']] <=> [$b['_grp'],$b['_evt'],$b['_ord']]);
 
-        // الرصيد التراكمي
-        $bal = 0.0; $i = 1;
-        foreach ($rows as &$r) {
-            if (($r['_impact'] ?? true) === true) {
-                $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
+$rows[] = [
+    'no'=>0,'date'=>$evt,'desc'=>$desc,'status'=>$status,
+    'debit'=>$debit,'credit'=>$credit,'balance'=>0.0,
+    // FIX: استخدم زمن الحدث دائمًا لضمان الترتيب الزمني العالمي
+    '_grp'=>$evt,'_evt'=>$evt,'_ord'=>$ord,'_seq'=>++$seq,'_impact'=>$impact,
+];
+
+}
+
+
+            // الفرز
+            usort($rows, fn($a,$b)=>[$a['_grp'],$a['_evt'],$a['_ord'],$a['_seq']] <=> [$b['_grp'],$b['_evt'],$b['_ord'],$b['_seq']]);
+
+            // الرصيد التراكمي + الإجماليات مع احترام _impact
+            $bal = 0.0; $i = 1; $sumDebit = 0.0; $sumCredit = 0.0;
+            foreach ($rows as &$r) {
+                if (($r['_impact'] ?? true) === true) {
+                    $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
+                    $sumDebit  += ($r['debit']  ?? 0.0);
+                    $sumCredit += ($r['credit'] ?? 0.0);
+                }
+                $r['balance'] = $bal;
+                $r['no'] = $i++;
+                unset($r['_grp'],$r['_evt'],$r['_ord'],$r['_seq']); // نُبقي _impact
             }
-            $r['balance'] = $bal;
-            $r['no'] = $i++;
-            unset($r['_grp'],$r['_evt'],$r['_ord'],$r['_impact']);
-        }
-        unset($r);
+            unset($r);
 
-        $this->statement    = $rows;
-        // حساب الإجماليات للتذييل
-        $this->sumDebit  = round(array_sum(array_column($rows, 'debit')), 2);
-        $this->sumCredit = round(array_sum(array_column($rows, 'credit')), 2);
-        $this->net       = round($this->sumCredit - $this->sumDebit, 2);
-        $this->selectedRows = [];
+            $this->statement = $rows;
+            $this->sumDebit  = round($sumDebit, 2);
+            $this->sumCredit = round($sumCredit, 2);
+            $this->net       = round($this->sumCredit - $this->sumDebit, 2);
+
     }
 
 
@@ -225,7 +294,11 @@ class CustomerStatement extends Component
 
     public function exportPdf(?string $scope = 'all')
     {
-        $rows = $this->statement;
+        $rows = array_map(function($r){
+            if (isset($r['_impact'])) unset($r['_impact']);
+            return $r;
+        }, $this->statement);
+
 
         if ($scope === 'selected') {
             $idx  = array_map('intval', $this->selectedRows);
@@ -281,6 +354,14 @@ class CustomerStatement extends Component
         $this->fromDate    = '';
         $this->toDate      = '';
         $this->rebuild();
+    }
+
+    private function minuteKey($dt): string {
+        try { return \Carbon\Carbon::parse($dt)->format('Y-m-d H:i'); }
+        catch (\Throwable $e) { return (string)$dt; }
+    }
+    private function moneyKey($n): string {
+        return number_format((float)$n, 2, '.', '');
     }
 
 }

@@ -22,8 +22,10 @@ class AutoPermission
         'login','logout','password.*',
         'agency.dashboard',
         'agency.change-password',
-        'agency.profile',
         'agency.notifications.index',
+        'agency.obligations-view',
+        'agency.policies.view',
+        
     ];
 
     // استثناءات: route.name => permission.name  (كلها من قائمة الـ 62)
@@ -112,8 +114,12 @@ class AutoPermission
         'agency.reports.accounts.pdf'              => 'accounts.export',
         'agency.reports.sales'                     => 'reportsSales.view',
         'agency.reports.sales.pdf'                 => 'sales.export',
-        'agency.reports.customers-follow-up'       => 'reportCustomersSales.view',
-        'agency.reports.customers-follow-up.pdf'   => 'reportCustomersSales.view',
+      // تقارير لوحة الوكالة
+'agency.reports.customers-follow-up'       => 'reportCustomerAccounts.view',
+'agency.reports.customers-follow-up.pdf'   => 'reportCustomerAccounts.view',
+// (اختياري إن أردت إبقاء القديم)
+'agency.reports.customers-follow-up.index' => 'reportCustomerAccounts.view',
+
         'agency.reports.customer-accounts'         => 'reportCustomerAccounts.view',
         'agency.reports.customer-accounts.details' => 'reportCustomerAccounts.view',
         'agency.reports.customer-accounts.pdf'     => 'reportCustomerAccounts.view',

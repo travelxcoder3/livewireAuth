@@ -21,6 +21,5 @@ class DatabaseSeeder extends Seeder
         $this->call(SystemDynamicListsSeeder::class); // Seeder القوائم
         $this->call(PermissionSeeder::class);
         $this->call(SyncAgencyAdminPermissionsSeeder::class);
-        $this->call(AutoPermissionsSeeder::class);
     }
 }
