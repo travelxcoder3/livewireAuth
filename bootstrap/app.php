@@ -33,6 +33,8 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Console\Commands\AgencyRestore::class,
         \App\Console\Commands\AgencyBackupAll::class,      
         \App\Console\Commands\AgencyPruneBackups::class,
+        \App\Console\Commands\BackupFull::class,         // الجديد
+    \App\Console\Commands\RestoreFull::class,  
     ])
 
     ->withExceptions(function (Exceptions $exceptions): void {
