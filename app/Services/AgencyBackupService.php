@@ -65,11 +65,7 @@ class AgencyBackupService
                         break;
                     } else {
                         $errors[] = trim($proc->getErrorOutput());
-                        // إذا كان الخطأ 10106 أو 11003 نستمر للمحاولة التالية، وفي النهاية سنسقط للخطة البديلة
                     }
-                }
-                if (!$dumpDone && !empty($errors)) {
-                    // سقوط إلى الخطة البديلة بدون mysqldump
                 }
             }
 
@@ -178,14 +174,182 @@ class AgencyBackupService
         $this->rrmdir($workDir);
     }
 
+    // ====================== NEW: Full backup mode ======================
+
+    /** إنشاء نسخة كاملة: كل الجداول + الروتينات + التريغرز + الإيفنتس + ملفات مختارة */
+    public function createFull(string $tag = 'full'): string
+    {
+        $disk = Storage::disk('agency_backups');
+        if (!is_dir($disk->path(''))) mkdir($disk->path(''), 0775, true);
+
+        $ts       = now()->format('Ymd_His');
+        $basename = "{$tag}_" . $ts;
+        $workDir  = $disk->path("__tmp_{$basename}");
+        $sqlPath  = "{$workDir}/payload.sql";
+        $zipPath  = $disk->path("{$basename}.zip");
+
+        if (!is_dir($workDir)) mkdir($workDir, 0775, true);
+
+        $dbName = DB::getDatabaseName();
+
+        // mysqldump كامل مع دعم MariaDB
+        $dumped = false;
+        $errors = [];
+        try {
+            $dumpBin = $this->resolveBinary('mysqldump');
+            $isMaria = $this->isMariaDB($dumpBin);
+
+            foreach ($this->connectionArgSets() as $connArgs) {
+                $base = [
+                    '--single-transaction',
+                    '--quick',
+                    '--lock-tables=false',
+                    '--routines',
+                    '--triggers',
+                    '--events',
+                    '--add-drop-table',
+                    '--skip-comments',
+                    '--default-character-set=utf8mb4',
+                    $dbName,
+                ];
+                if (!$isMaria) {
+                    // MySQL فقط
+                    array_splice($base, count($base)-1, 0, ['--set-gtid-purged=OFF']);
+                }
+
+                $args = array_values(array_filter(array_merge([$dumpBin], $connArgs, $base)));
+
+                $proc = new Process($args, timeout: 1800);
+                $proc->run();
+                if ($proc->isSuccessful()) {
+                    file_put_contents($sqlPath, $proc->getOutput());
+                    $dumped = true;
+                    break;
+                } else {
+                    $errors[] = trim($proc->getErrorOutput()) ?: '(no stderr)';
+                }
+            }
+        } catch (\Throwable $e) {
+            $errors[] = $e->getMessage();
+        }
+
+        if (!$dumped) {
+            @rmdir($workDir);
+            throw new \RuntimeException(
+                "فشل إنشاء النسخة الكاملة عبر mysqldump. تحقق من MYSQL_BIN_PATH و DB_*."
+                ."\nآخر أخطاء mysqldump:\n".implode("\n---\n", array_slice($errors, -3))
+            );
+        }
+
+        // ZIP مع استثناء مجلد النسخ الحالية لتجنب التعشيش
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            @unlink($sqlPath); @rmdir($workDir);
+            throw new \RuntimeException('Cannot create zip for full backup');
+        }
+
+        $zip->addFile($sqlPath, 'payload.sql');
+
+        // أضف ملفات التطبيق المفيدة. عدّل المسارات حسب احتياجك.
+        $this->addPathIfExistsExcluding($zip, storage_path('app'), 'storage_app', [
+            realpath(storage_path('agency_backups')) ?: storage_path('agency_backups'),
+            realpath(storage_path('app/agency_backups')) ?: storage_path('app/agency_backups'),
+        ]);
+        $this->addPathIfExists($zip, public_path('uploads'), 'public_uploads');
+
+        $zip->close();
+
+        // تنظيف المؤقت
+        @unlink($sqlPath);
+        @rmdir($workDir);
+
+        // تسجيل — استخدم 0 كقيمة حارس لأن الحقل NOT NULL
+        DB::table('agency_backups')->insert([
+            'agency_id'  => 0, // sentinel للنسخ الكاملة
+            'filename'   => basename($zipPath),
+            'size'       => filesize($zipPath) ?: 0,
+            'status'     => 'done',
+            'meta'       => json_encode([
+                'type'   => 'full',
+                'db'     => $dbName,
+                'paths'  => ['storage/app (excluded: agency_backups)', 'public/uploads'],
+            ], JSON_UNESCAPED_UNICODE),
+            'created_by' => Auth::id(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return basename($zipPath);
+    }
+
+    /** استعادة كاملة من نسخة كاملة */
+    public function restoreFull(string $zipFilename): void
+    {
+        $disk   = Storage::disk('agency_backups');
+        $zipAbs = $disk->path($zipFilename);
+        if (!file_exists($zipAbs)) throw new \InvalidArgumentException('Backup file not found');
+
+        $workDir = $disk->path('__restore_full_'.Str::random(8));
+        mkdir($workDir, 0775, true);
+
+        $zip = new ZipArchive();
+        if ($zip->open($zipAbs) !== true) throw new \RuntimeException('Cannot open zip');
+        $zip->extractTo($workDir);
+        $zip->close();
+
+        $sqlPath = "{$workDir}/payload.sql";
+        if (!file_exists($sqlPath)) { $this->rrmdir($workDir); throw new \RuntimeException('payload.sql missing'); }
+
+        $dbName = DB::getDatabaseName();
+
+        // استيراد عبر عميل mysql، ثم سقوط إلى PDO عند اللزوم
+        $imported = false;
+        try {
+            $mysqlBin = $this->resolveBinary('mysql');
+            foreach ($this->connectionArgSets() as $connArgs) {
+                $args  = array_values(array_filter(array_merge([$mysqlBin], $connArgs, [$dbName])));
+                $proc = new Process($args, timeout: 3600);
+                $proc->setInput(file_get_contents($sqlPath));
+                $proc->run();
+                if ($proc->isSuccessful()) { $imported = true; break; }
+            }
+        } catch (\Throwable $e) {
+            $imported = false;
+        }
+
+        if (!$imported) {
+            $sql = file_get_contents($sqlPath);
+            DB::unprepared($sql);
+        }
+
+        // استعادة الملفات
+        $this->restoreDirIfExists("{$workDir}/storage_app", storage_path('app'));
+        $this->restoreDirIfExists("{$workDir}/public_uploads", public_path('uploads'));
+
+        // تنظيف مؤقت
+        $this->rrmdir($workDir);
+
+        // تنظيف كاش بعد الاستعادة
+        try {
+            \Artisan::call('permission:cache-reset');
+            \Artisan::call('optimize:clear');
+        } catch (\Throwable $e) {
+            // تجاهل
+        }
+    }
+
+    // ====================== helpers ======================
+
     /** يحل مسار mysql/mysqldump: من .env ثم PATH */
     private function resolveBinary(string $name): string
     {
-        $binDir = rtrim((string) env('MYSQL_BIN_PATH', ''), DIRECTORY_SEPARATOR);
-        $suffix = str_starts_with(PHP_OS_FAMILY, 'Windows') ? '.exe' : '';
+        // نظّف أي اقتباسات زائدة من .env
+        $binDir = (string) env('MYSQL_BIN_PATH', '');
+        $binDir = trim($binDir, " \t\n\r\0\x0B\"'\\/");
         if ($binDir !== '') {
+            $suffix = str_starts_with(PHP_OS_FAMILY, 'Windows') ? '.exe' : '';
             $candidate = $binDir . DIRECTORY_SEPARATOR . $name . $suffix;
-            if (file_exists($candidate)) return $candidate;
+            if (is_file($candidate)) return $candidate;
         }
 
         $finder = str_starts_with(PHP_OS_FAMILY, 'Windows') ? 'where' : 'which';
@@ -193,10 +357,23 @@ class AgencyBackupService
         $cmd->run();
         if ($cmd->isSuccessful()) {
             $path = trim(explode(PHP_EOL, $cmd->getOutput())[0] ?? '');
-            if ($path !== '' && file_exists($path)) return $path;
+            if ($path !== '' && is_file($path)) return $path;
         }
 
-        throw new \RuntimeException("$name not found (set MYSQL_BIN_PATH in .env)");
+        throw new \RuntimeException("$name not found. Checked: "
+            .($binDir ? $binDir : '[no MYSQL_BIN_PATH]').". Set MYSQL_BIN_PATH to the directory containing $name.");
+    }
+
+    /** كشف نوع عميل التفريغ (MariaDB أو MySQL) */
+    private function isMariaDB(string $dumpBin): bool
+    {
+        try {
+            $p = new Process([$dumpBin, '--version']);
+            $p->run();
+            return stripos($p->getOutput(), 'MariaDB') !== false;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /** مجموعات وسائط اتصال بديلة (host/protocol) */
@@ -247,7 +424,6 @@ class AgencyBackupService
                 } elseif ($c['is_binary']) {
                     $values[] = '0x'.bin2hex($v);
                 } elseif ($c['is_numeric']) {
-                    // أرقام بدون اقتباس
                     $values[] = (string)$v;
                 } else {
                     $values[] = $pdo->quote($v);
@@ -300,6 +476,39 @@ class AgencyBackupService
             }
         } else {
             $zip->addFile($path, $alias.'/'.basename($path));
+        }
+    }
+
+    /** NEW: إضافة مع استثناء مسارات محددة */
+    private function addPathIfExistsExcluding(ZipArchive $zip, string $path, string $alias, array $excludeAbsPaths): void
+    {
+        if (!file_exists($path)) return;
+
+        $excludeAbsPaths = array_filter(array_map(fn($p) => rtrim((string)$p, DIRECTORY_SEPARATOR), $excludeAbsPaths));
+        $shouldExclude = function (string $abs) use ($excludeAbsPaths): bool {
+            foreach ($excludeAbsPaths as $ex) {
+                if ($ex !== '' && str_starts_with($abs, $ex)) return true;
+            }
+            return false;
+        };
+
+        if (is_dir($path)) {
+            $iter = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+            foreach ($iter as $file) {
+                $abs = $file->getPathname();
+                if ($shouldExclude($abs)) continue;
+
+                $rel = $alias.'/'.ltrim(str_replace($path, '', $abs), DIRECTORY_SEPARATOR);
+                if ($file->isDir()) $zip->addEmptyDir($rel);
+                else $zip->addFile($abs, $rel);
+            }
+        } else {
+            if (!$shouldExclude($path)) {
+                $zip->addFile($path, $alias.'/'.basename($path));
+            }
         }
     }
 

@@ -12,28 +12,39 @@ class AgencyPruneBackups extends Command
     protected $description = 'Delete old agency backups, keeping the most recent N per agency';
 
     public function handle(): int
-    {
-        $keep = (int)$this->option('keep-last');
-        $disk = Storage::disk('agency_backups');
-        $agencies = DB::table('agencies')->pluck('id');
+{
+    $keep = (int)$this->option('keep-last');
+    $disk = Storage::disk('agency_backups');
 
-        foreach ($agencies as $agencyId) {
-            $rows = DB::table('agency_backups')
-                ->where('agency_id', $agencyId)
-                ->orderByDesc('id')
-                ->get();
+    // 1) نسخ الوكالات
+    $agencies = DB::table('agencies')->pluck('id');
+    foreach ($agencies as $agencyId) {
+        $rows = DB::table('agency_backups')
+            ->where('agency_id', $agencyId)
+            ->orderByDesc('id')
+            ->get();
 
-            $delete = $rows->slice($keep); // ما بعد آخر N
-            foreach ($delete as $b) {
-                if ($disk->exists($b->filename)) {
-                    $disk->delete($b->filename);
-                }
-                DB::table('agency_backups')->where('id', $b->id)->delete();
-                $this->line("🗑 deleted {$b->filename} (agency {$agencyId})");
-            }
+        $delete = $rows->slice($keep);
+        foreach ($delete as $b) {
+            if ($disk->exists($b->filename)) $disk->delete($b->filename);
+            DB::table('agency_backups')->where('id', $b->id)->delete();
+            $this->line("🗑 deleted {$b->filename} (agency {$agencyId})");
         }
-
-        $this->info('Prune completed.');
-        return self::SUCCESS;
     }
+
+    // 2) النسخ الكاملة (agency_id = NULL)
+    $fullRows = DB::table('agency_backups')
+        ->whereNull('agency_id')
+        ->orderByDesc('id')
+        ->get();
+    $deleteFull = $fullRows->slice($keep);
+    foreach ($deleteFull as $b) {
+        if ($disk->exists($b->filename)) $disk->delete($b->filename);
+        DB::table('agency_backups')->where('id', $b->id)->delete();
+        $this->line("🗑 deleted {$b->filename} (full)");
+    }
+
+    $this->info('Prune completed.');
+    return self::SUCCESS;
+}
 }

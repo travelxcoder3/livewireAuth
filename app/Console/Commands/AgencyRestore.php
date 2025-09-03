@@ -7,16 +7,13 @@ use App\Services\AgencyBackupService;
 
 class AgencyRestore extends Command
 {
-    protected $signature = 'agency:restore {agency_id} {zip_filename}';
-    protected $description = 'Restore per-agency data from a ZIP';
+    protected $signature = 'backup:restore-full {zip : filename in agency_backups disk}';
+    protected $description = 'Restore a full backup ZIP (DB + files)';
 
-    public function handle(AgencyBackupService $svc)
+    public function handle(AgencyBackupService $svc): int
     {
-        $aid  = (int) $this->argument('agency_id');
-        $file = (string) $this->argument('zip_filename');
-
-        $svc->restore($aid, $file);
-        $this->info('Restore completed.');
+        $svc->restoreFull($this->argument('zip'));
+        $this->info('Full restore completed. Caches cleared.');
         return self::SUCCESS;
     }
 }
