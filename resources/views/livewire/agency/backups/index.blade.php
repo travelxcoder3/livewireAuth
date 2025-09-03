@@ -44,7 +44,7 @@
       <x-primary-button id="restoreUploadBtn" type="submit"
         :gradient="false" color="#8d8a8aff" textColor="white"
         icon='<i class="fas fa-upload"></i>' class="btn-full sm:w-auto">
-        استعادة من ملف مرفوع
+        إسترداد من ملف مرفوع
       </x-primary-button>
     </form>
 
