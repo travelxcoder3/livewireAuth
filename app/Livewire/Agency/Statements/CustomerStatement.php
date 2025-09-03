@@ -22,18 +22,18 @@ class CustomerStatement extends Component
 
     /** @var array<int,array{no:int,date:string,desc:string,status:string,debit:float,credit:float,balance:float}> */
     public array $statement = [];
-    // إجماليات التذييل
     public float $sumDebit = 0.0;   // إجمالي عليه
     public float $sumCredit = 0.0;  // إجمالي له
-    public float $net = 0.0;        // الصافي = عليه - له
+    public float $net = 0.0;        // الصافي = له - عليه
+
     private function statusArabicLabel(string $st): string
     {
         $s = mb_strtolower(trim($st));
         if (str_contains($s, 'refund') && str_contains($s, 'partial')) return 'استرداد جزئي';
-        if (str_contains($s, 'refund') && (str_contains($s, 'full')))     return 'استرداد كلي';
-        if ($s === 'void' || str_contains($s, 'cancel'))                  return 'إلغاء';
-        if ($s === 'issued' || str_contains($s, 'reissued'))              return 'تم الإصدار';
-        if ($s === 'pending' || str_contains($s, 'submit'))               return 'قيد التقديم';
+        if (str_contains($s, 'refund') && str_contains($s, 'full'))   return 'استرداد كلي';
+        if ($s === 'void' || str_contains($s, 'cancel'))              return 'إلغاء';
+        if ($s === 'issued' || str_contains($s, 'reissued'))          return 'تم الإصدار';
+        if ($s === 'pending' || str_contains($s, 'submit'))           return 'قيد التقديم';
         return $st ?: '-';
     }
 
@@ -75,9 +75,9 @@ class CustomerStatement extends Component
         $void   = ['void','cancel','canceled','cancelled'];
 
         $rows = [];
-        $seq  = 0; 
+        $seq  = 0;
 
-        // NEW: حمّل معاملات المحفظة مُبكرًا وابنِ فهرسًا للسحوبات حسب (الدقيقة+المبلغ)
+        // معاملات المحفظة
         $walletAffectsBalance = false;
         $walletTx = WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id', $this->customer->id))
             ->whereBetween('created_at', [$from, $to])
@@ -146,7 +146,7 @@ class CustomerStatement extends Component
         }
 
         // 2) التحصيلات
-        $collections = \App\Models\Collection::with(['sale.service','sale.customer'])
+        $collections = Collection::with(['sale.service','sale.customer'])
             ->whereHas('sale', fn($q)=>$q->where('customer_id', $this->customer->id))
             ->whereBetween('created_at', [$from, $to])
             ->orderBy('created_at')
@@ -158,6 +158,15 @@ class CustomerStatement extends Component
                 return mb_strpos($name, $bn) !== false;
             });
         }
+
+        // فهرس مفاتيح التحصيلات (دقيقة + مبلغ) لإخفاء سحب محفظة المطابق
+        $collectionKeys = [];
+        foreach ($collections as $c) {
+            $evtC = $this->fmtDate($c->created_at ?? $c->payment_date);
+            $kC   = $this->minuteKey($evtC).'|'.$this->moneyKey($c->amount);
+            $collectionKeys[$kC] = ($collectionKeys[$kC] ?? 0) + 1;
+        }
+
         $commissionPairMeta = [];
         foreach ($collections as $col) {
             $serviceName     = (string)($col->sale->service->label ?? '-');
@@ -167,136 +176,132 @@ class CustomerStatement extends Component
 
             $keyC = $this->minuteKey($evt).'|'.$this->moneyKey($col->amount);
 
-            // NEW: محاولة دقيقة لتحديد المصدر من حقول Collection الشائعة
             $isCommission = (bool) (data_get($col, 'is_commission')
                 ?? (Str::contains(Str::lower((string) data_get($col, 'source', '')), 'commission'))
                 ?? (Str::contains(Str::lower((string) data_get($col, 'notes',  '')), 'commission')));
 
-            // إذا وُجد سحب بالمفتاح نفسه نُحوّلها لزوج ونُمرّر نوعه
             if (($walletWithdrawAvail[$keyC] ?? 0) > 0) {
                 $commissionPairMeta[$keyC][] = [
                     'service'     => $serviceName,
                     'beneficiary' => $beneficiaryName,
                     'grp'         => $grpTs,
                     'evt'         => $evt,
-                    'kind'        => $isCommission ? 'commission' : 'collection', // NEW
+                    'kind'        => $isCommission ? 'commission' : 'collection',
                 ];
-                continue; // لا تضف صف "سداد من التحصيل"
+                continue; // لا تُنشئ صف التحصيل الآن
             }
 
-
-        // الحالة العادية
-        $rows[] = [
-            'no'=>0,'date'=>$evt,
-            'desc'=>"سداد من التحصيل {$serviceName} لـ{$beneficiaryName}",
-            'status'=>'سداد من التحصيل','debit'=>0.0,'credit'=>(float)$col->amount,'balance'=>0.0,
-            '_grp'=>$grpTs,'_evt'=>$evt,'_ord'=>4,'_seq'=>++$seq,
-        ];
-    }
-
-            // 3) حركات المحفظة
-// 3) حركات المحفظة
-foreach ($walletTx as $tx) {
-$evt = $this->fmtDate($tx->created_at);
-$key = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
-
-// NEW: مرجع العملية
-$refStr = \Illuminate\Support\Str::lower((string)($tx->reference ?? ''));
-$isCommissionRef = \Illuminate\Support\Str::startsWith($refStr, 'commission:group:');
-
-// إن وُجدت ميتا، فهذا زوج (تحصيل ↔ سحب للسداد)
-$meta = null;
-if (isset($commissionPairMeta[$key]) && !empty($commissionPairMeta[$key])) {
-    $meta = array_shift($commissionPairMeta[$key]);
-    if (empty($commissionPairMeta[$key])) unset($commissionPairMeta[$key]);
-}
-
-$debit = $credit = 0.0;
-$impact = $walletAffectsBalance; // false افتراضيًا
-
-$status = 'محفظة';
-$desc   = match($tx->type){
-    'deposit' => 'إيداع للمحفظة',
-    'withdraw'=> 'سحب من المحفظة',
-    'adjust'  => 'تعديل رصيد المحفظة',
-    default   => 'عملية محفظة',
-};
-
-if ($tx->type === 'deposit')      { $credit = (float)$tx->amount; }
-elseif ($tx->type === 'withdraw') { $debit  = (float)$tx->amount; }
-elseif ($tx->type === 'adjust') { /* كما هي */ }
-
-$ord = 5.0;
-
-// NEW: معاملات عمولة العميل تُحتسب دائمًا (سواء وُجد pairing أم لا)
-if ($isCommissionRef) {
-    if ($tx->type === 'deposit') {
-        $status = 'عمولة';
-        $desc   = "إضافة عمولة عميل له {$this->moneyKey($tx->amount)}";
-        $impact = true;      // ← تُضاف للمجاميع
-        $ord    = 5.00;
-    } elseif ($tx->type === 'withdraw') {
-        $status = 'عمولة';
-        $desc   = "خصم عمولة عميل عليه {$this->moneyKey($tx->amount)}";
-        $impact = true;      // ← تُخصم من المجاميع
-        $ord    = 5.05;
-    }
-// وإلا إن لم تكن عمولة وكان لدينا زوج من التحصيل نطبّق المنطق القديم
-} elseif ($meta) {
-    $kind = $meta['kind'] ?? 'collection';
-    if ($tx->type === 'deposit') {
-        if ($kind === 'commission') {
-            $status = 'عمولة';
-            $desc   = "إضافة عمولة عميل له {$this->moneyKey($tx->amount)}";
-        } else {
-            $status = 'تحصيل';
-            $desc   = "سداد من التحصيل {$meta['service']} لـ{$meta['beneficiary']}";
+            // الحالة العادية
+            $rows[] = [
+                'no'=>0,'date'=>$evt,
+                'desc'=>"سداد من التحصيل {$serviceName} لـ{$beneficiaryName}",
+                'status'=>'سداد من التحصيل','debit'=>0.0,'credit'=>(float)$col->amount,'balance'=>0.0,
+                '_grp'=>$grpTs,'_evt'=>$evt,'_ord'=>4,'_seq'=>++$seq,
+            ];
         }
-        $impact = true;
-        $ord    = 5.00;
-    } elseif ($tx->type === 'withdraw') {
-        $status = 'محفظة';
-        $desc   = "سحب من المحفظة لسداد مبلغ {$this->moneyKey($tx->amount)} من {$meta['service']} لـ{$meta['beneficiary']}";
-        $impact = false;
-        $ord    = 5.10;
-    }
-}
 
+        // 3) حركات المحفظة
+        foreach ($walletTx as $tx) {
+            $evt = $this->fmtDate($tx->created_at);
+            $key = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
 
-$rows[] = [
-    'no'=>0,'date'=>$evt,'desc'=>$desc,'status'=>$status,
-    'debit'=>$debit,'credit'=>$credit,'balance'=>0.0,
-    // FIX: استخدم زمن الحدث دائمًا لضمان الترتيب الزمني العالمي
-    '_grp'=>$evt,'_evt'=>$evt,'_ord'=>$ord,'_seq'=>++$seq,'_impact'=>$impact,
-];
-
-}
-
-
-            // الفرز
-            usort($rows, fn($a,$b)=>[$a['_grp'],$a['_evt'],$a['_ord'],$a['_seq']] <=> [$b['_grp'],$b['_evt'],$b['_ord'],$b['_seq']]);
-
-            // الرصيد التراكمي + الإجماليات مع احترام _impact
-            $bal = 0.0; $i = 1; $sumDebit = 0.0; $sumCredit = 0.0;
-            foreach ($rows as &$r) {
-                if (($r['_impact'] ?? true) === true) {
-                    $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
-                    $sumDebit  += ($r['debit']  ?? 0.0);
-                    $sumCredit += ($r['credit'] ?? 0.0);
-                }
-                $r['balance'] = $bal;
-                $r['no'] = $i++;
-                unset($r['_grp'],$r['_evt'],$r['_ord'],$r['_seq']); // نُبقي _impact
+            // اخفاء سحب يطابق تحصيلاً بنفس الدقيقة والمبلغ
+            if (($tx->type === 'withdraw') && !empty($collectionKeys[$key])) {
+                $collectionKeys[$key]--;
+                continue;
             }
-            unset($r);
 
-            $this->statement = $rows;
-            $this->sumDebit  = round($sumDebit, 2);
-            $this->sumCredit = round($sumCredit, 2);
-            $this->net       = round($this->sumCredit - $this->sumDebit, 2);
+            // مرجع العملية
+            $refStr = Str::lower((string)($tx->reference ?? ''));
+            $isCommissionRef = Str::startsWith($refStr, 'commission:group:');
 
+            // إن وُجد pairing مع Collection
+            $meta = null;
+            if (isset($commissionPairMeta[$key]) && !empty($commissionPairMeta[$key])) {
+                $meta = array_shift($commissionPairMeta[$key]);
+                if (empty($commissionPairMeta[$key])) unset($commissionPairMeta[$key]);
+            }
+
+            $debit = $credit = 0.0;
+            $impact = $walletAffectsBalance; // false افتراضيًا
+            $status = 'محفظة';
+            $desc   = match($tx->type){
+                'deposit' => 'إيداع للمحفظة',
+                'withdraw'=> 'سحب من المحفظة',
+                'adjust'  => 'تعديل رصيد المحفظة',
+                default   => 'عملية محفظة',
+            };
+
+            if ($tx->type === 'deposit')      { $credit = (float)$tx->amount; }
+            elseif ($tx->type === 'withdraw') { $debit  = (float)$tx->amount; }
+
+            $ord = 5.0;
+
+            // عمولة بالمرجع
+            if ($isCommissionRef) {
+                if ($tx->type === 'deposit') {
+                    $status = 'عمولة';
+                    $desc   = "إضافة عمولة عميل له {$this->moneyKey($tx->amount)}";
+                    $impact = true;
+                    $ord    = 5.00;
+                } elseif ($tx->type === 'withdraw') {
+                    $status = 'عمولة';
+                    $desc   = "خصم عمولة عميل عليه {$this->moneyKey($tx->amount)}";
+                    $impact = true;
+                    $ord    = 5.05;
+                }
+            }
+            // وإلا إن وُجد meta نطبق منطق الإقران
+            elseif ($meta) {
+                $kind = $meta['kind'] ?? 'collection';
+                if ($tx->type === 'deposit') {
+                    if ($kind === 'commission') {
+                        $status = 'عمولة';
+                        $desc   = "إضافة عمولة عميل له {$this->moneyKey($tx->amount)}";
+                    } else {
+                        $status = 'تحصيل';
+                        $desc   = "سداد من التحصيل {$meta['service']} لـ{$meta['beneficiary']}";
+                    }
+                    $impact = true;
+                    $ord    = 5.00;
+                } elseif ($tx->type === 'withdraw') {
+                    // إخفاء السحب الآلي المستخدم لتسوية التحصيل/العمولة
+                    continue;
+                }
+            }
+
+            $rows[] = [
+                'no'=>0,'date'=>$evt,'desc'=>$desc,'status'=>$status,
+                'debit'=>$debit,'credit'=>$credit,'balance'=>0.0,
+                '_grp'=>$evt,'_evt'=>$evt,'_ord'=>$ord,'_seq'=>++$seq,'_impact'=>$impact,
+            ];
+        }
+
+        // الفرز
+        usort(
+            $rows,
+            fn($a,$b)=>[$a['_grp'],$a['_evt'],$a['_ord'],$a['_seq']] <=> [$b['_grp'],$b['_evt'],$b['_ord'],$b['_seq']]
+        );
+
+        // الرصيد التراكمي + الإجماليات باحترام _impact
+        $bal = 0.0; $i = 1; $sumDebit = 0.0; $sumCredit = 0.0;
+        foreach ($rows as &$r) {
+            if (($r['_impact'] ?? true) === true) {
+                $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
+                $sumDebit  += ($r['debit']  ?? 0.0);
+                $sumCredit += ($r['credit'] ?? 0.0);
+            }
+            $r['balance'] = $bal;
+            $r['no'] = $i++;
+            unset($r['_grp'],$r['_evt'],$r['_ord'],$r['_seq']);
+        }
+        unset($r);
+
+        $this->statement = $rows;
+        $this->sumDebit  = round($sumDebit, 2);
+        $this->sumCredit = round($sumCredit, 2);
+        $this->net       = round($this->sumCredit - $this->sumDebit, 2);
     }
-
 
     public function render()
     {
@@ -313,14 +318,13 @@ $rows[] = [
             return $r;
         }, $this->statement);
 
-
         if ($scope === 'selected') {
             $idx  = array_map('intval', $this->selectedRows);
             $rows = array_values(array_intersect_key($rows, array_flip($idx)));
             if (empty($rows)) {
-                  session()->flash('message', 'اختر صفوفًا أولاً.');
-                    session()->flash('type', 'warning');
-                    return;
+                session()->flash('message', 'اختر صفوفًا أولاً.');
+                session()->flash('type', 'warning');
+                return;
             }
         }
 
@@ -343,9 +347,9 @@ $rows[] = [
     public function exportPdfAuto()
     {
         if (empty($this->selectedRows)) {
-         session()->flash('message', 'اختر صفاً واحداً على الأقل.');
-         session()->flash('type', 'info');  
-                  return;
+            session()->flash('message', 'اختر صفاً واحداً على الأقل.');
+            session()->flash('type', 'info');
+            return;
         }
         return $this->exportPdf('selected');
     }
@@ -358,7 +362,7 @@ $rows[] = [
         if (count($this->selectedRows) === $total) {
             $this->selectedRows = [];
         } else {
-            $this->selectedRows = array_keys($this->statement); // 0..n-1
+            $this->selectedRows = array_keys($this->statement);
         }
     }
 
@@ -374,8 +378,8 @@ $rows[] = [
         try { return \Carbon\Carbon::parse($dt)->format('Y-m-d H:i'); }
         catch (\Throwable $e) { return (string)$dt; }
     }
+
     private function moneyKey($n): string {
         return number_format((float)$n, 2, '.', '');
     }
-
 }

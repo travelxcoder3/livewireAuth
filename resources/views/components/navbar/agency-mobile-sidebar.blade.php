@@ -22,7 +22,6 @@
 
     // التحقق من الصلاحيات للمناطق المختلفة
     $showAccountsDropdown = $user->hasRole('agency-admin') ||
-        $user->can('review.view') ||
         $user->can('sales-review.view') ||
         $user->can('accounts-review.view') ||
         $user->can('invoices-review.view') ||
@@ -45,11 +44,8 @@
 
     $showReportsDropdown = $user->hasRole('agency-admin') ||
         $user->can('reportsSales.view') ||
-        $user->can('reportsAccounts.view') ||
-        $user->can('reportCustomers.view') ||
         $user->can('reportCustomerAccounts.view')||
         $user->can('reportEmployeeSales.view')|| 
-        $user->can('reportProvider.view')||
         $user->can('reportQuotation.view')||
         $user->can('reportCustomersSales.view')||
         $user->can('reportProvider.view');
@@ -58,8 +54,6 @@
         $user->can('agency.profile.view') ||
         $user->can('lists.view') ||
         $user->can('sequences.view') ||
-        $user->can('commissions-setup.view')||
-        $user->can('commission-policies.view') ||
         $user->can('policies.view') ||
         $user->can('obligations.view') ||
         $user->can('backup.view');
@@ -318,7 +312,7 @@
                         @endif
 
                         {{-- تقرير العملاء مع روابطه الفرعية --}}
-                        @if ($user->hasRole('agency-admin') || $user->can('reportCustomers.view') || $user->can('reportCustomerAccounts.view') || $user->can('reportCustomersSales.view'))
+                        @if ($user->hasRole('agency-admin') ||  $user->can('reportCustomerAccounts.view') || $user->can('reportCustomersSales.view'))
                             <div class="px-3 pt-3 text-xs text-gray-500">تقرير العملاء</div>
                             @if ($user->hasRole('agency-admin') || $user->can('reportCustomerAccounts.view'))
                                 <a href="{{ route('agency.reports.customers-follow-up') }}" @click="mobileSidebarOpen = false"

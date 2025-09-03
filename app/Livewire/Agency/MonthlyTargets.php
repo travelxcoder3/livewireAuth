@@ -110,7 +110,7 @@ public function simulate()
             $r = optional($profile?->collectorRules->firstWhere('method',$m));
             $this->collectorBaselines[$m] = [
                 'type'=>$r?->type ?? 'percent',
-                'value'=>$r?->value !== null ? (float)$r->value : 0,
+                'value'=>$this->fmtDec($r?->value),
                 'basis'=>$r?->basis ?? 'collected_amount',
             ];
         }
@@ -247,7 +247,7 @@ $this->successMessage = 'هذا الشهر مُهيّأ ومقفول مسبقا�
         foreach ([1,2,3,4,5,6,7,8] as $m) {
             if ($r = $prevRows->get($m)) {
                 $this->collectorMonthly[$m]['type']  = $r->type;
-                $this->collectorMonthly[$m]['value'] = (float)$r->value;
+                $this->collectorMonthly[$m]['value'] = $this->fmtDec($r->value);
                 $this->collectorMonthly[$m]['basis'] = $r->basis;
             }
             // إن لم يوجد في السابق نبقى على القاعدة الأساسية المحمّلة مسبقًا
@@ -506,7 +506,7 @@ public function saveDebtPolicy()
             $this->collectorMonthly[$m] = [
                 'exists'=>(bool)$rec,
                 'type'  =>$rec->type  ?? $b['type'],
-                'value' =>$rec->value ?? $b['value'],
+                'value' =>$this->fmtDec($rec->value ?? $b['value']),
                 'basis' =>$rec->basis ?? $b['basis'],
                 'locked'=>(bool)($rec->locked ?? false),
             ];
@@ -521,7 +521,7 @@ public function saveDebtPolicy()
         $this->clearToast();
         if ($this->monthHasCollections()) {
             $this->toastType = 'error';
-$this->successMessage = 'مرفوض: توجد تحصيلات في هذا الشهر؛ لا يمكن إنشاء أو تعديل قواعد التحصيل.';
+            $this->successMessage = 'مرفوض: توجد تحصيلات في هذا الشهر؛ لا يمكن إنشاء أو تعديل قواعد التحصيل.';
             return;
         }
 
@@ -548,7 +548,7 @@ $this->successMessage = 'هذه القواعد موجودة ومقفولة سل�
                     'month'=>$this->colMonth,
                     'method'=>$m,
                     'type'=>$this->collectorMonthly[$m]['type'],
-                    'value'=>$this->collectorMonthly[$m]['value'],
+                    'value'=>(float)$this->collectorMonthly[$m]['value'],
                     'basis'=>$this->collectorMonthly[$m]['basis'],
                     'locked'=>true,
                 ]);
@@ -635,6 +635,11 @@ $this->successMessage = 'هذه القواعد موجودة ومقفولة سل�
     {
         $this->successMessage = null;
         $this->toastType = null;
+    }
+    private function fmtDec(null|float|string $v): string {
+        if ($v === null) return '0';
+        $s = rtrim(rtrim((string)$v, '0'), '.');
+        return $s === '' ? '0' : $s;
     }
 
     public function render()

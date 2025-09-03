@@ -218,11 +218,8 @@
             $showReportsDropdown =
                 Auth::user()->hasRole('agency-admin') ||
                 Auth::user()->can('reportsSales.view') ||
-                Auth::user()->can('reportsAccounts.view') ||
-                Auth::user()->can('reportCustomers.view') ||
                 Auth::user()->can('reportCustomerAccounts.view')||
                 Auth::user()->can('reportEmployeeSales.view')|| 
-                Auth::user()->can('reportProvider.view')||
                 Auth::user()->can('reportQuotation.view')||
                 Auth::user()->can('reportCustomersSales.view')||
                 Auth::user()->can('reportProvider.view');
@@ -248,7 +245,7 @@
 
             
 
-                    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportCustomers.view') || Auth::user()->can('reportCustomersSales.view') || Auth::user()->can('reportCustomerAccounts.view'))
+                    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportCustomersSales.view') || Auth::user()->can('reportCustomerAccounts.view'))
                     {{-- تقرير العملاء --}}
                     <div class="relative group/clients">
                         {{-- العنوان الرئيسي بدون تنقّل --}}
@@ -352,12 +349,9 @@
                 Auth::user()->can('agency.profile.view') ||
                 Auth::user()->can('lists.view') ||
                 Auth::user()->can('sequences.view') ||
-                Auth::user()->can('commissions-setup.view')||
-                Auth::user()->can('commission-policies.view') ||
                 Auth::user()->can('policies.view') ||
                 Auth::user()->can('obligations.view') ||
-                Auth::user()->can('backup.view')||
-                Auth::user()->can('commissions-setup.view');
+                Auth::user()->can('backup.view')
       
         @endphp
 
@@ -382,14 +376,7 @@
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('sequences.view'))
                         <x-navbar.buttons.dropdown-link :href="route('agency.approval-sequences')"  icon="fas fa-project-diagram" label="تسلسل الموافقات"
                             :show="true" />
-                    @endif
-                                @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('commissions-setup.view'))
-                       
-                    @endif
-                    {{-- داخل dropdown-settings --}}
-                    @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('commission-policies.view'))
-                       
-                    @endif
+                    @endif    
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('policies.view'))
                         <x-navbar.buttons.dropdown-link :href="route('agency.policies')"   icon="fas fa-file-contract"
 

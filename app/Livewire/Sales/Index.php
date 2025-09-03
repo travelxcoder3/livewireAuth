@@ -347,7 +347,7 @@ public function requestEdit(int $id): void
         $this->pnr = $sale->pnr;
         $this->reference = $sale->reference;
         $this->status = $sale->status;
-        $this->amount_paid = $sale->amount_paid;
+$this->amount_paid = null; // لا ترث المدفوع عند التكرار
         $this->depositor_name = $sale->depositor_name;
         $this->customer_id = $sale->customer_id;
         $this->sale_profit = $sale->sale_profit;
@@ -932,7 +932,11 @@ public function confirmRequestEdit(int $id): void
             'expected_payment_date' => 'nullable|date',
         ];
 
-        switch ($this->payment_method) {
+     if (in_array($this->status, ['Refund-Full','Refund-Partial','Void'])) {
+    $rules['amount_paid'] = 'nullable|numeric';   // ← لا Required
+    // لا نغيّر بقية الحقول
+} else {
+    switch ($this->payment_method) {
             case 'kash':
                 $rules['customer_id'] = 'nullable|exists:customers,id';
                 $rules['amount_paid'] = ['required', 'numeric', function ($attribute, $value, $fail) {
@@ -967,7 +971,8 @@ public function confirmRequestEdit(int $id): void
                 $rules['customer_id'] = 'required';
                 $rules['amount_paid'] = 'prohibited';
                 break;
-        }
+           }
+}
 
         return $rules;
     }
@@ -1032,7 +1037,7 @@ public function confirmRequestEdit(int $id): void
             $this->receipt_number = null; $this->depositor_name = null;
         }
         if (in_array($this->status,['Refund-Full','Refund-Partial','Void'])) {
-            $this->amount_paid = 0;
+            $this->amount_paid = null;
         }
 
         $this->validate();
@@ -1231,7 +1236,7 @@ $this->original_user_id = null;
         if ($this->isDuplicated && in_array($value, ['Refund-Full', 'Refund-Partial', 'Void'])) {
             $this->showRefundModal = true;
             $this->payment_method = $this->payment_method;
-            $this->amount_paid = 0;
+$this->amount_paid = null; // اجعلها null في حالات Refund/Void
             $this->showAmountPaidField = false;
         } else {
             $this->showRefundModal = false;
@@ -1281,7 +1286,7 @@ $this->original_user_id = null;
         if ($this->usd_sell > 0) {
             $this->usd_sell *= -1;
         }
-        $this->amount_paid = 0;
+$this->amount_paid = null; // انسجاماً مع القاعدة الجديدة
         $this->calculateProfit();
         $this->showRefundModal = false;
         $this->updatedPaymentMethod($this->payment_method);
@@ -1391,7 +1396,7 @@ $this->original_user_id = null;
             $this->receipt_number = null; $this->depositor_name = null;
         }
         if (in_array($this->status,['Refund-Full','Refund-Partial','Void'])) {
-            $this->amount_paid = 0;
+            $this->amount_paid = null;
         }
 
         $this->validate();
