@@ -121,8 +121,7 @@
                         <th class="p-2 text-right">إجمالي الشراء</th>
                         <th class="p-2 text-right">الربح</th>
                         <!-- 🔸 عمولة الموظف -->
-                        <th class="p-2 text-right">عمولة الموظف (متوقعة)</th>
-                        <th class="p-2 text-right">عمولة الموظف (مستحقة)</th>
+                        <th class="p-2 text-right">عمولة الموظف </th>
                         <!-- المتبقي كما كان -->
                         <th class="p-2 text-right">إجمالي المستحق</th>
                         <th class="p-2 text-right">العملة</th>
@@ -139,7 +138,6 @@
                             <td class="p-2">{{ number_format($row['profit'], 2) }}</td>
                             <!-- 🔸 جديدة -->
                             <td class="p-2">{{ number_format($row['employee_commission_expected'] ?? 0, 2) }}</td>
-                            <td class="p-2">{{ number_format($row['employee_commission_due'] ?? 0, 2) }}</td>
                             <!-- المتبقي كما هو -->
                             <td class="p-2">{{ number_format($row['remaining'], 2) }}</td>
                             <td class="p-2">{{ $currency }}</td>
@@ -190,8 +188,7 @@
                         <th class="p-2 text-right">الشراء</th>
                         <th class="p-2 text-right">الربح</th>
                         <!-- 🔸 عمولة الموظف -->
-                        <th class="p-2 text-right">عمولة الموظف (متوقعة)</th>
-                        <th class="p-2 text-right">عمولة الموظف (مستحقة)</th>
+                        <th class="p-2 text-right">عمولة الموظف </th>
                         <!-- المتبقي -->
                         <th class="p-2 text-right">المستحق</th>
                         <th class="p-2 text-right"></th> {{-- تفصيلي --}}
@@ -207,7 +204,6 @@
                             <td class="p-2">{{ number_format($row['profit'],2) }}</td>
                             <!-- 🔸 جديدة -->
                             <td class="p-2">{{ number_format($row['employee_commission_expected'] ?? 0,2) }}</td>
-                            <td class="p-2">{{ number_format($row['employee_commission_due'] ?? 0,2) }}</td>
                             <!-- المتبقي كما هو -->
                             <td class="p-2">{{ number_format($row['remaining'],2) }}</td>
                             <td class="p-2">
@@ -237,8 +233,7 @@
                         <th class="p-2 text-right">الشراء</th>
                         <th class="p-2 text-right">الربح</th>
                         <!-- 🔸 عمولة الموظف -->
-                        <th class="p-2 text-right">عمولة الموظف (متوقعة)</th>
-                        <th class="p-2 text-right">عمولة الموظف (مستحقة)</th>
+                        <th class="p-2 text-right">عمولة الموظف </th>
                         <!-- المتبقي -->
                         <th class="p-2 text-right">المستحق</th>
                         <th class="p-2 text-right"></th> {{-- تفصيلي --}}
@@ -254,7 +249,6 @@
                             <td class="p-2">{{ number_format($row['profit'],2) }}</td>
                             <!-- 🔸 جديدة -->
                             <td class="p-2">{{ number_format($row['employee_commission_expected'] ?? 0,2) }}</td>
-                            <td class="p-2">{{ number_format($row['employee_commission_due'] ?? 0,2) }}</td>
                             <!-- المتبقي كما هو -->
                             <td class="p-2">{{ number_format($row['remaining'],2) }}</td>
                             <td class="p-2">

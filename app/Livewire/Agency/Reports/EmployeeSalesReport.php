@@ -51,7 +51,6 @@ class EmployeeSalesReport extends Component
         'commission' => 0,
         'remaining' => 0,
         'employee_commission_expected' => 0,
-        'employee_commission_due'      => 0,
     ];
 
     // التفصيلي
@@ -313,7 +312,6 @@ class EmployeeSalesReport extends Component
                 'commission' => $customerCommission,
                 'remaining'  => $sell - $paid,
                 'employee_commission_expected' => $agg['expected'],
-                'employee_commission_due'      => $agg['due'],
             ];
         });
 
@@ -353,7 +351,6 @@ class EmployeeSalesReport extends Component
             'commission' => $customerCommission,
             'remaining'  => $remaining,
             'employee_commission_expected' => $empExpected,
-            'employee_commission_due'      => $empDue,
         ];
     }
 
@@ -508,7 +505,6 @@ class EmployeeSalesReport extends Component
                 'remaining'  => $sell - $paid,
                 'firstRow'   => $group->first(),
                 'employee_commission_expected' => $empExpected,
-                'employee_commission_due'      => $empDue,
             ];
         });
 
@@ -538,7 +534,6 @@ class EmployeeSalesReport extends Component
                     'commission' => $customerCommission,
                     'remaining'  => $sell - $paid,
                     'employee_commission_expected' => $empExpected,
-                    'employee_commission_due'      => $empDue,
                 ];
             })
             ->sortKeysDesc();
