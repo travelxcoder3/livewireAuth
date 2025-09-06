@@ -46,19 +46,23 @@ class EmployeeStatement extends Component
 
     private function rebuild(): void
     {
-        $from = ($this->fromDate ?: '0001-01-01') . ' 00:00:00';
-        $to   = ($this->toDate   ?: '9999-12-31') . ' 23:59:59';
+                // EmployeeStatement::rebuild()
+            $wallet = \App\Models\EmployeeWallet::firstOrCreate(
+                ['user_id' => $this->user->id],
+                ['balance' => 0, 'status' => 'active']
+            );
 
-        $wallet = \App\Models\EmployeeWallet::firstOrCreate(
-            ['user_id' => $this->user->id],
-            ['balance' => 0, 'status' => 'active']
-        );
+            $tx = \App\Models\EmployeeWalletTransaction::where('wallet_id', $wallet->id)
+                ->when($this->fromDate, fn($q) =>
+                    $q->where('created_at', '>=', \Carbon\Carbon::parse($this->fromDate)->startOfDay())
+                )
+                ->when($this->toDate, fn($q) =>
+                    $q->where('created_at', '<=', \Carbon\Carbon::parse($this->toDate)->endOfDay())
+                )
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->get(['id','type','amount','running_balance','reference','note','created_at']);
 
-        $tx = \App\Models\EmployeeWalletTransaction::where('wallet_id', $wallet->id)
-            ->whereBetween('created_at', [$from, $to])
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->get(['id','type','amount','running_balance','reference','note','created_at']);
 
         $rows = [];
         foreach ($tx as $t) {

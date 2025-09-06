@@ -9,16 +9,14 @@ use ZipArchive;
 
 class AgencyBackupService
 {
-    /** إنشاء نسخة ZIP مفلترة بالـ agency_id + تضم جداول مشتركة كاملة */
+    /** إنشاء نسخة ZIP مفلترة بالـ agency_id + تضم جداول مشتركة كاملة (INSERT فقط بلا DDL) */
     public function create(int $agencyId): string
     {
         $disk = Storage::disk('agency_backups');
         if (!is_dir($disk->path(''))) mkdir($disk->path(''), 0775, true);
 
-        $ts    = now()->format('Ymd_His');
-        $aname = $this->agencyName($agencyId);
-        $slug  = Str::slug($aname, '-');
-        $basename = "agency_{$slug}_{$agencyId}_{$ts}";
+        $ts       = now()->format('Ymd_His');
+        $basename = "agency_{$agencyId}_{$ts}"; // التزم بصيغة الواجهة
 
         $workDir  = $disk->path("__tmp_{$basename}");
         $sqlPath  = "{$workDir}/payload.sql";
@@ -47,7 +45,7 @@ class AgencyBackupService
 
         $allTables = $withAid->merge($existingAlso)->unique()->values();
 
-        file_put_contents($sqlPath, "-- partial dump for agency {$agencyId} ({$aname})\nSET FOREIGN_KEY_CHECKS=0;\n");
+        file_put_contents($sqlPath, "-- partial dump for agency {$agencyId}\nSET FOREIGN_KEY_CHECKS=0;\n");
 
         // mysqldump إن توفر
         $dumpBin = null; $dumpAvailable = true;
@@ -58,11 +56,18 @@ class AgencyBackupService
             $dumpDone = false;
 
             if ($dumpAvailable) {
-                $errors = [];
                 foreach ($this->connectionArgSets() as $connArgs) {
+                    // IMPORTANT: إنتاج INSERT فقط (بدون DROP/CREATE/LOCK/TRIGGERS)
+                    $common = [
+                        '--single-transaction','--quick','--skip-tz-utc',
+                        '--no-create-info','--skip-add-drop-table','--skip-triggers',
+                        '--skip-lock-tables','--skip-comments','--compact',
+                        '--default-character-set=utf8mb4'
+                    ];
+
                     $base = $hasAgency
-                        ? ['--single-transaction','--skip-lock-tables','--no-create-db',"--where=agency_id={$agencyId}",$dbName,$t]
-                        : ['--single-transaction','--skip-lock-tables','--no-create-db',$dbName,$t];
+                        ? array_merge($common, ["--where=agency_id={$agencyId}", $dbName, $t])
+                        : array_merge($common, [$dbName, $t]);
 
                     $args = array_values(array_filter(array_merge([$dumpBin], $connArgs, $base)));
                     $proc = new Process($args, timeout: 300);
@@ -73,14 +78,12 @@ class AgencyBackupService
                         file_put_contents($sqlPath, "\n", FILE_APPEND);
                         $dumpDone = true;
                         break;
-                    } else {
-                        $errors[] = trim($proc->getErrorOutput());
                     }
                 }
             }
 
             if (!$dumpDone) {
-                // الخطة البديلة عبر PDO
+                // الخطة البديلة عبر PDO (INSERT فقط)
                 $this->dumpTableViaPdo($t, $agencyId, $sqlPath, $dbName, $hasAgency);
             }
         }
@@ -109,10 +112,9 @@ class AgencyBackupService
             'status'     => 'done',
             'meta'       => json_encode([
                 'agency_id'   => $agencyId,
-                'agency_name' => $aname,
                 'tables_filtered_by_agency' => $withAid,
                 'tables_full_copy'          => $existingAlso,
-                'note' => 'whitelist tables exported fully to keep roles/permissions links and migrations',
+                'note'        => 'INSERT-only export (no DDL). Shared tables included fully.',
                 'paths'  => [
                     "storage/app/agencies/{$agencyId}",
                     "public/uploads/agencies/{$agencyId}",
@@ -126,7 +128,7 @@ class AgencyBackupService
         return basename($zipPath);
     }
 
-    /** استعادة نسخة الوكالة مع تفريغ آمن للجداول المشتركة وتبديل للتطوير */
+    /** استعادة نسخة الوكالة (تفريغ بيانات الوكالة فقط + تعقيم SQL من أي DDL) */
     public function restore(int $agencyId, string $zipFilename): void
     {
         $disk   = Storage::disk('agency_backups');
@@ -154,7 +156,7 @@ class AgencyBackupService
             ORDER BY TABLE_NAME
         ", [$dbName]))->pluck('t')->values();
 
-        // جداول مشتركة يجب تفريغها قبل الاستيراد لمنع تضارب PK
+        // جداول مشتركة يمكن تفريغها قبل الاستيراد لمنع تضارب PK
         $fullCopyBase = ['migrations','model_has_roles','model_has_permissions','role_has_permissions'];
         $ph = implode(',', array_fill(0, count($fullCopyBase), '?'));
         $fullCopyExisting = collect(DB::select("
@@ -167,32 +169,32 @@ class AgencyBackupService
 
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-        // التطوير: مسح كامل لجداول الوكالة لتجنب Duplicate PK
-        // الإنتاج: حذف حسب agency_id فقط
+        // التطوير: TRUNCATE كامل لجداول الوكالة، الإنتاج: حذف agency_id فقط
         foreach ($tablesWithAid as $t) {
             if ($devTruncateAll) {
-                // TRUNCATE يتجاهل WHERE لذا نستعمل statement مباشر
                 DB::table($t)->truncate();
             } else {
                 DB::table($t)->where('agency_id', $agencyId)->delete();
             }
         }
 
-        // الجداول المشتركة دائمًا تُفرّغ
+        // الجداول المشتركة (إن أردتَ استبدالها بما في النسخة)
         foreach ($fullCopyExisting as $t) {
             DB::table($t)->truncate();
         }
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // تعقيم SQL (حماية إضافية لو وُجد DROP/CREATE/TRIGGER/LOCK بفعل نسخة قديمة)
+        $sql = file_get_contents($sqlPath);
+        $sql = $this->stripDdlFromSql($sql);
 
-        // استيراد SQL
+        // استيراد SQL مع إبقاء FK مغلق حتى يكتمل
         $imported = false;
         try {
             $mysqlBin = $this->resolveBinary('mysql');
             foreach ($this->connectionArgSets() as $connArgs) {
                 $args  = array_values(array_filter(array_merge([$mysqlBin], $connArgs, [$dbName])));
                 $proc = new Process($args, timeout: 300);
-                $proc->setInput(file_get_contents($sqlPath));
+                $proc->setInput($sql);
                 $proc->run();
                 if ($proc->isSuccessful()) { $imported = true; break; }
             }
@@ -201,8 +203,10 @@ class AgencyBackupService
         }
 
         if (!$imported) {
-            DB::unprepared(file_get_contents($sqlPath));
+            DB::unprepared($sql);
         }
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // استعادة الملفات
         $this->restoreDirIfExists("{$workDir}/storage_agencies_{$agencyId}", storage_path("app/agencies/{$agencyId}"));
@@ -226,13 +230,6 @@ class AgencyBackupService
 
     // ====================== helpers ======================
 
-    /** اسم الوكالة */
-    private function agencyName(int $agencyId): string
-    {
-        $name = (string) DB::table('agencies')->where('id', $agencyId)->value('name');
-        return $name !== '' ? $name : "agency{$agencyId}";
-    }
-
     /** يحل مسار mysql/mysqldump */
     private function resolveBinary(string $name): string
     {
@@ -253,18 +250,6 @@ class AgencyBackupService
         }
 
         throw new \RuntimeException("$name not found. Checked: ".($binDir ? $binDir : '[no MYSQL_BIN_PATH]').".");
-    }
-
-    /** كشف نوع عميل التفريغ */
-    private function isMariaDB(string $dumpBin): bool
-    {
-        try {
-            $p = new Process([$dumpBin, '--version']);
-            $p->run();
-            return stripos($p->getOutput(), 'MariaDB') !== false;
-        } catch (\Throwable $e) {
-            return false;
-        }
     }
 
     /** مجموعات وسائط اتصال بديلة */
@@ -303,7 +288,7 @@ class AgencyBackupService
 
         file_put_contents(
             $sqlPath,
-            "\n-- Fallback dump via PDO for `{$table}` ".($filterByAgency ? "(filtered agency_id={$agencyId})" : "(full)") ."\n",
+            "\n-- Fallback dump via PDO for `{$table}` ".($filterByAgency ? "(filtered agency_id={$agencyId})" : "(full)" ) ."\n",
             FILE_APPEND
         );
 
@@ -357,6 +342,22 @@ class AgencyBackupService
             ];
         }
         return $out;
+    }
+
+    /** إزالة أي DDL/Locks من SQL كحماية إضافية */
+    private function stripDdlFromSql(string $sql): string
+    {
+        // احذف CREATE/DROP/ALTER/TRIGGER/LOCK/UNLOCK متعددة الأسطر حتى الفاصلة المنقوطة
+        $patterns = [
+            '/^\s*DROP\s+TABLE.*?;[\r\n]*/ims',
+            '/^\s*CREATE\s+TABLE.*?;[\r\n]*/ims',
+            '/^\s*ALTER\s+TABLE.*?;[\r\n]*/ims',
+            '/^\s*LOCK\s+TABLES.*?;[\r\n]*/ims',
+            '/^\s*UNLOCK\s+TABLES.*?;[\r\n]*/ims',
+            '/\/\*!\d{5}\s+TRIGGER.*?END\*\/;[\r\n]*/ims', // تريجرات ضمن تعليقات إصدارات
+        ];
+        $clean = preg_replace($patterns, '', $sql);
+        return $clean ?? $sql;
     }
 
     private function addPathIfExists(ZipArchive $zip, string $path, string $alias): void
