@@ -302,23 +302,28 @@ class CustomerStatement extends Component
         );
 
         // الرصيد التراكمي + الإجماليات باحترام _impact
-        $bal = 0.0; $i = 1; $sumDebit = 0.0; $sumCredit = 0.0;
-        foreach ($rows as &$r) {
-            if (($r['_impact'] ?? true) === true) {
-                $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
-                $sumDebit  += ($r['debit']  ?? 0.0);
-                $sumCredit += ($r['credit'] ?? 0.0);
-            }
-            $r['balance'] = $bal;
-            $r['no'] = $i++;
-            unset($r['_grp'],$r['_evt'],$r['_ord'],$r['_seq']);
-        }
-        unset($r);
+    $bal = 0.0; $i = 1; $sumDebitAll = 0.0; $sumCreditAll = 0.0;
+foreach ($rows as &$r) {
+  // إجماليات له/عليه: احسب كل الصفوف بدون شرط
+  $sumDebitAll  += ($r['debit']  ?? 0.0);
+  $sumCreditAll += ($r['credit'] ?? 0.0);
 
-        $this->statement = $rows;
-        $this->sumDebit  = round($sumDebit, 2);
-        $this->sumCredit = round($sumCredit, 2);
-        $this->net       = round($this->sumCredit - $this->sumDebit, 2);
+  // الرصيد التراكمي فقط للصفوف المؤثرة
+  if (($r['_impact'] ?? true) === true) {
+      $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
+  }
+
+  $r['balance'] = $bal;
+  $r['no'] = $i++;
+  unset($r['_grp'],$r['_evt'],$r['_ord'],$r['_seq']);
+}
+unset($r);
+
+$this->statement = $rows;
+$this->sumDebit  = round($sumDebitAll, 2);
+$this->sumCredit = round($sumCreditAll, 2);
+$this->net       = round($this->sumCredit - $this->sumDebit, 2);
+
     }
 
     public function render()

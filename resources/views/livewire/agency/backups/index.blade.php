@@ -49,8 +49,10 @@
     </form>
 
     <p class="text-xs text-gray-500">
-      يجب أن يكون اسم الملف: <span class="font-mono">agency_{{ $agencyId }}_YYYYMMDD_HHMMSS.zip</span>
-    </p>
+  يجب أن يكون اسم الملف: <span class="font-mono">
+    agency_{slug}_{agencyId}_YYYYMMDD_HHMMSS.zip
+  </span>
+</p>
   </div>
 
   {{-- البطاقات --}}

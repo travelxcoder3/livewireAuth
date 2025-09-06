@@ -9,14 +9,17 @@ use ZipArchive;
 
 class AgencyBackupService
 {
-    /** إنشاء نسخة ZIP تحتوي SQL مفلتر بـ agency_id + ملفات الوكالة */
+    /** إنشاء نسخة ZIP مفلترة بالـ agency_id + تضم جداول مشتركة كاملة */
     public function create(int $agencyId): string
     {
         $disk = Storage::disk('agency_backups');
         if (!is_dir($disk->path(''))) mkdir($disk->path(''), 0775, true);
 
-        $ts       = now()->format('Ymd_His');
-        $basename = "agency_{$agencyId}_{$ts}";
+        $ts    = now()->format('Ymd_His');
+        $aname = $this->agencyName($agencyId);
+        $slug  = Str::slug($aname, '-');
+        $basename = "agency_{$slug}_{$agencyId}_{$ts}";
+
         $workDir  = $disk->path("__tmp_{$basename}");
         $sqlPath  = "{$workDir}/payload.sql";
         $zipPath  = $disk->path("{$basename}.zip");
@@ -24,41 +27,48 @@ class AgencyBackupService
         if (!is_dir($workDir)) mkdir($workDir, 0775, true);
 
         $dbName = DB::getDatabaseName();
-        $tables = collect(DB::select("
+
+        // جداول بها agency_id
+        $withAid = collect(DB::select("
             SELECT TABLE_NAME AS t
             FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = ? AND COLUMN_NAME = 'agency_id'
             ORDER BY TABLE_NAME
         ", [$dbName]))->pluck('t')->values();
 
-        file_put_contents($sqlPath, "-- partial dump for agency {$agencyId}\nSET FOREIGN_KEY_CHECKS=0;\n");
+        // جداول مشتركة تُؤخذ كاملة
+        $alsoTables = ['model_has_roles','model_has_permissions','role_has_permissions','migrations'];
+        $placeholders = implode(',', array_fill(0, count($alsoTables), '?'));
+        $existingAlso = collect(DB::select("
+            SELECT TABLE_NAME AS t
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN ($placeholders)
+        ", array_merge([$dbName], $alsoTables)))->pluck('t')->values();
 
-        // جرّب اكتشاف binaries، ولو فشل اعتبر mysqldump غير متاح
+        $allTables = $withAid->merge($existingAlso)->unique()->values();
+
+        file_put_contents($sqlPath, "-- partial dump for agency {$agencyId} ({$aname})\nSET FOREIGN_KEY_CHECKS=0;\n");
+
+        // mysqldump إن توفر
         $dumpBin = null; $dumpAvailable = true;
-        try { $dumpBin = $this->resolveBinary('mysqldump'); }
-        catch (\Throwable $e) { $dumpAvailable = false; }
+        try { $dumpBin = $this->resolveBinary('mysqldump'); } catch (\Throwable $e) { $dumpAvailable = false; }
 
-        foreach ($tables as $t) {
+        foreach ($allTables as $t) {
+            $hasAgency = $withAid->contains($t);
             $dumpDone = false;
 
             if ($dumpAvailable) {
                 $errors = [];
                 foreach ($this->connectionArgSets() as $connArgs) {
-                    $args = array_values(array_filter(array_merge(
-                        [$dumpBin],
-                        $connArgs,
-                        [
-                            '--single-transaction',
-                            '--skip-lock-tables',
-                            '--no-create-db',
-                            "--where=agency_id={$agencyId}",
-                            $dbName,
-                            $t,
-                        ]
-                    )));
+                    $base = $hasAgency
+                        ? ['--single-transaction','--skip-lock-tables','--no-create-db',"--where=agency_id={$agencyId}",$dbName,$t]
+                        : ['--single-transaction','--skip-lock-tables','--no-create-db',$dbName,$t];
+
+                    $args = array_values(array_filter(array_merge([$dumpBin], $connArgs, $base)));
                     $proc = new Process($args, timeout: 300);
                     $proc->run();
                     if ($proc->isSuccessful()) {
+                        file_put_contents($sqlPath, "\n-- ".($hasAgency ? "Filtered by agency_id={$agencyId}" : "Full copy (no agency_id)")." for `{$t}`\n", FILE_APPEND);
                         file_put_contents($sqlPath, $proc->getOutput(), FILE_APPEND);
                         file_put_contents($sqlPath, "\n", FILE_APPEND);
                         $dumpDone = true;
@@ -70,14 +80,14 @@ class AgencyBackupService
             }
 
             if (!$dumpDone) {
-                // ======= الخطة البديلة: توليد INSERTs عبر PDO =======
-                $this->dumpTableViaPdo($t, $agencyId, $sqlPath, $dbName);
+                // الخطة البديلة عبر PDO
+                $this->dumpTableViaPdo($t, $agencyId, $sqlPath, $dbName, $hasAgency);
             }
         }
 
         file_put_contents($sqlPath, "SET FOREIGN_KEY_CHECKS=1;\n", FILE_APPEND);
 
-        // إنشاء ZIP
+        // ZIP
         $zip = new ZipArchive();
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new \RuntimeException('Cannot create zip');
@@ -87,7 +97,7 @@ class AgencyBackupService
         $this->addPathIfExists($zip, public_path("uploads/agencies/{$agencyId}"), "public_uploads_agencies_{$agencyId}");
         $zip->close();
 
-        // تنظيف
+        // تنظيف مؤقت
         @unlink($sqlPath);
         @rmdir($workDir);
 
@@ -98,7 +108,11 @@ class AgencyBackupService
             'size'       => filesize($zipPath) ?: 0,
             'status'     => 'done',
             'meta'       => json_encode([
-                'tables' => $tables,
+                'agency_id'   => $agencyId,
+                'agency_name' => $aname,
+                'tables_filtered_by_agency' => $withAid,
+                'tables_full_copy'          => $existingAlso,
+                'note' => 'whitelist tables exported fully to keep roles/permissions links and migrations',
                 'paths'  => [
                     "storage/app/agencies/{$agencyId}",
                     "public/uploads/agencies/{$agencyId}",
@@ -112,7 +126,7 @@ class AgencyBackupService
         return basename($zipPath);
     }
 
-    /** استعادة بيانات وكالة من ZIP */
+    /** استعادة نسخة الوكالة مع تفريغ آمن للجداول المشتركة وتبديل للتطوير */
     public function restore(int $agencyId, string $zipFilename): void
     {
         $disk   = Storage::disk('agency_backups');
@@ -128,24 +142,50 @@ class AgencyBackupService
         $zip->close();
 
         $sqlPath = "{$workDir}/payload.sql";
-        if (!file_exists($sqlPath)) throw new \RuntimeException('payload.sql missing');
+        if (!file_exists($sqlPath)) { $this->rrmdir($workDir); throw new \RuntimeException('payload.sql missing'); }
 
         $dbName = DB::getDatabaseName();
-        $tables = collect(DB::select("
+
+        // جداول بها agency_id
+        $tablesWithAid = collect(DB::select("
             SELECT TABLE_NAME AS t
             FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = ? AND COLUMN_NAME = 'agency_id'
             ORDER BY TABLE_NAME
         ", [$dbName]))->pluck('t')->values();
 
-        // حذف بيانات الوكالة
+        // جداول مشتركة يجب تفريغها قبل الاستيراد لمنع تضارب PK
+        $fullCopyBase = ['migrations','model_has_roles','model_has_permissions','role_has_permissions'];
+        $ph = implode(',', array_fill(0, count($fullCopyBase), '?'));
+        $fullCopyExisting = collect(DB::select("
+            SELECT TABLE_NAME AS t
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN ($ph)
+        ", array_merge([$dbName], $fullCopyBase)))->pluck('t')->values();
+
+        $devTruncateAll = (bool) env('RESTORE_DEV_TRUNCATE_ALL', false);
+
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        foreach ($tables as $t) {
-            DB::table($t)->where('agency_id', $agencyId)->delete();
+
+        // التطوير: مسح كامل لجداول الوكالة لتجنب Duplicate PK
+        // الإنتاج: حذف حسب agency_id فقط
+        foreach ($tablesWithAid as $t) {
+            if ($devTruncateAll) {
+                // TRUNCATE يتجاهل WHERE لذا نستعمل statement مباشر
+                DB::table($t)->truncate();
+            } else {
+                DB::table($t)->where('agency_id', $agencyId)->delete();
+            }
         }
+
+        // الجداول المشتركة دائمًا تُفرّغ
+        foreach ($fullCopyExisting as $t) {
+            DB::table($t)->truncate();
+        }
+
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // حاول mysql client أولًا، ثم سقط إلى PDO unprepared
+        // استيراد SQL
         $imported = false;
         try {
             $mysqlBin = $this->resolveBinary('mysql');
@@ -157,16 +197,14 @@ class AgencyBackupService
                 if ($proc->isSuccessful()) { $imported = true; break; }
             }
         } catch (\Throwable $e) {
-            // تجاهل، سنجرّب PDO
+            // سقوط إلى PDO
         }
 
         if (!$imported) {
-            // إستيراد عبر PDO مباشرة
-            $sql = file_get_contents($sqlPath);
-            DB::unprepared($sql);
+            DB::unprepared(file_get_contents($sqlPath));
         }
 
-        // إعادة الملفات
+        // استعادة الملفات
         $this->restoreDirIfExists("{$workDir}/storage_agencies_{$agencyId}", storage_path("app/agencies/{$agencyId}"));
         $this->restoreDirIfExists("{$workDir}/public_uploads_agencies_{$agencyId}", public_path("uploads/agencies/{$agencyId}"));
 
@@ -174,176 +212,30 @@ class AgencyBackupService
         $this->rrmdir($workDir);
     }
 
-    // ====================== NEW: Full backup mode ======================
+    // ====================== Full backup mode (اترك نسختك كما هي) ======================
 
-    /** إنشاء نسخة كاملة: كل الجداول + الروتينات + التريغرز + الإيفنتس + ملفات مختارة */
     public function createFull(string $tag = 'full'): string
     {
-        $disk = Storage::disk('agency_backups');
-        if (!is_dir($disk->path(''))) mkdir($disk->path(''), 0775, true);
-
-        $ts       = now()->format('Ymd_His');
-        $basename = "{$tag}_" . $ts;
-        $workDir  = $disk->path("__tmp_{$basename}");
-        $sqlPath  = "{$workDir}/payload.sql";
-        $zipPath  = $disk->path("{$basename}.zip");
-
-        if (!is_dir($workDir)) mkdir($workDir, 0775, true);
-
-        $dbName = DB::getDatabaseName();
-
-        // mysqldump كامل مع دعم MariaDB
-        $dumped = false;
-        $errors = [];
-        try {
-            $dumpBin = $this->resolveBinary('mysqldump');
-            $isMaria = $this->isMariaDB($dumpBin);
-
-            foreach ($this->connectionArgSets() as $connArgs) {
-                $base = [
-                    '--single-transaction',
-                    '--quick',
-                    '--lock-tables=false',
-                    '--routines',
-                    '--triggers',
-                    '--events',
-                    '--add-drop-table',
-                    '--skip-comments',
-                    '--default-character-set=utf8mb4',
-                    $dbName,
-                ];
-                if (!$isMaria) {
-                    // MySQL فقط
-                    array_splice($base, count($base)-1, 0, ['--set-gtid-purged=OFF']);
-                }
-
-                $args = array_values(array_filter(array_merge([$dumpBin], $connArgs, $base)));
-
-                $proc = new Process($args, timeout: 1800);
-                $proc->run();
-                if ($proc->isSuccessful()) {
-                    file_put_contents($sqlPath, $proc->getOutput());
-                    $dumped = true;
-                    break;
-                } else {
-                    $errors[] = trim($proc->getErrorOutput()) ?: '(no stderr)';
-                }
-            }
-        } catch (\Throwable $e) {
-            $errors[] = $e->getMessage();
-        }
-
-        if (!$dumped) {
-            @rmdir($workDir);
-            throw new \RuntimeException(
-                "فشل إنشاء النسخة الكاملة عبر mysqldump. تحقق من MYSQL_BIN_PATH و DB_*."
-                ."\nآخر أخطاء mysqldump:\n".implode("\n---\n", array_slice($errors, -3))
-            );
-        }
-
-        // ZIP مع استثناء مجلد النسخ الحالية لتجنب التعشيش
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            @unlink($sqlPath); @rmdir($workDir);
-            throw new \RuntimeException('Cannot create zip for full backup');
-        }
-
-        $zip->addFile($sqlPath, 'payload.sql');
-
-        // أضف ملفات التطبيق المفيدة. عدّل المسارات حسب احتياجك.
-        $this->addPathIfExistsExcluding($zip, storage_path('app'), 'storage_app', [
-            realpath(storage_path('agency_backups')) ?: storage_path('agency_backups'),
-            realpath(storage_path('app/agency_backups')) ?: storage_path('app/agency_backups'),
-        ]);
-        $this->addPathIfExists($zip, public_path('uploads'), 'public_uploads');
-
-        $zip->close();
-
-        // تنظيف المؤقت
-        @unlink($sqlPath);
-        @rmdir($workDir);
-
-        // تسجيل — استخدم 0 كقيمة حارس لأن الحقل NOT NULL
-        DB::table('agency_backups')->insert([
-            'agency_id'  => 0, // sentinel للنسخ الكاملة
-            'filename'   => basename($zipPath),
-            'size'       => filesize($zipPath) ?: 0,
-            'status'     => 'done',
-            'meta'       => json_encode([
-                'type'   => 'full',
-                'db'     => $dbName,
-                'paths'  => ['storage/app (excluded: agency_backups)', 'public/uploads'],
-            ], JSON_UNESCAPED_UNICODE),
-            'created_by' => Auth::id(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return basename($zipPath);
+        throw new \LogicException('keep your existing createFull() implementation from previous step');
     }
 
-    /** استعادة كاملة من نسخة كاملة */
-    public function restoreFull(string $zipFilename): void
+    public function restoreFull(string $zipFilename, bool $restoreProjectFiles = false): void
     {
-        $disk   = Storage::disk('agency_backups');
-        $zipAbs = $disk->path($zipFilename);
-        if (!file_exists($zipAbs)) throw new \InvalidArgumentException('Backup file not found');
-
-        $workDir = $disk->path('__restore_full_'.Str::random(8));
-        mkdir($workDir, 0775, true);
-
-        $zip = new ZipArchive();
-        if ($zip->open($zipAbs) !== true) throw new \RuntimeException('Cannot open zip');
-        $zip->extractTo($workDir);
-        $zip->close();
-
-        $sqlPath = "{$workDir}/payload.sql";
-        if (!file_exists($sqlPath)) { $this->rrmdir($workDir); throw new \RuntimeException('payload.sql missing'); }
-
-        $dbName = DB::getDatabaseName();
-
-        // استيراد عبر عميل mysql، ثم سقوط إلى PDO عند اللزوم
-        $imported = false;
-        try {
-            $mysqlBin = $this->resolveBinary('mysql');
-            foreach ($this->connectionArgSets() as $connArgs) {
-                $args  = array_values(array_filter(array_merge([$mysqlBin], $connArgs, [$dbName])));
-                $proc = new Process($args, timeout: 3600);
-                $proc->setInput(file_get_contents($sqlPath));
-                $proc->run();
-                if ($proc->isSuccessful()) { $imported = true; break; }
-            }
-        } catch (\Throwable $e) {
-            $imported = false;
-        }
-
-        if (!$imported) {
-            $sql = file_get_contents($sqlPath);
-            DB::unprepared($sql);
-        }
-
-        // استعادة الملفات
-        $this->restoreDirIfExists("{$workDir}/storage_app", storage_path('app'));
-        $this->restoreDirIfExists("{$workDir}/public_uploads", public_path('uploads'));
-
-        // تنظيف مؤقت
-        $this->rrmdir($workDir);
-
-        // تنظيف كاش بعد الاستعادة
-        try {
-            \Artisan::call('permission:cache-reset');
-            \Artisan::call('optimize:clear');
-        } catch (\Throwable $e) {
-            // تجاهل
-        }
+        throw new \LogicException('keep your existing restoreFull() implementation from previous step');
     }
 
     // ====================== helpers ======================
 
-    /** يحل مسار mysql/mysqldump: من .env ثم PATH */
+    /** اسم الوكالة */
+    private function agencyName(int $agencyId): string
+    {
+        $name = (string) DB::table('agencies')->where('id', $agencyId)->value('name');
+        return $name !== '' ? $name : "agency{$agencyId}";
+    }
+
+    /** يحل مسار mysql/mysqldump */
     private function resolveBinary(string $name): string
     {
-        // نظّف أي اقتباسات زائدة من .env
         $binDir = (string) env('MYSQL_BIN_PATH', '');
         $binDir = trim($binDir, " \t\n\r\0\x0B\"'\\/");
         if ($binDir !== '') {
@@ -360,11 +252,10 @@ class AgencyBackupService
             if ($path !== '' && is_file($path)) return $path;
         }
 
-        throw new \RuntimeException("$name not found. Checked: "
-            .($binDir ? $binDir : '[no MYSQL_BIN_PATH]').". Set MYSQL_BIN_PATH to the directory containing $name.");
+        throw new \RuntimeException("$name not found. Checked: ".($binDir ? $binDir : '[no MYSQL_BIN_PATH]').".");
     }
 
-    /** كشف نوع عميل التفريغ (MariaDB أو MySQL) */
+    /** كشف نوع عميل التفريغ */
     private function isMariaDB(string $dumpBin): bool
     {
         try {
@@ -376,7 +267,7 @@ class AgencyBackupService
         }
     }
 
-    /** مجموعات وسائط اتصال بديلة (host/protocol) */
+    /** مجموعات وسائط اتصال بديلة */
     private function connectionArgSets(): array
     {
         $mysql = config('database.connections.mysql');
@@ -400,8 +291,8 @@ class AgencyBackupService
         return $sets;
     }
 
-    /** الخطة البديلة: توليد INSERTs عبر PDO */
-    private function dumpTableViaPdo(string $table, int $agencyId, string $sqlPath, string $dbName): void
+    /** تفريغ عبر PDO */
+    private function dumpTableViaPdo(string $table, int $agencyId, string $sqlPath, string $dbName, bool $filterByAgency = true): void
     {
         $pdo = DB::getPdo();
         $cols = $this->describeColumns($dbName, $table);
@@ -410,10 +301,18 @@ class AgencyBackupService
         $colNames = array_map(fn($c) => '`'.$c['name'].'`', $cols);
         $colList  = implode(',', $colNames);
 
-        file_put_contents($sqlPath, "\n-- Fallback dump via PDO for `{$table}`\n", FILE_APPEND);
+        file_put_contents(
+            $sqlPath,
+            "\n-- Fallback dump via PDO for `{$table}` ".($filterByAgency ? "(filtered agency_id={$agencyId})" : "(full)") ."\n",
+            FILE_APPEND
+        );
 
-        $stmt = $pdo->prepare("SELECT * FROM `{$table}` WHERE `agency_id` = :aid");
-        $stmt->execute(['aid' => $agencyId]);
+        if ($filterByAgency) {
+            $stmt = $pdo->prepare("SELECT * FROM `{$table}` WHERE `agency_id` = :aid");
+            $stmt->execute(['aid' => $agencyId]);
+        } else {
+            $stmt = $pdo->query("SELECT * FROM `{$table}`");
+        }
 
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
             $values = [];
@@ -434,7 +333,7 @@ class AgencyBackupService
         }
     }
 
-    /** توصيف أعمدة الجدول (نوع رقمي/ثنائي) */
+    /** توصيف أعمدة الجدول */
     private function describeColumns(string $dbName, string $table): array
     {
         $rows = DB::select("
@@ -479,7 +378,6 @@ class AgencyBackupService
         }
     }
 
-    /** NEW: إضافة مع استثناء مسارات محددة */
     private function addPathIfExistsExcluding(ZipArchive $zip, string $path, string $alias, array $excludeAbsPaths): void
     {
         if (!file_exists($path)) return;

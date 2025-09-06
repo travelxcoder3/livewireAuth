@@ -117,10 +117,9 @@ private function componentsFor(User $user, int $year, int $month): array
             str_contains(mb_strtolower((string)($row->status ?? '')), 'refund')
             || (float)$row->usd_sell < 0
         );
-        $totalProfit += $hasRefund
-            ? (float) $g->filter(fn($row) => $getProfit($row) > 0)
-                        ->sum(fn($row) => $getProfit($row))
-            : (float) $g->sum(fn($row) => $getProfit($row));
+       $totalProfit += (float) $g->filter(fn($row) => $getProfit($row) > 0)
+                           ->sum(fn($row) => $getProfit($row));
+
     }
 
     return [$totalProfit, $target, $rate];

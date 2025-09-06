@@ -135,7 +135,7 @@ class Index extends Component
         ->first();
 }
 
-    
+
     private function remainingEditableMinutesFor(Sale $sale): int
 {
     $window = max(0, $this->editWindowMinutes()); // من سياسة الوكالة (مثلاً 180)
@@ -858,7 +858,7 @@ public function confirmRequestEdit(int $id): void
             'payment-collected'       => 'refreshSales',
             'approval-state-updated'  => 'refreshSales', // عند الموافقة/الرفض/إنشاء الطلب
             'sales-tick'              => 'refreshSales', // نبض كل X ثواني
-            
+
         ];
     }
 
@@ -1102,9 +1102,8 @@ if ($this->customer_id && (
 }
 
 // 2) مزامنة العمولة
-if ($this->shouldSyncCommission($sale)) {
-    app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
-}
+
+app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
 // 2.1) تصفية شاملة من المحفظة لإطفاء الديون الأقدم أولاً
 // 2.1) لا تصفِّ المحفظة إذا كانت العملية استرداد/سالب
 if ($sale->customer_id) {
@@ -1378,7 +1377,7 @@ $this->amount_paid = null; // انسجاماً مع القاعدة الجديد�
     $limit = $this->sale_edit_hours;
     return $limit > 0 && $sale->created_at->diffInHours(now()) >= $limit;
 }
- 
+
 
     public function update()
     {
@@ -1481,7 +1480,7 @@ $svc->recalcMonthForUser($sale->user_id, (int)$ref->year, (int)$ref->month);
 if ($sale->customer_id) {
     $this->dispatch('wallet-updated', customerId: (int)$sale->customer_id);
 }
- 
+
         $this->resetForm();
         $this->editingSale = null;
         $this->successMessage = 'تم تحديث العملية بنجاح';
