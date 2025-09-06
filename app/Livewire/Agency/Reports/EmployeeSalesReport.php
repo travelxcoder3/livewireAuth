@@ -557,107 +557,134 @@ class EmployeeSalesReport extends Component
     }
 
     // === مثل Sales\Index لكن مع هدف الأشهر ===
-    protected function aggCommissionLikeIndex($rows, ?User $employee = null): array
-    {
-        $groups = $rows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+   protected function aggCommissionLikeIndex($rows, ?User $employee = null): array
+{
+    $byMonth = $rows->groupBy(fn($s) => \Carbon\Carbon::parse($s->sale_date)->format('Y-m'));
 
-        $totalProfit = 0.0;
-        $totalCollectedProfit = 0.0;
+    $expected = 0.0;
+    $due      = 0.0;
+    $totalProfit = 0.0;
+    $totalCollectedProfit = 0.0;
 
-        foreach ($groups as $group) {
-            $netSell = (float) $group->sum('usd_sell');
+    foreach ($byMonth as $ym => $monthRows) {
+        [$y, $m] = array_map('intval', explode('-', $ym));
+        $rate = $this->monthlyRateFor($employee, $y, $m) / 100.0;
+        $target = $this->monthlyTargetFor($employee, $y, $m);
+
+        $groups = $monthRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+
+        $monthProfit = 0.0;
+        $monthCollectedProfit = 0.0;
+
+        foreach ($groups as $g) {
+            $netSell      = (float) $g->sum('usd_sell');
             if ($netSell <= 0) continue;
 
-            $collectionsSum = (float) $group->sum(function ($s) {
+            $collectionsSum = (float) $g->sum(function ($s) {
                 return (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
             });
-            $netCollected = (float) $group->sum('amount_paid') + $collectionsSum;
+            $netCollected = (float) $g->sum('amount_paid') + $collectionsSum;
 
-            $groupProfit = (float) $group->sum('sale_profit');
+            $gProfit = (float) $g->sum('sale_profit');
 
-            $totalProfit += $groupProfit;
+            $hasRefund = $g->contains(function ($row) {
+                $st = mb_strtolower((string)($row->status ?? ''));
+                return str_contains($st, 'refund') || (float)$row->usd_sell < 0;
+            });
+
+            $monthProfit += $hasRefund
+                ? (float) $g->filter(fn($row) => (float)$row->sale_profit > 0)->sum('sale_profit')
+                : $gProfit;
 
             if ($netCollected + 0.01 >= $netSell) {
-                $totalCollectedProfit += $groupProfit;
+                $monthCollectedProfit += $gProfit;
             }
         }
 
-        $target = $this->employeeTargetForRows($employee, $rows); // ⬅️ بدل main_target
-        $rate   = $this->employeeCommissionRate($employee) / 100.0;
+        $expected += max(($monthProfit - $target) * $rate, 0);
+        $due      += max(($monthCollectedProfit - $target) * $rate, 0);
 
-        $expected = max(($totalProfit - $target) * $rate, 0);
-        $due      = max(($totalCollectedProfit - $target) * $rate, 0);
-
-        return [
-            'expected' => round($expected, 2),
-            'due'      => round($due, 2),
-            'totalProfit' => round($totalProfit, 2),
-            'totalCollectedProfit' => round($totalCollectedProfit, 2),
-        ];
+        $totalProfit           += $monthProfit;
+        $totalCollectedProfit  += $monthCollectedProfit;
     }
+
+    return [
+        'expected' => round($expected, 2),
+        'due'      => round($due, 2),
+        'totalProfit' => round($totalProfit, 2),
+        'totalCollectedProfit' => round($totalCollectedProfit, 2),
+    ];
+}
+
 
     // === توزيع عمولة الصفوف بعد "بوابة الهدف" بحسب الأشهر ===
-    protected function commissionPerRowWithTargetGate($rows, ?User $employee): array
-    {
-        $rate   = $this->employeeCommissionRate($employee) / 100.0;
-        $target = $this->employeeTargetForRows($employee, $rows); // ⬅️ بدل main_target
+  protected function commissionPerRowWithTargetGate($rows, ?User $employee): array
+{
+    $groups = $rows->groupBy(fn($s) => $s->sale_group_id ?: $s->id)
+                   ->sortBy(fn($g) => $g->min('sale_date'));
 
-        $groups = $rows->groupBy(fn($s) => $s->sale_group_id ?: $s->id)
-                       ->sortBy(fn($g) => $g->min('sale_date'));
+    $perSale = [];
+    $ymStats = []; // لكل شهر: cumProfit, cumCollectedProfit, rate, target
 
-        $cumProfit = 0.0;
-        $cumCollectedProfit = 0.0;
+    foreach ($groups as $group) {
+        $firstDate = \Carbon\Carbon::parse($group->min('sale_date'));
+        $y = (int)$firstDate->year; $m = (int)$firstDate->month;
+        $key = $firstDate->format('Y-m');
 
-        $perSale = [];
+        $rate   = ($ymStats[$key]['rate']   ??= $this->monthlyRateFor($employee, $y, $m) / 100.0);
+        $target = ($ymStats[$key]['target'] ??= $this->monthlyTargetFor($employee, $y, $m));
+        $cumP   = ($ymStats[$key]['cumProfit'] ?? 0.0);
+        $cumC   = ($ymStats[$key]['cumCollectedProfit'] ?? 0.0);
 
-        foreach ($groups as $group) {
-            $groupProfit = (float) $group->sum('sale_profit');
-            $netSell     = (float) $group->sum('usd_sell');
+        $groupProfit = (float) $group->sum('sale_profit');
+        $netSell     = (float) $group->sum('usd_sell');
 
-            $collectionsSum = (float) $group->sum(function ($s) {
-                return (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
-            });
-            $netCollected = (float) $group->sum('amount_paid') + $collectionsSum;
+        $collectionsSum = (float) $group->sum(function ($s) {
+            return (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
+        });
+        $netCollected = (float) $group->sum('amount_paid') + $collectionsSum;
 
-            $isCollected = ($netSell > 0) && ($netCollected + 0.01 >= $netSell);
+        $isCollected = ($netSell > 0) && ($netCollected + 0.01 >= $netSell);
 
-            $prior  = $cumProfit;
-            $after  = $cumProfit + $groupProfit;
-            $eligibleProfitExp = max(0, $after - $target) - max(0, $prior - $target);
-            $cumProfit = $after;
+        $prior  = $cumP;
+        $after  = $cumP + $groupProfit;
+        $eligibleProfitExp = max(0, $after - $target) - max(0, $prior - $target);
+        $cumP = $after;
 
-            $priorDue = $cumCollectedProfit;
-            $afterDue = $cumCollectedProfit + ($isCollected ? $groupProfit : 0.0);
-            $eligibleProfitDue = max(0, $afterDue - $target) - max(0, $priorDue - $target);
-            $cumCollectedProfit = $afterDue;
+        $priorDue = $cumC;
+        $afterDue = $cumC + ($isCollected ? $groupProfit : 0.0);
+        $eligibleProfitDue = max(0, $afterDue - $target) - max(0, $priorDue - $target);
+        $cumC = $afterDue;
 
-            $groupExpected = round($eligibleProfitExp * $rate, 2);
-            $groupDue      = round($eligibleProfitDue * $rate, 2);
+        $ymStats[$key]['cumProfit'] = $cumP;
+        $ymStats[$key]['cumCollectedProfit'] = $cumC;
 
-            $sumNetProfit = 0.0;
-            $sumCollectedProfit = 0.0;
-            $rowsPP = [];
+        $groupExpected = round($eligibleProfitExp * $rate, 2);
+        $groupDue      = round($eligibleProfitDue * $rate, 2);
 
-            foreach ($group as $sale) {
-                $pp = $this->profitParts($sale);
-                $rowsPP[$sale->id] = $pp;
-                $sumNetProfit      += (float) $pp['net_profit'];
-                $sumCollectedProfit+= (float) $pp['collected_profit'];
-            }
+        $sumNetProfit = 0.0;
+        $sumCollectedProfit = 0.0;
+        $rowsPP = [];
 
-            foreach ($group as $sale) {
-                $pp = $rowsPP[$sale->id];
-
-                $expShare = ($sumNetProfit > 0) ? ($pp['net_profit'] / $sumNetProfit) : 0.0;
-                $dueShare = ($sumCollectedProfit > 0) ? ($pp['collected_profit'] / $sumCollectedProfit) : 0.0;
-
-                $perSale[$sale->id]['exp'] = round($groupExpected * $expShare, 2);
-                $perSale[$sale->id]['due'] = round($groupDue      * $dueShare, 2);
-            }
+        foreach ($group as $sale) {
+            $pp = $this->profitParts($sale);
+            $rowsPP[$sale->id] = $pp;
+            $sumNetProfit      += (float) $pp['net_profit'];
+            $sumCollectedProfit+= (float) $pp['collected_profit'];
         }
 
-        return $perSale;
+        foreach ($group as $sale) {
+            $pp = $rowsPP[$sale->id];
+            $expShare = ($sumNetProfit > 0) ? ($pp['net_profit'] / $sumNetProfit) : 0.0;
+            $dueShare = ($sumCollectedProfit > 0) ? ($pp['collected_profit'] / $sumCollectedProfit) : 0.0;
+
+            $perSale[$sale->id]['exp'] = round($groupExpected * $expShare, 2);
+            $perSale[$sale->id]['due'] = round($groupDue      * $dueShare, 2);
+        }
     }
+
+    return $perSale;
+}
 
     public function render()
     {
@@ -732,4 +759,37 @@ class EmployeeSalesReport extends Component
             'sale-details-' . $sale->id . '.pdf'
         );
     }
+
+
+    protected function monthlyRateFor(?User $user, int $year, int $month): float
+{
+    if (!$user) return 20.0;
+
+    $override = EmployeeMonthlyTarget::where('user_id', $user->id)
+        ->where('year', $year)->where('month', $month)
+        ->value('override_rate');
+
+    if (!is_null($override)) return (float) $override;
+
+    if (!is_null($user->commission_rate) && $user->commission_rate > 0) {
+        return (float) $user->commission_rate;
+    }
+    if (!is_null($user->commission_percentage) && $user->commission_percentage > 0) {
+        return (float) $user->commission_percentage;
+    }
+
+    $profileRate = CommissionProfile::where('agency_id', $user->agency_id)
+        ->where('is_active', 1)->value('employee_rate');
+
+    return (!is_null($profileRate) && $profileRate > 0) ? (float) $profileRate : 20.0;
+}
+
+protected function monthlyTargetFor(?User $user, int $year, int $month): float
+{
+    if (!$user) return 0.0;
+    return (float) (EmployeeMonthlyTarget::where('user_id', $user->id)
+        ->where('year', $year)->where('month', $month)
+        ->value('main_target') ?? 0.0);
+}
+
 }
