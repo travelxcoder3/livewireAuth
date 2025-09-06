@@ -123,7 +123,7 @@
                         <!-- 🔸 عمولة الموظف -->
                         <th class="p-2 text-right">عمولة الموظف </th>
                         <!-- المتبقي كما كان -->
-                        <th class="p-2 text-right">إجمالي المستحق</th>
+                        <th class="p-2 text-right">إجمالي الدين</th>
                         <th class="p-2 text-right">العملة</th>
                         <th class="p-2 text-right"></th> {{-- تفصيلي --}}
                     </tr>
@@ -190,7 +190,7 @@
                         <!-- 🔸 عمولة الموظف -->
                         <th class="p-2 text-right">عمولة الموظف </th>
                         <!-- المتبقي -->
-                        <th class="p-2 text-right">المستحق</th>
+                        <th class="p-2 text-right">الدين</th>
                         <th class="p-2 text-right"></th> {{-- تفصيلي --}}
                     </tr>
                 </thead>
@@ -235,7 +235,7 @@
                         <!-- 🔸 عمولة الموظف -->
                         <th class="p-2 text-right">عمولة الموظف </th>
                         <!-- المتبقي -->
-                        <th class="p-2 text-right">المستحق</th>
+                        <th class="p-2 text-right">الدين</th>
                         <th class="p-2 text-right"></th> {{-- تفصيلي --}}
                     </tr>
                 </thead>

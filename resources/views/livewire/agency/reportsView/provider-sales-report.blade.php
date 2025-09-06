@@ -116,7 +116,7 @@
                         <th class="p-2 text-right">إجمالي الشراء</th>
                         <th class="p-2 text-right">إجمالي البيع</th>
                         <th class="p-2 text-right">الربح</th>
-                        <th class="p-2 text-right">إجمالي المستحق</th>
+                        <th class="p-2 text-right">إجمالي الدين</th>
                         <th class="p-2 text-right">العملة</th>
                         <th class="p-2 text-right"></th>
                     </tr>
@@ -175,7 +175,7 @@
                         <th class="p-2 text-right">البيع</th>
                         <th class="p-2 text-right">الشراء</th>
                         <th class="p-2 text-right">الربح</th>
-                        <th class="p-2 text-right">المستحق</th>
+                        <th class="p-2 text-right">الدين</th>
                         <th class="p-2 text-right"></th>
                     </tr>
                 </thead>
@@ -214,7 +214,7 @@
                         <th class="p-2 text-right">البيع</th>
                         <th class="p-2 text-right">الشراء</th>
                         <th class="p-2 text-right">الربح</th>
-                        <th class="p-2 text-right">المستحق</th>
+                        <th class="p-2 text-right">الدين</th>
                         <th class="p-2 text-right"></th>
                     </tr>
                 </thead>

@@ -67,9 +67,7 @@ class CustomerStatement extends Component
 
     private function rebuild(): void
     {
-        $from = ($this->fromDate ?: '0001-01-01') . ' 00:00:00';
-        $to   = ($this->toDate   ?: '9999-12-31') . ' 23:59:59';
-        $bn   = $this->normalize($this->beneficiary);
+        $bn = $this->normalize($this->beneficiary);
 
         $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
         $void   = ['void','cancel','canceled','cancelled'];
@@ -82,9 +80,15 @@ class CustomerStatement extends Component
         // معاملات المحفظة
         $walletAffectsBalance = false;
         $walletTx = WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id', $this->customer->id))
-            ->whereBetween('created_at', [$from, $to])
+            ->when($this->fromDate, fn($q) =>
+                $q->where('created_at', '>=', \Carbon\Carbon::parse($this->fromDate)->startOfDay())
+            )
+            ->when($this->toDate, fn($q) =>
+                $q->where('created_at', '<=', \Carbon\Carbon::parse($this->toDate)->endOfDay())
+            )
             ->orderBy('created_at')
             ->get();
+
 
         $walletWithdrawAvail = [];
         foreach ($walletTx as $t) {
@@ -97,9 +101,15 @@ class CustomerStatement extends Component
         // 1) المشتريات
         $sales = $this->customer->sales()
             ->with(['service','customer'])
-            ->when($this->fromDate || $this->toDate, fn($q)=>$q->whereBetween('created_at', [$from, $to]))
+            ->when($this->fromDate, fn($q) =>
+                $q->where('created_at', '>=', \Carbon\Carbon::parse($this->fromDate)->startOfDay())
+            )
+            ->when($this->toDate, fn($q) =>
+                $q->where('created_at', '<=', \Carbon\Carbon::parse($this->toDate)->endOfDay())
+            )
             ->orderBy('created_at')
             ->get();
+
 
         if ($bn !== '') {
             $sales = $sales->filter(function ($s) use ($bn) {
@@ -156,9 +166,15 @@ class CustomerStatement extends Component
         // 2) التحصيلات
         $collections = Collection::with(['sale.service','sale.customer'])
             ->whereHas('sale', fn($q)=>$q->where('customer_id', $this->customer->id))
-            ->whereBetween('created_at', [$from, $to])
+            ->when($this->fromDate, fn($q) =>
+                $q->where('created_at', '>=', \Carbon\Carbon::parse($this->fromDate)->startOfDay())
+            )
+            ->when($this->toDate, fn($q) =>
+                $q->where('created_at', '<=', \Carbon\Carbon::parse($this->toDate)->endOfDay())
+            )
             ->orderBy('created_at')
             ->get();
+
 
         if ($bn !== '') {
             $collections = $collections->filter(function ($c) use ($bn) {
