@@ -1102,15 +1102,18 @@ if ($this->customer_id && (
 }
 
 // 2) مزامنة العمولة
-app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
-
+if ($this->shouldSyncCommission($sale)) {
+    app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
+}
 // 2.1) تصفية شاملة من المحفظة لإطفاء الديون الأقدم أولاً
+// 2.1) لا تصفِّ المحفظة إذا كانت العملية استرداد/سالب
 if ($sale->customer_id) {
     $customer = \App\Models\Customer::where('agency_id', $sale->agency_id)->find($sale->customer_id);
-    if ($customer) {
+    if ($customer && !in_array($sale->status, ['Refund-Full','Refund-Partial','Void']) && (float)$sale->usd_sell >= 0) {
         app(\App\Services\CustomerCreditService::class)->autoPayAllFromWallet($customer);
     }
 }
+
 
 // 3) أخيرًا: صَفِّ العملية الحالية إن تبقى عليها شيء
 if (!str_contains(mb_strtolower((string)$sale->status), 'refund')) {
@@ -1452,12 +1455,14 @@ if ($sale->customer_id && (
 app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
 
 // 2.1) تصفية شاملة تسبق تصفية العملية الحالية
+// 2.1) لا تصفِّ المحفظة إذا كانت العملية استرداد/سالب
 if ($sale->customer_id) {
     $customer = \App\Models\Customer::where('agency_id', $sale->agency_id)->find($sale->customer_id);
-    if ($customer) {
+    if ($customer && !in_array($sale->status, ['Refund-Full','Refund-Partial','Void']) && (float)$sale->usd_sell >= 0) {
         app(\App\Services\CustomerCreditService::class)->autoPayAllFromWallet($customer);
     }
 }
+
 
 // 3) تصفية العملية الحالية إن لزم
 if (!str_contains(mb_strtolower((string)$sale->status), 'refund')) {
@@ -1502,5 +1507,31 @@ if ($sale->customer_id) {
     $this->dispatch('wallet-opened', customerId: $customerId)
          ->to(\App\Livewire\Agency\CustomerWallet::class);
 }
+
+// +++ ADD
+private function shouldSyncCommission(\App\Models\Sale $sale): bool
+{
+    $st = mb_strtolower((string)($sale->status ?? ''));
+    if (str_contains($st, 'refund') || $sale->status === 'Void') {
+        return false; // لا عمولة على الاسترداد/الإلغاء
+    }
+
+    $groupId = $sale->sale_group_id;
+    if (!$groupId) {
+        // في حالة التكرار بدون group واضح: إن كان المنسوخ له عمولة، فلا تزامن
+        return !($this->isDuplicated && (float)($this->commission ?? 0) > 0);
+    }
+
+    // إن كانت للمجموعة عمولة موجبة سابقة، فلا تزامن مرّة أخرى
+    $exists = \App\Models\Sale::where('agency_id', $sale->agency_id)
+        ->where('sale_group_id', $groupId)
+        ->where('id', '!=', $sale->id)
+        ->whereNotNull('commission')
+        ->where('commission', '>', 0)
+        ->exists();
+
+    return !$exists;
+}
+
 
 }

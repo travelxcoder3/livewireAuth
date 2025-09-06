@@ -12,34 +12,11 @@ use Illuminate\Support\Facades\DB;
 class EmployeeCommissionAccrual
 {
 
-    public function expectedForMonth(User $user, int $year, int $month): float
-    {
-        $target = (float) (\App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
-                    ->where('year',$year)->where('month',$month)->value('main_target')
-                ?? $user->main_target ?? 0);
+  public function expectedForMonth(User $user, int $year, int $month): float
+{
+    return $this->computeExpectedFor($user, $year, $month);
+}
 
-        $override = \App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
-            ->where('year',$year)->where('month',$month)->value('override_rate');
-
-        $ratePct = ($override !== null)
-            ? (float)$override
-            : (float)(CommissionProfile::where('agency_id',$user->agency_id)
-                ->where('is_active',true)->value('employee_rate') ?? 0);
-        $rate = $ratePct / 100.0;
-
-
-        $sales = Sale::where('user_id',$user->id)
-            ->whereYear('sale_date',$year)->whereMonth('sale_date',$month)
-            ->where('status','!=','Void')
-            ->get(['usd_buy','usd_sell','sale_profit']);
-
-        $totalProfit = $sales->sum(fn($s) =>
-            is_numeric($s->sale_profit) ? (float)$s->sale_profit
-                                        : (float)(($s->usd_sell ?? 0) - ($s->usd_buy ?? 0))
-        );
-
-        return round(max(($totalProfit - $target) * $rate, 0), 2);
-    }
 
 
     public function syncWalletToExpected(\App\Models\User $user, int $year, int $month): void
@@ -47,7 +24,7 @@ class EmployeeCommissionAccrual
     $svc    = app(\App\Services\EmployeeWalletService::class);
     $wallet = $svc->ensureWallet($user->id);
 
-    $expected = round($this->computeExpectedFor($user, $year, $month), 2); // احسب المتوقع
+$expected = round($this->expectedForMonth($user, $year, $month), 2);
     $ref = "accrual:{$year}-{$month}";
 
     \DB::transaction(function () use ($wallet, $expected, $ref, $year, $month) {
@@ -71,55 +48,83 @@ class EmployeeCommissionAccrual
             ]);
             $locked->update(['balance' => $running]);
         } else {
-            // موجودة: سوّي تسوية بالفارق بدل محاولة إدراج نفس المرجع
-            $diff = round($expected - (float)$existing->amount, 2);
-            if (abs($diff) >= 0.01) {
-                $running = $locked->balance + $diff; // diff قد يكون + أو -
-                \App\Models\EmployeeWalletTransaction::create([
-                    'wallet_id'        => $locked->id,
-                    'type'             => 'accrual_adjust',
-                    'amount'           => abs($diff),
-                    'running_balance'  => $running,
-                    'reference'        => $ref . ':adjust',
-                    'note'             => 'تسوية المتوقّع لنفس الشهر',
-                    'performed_by_name'=> 'System (expected accrual)',
-                ]);
-                $locked->update(['balance' => $running]);
-                // للتوثيق فقط: حدّث مبلغ الحركة الأساسية ليطابق المتوقّع الحالي
-                $existing->update(['amount' => $expected]);
-            }
+          // نفس منطق شاشة المبيعات
+[$totalProfit, $target, $rate] = $this->componentsFor($user, $year, $month);
+
+// تقدير الربح السابق من حركة الشهر (حتى لا نخصم الهدف مرة ثانية)
+$prevExpected = (float) $existing->amount;
+$prevTotalEst = $rate > 0 ? ($prevExpected / $rate) + $target : 0.0;
+
+// الزيادة فقط
+$deltaProfit = max($totalProfit - $prevTotalEst, 0.0);
+$diff        = round($deltaProfit * $rate, 2);
+
+if ($diff >= 0.01) {
+    $running = $locked->balance + $diff;
+    \App\Models\EmployeeWalletTransaction::create([
+        'wallet_id' => $locked->id,
+        'type' => 'accrual_adjust',
+        'amount' => $diff,
+        'running_balance' => $running,
+        'reference' => $ref . ':adjust',
+        'note' => 'تسوية المتوقّع لنفس الشهر (بدون إعادة خصم الهدف)',
+        'performed_by_name'=> 'System (expected accrual)',
+    ]);
+    $locked->update(['balance' => $running]);
+    // زد المبلغ بدل استبداله ليمثّل مجموع المتوقّع حتى الآن
+    $existing->update(['amount' => $prevExpected + $diff]);
+}
+
         }
     });
 }
 
-    public function computeExpectedFor(User $user, int $year, int $month): float
-    {
-        $target = (float) (\App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
-                    ->where('year',$year)->where('month',$month)->value('main_target')
-                ?? $user->main_target ?? 0);
+ public function computeExpectedFor(User $user, int $year, int $month): float
+{
+    [$totalProfit, $target, $rate] = $this->componentsFor($user, $year, $month);
+    return round(max(($totalProfit - $target) * $rate, 0), 2);
+}
 
-        $sales = Sale::where('user_id',$user->id)
-            ->whereYear('sale_date',$year)->whereMonth('sale_date',$month)
-            ->where('status','!=','Void')
-            ->get(['usd_buy','usd_sell','sale_profit']);
+private function componentsFor(User $user, int $year, int $month): array
+{
+    $target = (float) (\App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
+        ->where('year',$year)->where('month',$month)->value('main_target')
+        ?? $user->main_target ?? 0);
 
-        $totalProfit = $sales->sum(fn($s) =>
-            is_numeric($s->sale_profit) ? (float)$s->sale_profit
-                                        : (float)(($s->usd_sell ?? 0) - ($s->usd_buy ?? 0))
+    $override = \App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
+        ->where('year',$year)->where('month',$month)->value('override_rate');
+
+    $ratePct = ($override !== null)
+        ? (float)$override
+        : (float)(CommissionProfile::where('agency_id',$user->agency_id)
+            ->where('is_active',true)->value('employee_rate') ?? 0);
+    $rate = $ratePct / 100.0;
+
+    $sales = Sale::where('user_id',$user->id)
+        ->whereYear('sale_date',$year)->whereMonth('sale_date',$month)
+        ->where('status','!=','Void')
+        ->get(['id','usd_buy','usd_sell','sale_profit','sale_group_id','status']);
+
+    $getProfit = fn($s) => is_numeric($s->sale_profit)
+        ? (float)$s->sale_profit
+        : (float)(($s->usd_sell ?? 0) - ($s->usd_buy ?? 0));
+
+    $groups = $sales->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+
+    $totalProfit = 0.0;
+    foreach ($groups as $g) {
+        $hasRefund = $g->contains(fn($row) =>
+            str_contains(mb_strtolower((string)($row->status ?? '')), 'refund')
+            || (float)$row->usd_sell < 0
         );
-
-        $override = \App\Models\EmployeeMonthlyTarget::where('user_id',$user->id)
-            ->where('year',$year)->where('month',$month)->value('override_rate');
-
-        $ratePct = ($override !== null)
-            ? (float)$override
-            : (float)(CommissionProfile::where('agency_id',$user->agency_id)
-                ->where('is_active',true)->value('employee_rate') ?? 0);
-        $rate = $ratePct / 100.0;
-
-
-        return round(max(($totalProfit - $target) * $rate, 0), 2);
+        $totalProfit += $hasRefund
+            ? (float) $g->filter(fn($row) => $getProfit($row) > 0)
+                        ->sum(fn($row) => $getProfit($row))
+            : (float) $g->sum(fn($row) => $getProfit($row));
     }
+
+    return [$totalProfit, $target, $rate];
+}
 
 
 }

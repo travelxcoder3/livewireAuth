@@ -76,6 +76,8 @@ class CustomerStatement extends Component
 
         $rows = [];
         $seq  = 0;
+        $refundCreditKeys = []; // <— NEW
+
 
         // معاملات المحفظة
         $walletAffectsBalance = false;
@@ -123,15 +125,21 @@ class CustomerStatement extends Component
                 ];
             }
 
-            if (in_array($st, $refund, true) || in_array($st, $void, true)) {
-                $label = $this->statusArabicLabel($st);
-                $rows[] = [
-                    'no'=>0,'date'=>$this->fmtDate($sale->created_at),
-                    'desc'=> "{$label} لـ{$serviceName} لـ{$beneficiaryName}",
-                    'status'=>$label,'debit'=>0.0,'credit'=>abs((float)$sale->usd_sell),'balance'=>0.0,
-                    '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>2,'_seq'=>++$seq,
-                ];
-            }
+           if (in_array($st, $refund, true) || in_array($st, $void, true)) {
+                    $label = $this->statusArabicLabel($st);
+
+                    // NEW: خزّن مفتاح (دقيقة+مبلغ) للاسترداد لمنع تكرار التحصيل
+                    $keyR = $this->minuteKey($sale->created_at) . '|' . $this->moneyKey(abs((float)$sale->usd_sell));
+                    $refundCreditKeys[$keyR] = ($refundCreditKeys[$keyR] ?? 0) + 1;
+
+                    $rows[] = [
+                        'no'=>0,'date'=>$this->fmtDate($sale->created_at),
+                        'desc'=> "{$label} لـ{$serviceName} لـ{$beneficiaryName}",
+                        'status'=>$label,'debit'=>0.0,'credit'=>abs((float)$sale->usd_sell),'balance'=>0.0,
+                        '_grp'=>$grpTs,'_evt'=>$this->fmtDate($sale->created_at),'_ord'=>2,'_seq'=>++$seq,
+                    ];
+                }
+
 
             if ((float)$sale->amount_paid > 0) {
                 $statusLabel = ($sale->payment_method === 'kash' && (float)$sale->amount_paid >= (float)$sale->usd_sell)
@@ -174,42 +182,52 @@ class CustomerStatement extends Component
             $evt             = $this->fmtDate($col->created_at ?? $col->payment_date);
             $grpTs           = $this->fmtDate($col->sale->created_at);
 
-            $keyC = $this->minuteKey($evt).'|'.$this->moneyKey($col->amount);
+           $keyC = $this->minuteKey($evt).'|'.$this->moneyKey($col->amount);
+
+            // NEW: لو يوجد Refund بنفس الدقيقة والمبلغ، لا تُظهر "سداد من التحصيل"
+            if (($refundCreditKeys[$keyC] ?? 0) > 0) {
+                $refundCreditKeys[$keyC]--; // استهلك المطابقة
+                continue;
+            }
 
             $isCommission = (bool) (data_get($col, 'is_commission')
                 ?? (Str::contains(Str::lower((string) data_get($col, 'source', '')), 'commission'))
                 ?? (Str::contains(Str::lower((string) data_get($col, 'notes',  '')), 'commission')));
 
             if (($walletWithdrawAvail[$keyC] ?? 0) > 0) {
-                $commissionPairMeta[$keyC][] = [
-                    'service'     => $serviceName,
-                    'beneficiary' => $beneficiaryName,
-                    'grp'         => $grpTs,
-                    'evt'         => $evt,
-                    'kind'        => $isCommission ? 'commission' : 'collection',
-                ];
-                continue; // لا تُنشئ صف التحصيل الآن
+                $commissionPairMeta[$keyC][] = [/* ... */];
+                continue;
             }
 
-            // الحالة العادية
             $rows[] = [
                 'no'=>0,'date'=>$evt,
                 'desc'=>"سداد من التحصيل {$serviceName} لـ{$beneficiaryName}",
                 'status'=>'سداد من التحصيل','debit'=>0.0,'credit'=>(float)$col->amount,'balance'=>0.0,
                 '_grp'=>$grpTs,'_evt'=>$evt,'_ord'=>4,'_seq'=>++$seq,
             ];
+
         }
 
         // 3) حركات المحفظة
         foreach ($walletTx as $tx) {
-            $evt = $this->fmtDate($tx->created_at);
+           $evt = $this->fmtDate($tx->created_at);
             $key = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
+
+            // NEW: إخفاء إيداع محفظة ناتج عن الاسترداد (نفس الدقيقة + نفس المبلغ)
+            if ($tx->type === 'deposit') {
+                $keyR = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
+                if (($refundCreditKeys[$keyR] ?? 0) > 0) {
+                    $refundCreditKeys[$keyR]--;   // استهلك المطابقة
+                    continue;                     // لا تُظهر "إيداع للمحفظة"
+                }
+            }
 
             // اخفاء سحب يطابق تحصيلاً بنفس الدقيقة والمبلغ
             if (($tx->type === 'withdraw') && !empty($collectionKeys[$key])) {
                 $collectionKeys[$key]--;
                 continue;
             }
+
 
             // مرجع العملية
             $refStr = Str::lower((string)($tx->reference ?? ''));
