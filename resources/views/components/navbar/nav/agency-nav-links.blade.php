@@ -64,7 +64,7 @@
                     <x-navbar.buttons.dropdown-link
                         href="#"
                         x-on:click.prevent
-                        icon="fas fa-clipboard-check"
+                        icon="fas fa-list-check" 
                         label="مراجعة"
                         :show="true"
                         class="pr-8 cursor-default select-none" />
@@ -86,7 +86,7 @@
                 {{-- فواتير --}}
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('sales-invoices.view') || Auth::user()->can('customer-invoices.view') || Auth::user()->can('provider-invoices.view') || Auth::user()->can('quotations.view'))
                 <div class="relative group/audit">
-                    <x-navbar.buttons.dropdown-link href="#" x-on:click.prevent icon="fas fa-clipboard-check" label="فواتير" :show="true" class="pr-8 cursor-default select-none" />
+                    <x-navbar.buttons.dropdown-link href="#" x-on:click.prevent icon="fas fa-receipt" label="فواتير" :show="true" class="pr-8 cursor-default select-none" />
                     <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                     <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('sales-invoices.view'))
@@ -108,17 +108,17 @@
                 {{-- إدارة حسابات الشركة --}}
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers.view') || Auth::user()->can('providers.view') || Auth::user()->can('employees-manage.view'))
                 <div class="relative group/audit">
-                    <x-navbar.buttons.dropdown-link href="#" x-on:click.prevent icon="fas fa-clipboard-check" label="اداره حسابات الشركة" :show="true" class="pr-8 cursor-default select-none" />
+                    <x-navbar.buttons.dropdown-link href="#" x-on:click.prevent icon="fas fa-briefcase" label="اداره حسابات الشركة" :show="true" class="pr-8 cursor-default select-none" />
                     <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                     <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers.view'))
-                        <x-navbar.buttons.dropdown-link :href="route('agency.customers.add')" icon="fas fa-chart-line" label="ملفات العملاء" :show="true" />
+                        <x-navbar.buttons.dropdown-link :href="route('agency.customers.add')" icon="fas fa-address-book" label="ملفات العملاء" :show="true" />
                         @endif
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('providers.view'))
-                        <x-navbar.buttons.dropdown-link :href="route('agency.providers')" icon="fas fa-wallet" label="ملفات المزودين" :show="true" />
+                        <x-navbar.buttons.dropdown-link :href="route('agency.providers')" icon="fas fa-handshake" label="ملفات المزودين" :show="true" />
                         @endif
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('employees-manage.view'))
-                        <x-navbar.buttons.dropdown-link :href="route('agency.hr.employee-files')" icon="fas fa-file-invoice" label="ملفات الموظفين" :show="true" />
+                        <x-navbar.buttons.dropdown-link :href="route('agency.hr.employee-files')" icon="fas fa-id-badge" label="ملفات الموظفين" :show="true" />
                         @endif
                     </div>
                 </div>
@@ -127,17 +127,17 @@
                 {{-- كشف حساب --}}
                 @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers-statement.view') || Auth::user()->can('providers-statement.view') || Auth::user()->can('employee-statement.view'))
                 <div class="relative group/audit">
-                    <x-navbar.buttons.dropdown-link href="#" x-on:click.prevent icon="fas fa-clipboard-check" label="كشف حساب" :show="true" class="pr-8 cursor-default select-none" />
+                    <x-navbar.buttons.dropdown-link href="#" x-on:click.prevent icon="fas fa-file-lines"  label="كشف حساب" :show="true" class="pr-8 cursor-default select-none" />
                     <i class="fas fa-angle-left absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                     <div class="absolute right-full top-0 min-w-[220px] bg-white rounded-xl shadow-lg py-2 z-50 hidden group-hover/audit:block">
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('customers-statement.view'))
-                        <x-navbar.buttons.dropdown-link :href="route('agency.statements.customers')" icon="fas fa-chart-line" label="كشف حساب العميل" :show="true" />
+                        <x-navbar.buttons.dropdown-link :href="route('agency.statements.customers')" icon="fas fa-user"  label="كشف حساب العميل" :show="true" />
                         @endif
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('providers-statement.view'))
-                        <x-navbar.buttons.dropdown-link :href="route('agency.statements.providers')" icon="fas fa-wallet" label="كشف حساب المزودين" :show="true" />
+                        <x-navbar.buttons.dropdown-link :href="route('agency.statements.providers')" icon="fas fa-building"  label="كشف حساب المزودين" :show="true" />
                         @endif
                         @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('employee-statement.view'))
-                        <x-navbar.buttons.dropdown-link :href="route('agency.statements.employees')" icon="fas fa-file-invoice" label="كشف حساب الموظفين" :show="true" />
+                        <x-navbar.buttons.dropdown-link :href="route('agency.statements.employees')" icon="fas fa-user-tie" label="كشف حساب الموظفين" :show="true" />
                         @endif
                     </div>
                 </div>
@@ -161,7 +161,7 @@
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.employee.view'))
                         <x-navbar.buttons.dropdown-link
                             :href="route('agency.employee-collections')"
-                            icon="fas fa-user-friends"
+                            icon="fas fa-user-group"
                             label="تحصيلات الموظفين"
                             :show="true" />
                     @endif
@@ -290,7 +290,7 @@
                             @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('reportEmployeeSales.view'))
                                 <x-navbar.buttons.dropdown-link
                                     :href="route('agency.reports.employee-sales')"   
-                                    icon="fas fa-user-tie"
+                                    icon="fas fa-user-gear"
                                     label=" تقارير الموظفين "
                                     :show="true" />
                             @endif
@@ -358,7 +358,7 @@
 
         @if ($showSettingsDropdown)
             <div class="relative nav-item flex items-center px-2 py-1 rounded-full group-hover/nav:bg-white/10 group">
-                <x-navbar.buttons.icon-button    icon="fas fa-cogs" tooltip="إعدادات الشركة" label="إعدادات الشركة"
+                <x-navbar.buttons.icon-button    icon="fas fa-gears" tooltip="إعدادات الشركة" label="إعدادات الشركة"
                     href="#" class="!px-2 !py-1" :active="request()->routeIs('agency.profile') ||
                         request()->routeIs('agency.dynamic-lists') ||
                         request()->routeIs('agency.approval-sequences') ||
@@ -374,7 +374,7 @@
                             :show="true" />
                     @endif
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('sequences.view'))
-                        <x-navbar.buttons.dropdown-link :href="route('agency.approval-sequences')"  icon="fas fa-project-diagram" label="تسلسل الموافقات"
+                        <x-navbar.buttons.dropdown-link :href="route('agency.approval-sequences')"  icon="fas fa-diagram-project" label="تسلسل الموافقات"
                             :show="true" />
                     @endif    
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('policies.view'))
