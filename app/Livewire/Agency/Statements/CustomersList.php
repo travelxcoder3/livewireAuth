@@ -262,17 +262,28 @@ class CustomersList extends Component
             $query->whereIn('id', $filteredIds ?: [-1]);
         }
 
-        // بطاقات الإجماليات من نفس المنطق القديم + المحفظة فقط
-        $this->totalRemainingForCustomer = 0.0;
-        $this->totalRemainingForCompany  = 0.0;
+        // بطاقات الإجماليات حسب الصافي (له − عليه) تمامًا مثل عمود "الإجمالي"
+        $this->totalRemainingForCustomer = 0.0; // على العملاء (مجموع القيم السالبة كقيمة موجبة)
+        $this->totalRemainingForCompany  = 0.0; // لصالح العملاء (مجموع القيم الموجبة)
 
         $idsForTotals = $filteredIds ?: $all->pluck('id');
         foreach ($idsForTotals as $id) {
             $st = $statsById[$id] ?? null;
             if (!$st) continue;
-            $this->totalRemainingForCustomer += $st['remaining_for_customer']; // عليه
-            $this->totalRemainingForCompany  += $st['remaining_for_company'];  // له
+
+            $net = (float)($st['net_balance'] ?? 0); // نفس الذي نعرضه في الجدول
+            if ($net > 0) {
+                // له (لصالح العميل)
+                $this->totalRemainingForCompany += $net;
+            } elseif ($net < 0) {
+                // عليه (على العميل)
+                $this->totalRemainingForCustomer += abs($net);
+            }
         }
+
+        $this->totalRemainingForCustomer = round($this->totalRemainingForCustomer, 2);
+        $this->totalRemainingForCompany  = round($this->totalRemainingForCompany, 2);
+
 
         // إخراج الصفحة
         $customers = $query->paginate(10)->through(function ($c) use ($statsById) {
