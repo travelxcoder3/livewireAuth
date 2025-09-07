@@ -149,12 +149,14 @@ public function getDebtProperty(): float
 {
     $cid = (int)$this->customerId;
 
-    // 1) المشتريات + المدفوع
-   $cols = ['usd_sell','status','amount_paid','refund_amount'];
-    if (Schema::hasColumn('sales', 'invoice_total_true')) {
-        $cols[] = 'invoice_total_true';
-    }
-    $sales = \App\Models\Sale::where('customer_id', $cid)->get($cols);
+$cols = ['usd_sell','status','amount_paid'];
+if (\Illuminate\Support\Facades\Schema::hasColumn('sales','invoice_total_true')) {
+    $cols[] = 'invoice_total_true';
+}
+if (\Illuminate\Support\Facades\Schema::hasColumn('sales','refund_amount')) {
+    $cols[] = 'refund_amount';
+}
+$sales = \App\Models\Sale::where('customer_id', $cid)->get($cols);
 
 
     $debit  = 0.0; // عليه
