@@ -184,8 +184,16 @@ class CustomerWallet extends Component
             }
         }
 
-        return round($debt, 2);
+        // 👇 أي رصيد سالب يُعتبر ديناً إضافياً
+        $neg = max(0.0, -1 * (float)($this->wallet->balance ?? 0));
+        return round($debt + $neg, 2);
+}
+
+    public function getDisplayBalanceProperty(): float
+    {
+        return max(0.0, (float)($this->wallet->balance ?? 0));
     }
+
 
     public function getDebtBreakdownProperty(): array
     {
