@@ -226,27 +226,34 @@ class CustomerStatement extends Component
 
         // 3) حركات المحفظة
         foreach ($walletTx as $tx) {
-           $evt = $this->fmtDate($tx->created_at);
+            $evt = $this->fmtDate($tx->created_at);
             $key = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
 
-            // NEW: إخفاء إيداع محفظة ناتج عن الاسترداد (نفس الدقيقة + نفس المبلغ)
+            // مرجع العملية (مبكراً)
+            $refStrRaw = (string)($tx->reference ?? '');
+            $refStr    = Str::lower($refStrRaw);
+
+            // ✳️ لا تكرّر الإيداع الآلي الناتج عن الاسترداد
+            // (CustomerCreditService::autoDepositToWallet يضع sales-auto|group:*)
+            if ($tx->type === 'deposit' && Str::contains($refStr, 'sales-auto|group:')) {
+                continue; // سيظهر كسطر "استرداد" من قسم المبيعات
+            }
+
+            // fallback قديم: مطابقة دقيقة+مبلغ إن لم يوجد مرجع واضح
             if ($tx->type === 'deposit') {
                 $keyR = $this->minuteKey($evt).'|'.$this->moneyKey($tx->amount);
                 if (($refundCreditKeys[$keyR] ?? 0) > 0) {
-                    $refundCreditKeys[$keyR]--;   // استهلك المطابقة
-                    continue;                     // لا تُظهر "إيداع للمحفظة"
+                    $refundCreditKeys[$keyR]--;
+                    continue;
                 }
             }
 
             // اخفاء سحب يطابق تحصيلاً بنفس الدقيقة والمبلغ
-            if (($tx->type === 'withdraw') && !empty($collectionKeys[$key])) {
+            if ($tx->type === 'withdraw' && !empty($collectionKeys[$key])) {
                 $collectionKeys[$key]--;
                 continue;
             }
 
-
-            // مرجع العملية
-            $refStr = Str::lower((string)($tx->reference ?? ''));
             $isCommissionRef = Str::startsWith($refStr, 'commission:group:');
 
             // إن وُجد pairing مع Collection

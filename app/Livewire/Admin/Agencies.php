@@ -64,12 +64,14 @@ class Agencies extends Component
     {
         $query = Agency::with('admin')
             ->orderBy('created_at', 'desc');
-
-        if ($this->search) {
+        // تجاهل الفلاتر عند عرض الكل
+        if (!$this->showAll && $this->search) {
             $query->where('name', 'like', '%' . $this->search . '%');
         }
 
-        $agencies = $query->paginate($this->perPage);  // استخدام الترقيم
+        $agencies = $this->showAll
+            ? $query->get()
+            : $query->paginate($this->perPage);
 
         return view('livewire.admin.agencies', compact('agencies'))
             ->layout('layouts.admin');
@@ -83,6 +85,12 @@ class Agencies extends Component
     public function toggleShowAll()
     {
         $this->showAll = !$this->showAll;
+
+        // إذا تحولت إلى وضع "عرض الكل" نظّف الفلاتر
+        if ($this->showAll) {
+            $this->resetFilters();
+        }
+
         $this->resetPage();
     }
 
@@ -206,5 +214,9 @@ class Agencies extends Component
             $this->reset(['newPassword', 'confirmPassword']);
             session()->flash('error', $e->getMessage());
         }
+    }
+    public function resetFilters()
+    {
+        $this->search = '';
     }
 }

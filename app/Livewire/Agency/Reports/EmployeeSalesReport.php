@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Models\CommissionProfile;
 use App\Models\CommissionEmployeeRateOverride;
-use App\Models\EmployeeMonthlyTarget; // ⬅️ جديد
+use App\Models\EmployeeMonthlyTarget; 
+use App\Models\WalletTransaction;
 
 #[Layout('layouts.agency')]
 class EmployeeSalesReport extends Component
@@ -282,6 +283,22 @@ class EmployeeSalesReport extends Component
         return $sum > 0 ? $sum : (float)($employee->main_target ?? 0);
     }
 
+    // إجمالي الدين مثل صفحة "تحصيلات الموظفين"
+    protected function debtFromNetForRows($rows): float
+    {
+        if (!$rows || $rows->isEmpty()) return 0.0;
+
+        $sum = 0.0;
+        foreach ($rows->groupBy(fn($s) => $s->sale_group_id ?? $s->id) as $g) {
+            $sell = (float) $g->sum('usd_sell');                 // يشمل السالب لو فيه ريفند
+            $paid = (float) $g->sum('amount_paid');
+            $coll = (float) $g->flatMap->collections->sum('amount');
+            $rem  = $sell - $paid - $coll;
+            if ($rem > 0) $sum += $rem;
+        }
+        return round($sum, 2);
+    }
+
     // ملخص لكل موظف
     protected function perEmployeeRows()
     {
@@ -310,7 +327,7 @@ class EmployeeSalesReport extends Component
                 'buy'        => $buy,
                 'profit'     => $profit,
                 'commission' => $customerCommission,
-                'remaining'  => $sell - $paid,
+                'remaining'  => $this->debtFromNetForRows($rows),
                 'employee_commission_expected' => $agg['expected'],
             ];
         });
@@ -331,7 +348,7 @@ class EmployeeSalesReport extends Component
             return (float) ($sale->amount_paid ?? 0)
                  + (float) ($sale->collections_sum_amount ?? $sale->collections->sum('amount'));
         })->sum();
-        $remaining = $sell - $totalPaid;
+        $remaining = $this->debtFromNetForRows($sales);
 
         $empExpected = 0.0;
         $empDue      = 0.0;
@@ -502,7 +519,7 @@ class EmployeeSalesReport extends Component
                 'buy'        => $buy,
                 'profit'     => $profit,
                 'commission' => $customerCommission,
-                'remaining'  => $sell - $paid,
+                'remaining' => $this->debtFromNetForRows($group),
                 'firstRow'   => $group->first(),
                 'employee_commission_expected' => $empExpected,
             ];
@@ -532,7 +549,7 @@ class EmployeeSalesReport extends Component
                     'buy'        => $buy,
                     'profit'     => $profit,
                     'commission' => $customerCommission,
-                    'remaining'  => $sell - $paid,
+                    'remaining' => $this->debtFromNetForRows($group),
                     'employee_commission_expected' => $empExpected,
                 ];
             })

@@ -21,24 +21,12 @@
         <div class="text-sm text-gray-500">عميل</div>
         <h3 class="text-xl font-bold">{{ $customer->name }}</h3>
       </div>
-      <div class="text-right">
-        <div class="text-xs text-gray-500">الرصيد الحالي</div>
-        <div class="text-2xl font-extrabold">
-          {{ number_format($wallet->balance,2) }}
-          <span class="text-sm text-gray-500">{{ $customer->agency?->currency }}</span>
-        </div>
-
-        <div class="text-xs text-gray-500 mt-1">الدَّين المستحق</div>
-<div class="text-xl font-extrabold {{ $this->debt > 0 ? 'text-red-600' : 'text-emerald-600' }}">
-  {{ number_format($this->debt, 2) }}
+<div class="text-xs text-gray-500">الصافي (له − عليه)</div>
+<div class="text-2xl font-extrabold {{ $this->net >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+  {{ number_format($this->net, 2) }}
   <span class="text-sm text-gray-500">{{ $customer->agency?->currency }}</span>
 </div>
 
-        <div class="flex gap-2">
-
-</div>
-
-      </div>
     </div>
 
     <hr class="my-4"/>

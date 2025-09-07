@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Collection;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 #[Layout('layouts.agency')]
 class CustomersList extends Component
@@ -100,16 +101,103 @@ class CustomersList extends Component
             $remainingForCustomer += abs($walletNet); // عليه
         }
         // ================================================
+        // --- NEW: احسب الصافي (له − عليه) بنفس منطق صفحة التفاصيل ---
+        $minuteKey = function($dt){ try { return \Carbon\Carbon::parse($dt)->format('Y-m-d H:i'); } catch (\Throwable $e) { return (string)$dt; } };
+        $moneyKey  = function($n){ return number_format((float)$n, 2, '.', ''); };
 
-        $net = $remainingForCustomer - $remainingForCompany; // يُعرض كالإجمالي
+        $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
+        $void   = ['void','cancel','canceled','cancelled'];
+
+        $sumD = 0.0; // عليه
+        $sumC = 0.0; // له
+
+        // معاملات المحفظة
+        $walletTx = WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id', $c->id))
+            ->orderBy('created_at')->get();
+
+        $walletWithdrawAvail = [];
+        foreach ($walletTx as $t) {
+            if (strtolower((string)$t->type) === 'withdraw') {
+                $k = $minuteKey($t->created_at).'|'.$moneyKey($t->amount);
+                $walletWithdrawAvail[$k] = ($walletWithdrawAvail[$k] ?? 0) + 1;
+            }
+        }
+
+        // المبيعات
+        $refundCreditKeys = [];
+        $salesAll = \App\Models\Sale::where('customer_id', $c->id)->orderBy('created_at')->get();
+
+        foreach ($salesAll as $s) {
+            $st = mb_strtolower(trim((string)$s->status));
+
+            if (!in_array($st, $refund, true) && !in_array($st, $void, true)) {
+                $sumD += (float)($s->invoice_total_true ?? $s->usd_sell ?? 0);
+            }
+
+            if (in_array($st, $refund, true) || in_array($st, $void, true)) {
+                $amt = (float)($s->refund_amount ?? 0);
+                if ($amt <= 0) $amt = abs((float)($s->usd_sell ?? 0));
+                $sumC += $amt;
+
+                $keyR = $minuteKey($s->created_at).'|'.$moneyKey($amt);
+                $refundCreditKeys[$keyR] = ($refundCreditKeys[$keyR] ?? 0) + 1;
+            }
+
+            if ((float)$s->amount_paid > 0) {
+                $sumC += (float)$s->amount_paid;
+            }
+        }
+
+        // التحصيلات
+        $collections = Collection::with('sale')
+            ->whereHas('sale', fn($q)=>$q->where('customer_id', $c->id))
+            ->orderBy('created_at')->get();
+
+        $collectionKeys = [];
+        foreach ($collections as $col) {
+            $evt = $minuteKey($col->created_at ?? $col->payment_date);
+            $k   = $evt.'|'.$moneyKey($col->amount);
+            $collectionKeys[$k] = ($collectionKeys[$k] ?? 0) + 1;
+        }
+
+        foreach ($collections as $col) {
+            $evt = $minuteKey($col->created_at ?? $col->payment_date);
+            $k   = $evt.'|'.$moneyKey($col->amount);
+
+            if (($refundCreditKeys[$k] ?? 0) > 0) { $refundCreditKeys[$k]--; continue; }
+            if (($walletWithdrawAvail[$k] ?? 0) > 0) { $walletWithdrawAvail[$k]--; continue; }
+
+            $sumC += (float)$col->amount;
+        }
+
+        // إدراج المحفظة في الإجماليات مع تجنّب التكرار
+        foreach ($walletTx as $tx) {
+            $evt  = $minuteKey($tx->created_at);
+            $k    = $evt.'|'.$moneyKey($tx->amount);
+            $type = strtolower((string)$tx->type);
+            $ref  = Str::lower((string)$tx->reference);
+
+            if ($type === 'deposit') {
+                if (Str::contains($ref, 'sales-auto|group:')) continue;        // إيداع استرداد سيظهر في "استرداد"
+                if (($refundCreditKeys[$k] ?? 0) > 0) { $refundCreditKeys[$k]--; continue; }
+                $sumC += (float)$tx->amount;
+            } elseif ($type === 'withdraw') {
+                if (($collectionKeys[$k] ?? 0) > 0) { $collectionKeys[$k]--; continue; } // سحب يقابل تحصيلاً
+                $sumD += (float)$tx->amount;
+            }
+        }
+
+        $netStrict = round($sumC - $sumD, 2); // ← نفس الصافي في صفحة التفاصيل
+        // -------------------------------------------------------------------
 
         return [
             'currency'               => $currency,
-            'remaining_for_customer' => (float)$remainingForCustomer,
-            'remaining_for_company'  => (float)$remainingForCompany,
-            'net_balance'            => (float)$net,
+            'remaining_for_customer' => (float)$remainingForCustomer, // تُستخدم لبطاقات الإجماليات كما هي
+            'remaining_for_company'  => (float)$remainingForCompany,  // تُستخدم لبطاقات الإجماليات كما هي
+            'net_balance'            => (float)$netStrict,            // عمود "الإجمالي" = الصافي (له − عليه)
             'last_sale_date'         => $lastSaleDate,
         ];
+
     }
 
     /** فلترة حسب تاريخ آخر عملية بيع فقط */

@@ -5,8 +5,9 @@ namespace App\Livewire\Agency;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
-use App\Models\{Customer, Wallet, WalletTransaction, Sale};
+use App\Models\{Customer, Wallet, WalletTransaction, Sale, Collection};
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class CustomerWallet extends Component
 {
@@ -59,21 +60,25 @@ class CustomerWallet extends Component
         $typeAtSubmit = $this->type;
 
         DB::transaction(function () {
-            $wallet = Wallet::where('id', $this->wallet->id)->lockForUpdate()->first();
+        $wallet = Wallet::where('id', $this->wallet->id)->lockForUpdate()->first();
+        $delta = (float) $this->amount;
+        $creditCap = max(0.0, (float) $this->net); // الصافي له
 
-            $delta = (float) $this->amount;
-            $newBalance = match ($this->type) {
-                'deposit'  => $wallet->balance + $delta,
-                'withdraw' => function () use ($wallet, $delta) {
-                    if ($wallet->balance < $delta) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'amount' => 'الرصيد غير كافٍ',
-                        ]);
-                    }
-                    return $wallet->balance - $delta;
-                },
-                'adjust'   => $delta, // رصيد نهائي
-            };
+        $newBalance = match ($this->type) {
+            'deposit'  => $wallet->balance + $delta,
+            'withdraw' => function () use ($wallet, $delta, $creditCap) {
+                $cap = min((float)$wallet->balance, $creditCap);
+                if ($delta > $cap) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'amount' => 'المتاح للسحب لا يتجاوز '.number_format($cap,2).' وفقًا للرصيد/الصافي.',
+                    ]);
+                }
+                return $wallet->balance - $delta;
+            },
+            'adjust'   => $delta,
+        };
+
+
             if (is_callable($newBalance)) $newBalance = $newBalance();
 
             $txType = $this->type === 'adjust' ? 'adjust' : $this->type;
@@ -109,6 +114,103 @@ class CustomerWallet extends Component
             : 'تم تنفيذ العملية'
         );
     }
+
+public function getNetProperty(): float
+{
+    $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
+    $void   = ['void','cancel','canceled','cancelled'];
+
+    $sumD = 0.0; // عليه
+    $sumC = 0.0; // له
+
+    // معاملات المحفظة (لبناء مفاتيح المطابقة)
+    $walletTx = WalletTransaction::where('wallet_id', $this->wallet->id)
+        ->orderBy('created_at')->get();
+
+    $walletWithdrawAvail = [];
+    foreach ($walletTx as $t) {
+        if (strtolower((string)$t->type) === 'withdraw') {
+            $k = $this->minuteKey($t->created_at) . '|' . $this->moneyKey($t->amount);
+            $walletWithdrawAvail[$k] = ($walletWithdrawAvail[$k] ?? 0) + 1;
+        }
+    }
+
+    // المبيعات
+    $refundCreditKeys = [];
+    $sales = Sale::where('customer_id', $this->customerId)
+        ->orderBy('created_at')->get();
+
+    foreach ($sales as $s) {
+        $st = mb_strtolower(trim((string)$s->status));
+
+        if (!in_array($st, $refund, true) && !in_array($st, $void, true)) {
+            $sumD += (float)($s->invoice_total_true ?? $s->usd_sell ?? 0);
+        }
+
+        if (in_array($st, $refund, true) || in_array($st, $void, true)) {
+            $amt = (float)($s->refund_amount ?? 0);
+            if ($amt <= 0) { $amt = abs((float)($s->usd_sell ?? 0)); }
+            $sumC += $amt;
+
+            $keyR = $this->minuteKey($s->created_at) . '|' . $this->moneyKey($amt);
+            $refundCreditKeys[$keyR] = ($refundCreditKeys[$keyR] ?? 0) + 1;
+        }
+
+        if ((float)$s->amount_paid > 0) {
+            $sumC += (float)$s->amount_paid;
+        }
+    }
+
+    // التحصيلات (أظهر فقط غير المقترن بسحب محفظة أو باسترداد)
+    $collections = Collection::with('sale')
+        ->whereHas('sale', fn($q)=>$q->where('customer_id',$this->customerId))
+        ->orderBy('created_at')->get();
+
+    $collectionKeys = [];
+    foreach ($collections as $c) {
+        $evt = $this->minuteKey($c->created_at ?? $c->payment_date);
+        $k   = $evt . '|' . $this->moneyKey($c->amount);
+        $collectionKeys[$k] = ($collectionKeys[$k] ?? 0) + 1;
+    }
+
+    foreach ($collections as $c) {
+        $evt = $this->minuteKey($c->created_at ?? $c->payment_date);
+        $k   = $evt . '|' . $this->moneyKey($c->amount);
+
+        if (($refundCreditKeys[$k] ?? 0) > 0) { $refundCreditKeys[$k]--; continue; }
+        if (($walletWithdrawAvail[$k] ?? 0) > 0) { $walletWithdrawAvail[$k]--; continue; }
+
+        $sumC += (float)$c->amount;
+    }
+
+    // معاملات المحفظة في الإجماليات (تجاهل إيداع استرداد sales-auto واذهب حسب الإقران)
+    foreach ($walletTx as $tx) {
+        $evt  = $this->minuteKey($tx->created_at);
+        $k    = $evt . '|' . $this->moneyKey($tx->amount);
+        $type = strtolower((string)$tx->type);
+        $ref  = Str::lower((string)$tx->reference);
+
+        if ($type === 'deposit') {
+            if (Str::contains($ref, 'sales-auto|group:')) continue;
+            if (($refundCreditKeys[$k] ?? 0) > 0) { $refundCreditKeys[$k]--; continue; }
+            $sumC += (float)$tx->amount;
+        } elseif ($type === 'withdraw') {
+            if (($collectionKeys[$k] ?? 0) > 0) { $collectionKeys[$k]--; continue; }
+            $sumD += (float)$tx->amount;
+        }
+    }
+
+    return round($sumC - $sumD, 2); // نفس منطق كشف الحساب (له − عليه)
+}
+private function minuteKey($dt): string {
+    try { return \Carbon\Carbon::parse($dt)->format('Y-m-d H:i'); }
+    catch (\Throwable $e) { return (string)$dt; }
+}
+private function moneyKey($n): string {
+    return number_format((float)$n, 2, '.', '');
+}
+
+
 
     public function getTransactionsProperty()
     {
