@@ -609,40 +609,45 @@ $this->amount_paid = null; // لا ترث المدفوع عند التكرار
         $intermediaries = Intermediary::select('id','name')->orderBy('name')->get();
         $accounts = Account::select('id','name')->orderBy('name')->get();
 
-        // إجماليات الموظف الحالي
-     // كون موحّد للمجموعات لموظفك وعلى نفس فلاتر الجدول
+// === إجمالي المبيعات/الأرباح على مستوى مجموعات البيع (كما هو) ===
 $groupUniverse = (clone $salesQuery)
     ->where('user_id', Auth::id())
     ->where('status','!=','Void')
     ->withSum('collections','amount')
     ->get(['id','sale_group_id','usd_sell','amount_paid','sale_profit']);
 
-// اجمع حسب sale_group_id فقط، وإن كان null ادمجه على مفتاح اصطناعي لكل مجموعة
-$byGroup = $groupUniverse->groupBy(function($s){
-    return $s->sale_group_id ?: ('solo:'.$s->id); // يمنع دمج سطور غير مرتبطة خطأً
-});
+$byGroup = $groupUniverse->groupBy(fn($s) => $s->sale_group_id ?: ('solo:'.$s->id));
 
-$totalAmount = $totalReceived = $totalPending = $totalProfit = 0.0;
-
+$totalAmount = $totalReceivedDummy = $totalProfit = 0.0;
 foreach ($byGroup as $g) {
     $sell = (float) $g->sum('usd_sell');
-    if ($sell <= 0) continue;                        // تجاهل السالب/الصفري
-    $collected = (float) $g->sum('amount_paid') +    // مدفوع مباشر
-                 (float) $g->sum('collections_sum_amount'); // تحصيلات
+    if ($sell <= 0) continue;
+    $collected = (float) $g->sum('amount_paid') + (float) $g->sum('collections_sum_amount');
+    $profit    = (float) $g->sum('sale_profit');
 
-    $profit = (float) $g->sum('sale_profit');
-
-    $totalAmount   += $sell;
-    $totalReceived += min($collected, $sell);        // سقف عند البيع
-    $totalProfit   += $profit;
+    $totalAmount += $sell;
+    // احتفظ بالقيمة القديمة كمرجع فقط (لن نستخدمها للكارت)
+    $totalReceivedDummy += min($collected, $sell);
+    $totalProfit += $profit;
 }
 
-$totalPending = max($totalAmount - $totalReceived, 0);
+// === غير المحصَّل من منطق كشف الحساب: مجموع (-الصافي) لكل العملاء في نطاق الفلاتر ===
+$customerIds = (clone $salesQuery)
+    ->where('user_id', Auth::id())
+    ->pluck('customer_id')->filter()->unique();
 
-$this->totalAmount   = $totalAmount;
-$this->totalReceived = $totalReceived;
-$this->totalPending  = $totalPending;
-$this->totalProfit   = $totalProfit;
+$totalPending = 0.0;
+foreach ($customerIds as $cid) {
+    $net = $this->netForCustomer((int)$cid); // الصافي له − عليه
+    if ($net < 0) { $totalPending += abs($net); }   // دين علينا فقط
+}
+
+// === المحصَّل = إجمالي المبيعات − غير المحصَّل (بنفس منطق كشف الحساب) ===
+$this->totalAmount   = round($totalAmount, 2);
+$this->totalPending  = round($totalPending, 2);
+$this->totalReceived = max(round($totalAmount - $totalPending, 2), 0);
+$this->totalProfit   = round($totalProfit, 2);
+
 
 
         // تحديد شهر المرجع من الفلاتر إن كانت داخل نفس الشهر، وإلا شهر اليوم
@@ -1530,6 +1535,103 @@ private function shouldSyncCommission(\App\Models\Sale $sale): bool
         ->exists();
 
     return !$exists;
+}
+// ===== Helpers: نفس منطق كشف الحساب =====
+private function minuteKey($dt): string {
+    try { return \Carbon\Carbon::parse($dt)->format('Y-m-d H:i'); }
+    catch (\Throwable $e) { return (string)$dt; }
+}
+private function moneyKey($n): string {
+    return number_format((float)$n, 2, '.', '');
+}
+
+/* الصافي للعميل = له − عليه (يتجنّب ازدواج الاسترداد/التحصيل ويقرن سحب المحفظة بتحصيل مطابق) */
+private function netForCustomer(int $customerId): float
+{
+    $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
+    $void   = ['void','cancel','canceled','cancelled'];
+
+    $sumD = 0.0; // عليه
+    $sumC = 0.0; // له
+
+    // كل معاملات المحفظة
+    $walletTx = \App\Models\WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id',$customerId))
+        ->orderBy('created_at')->get();
+
+    // مفاتيح سحوبات المحفظة لمعادلة التحصيلات
+    $walletWithdrawAvail = [];
+    foreach ($walletTx as $t) {
+        if (strtolower((string)$t->type) === 'withdraw') {
+            $k = $this->minuteKey($t->created_at).'|'.$this->moneyKey($t->amount);
+            $walletWithdrawAvail[$k] = ($walletWithdrawAvail[$k] ?? 0) + 1;
+        }
+    }
+
+    // المبيعات + مفاتيح الاسترداد
+    $refundCreditKeys = [];
+    $sales = \App\Models\Sale::where('customer_id',$customerId)->orderBy('created_at')->get();
+
+    foreach ($sales as $s) {
+        $st = mb_strtolower(trim((string)$s->status));
+
+        if (!in_array($st,$refund,true) && !in_array($st,$void,true)) {
+            $sumD += (float)($s->invoice_total_true ?? $s->usd_sell ?? 0);
+        }
+
+        if (in_array($st,$refund,true) || in_array($st,$void,true)) {
+            $amt = (float)($s->refund_amount ?? 0);
+            if ($amt <= 0) { $amt = abs((float)($s->usd_sell ?? 0)); }
+            $sumC += $amt;
+
+            $keyR = $this->minuteKey($s->created_at).'|'.$this->moneyKey($amt);
+            $refundCreditKeys[$keyR] = ($refundCreditKeys[$keyR] ?? 0) + 1;
+        }
+
+        if ((float)$s->amount_paid > 0) {
+            $sumC += (float)$s->amount_paid;
+        }
+    }
+
+    // التحصيلات (واستبعاد ما يقابله استرداد أو سحب محفظة مطابق)
+    $collections = \App\Models\Collection::with('sale')
+        ->whereHas('sale', fn($q)=>$q->where('customer_id',$customerId))
+        ->orderBy('created_at')->get();
+
+    $collectionKeys = [];
+    foreach ($collections as $c) {
+        $evt = $this->minuteKey($c->created_at ?? $c->payment_date);
+        $k   = $evt.'|'.$this->moneyKey($c->amount);
+        $collectionKeys[$k] = ($collectionKeys[$k] ?? 0) + 1;
+    }
+
+    foreach ($collections as $c) {
+        $evt = $this->minuteKey($c->created_at ?? $c->payment_date);
+        $k   = $evt.'|'.$this->moneyKey($c->amount);
+
+        if (($refundCreditKeys[$k] ?? 0) > 0) { $refundCreditKeys[$k]--; continue; }
+        if (($walletWithdrawAvail[$k] ?? 0) > 0) { $walletWithdrawAvail[$k]--; continue; }
+
+        $sumC += (float)$c->amount;
+    }
+
+    // معاملات المحفظة المتبقية
+    foreach ($walletTx as $tx) {
+        $evt  = $this->minuteKey($tx->created_at);
+        $k    = $evt.'|'.$this->moneyKey($tx->amount);
+        $type = strtolower((string)$tx->type);
+        $ref  = \Illuminate\Support\Str::lower((string)$tx->reference);
+
+        if ($type === 'deposit') {
+            if (\Illuminate\Support\Str::contains($ref, 'sales-auto|group:')) continue; // إيداع استرداد آلي يُعرض كمبيعات
+            if (($refundCreditKeys[$k] ?? 0) > 0) { $refundCreditKeys[$k]--; continue; }
+            $sumC += (float)$tx->amount;
+        } elseif ($type === 'withdraw') {
+            if (($collectionKeys[$k] ?? 0) > 0) { $collectionKeys[$k]--; continue; }
+            $sumD += (float)$tx->amount;
+        }
+    }
+
+    return round($sumC - $sumD, 2); // الصافي
 }
 
 
