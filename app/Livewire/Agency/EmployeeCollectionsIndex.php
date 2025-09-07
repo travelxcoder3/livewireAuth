@@ -4,7 +4,8 @@ namespace App\Livewire\Agency;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
-use App\Models\{Sale, Collection, User};
+use App\Models\{Sale, Collection, User, WalletTransaction};
+use Illuminate\Support\Str;
 
 class EmployeeCollectionsIndex extends Component
 {
@@ -34,14 +35,13 @@ class EmployeeCollectionsIndex extends Component
             $first = $empSales->first();
             $emp   = $first?->employee;
             // احسب المتبقي لكل مجموعة بيع (sale_group_id أو id)
-            $remaining = $empSales->groupBy(fn($s)=>$s->sale_group_id ?? $s->id)
-                ->sum(function($group){
-                    $total = $group->sum('usd_sell');
-                    $paid  = $group->sum('amount_paid');
-                    $coll  = $group->flatMap->collections->sum('amount');
-                    $rem   = $total - $paid - $coll;
-                    return $rem > 0 ? $rem : 0;
-                });
+            $customerIds = $empSales->pluck('customer_id')->unique()->filter();
+            $remaining = 0.0;
+            foreach ($customerIds as $cid) {
+                $net = $this->netForCustomer((int)$cid); // نفس دالة Show
+                if ($net < 0) { $remaining += abs($net); }
+            }
+
 
             $lastCol = $empSales->flatMap->collections->sortByDesc('payment_date')->first();
 
@@ -72,10 +72,106 @@ class EmployeeCollectionsIndex extends Component
 
 
     public function resetFilters()
+    {
+        $this->name = '';
+        $this->from = null;
+        $this->to   = null;
+    }
+
+    private function netForCustomer(int $customerId): float
 {
-    $this->name = '';
-    $this->from = null;
-    $this->to   = null;
+    $refund = ['refund-full','refund_full','refund-partial','refund_partial','refunded','refund'];
+    $void   = ['void','cancel','canceled','cancelled'];
+
+    $sumD = 0.0; // عليه
+    $sumC = 0.0; // له
+
+    // جميع معاملات محفظة العميل
+    $walletTx = WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id', $customerId))
+        ->orderBy('created_at')->get();
+
+    // مفاتيح سحوبات المحفظة (لمعادلة التحصيلات)
+    $walletWithdrawAvail = [];
+    foreach ($walletTx as $t) {
+        if (strtolower((string)$t->type) === 'withdraw') {
+            $k = $this->minuteKey($t->created_at) . '|' . $this->moneyKey($t->amount);
+            $walletWithdrawAvail[$k] = ($walletWithdrawAvail[$k] ?? 0) + 1;
+        }
+    }
+
+    // المبيعات
+    $refundCreditKeys = [];
+    $sales = Sale::where('customer_id', $customerId)->orderBy('created_at')->get();
+
+    foreach ($sales as $s) {
+        $st = mb_strtolower(trim((string)$s->status));
+
+        if (!in_array($st, $refund, true) && !in_array($st, $void, true)) {
+            $sumD += (float)($s->invoice_total_true ?? $s->usd_sell ?? 0);
+        }
+
+        if (in_array($st, $refund, true) || in_array($st, $void, true)) {
+            $amt = (float)($s->refund_amount ?? 0);
+            if ($amt <= 0) { $amt = abs((float)($s->usd_sell ?? 0)); }
+            $sumC += $amt;
+
+            $keyR = $this->minuteKey($s->created_at) . '|' . $this->moneyKey($amt);
+            $refundCreditKeys[$keyR] = ($refundCreditKeys[$keyR] ?? 0) + 1;
+        }
+
+        if ((float)$s->amount_paid > 0) {
+            $sumC += (float)$s->amount_paid;
+        }
+    }
+
+    // التحصيلات (غير المقترنة بسحب محفظة أو باسترداد)
+    $collections = Collection::with('sale')
+        ->whereHas('sale', fn($q)=>$q->where('customer_id',$customerId))
+        ->orderBy('created_at')->get();
+
+    $collectionKeys = [];
+    foreach ($collections as $c) {
+        $evt = $this->minuteKey($c->created_at ?? $c->payment_date);
+        $k   = $evt . '|' . $this->moneyKey($c->amount);
+        $collectionKeys[$k] = ($collectionKeys[$k] ?? 0) + 1;
+    }
+
+    foreach ($collections as $c) {
+        $evt = $this->minuteKey($c->created_at ?? $c->payment_date);
+        $k   = $evt . '|' . $this->moneyKey($c->amount);
+
+        if (($refundCreditKeys[$k] ?? 0) > 0) { $refundCreditKeys[$k]--; continue; }
+        if (($walletWithdrawAvail[$k] ?? 0) > 0) { $walletWithdrawAvail[$k]--; continue; }
+
+        $sumC += (float)$c->amount;
+    }
+
+    // معاملات المحفظة (تجاهل إيداعات الاسترداد sales-auto)
+    foreach ($walletTx as $tx) {
+        $evt  = $this->minuteKey($tx->created_at);
+        $k    = $evt . '|' . $this->moneyKey($tx->amount);
+        $type = strtolower((string)$tx->type);
+        $ref  = Str::lower((string)$tx->reference);
+
+        if ($type === 'deposit') {
+            if (Str::contains($ref, 'sales-auto|group:')) continue;
+            if (($refundCreditKeys[$k] ?? 0) > 0) { $refundCreditKeys[$k]--; continue; }
+            $sumC += (float)$tx->amount;
+        } elseif ($type === 'withdraw') {
+            if (($collectionKeys[$k] ?? 0) > 0) { $collectionKeys[$k]--; continue; }
+            $sumD += (float)$tx->amount;
+        }
+    }
+
+    return round($sumC - $sumD, 2); // الصافي (له − عليه)
+}
+
+private function minuteKey($dt): string {
+    try { return \Carbon\Carbon::parse($dt)->format('Y-m-d H:i'); }
+    catch (\Throwable $e) { return (string)$dt; }
+}
+private function moneyKey($n): string {
+    return number_format((float)$n, 2, '.', '');
 }
 
 }
