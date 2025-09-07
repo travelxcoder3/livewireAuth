@@ -10,7 +10,7 @@ use App\Models\Provider;
 use App\Models\Sale;
 use App\Models\ProviderPayment; // غيّر الاسم إن كان مختلفًا
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Schema;
 #[Layout('layouts.agency')]
 class ProvidersList extends Component
 {
@@ -56,40 +56,69 @@ class ProvidersList extends Component
     }
 
 
-    private function buildStats(Provider $p): array
+private function buildStats(Provider $p): array
 {
     $currency = Auth::user()->agency->currency ?? 'SAR';
 
-    // إجلب الحقول التي قد تحمل التكلفة بأي اسم
-    $sales = \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
-        ->where('provider_id', $p->id)
-        ->get(['usd_buy','sar_buy','buy_price','provider_cost','sale_date','created_at','id']);
+    $from = $this->fromDate ? \Carbon\Carbon::parse($this->fromDate)->startOfDay() : null;
+    $to   = $this->toDate   ? \Carbon\Carbon::parse($this->toDate)->endOfDay()   : null;
 
-    // آخر عملية
+    // أعمدة محتملة للتكلفة (رتّب حسب عملتك)
+    $candidates = ['sar_buy','usd_buy','buy_price','provider_cost'];
+    $available  = array_values(array_filter($candidates, fn($c)=> Schema::hasColumn('sales',$c)));
+    $selectCols = array_merge($available, ['sale_date','created_at','id']);
+
+    // المبيعات ضمن النطاق (أو كلها)
+    $salesQ = \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
+        ->where('provider_id', $p->id);
+
+    if ($from || $to) {
+        $salesQ->whereBetween('created_at', [
+            ($from? $from->format('Y-m-d H:i:s') : '0001-01-01 00:00:00'),
+            ($to  ? $to->format('Y-m-d H:i:s')   : '9999-12-31 23:59:59'),
+        ]);
+    }
+
+    $sales = $salesQ->orderBy('created_at')->get($selectCols);
+
+    // آخر عملية للعرض/الفلترة
     $last = $sales->sortByDesc(fn($s)=>[$s->sale_date ?? $s->created_at, $s->id])->first();
     $lastDate = $last?->sale_date ?? $last?->created_at;
 
-    // مجموع تكلفة المزود = له
-    $totalCost = (float)$sales->sum(function($s){
-        return (float)($s->usd_buy ?? $s->sar_buy ?? $s->buy_price ?? $s->provider_cost ?? 0);
+    // مجموع تكلفة المزود
+    $totalCost = (float)$sales->sum(function($s) use ($available){
+        foreach ($available as $col) {
+            $v = $s->{$col};
+            if ($v !== null) return (float)$v;
+        }
+        return 0.0;
     });
 
-    // مدفوعات للمزوّد = عليه (على الوكالة)
-    $paid = (float)ProviderPayment::where('agency_id', Auth::user()->agency_id)
-        ->where('provider_id', $p->id)
-        ->sum('amount');
+    // مدفوعات المزود ضمن النطاق (إن وُجد الجدول)
+    $paid = 0.0;
+    if (Schema::hasTable('provider_payments') && Schema::hasColumn('provider_payments','amount')) {
+        $payQ = \App\Models\ProviderPayment::where('agency_id', Auth::user()->agency_id)
+            ->where('provider_id', $p->id);
+        if ($from || $to) {
+            $payQ->whereBetween('created_at', [
+                ($from? $from->format('Y-m-d H:i:s') : '0001-01-01 00:00:00'),
+                ($to  ? $to->format('Y-m-d H:i:s')   : '9999-12-31 23:59:59'),
+            ]);
+        }
+        $paid = (float)$payQ->sum('amount');
+    }
 
-    // صافي المستحق للمزوّد = التكلفة - المدفوع
     $net = round($totalCost - $paid, 2);
 
     return [
         'currency'               => $currency,
         'remaining_for_provider' => max($net, 0),   // له
         'remaining_for_agency'   => max(-$net, 0),  // عليه
-        'net_balance'            => $net,           // موجب = دائن، سالب = مدين
+        'net_balance'            => $net,           // موجب دائن، سالب مدين
         'last_sale_date'         => $lastDate ? \Carbon\Carbon::parse($lastDate)->format('Y-m-d') : '-',
     ];
 }
+
 
 
 
