@@ -24,7 +24,7 @@
       <div class="text-right">
         <div class="text-xs text-gray-500">الرصيد الحالي</div>
         <div class="text-2xl font-extrabold">
-          {{ number_format($this->displayBalance, 2) }}
+          {{ number_format($wallet->balance,2) }}
           <span class="text-sm text-gray-500">{{ $customer->agency?->currency }}</span>
         </div>
 

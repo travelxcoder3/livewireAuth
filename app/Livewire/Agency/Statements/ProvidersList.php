@@ -57,27 +57,40 @@ class ProvidersList extends Component
 
 
     private function buildStats(Provider $p): array
-    {
-        $currency = Auth::user()->agency->currency ?? 'USD';
+{
+    $currency = Auth::user()->agency->currency ?? 'SAR';
 
-        $sales = \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
-            ->where('provider_id', $p->id)
-            ->get(['usd_sell','sale_date','created_at','id']);
+    // إجلب الحقول التي قد تحمل التكلفة بأي اسم
+    $sales = \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
+        ->where('provider_id', $p->id)
+        ->get(['usd_buy','sar_buy','buy_price','provider_cost','sale_date','created_at','id']);
 
-        $last = $sales->sortByDesc(fn($s)=>[$s->sale_date ?? $s->created_at, $s->id])->first();
-        $lastDate = $last?->sale_date ?? $last?->created_at;
+    // آخر عملية
+    $last = $sales->sortByDesc(fn($s)=>[$s->sale_date ?? $s->created_at, $s->id])->first();
+    $lastDate = $last?->sale_date ?? $last?->created_at;
 
-        // ✅ كل الرصيد للمزوّد = مجموع usd_sell
-        $totalForProvider = (float)$sales->sum('usd_sell');
+    // مجموع تكلفة المزود = له
+    $totalCost = (float)$sales->sum(function($s){
+        return (float)($s->usd_buy ?? $s->sar_buy ?? $s->buy_price ?? $s->provider_cost ?? 0);
+    });
 
-        return [
-            'currency'               => $currency,
-            'remaining_for_provider' => $totalForProvider, // له
-            'remaining_for_agency'   => 0.0,               // لا يوجد دفع مقابل
-            'net_balance'            => $totalForProvider, // >0 لصالح المزوّد دائمًا
-            'last_sale_date'         => $lastDate ? \Carbon\Carbon::parse($lastDate)->format('Y-m-d') : '-',
-        ];
-    }
+    // مدفوعات للمزوّد = عليه (على الوكالة)
+    $paid = (float)ProviderPayment::where('agency_id', Auth::user()->agency_id)
+        ->where('provider_id', $p->id)
+        ->sum('amount');
+
+    // صافي المستحق للمزوّد = التكلفة - المدفوع
+    $net = round($totalCost - $paid, 2);
+
+    return [
+        'currency'               => $currency,
+        'remaining_for_provider' => max($net, 0),   // له
+        'remaining_for_agency'   => max(-$net, 0),  // عليه
+        'net_balance'            => $net,           // موجب = دائن، سالب = مدين
+        'last_sale_date'         => $lastDate ? \Carbon\Carbon::parse($lastDate)->format('Y-m-d') : '-',
+    ];
+}
+
 
 
     private function passDateFilter(?string $lastSaleDate): bool
@@ -131,14 +144,15 @@ class ProvidersList extends Component
         }
 
             $employees = $query->paginate(10)->through(function($p) use ($stats){
-                $st = $stats[$p->id];
-                $p->details_url       = route('agency.statements.provider', $p->id);
-                $p->currency          = $st['currency'];
-                $p->last_sale_date    = $st['last_sale_date'];
-                $p->balance_total     = $st['net_balance'];           // مباشرةً
-                $p->account_type_text = 'دائن';                       // دائمًا لصالح المزوّد
-                return $p;
-            });
+            $st = $stats[$p->id];
+            $p->details_url       = route('agency.statements.provider', $p->id);
+            $p->currency          = $st['currency'];
+            $p->last_sale_date    = $st['last_sale_date'];
+            $p->balance_total     = $st['net_balance'];
+            $p->account_type_text = $st['net_balance'] >= 0 ? 'دائن' : 'مدين';
+            return $p;
+        });
+
 
 
         return view('livewire.agency.statements.providers-list', [

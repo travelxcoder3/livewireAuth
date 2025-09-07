@@ -55,20 +55,27 @@ public function rebuild(): void
     $sales = \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
         ->where('provider_id', $this->provider->id)
         ->when($this->fromDate || $this->toDate, fn($q)=>$q->whereBetween('created_at',[$from,$to]))
-        ->orderBy('created_at')->get(['usd_buy','created_at','id']);   // خذ تكلفة الشراء من المزود
+        ->orderBy('created_at')
+        ->get(['usd_buy','sar_buy','buy_price','provider_cost','created_at','id']);
 
-    foreach ($sales as $s) {
-        $rows[] = [
-            'no'=>0,
-            'date'=>\Carbon\Carbon::parse($s->created_at)->format('Y-m-d H:i:s'),
-            'desc'=>'قيمة خدمة من المزوّد',
-            'status'=>'شراء',
-            'debit'=>0.0,
-            'credit'=>(float)($s->usd_sell ?? 0), // 'credit'=>(float)($s->usd_buy ?? 0),    // له = تكلفة المزود فقط
-            'balance'=>0.0,
-            '_ord'=>1,
-        ];
-    }
+foreach ($sales as $s) {
+    $cost = (float)($s->usd_buy
+        ?? $s->sar_buy
+        ?? $s->buy_price
+        ?? $s->provider_cost
+        ?? 0);
+
+    $rows[] = [
+        'no'=>0,
+        'date'=>\Carbon\Carbon::parse($s->created_at)->format('Y-m-d H:i:s'),
+        'desc'=>'قيمة خدمة من المزوّد',
+        'status'=>'شراء',
+        'debit'=>0.0,
+        'credit'=>$cost,      // له = تكلفة المزود بالعملة المعتمدة
+        'balance'=>0.0,
+        '_ord'=>1,
+    ];
+}
 
     usort($rows, fn($a,$b)=>[$a['date'],$a['_ord']] <=> [$b['date'],$b['_ord']]);
 

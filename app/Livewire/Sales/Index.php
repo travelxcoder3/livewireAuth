@@ -1089,10 +1089,7 @@ public function confirmRequestEdit(int $id): void
             'sale_group_id' => $this->sale_group_id,
         ]);
 
-// 1) مزامنة العمولة أولاً
-app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
-
-// 2) إن كانت Refund: أودِع الاسترداد الآن
+// 1) إن كانت Refund: إيداع الاسترداد أولاً ثم تصفية الدين من الرصيد
 if ($this->customer_id && (
     in_array($sale->status, ['Refund-Full','Refund-Partial']) || (float)$sale->usd_sell < 0
 )) {
@@ -1103,7 +1100,6 @@ if ($this->customer_id && (
             'sales-auto|group:'.($sale->sale_group_id ?: $sale->id)
         );
 }
-
 
 // 2) مزامنة العمولة
 
@@ -1446,18 +1442,16 @@ $this->amount_paid = null; // انسجاماً مع القاعدة الجديد�
 $sale->refresh();
 
 
-// 1) مزامنة العمولة أولاً
-app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
-
-// 2) ثم إيداع الاسترداد إن وُجد
+// 1) إن كان Refund: أودِع أولاً ثم صفِّ الدين فوراً من الرصيد
 if ($sale->customer_id && (
     in_array($sale->status, ['Refund-Full','Refund-Partial']) || (float)$sale->usd_sell < 0
 )) {
     app(\App\Services\CustomerCreditService::class)
-        ->autoDepositToWallet((int)$sale->customer_id, Auth::user()->agency_id,
-            'sales-auto|group:'.($sale->sale_group_id ?: $sale->id));
+        ->autoDepositToWallet((int)$sale->customer_id, Auth::user()->agency_id, 'sales-auto|group:'.($sale->sale_group_id ?: $sale->id));
 }
 
+// 2) مزامنة العمولة
+app(\App\Services\CustomerCreditService::class)->syncCustomerCommission($sale);
 
 // 2.1) تصفية شاملة تسبق تصفية العملية الحالية
 // 2.1) لا تصفِّ المحفظة إذا كانت العملية استرداد/سالب

@@ -220,81 +220,8 @@
                 </div>
             </div>
 
-            {{-- شريط التحكم لهذا الشهر --}}
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-              <div class="flex items-center gap-2">
-                <input type="number" min="2000" wire:model.lazy="colYear"  class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-                <input type="number" min="1" max="12" wire:model.lazy="colMonth" class="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button"
-                        class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-xl text-sm w-full sm:w-auto"
-                        @click="$dispatch('confirm:open',{
-                            title:'نسخ قواعد التحصيل من الشهر السابق',
-                            message:'سيتم جلب القواعد من الشهر السابق كمسودة لهذا الشهر (غير محفوظة). متابعة؟',
-                            confirmText:'نعم، انسخ',
-                            cancelText:'إلغاء',
-                            onConfirm:'copyCollectorFromPrev',
-                            icon:'info'
-                        })">
-                  نسخ من الشهر السابق
-                </button>
+        
 
-                <x-primary-button type="button" :gradient="true" class="w-full sm:w-auto"
-                    @click="$dispatch('confirm:open',{
-                        title:'إنشاء قواعد هذا الشهر وقفلها',
-                        message:'سيتم إنشاء قواعد التحصيل لهذا الشهر وفق القيم الحالية ثم قفلها نهائيًا. متابعة؟',
-                        confirmText:'نعم، أنشئ واقفل',
-                        cancelText:'إلغاء',
-                        onConfirm:'createCollectorForMonth',
-                        icon:'warn'
-                    })">
-                  إنشاء ضبط هذا الشهر وقفله
-                </x-primary-button>
-              </div>
-            </div>
-
-            <div class="overflow-x-auto rounded-xl ring-1 ring-black/5">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50">
-                        <tr class="text-right">
-                            <th class="px-3 py-2">طريقة التحصيل</th>
-                            <th class="px-3 py-2 w-40">نوع العمولة</th>
-                            <th class="px-3 py-2 w-40">القيمة</th>
-                            <th class="px-3 py-2 w-24">الحالة</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 bg-white">
-                        @foreach([1,2,3,4,5,6,7,8] as $m)
-                            @php $row = $collectorMonthly[$m]; @endphp
-                            <tr>
-                                <td class="px-3 py-2 font-medium">{{ $labels[$m] }}</td>
-                                <td class="px-3 py-2">
-                                    <x-select-field
-                                        label=""
-                                        :options="$typeOptions"
-                                        wire-model="collectorMonthly.{{ $m }}.type"
-                                        placeholder="نوع العمولة"
-                                        container-class="relative m-0"
-                                        :disabled="$row['exists']"
-                                        compact
-                                    />
-                                </td>
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.0001" min="0" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-right"
-                                           wire:model.lazy="collectorMonthly.{{ $m }}.value"
-                                           @disabled($row['exists'])>
-                                </td>
-                                <td class="px-3 py-2">
-                                    <span class="text-xs px-2 py-1 rounded-lg {{ $row['exists'] ? 'bg-gray-100 text-gray-600' : 'bg-[rgb(var(--primary-600))] text-white' }}">
-                                        {{ $row['exists'] ? 'مقفول' : 'جديد' }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
         </div>
 
         <!-- تبويب سياسة دين الموظف -->
