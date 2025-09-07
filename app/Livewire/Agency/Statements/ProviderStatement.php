@@ -55,7 +55,7 @@ public function rebuild(): void
     $sales = \App\Models\Sale::where('agency_id', Auth::user()->agency_id)
         ->where('provider_id', $this->provider->id)
         ->when($this->fromDate || $this->toDate, fn($q)=>$q->whereBetween('created_at',[$from,$to]))
-        ->orderBy('created_at')->get(['usd_sell','created_at','id']);
+        ->orderBy('created_at')->get(['usd_buy','created_at','id']);   // خذ تكلفة الشراء من المزود
 
     foreach ($sales as $s) {
         $rows[] = [
@@ -64,7 +64,7 @@ public function rebuild(): void
             'desc'=>'قيمة خدمة من المزوّد',
             'status'=>'شراء',
             'debit'=>0.0,
-            'credit'=>(float)($s->usd_sell ?? 0), // له
+            'credit'=>(float)($s->usd_sell ?? 0), // 'credit'=>(float)($s->usd_buy ?? 0),    // له = تكلفة المزود فقط
             'balance'=>0.0,
             '_ord'=>1,
         ];
@@ -82,7 +82,7 @@ public function rebuild(): void
     $this->statement=$rows;
     $this->sumDebit  = 0.0;                                   // لا مدفوعات
     $this->sumCredit = round(array_sum(array_column($rows,'credit')),2);
-    $this->net       = $this->sumCredit;                      // له − عليه
+    $this->net = round($this->sumCredit - $this->sumDebit, 2);
     $this->selectedRows=[];
 }
 

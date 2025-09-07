@@ -7,6 +7,7 @@ use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
 use App\Models\{Customer, Wallet, WalletTransaction, Sale};
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema; // 👈 جديد
 
 class CustomerWallet extends Component
 {
@@ -149,8 +150,12 @@ public function getDebtProperty(): float
     $cid = (int)$this->customerId;
 
     // 1) المشتريات + المدفوع
-    $sales = \App\Models\Sale::where('customer_id', $cid)
-        ->get(['usd_sell','invoice_total_true','status','amount_paid','refund_amount']);
+   $cols = ['usd_sell','status','amount_paid','refund_amount'];
+    if (Schema::hasColumn('sales', 'invoice_total_true')) {
+        $cols[] = 'invoice_total_true';
+    }
+    $sales = \App\Models\Sale::where('customer_id', $cid)->get($cols);
+
 
     $debit  = 0.0; // عليه
     $credit = 0.0; // له
