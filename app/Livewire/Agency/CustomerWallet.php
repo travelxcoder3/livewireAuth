@@ -93,11 +93,12 @@ class CustomerWallet extends Component
             $wallet->update(['balance' => $newBalance]);
         });
 
-        $autoApplied = 0.0;
-        if ($typeAtSubmit === 'deposit') {
-            $autoApplied = app(\App\Services\CustomerCreditService::class)
-                ->autoPayAllFromWallet($this->customer);
-        }
+       $autoApplied = 0.0;
+            if ($typeAtSubmit === 'deposit') {
+                $autoApplied = app(\App\Services\CustomerCreditService::class)
+                    ->autoPayAllFromWallet($this->customer, (float)$this->amount);
+            }
+
 
         $this->wallet->refresh();
         $this->reset(['type','amount','reference','note']);
@@ -143,51 +144,53 @@ class CustomerWallet extends Component
         $this->wallet->refresh();
         session()->flash('message', $applied > 0 ? 'تمت التصفية: '.number_format($applied,2) : 'لا يوجد ما يُصفّى');
     }
+public function getDebtProperty(): float
+{
+    $cid = (int)$this->customerId;
 
-    public function getDebtProperty(): float
-    {
-        $groups = Sale::with('collections')
-            ->where('customer_id', $this->customerId)
-            ->get()
-            ->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+    // 1) المشتريات + المدفوع
+    $sales = \App\Models\Sale::where('customer_id', $cid)
+        ->get(['usd_sell','invoice_total_true','status','amount_paid','refund_amount']);
 
-        $debt = 0.0;
+    $debit  = 0.0; // عليه
+    $credit = 0.0; // له
 
-        $effectiveTotal = function ($s): float {
-            $status = mb_strtolower(trim((string)$s->status));
+    foreach ($sales as $s) {
+        $st = mb_strtolower((string)$s->status);
+        $total = (float)($s->invoice_total_true ?? $s->usd_sell ?? 0);
 
-            if ($status === 'void' || str_contains($status, 'cancel')) {
-                return 0.0;
-            }
-
-            if (str_contains($status, 'refund')) {
-                $refund = (float) ($s->refund_amount ?? 0);
-                if ($refund <= 0) {
-                    $refund = abs((float) ($s->usd_sell ?? 0));
-                }
-                return -1 * $refund;
-            }
-
-            return (float) ($s->invoice_total_true ?? $s->usd_sell ?? 0);
-        };
-
-        foreach ($groups as $g) {
-            $remaining = $g->sum(function ($s) use ($effectiveTotal) {
-                $total  = $effectiveTotal($s);
-                $paid   = max(0.0, (float) ($s->amount_paid ?? 0));
-                $coll   = max(0.0, (float) $s->collections->sum('amount'));
-                return $total - $paid - $coll;
-            });
-
-            if ($remaining > 0) {
-                $debt += $remaining;
-            }
+        if ($st === 'void' || str_contains($st,'cancel')) {
+            // تجاهل
+        } elseif (str_contains($st,'refund')) {
+            // الاسترداد يُحسب له
+            $credit += (float)($s->refund_amount ?? 0) > 0
+                ? (float)$s->refund_amount
+                : abs((float)$s->usd_sell);
+        } else {
+            $debit  += max(0.0, $total);
         }
 
-        // 👇 أي رصيد سالب يُعتبر ديناً إضافياً
-        $neg = max(0.0, -1 * (float)($this->wallet->balance ?? 0));
-        return round($debt + $neg, 2);
+        $credit += max(0.0, (float)($s->amount_paid ?? 0));
+    }
+
+    // 2) التحصيلات كلها
+    $credit += (float)\App\Models\Collection::whereHas('sale', fn($q)=>$q->where('customer_id',$cid))
+                ->sum('amount');
+
+    // 3) عمولات العميل من معاملات المحفظة فقط
+    $wq = \App\Models\WalletTransaction::whereHas('wallet', fn($q)=>$q->where('customer_id',$cid));
+    $credit += (float)(clone $wq)->where('type','deposit')
+                ->where('reference','like','commission:group:%')->sum('amount');
+    $debit  += (float)(clone $wq)->where('type','withdraw')
+                ->where('reference','like','commission:group:%')->sum('amount');
+
+    // 4) أي رصيد سالب بالمحفظة يُعد ديناً إضافياً
+    $neg = max(0.0, -1 * (float)($this->wallet->balance ?? 0));
+
+    $debtNow = max(0.0, ($debit + $neg) - $credit);
+    return round($debtNow, 2);
 }
+
 
     public function getDisplayBalanceProperty(): float
     {

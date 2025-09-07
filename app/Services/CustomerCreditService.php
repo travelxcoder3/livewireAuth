@@ -100,7 +100,10 @@ public function autoDepositToWallet(int $customerId, int $agencyId, string $who 
     if ($amount <= 0) return null;
 
     DB::transaction(function () use ($customerId, $agencyId, $amount, $who) {
-        $customer = \App\Models\Customer::where('agency_id', $agencyId)->findOrFail($customerId);
+        // بعد الإيداع: صفِّ بحد أقصى مبلغ الإيداع
+$customer = \App\Models\Customer::where('agency_id', $agencyId)->findOrFail($customerId);
+$this->autoPayAllFromWallet($customer, (float)$amount);
+
         $wallet   = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
 
         $wallet->balance = bcadd($wallet->balance, $amount, 2);
@@ -194,25 +197,27 @@ Collection::create([
 
 
 // CustomerCreditService.php
-public function autoPayAllFromWallet(Customer $customer): float
+public function autoPayAllFromWallet(Customer $customer, float $maxToApply = INF): float
 {
     $totalApplied = 0.0;
 
-    DB::transaction(function () use ($customer, &$totalApplied) {
+    DB::transaction(function () use ($customer, &$totalApplied, $maxToApply) {
 
-        // اقفل المحفظة ثم اجلب الرصيد
         $wallet = $customer->wallet()->lockForUpdate()->firstOrCreate([], ['balance' => 0]);
         $balance = (float) $wallet->balance;
         if ($balance <= 0) return;
 
-        // اجلب المبيعات غير المسددة بالأقدمية
+        $limit = is_finite($maxToApply) ? max(0.0, $maxToApply) : PHP_FLOAT_MAX;
+
         $sales = Sale::with('collections')
             ->where('customer_id', $customer->id)
-          //  ->whereIn('payment_method', ['part','all'])
-            ->orderBy('id')  // بدّلها بتاريخ البيع إن وُجد عمود
+            ->orderBy('id')
             ->get();
-foreach ($sales as $sale) {
-    $gid = (string)($sale->sale_group_id ?: $sale->id);
+
+        foreach ($sales as $sale) {
+            if ($totalApplied >= $limit) break;
+
+            $gid = (string)($sale->sale_group_id ?: $sale->id);
 
             $totalPaid = (float) ($sale->amount_paid ?? 0);
             $collected = (float) $sale->collections->sum('amount');
@@ -220,7 +225,8 @@ foreach ($sales as $sale) {
             $remaining = max(0.0, $totalDue - $totalPaid - $collected);
             if ($remaining <= 0) continue;
 
-            $use = min($remaining, $balance);
+            $available = min($balance, $limit - $totalApplied);
+            $use = min($remaining, $available);
             if ($use <= 0) continue;
 
             // حركة سحب من المحفظة
@@ -253,7 +259,7 @@ foreach ($sales as $sale) {
             ]);
 
 
-            $totalApplied += $use;
+    $totalApplied += $use;
         }
     });
 
