@@ -334,47 +334,41 @@ class CustomerSalesReport extends Component
         $totals = $this->computeTotals($sales);
 
         $byService = $sales->groupBy('service_type_id')->map(function ($group) {
-            $sell   = (float) $group->sum('usd_sell');
-            $buy    = (float) $group->sum('usd_buy');
-            $profit = $sell - $buy;
+    $sell   = (float) $group->sum('usd_sell');
+    $buy    = (float) $group->sum('usd_buy');
+    $profit = $sell - $buy;
 
-            $paid = (float) $group->map(function ($s) {
-                if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
-                return (float) ($s->amount_paid ?? 0)
-                     + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
-            })->sum();
+    $remaining = $this->remainingFromRows($group); // ✅ نفس منطق المبيعات
 
-            return [
-                'count'    => $group->count(),
-                'sell'     => $sell,
-                'buy'      => $buy,
-                'profit'   => $profit,
-                'remaining'=> $sell - $paid,
-                'firstRow' => $group->first(),
-            ];
-        });
+    return [
+        'count'    => $group->count(),
+        'sell'     => $sell,
+        'buy'      => $buy,
+        'profit'   => $profit,
+        'remaining'=> $remaining,              // ✅ صحيح الآن
+        'firstRow' => $group->first(),
+    ];
+});
 
-        $byMonth = $sales->groupBy(fn($s) => Carbon::parse($s->sale_date)->format('Y-m'))
-            ->map(function ($group) {
-                $sell   = (float) $group->sum('usd_sell');
-                $buy    = (float) $group->sum('usd_buy');
-                $profit = $sell - $buy;
 
-                $paid = (float) $group->map(function ($s) {
-                    if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
-                    return (float) ($s->amount_paid ?? 0)
-                         + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
-                })->sum();
+       $byMonth = $sales->groupBy(fn($s) => Carbon::parse($s->sale_date)->format('Y-m'))
+    ->map(function ($group) {
+        $sell   = (float) $group->sum('usd_sell');
+        $buy    = (float) $group->sum('usd_buy');
+        $profit = $sell - $buy;
 
-                return [
-                    'count'    => $group->count(),
-                    'sell'     => $sell,
-                    'buy'      => $buy,
-                    'profit'   => $profit,
-                    'remaining'=> $sell - $paid,
-                ];
-            })
-            ->sortKeysDesc();
+        $remaining = $this->remainingFromRows($group); // ✅
+
+        return [
+            'count'    => $group->count(),
+            'sell'     => $sell,
+            'buy'      => $buy,
+            'profit'   => $profit,
+            'remaining'=> $remaining,           // ✅
+        ];
+    })
+    ->sortKeysDesc();
+
 
         return [
             'agency'    => $agency,
@@ -395,14 +389,21 @@ class CustomerSalesReport extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(12);
 
-        $sales->each(function ($sale) {
-            $paid = in_array($sale->status, ['Refund-Full','Refund-Partial'])
-                ? 0
-                : (float)($sale->amount_paid ?? 0) + (float)$sale->collections_sum_amount;
+       $sales->each(function ($sale) {
+            $st = strtolower((string)($sale->status ?? ''));
+            $isRefundOrVoid = in_array($st, [
+                'refund-full','refund_full','refund-partial','refund_partial',
+                'refunded','refund','void','cancel','canceled','cancelled'
+            ], true);
 
-            $sale->remaining_payment = (float)($sale->usd_sell ?? 0) - $paid;
+            $sell = (float)($sale->usd_sell ?? 0);
+            $paid = $isRefundOrVoid ? 0.0
+                : (float)($sale->amount_paid ?? 0) + (float)($sale->collections_sum_amount ?? 0);
+
+            $sale->remaining_payment = ($isRefundOrVoid || $sell <= 0) ? 0.0 : max($sell - $paid, 0);
             $sale->effective_customer_commission = $this->effectiveCustomerCommission($sale);
         });
+
 
         $data = $this->prepareReportData();
         $perCustomer = $this->perCustomerRows();
@@ -514,5 +515,38 @@ class CustomerSalesReport extends Component
     private function moneyKey($n): string {
         return number_format((float)$n, 2, '.', '');
     }
+
+
+    // المؤجَّل = Σ max( netSell(group) - netPaid(group), 0 ) وتجاهُل المجموعات ذات netSell ≤ 0
+private function remainingFromRows($rows): float
+{
+    $sum = 0.0;
+
+    foreach ($rows as $s) {
+        $st = strtolower(trim((string)($s->status ?? '')));
+
+        // تجاهل الاسترداد والإلغاء
+        if (in_array($st, [
+            'refund-full','refund_full','refund-partial','refund_partial',
+            'refunded','refund','void','cancel','canceled','cancelled'
+        ], true)) {
+            continue;
+        }
+
+        $sell = (float)($s->usd_sell ?? 0);
+        if (round($sell, 2) <= 0.00) {
+            continue; // لا دين بدون بيع
+        }
+
+        // مبالغ السداد المرتبطة بالعملية
+        $paid = (float)($s->amount_paid ?? 0) + (float)($s->collections_sum_amount ?? 0);
+
+        $sum += max($sell - $paid, 0);
+    }
+
+    return round($sum, 2);
+}
+
+
 
 }
