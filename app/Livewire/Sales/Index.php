@@ -1305,12 +1305,24 @@ $this->amount_paid = null; // انسجاماً مع القاعدة الجديد�
         return in_array($this->status, ['Refund-Full', 'Refund-Partial', 'Void']);
     }
 
-    protected function onlyReferenceFilter()
-    {
-        $filters = $this->filters;
-        $activeFilters = array_filter($filters, fn($v) => !empty($v));
-        return count($activeFilters) === 1 && isset($activeFilters['reference']);
-    }
+protected function onlyReferenceFilter()
+{
+    $filters = $this->filters;
+
+    // تجاهل scope من العدّ
+    unset($filters['scope']);
+
+    // فعّل فقط العناصر غير الفارغة
+    $active = array_filter(
+        $filters,
+        fn($v) => !is_null($v) && $v !== ''
+    );
+
+    return isset($filters['reference'])
+        && $filters['reference'] !== ''
+        && count($active) === 1;
+}
+
 
     public function edit($id)
     {
