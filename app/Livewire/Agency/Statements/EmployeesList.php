@@ -163,9 +163,9 @@ class EmployeesList extends Component
             return (object) [
                 'id'               => $u->id,
                 'name'             => $u->name ?? $u->user_name,
-                'account_type_text'=> $st['net_balance'] > 0 
-                                        ? 'مدين' 
-                                        : ($st['net_balance'] < 0 ? 'دائن' : 'متزن'),
+               'account_type_text'=> $st['net_balance'] > 0 
+                                        ? 'دائن' 
+                                        : ($st['net_balance'] < 0 ? 'مدين' : 'متزن'),
                 'balance_total'    => abs($st['net_balance'] ?? 0),
                 'currency'         => $st['currency'] ?? 'USD',
                 'last_sale_date'   => $st['last_sale_date'] ?? '-',   // <== هنا نضمن القيمة

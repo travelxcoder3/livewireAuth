@@ -292,8 +292,7 @@ class CustomersList extends Component
             $c->currency          = $st['currency'];
             $c->last_sale_date    = $st['last_sale_date'] ?: '-';
             $c->balance_total     = abs($st['net_balance']); 
-            $c->account_type_text = $st['net_balance'] > 0 ? 'مدين' : ($st['net_balance'] < 0 ? 'دائن' : 'متزن');
-
+$c->account_type_text = $st['net_balance'] > 0 ? 'دائن' : ($st['net_balance'] < 0 ? 'مدين' : 'متزن');
             return $c;
         });
 
