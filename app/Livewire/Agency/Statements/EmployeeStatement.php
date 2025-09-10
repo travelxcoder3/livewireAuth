@@ -105,8 +105,13 @@ class EmployeeStatement extends Component
         }
 
         // فرز احتياطي ثم الرصيد التراكمي
-        usort($rows, fn($a,$b)=>[$a['date'],$a['_ord']] <=> [$b['date'],$b['_ord']]);
-
+        usort($rows, function($a, $b) {
+            $dateCompare = strcmp($a['date'], $b['date']);
+            if ($dateCompare === 0) {
+                return $a['_ord'] <=> $b['_ord'];
+            }
+            return $dateCompare;
+        });
         $bal = 0.0; $i = 1;
         foreach ($rows as &$r) {
             $bal += (($r['debit'] ?? 0.0) - ($r['credit'] ?? 0.0));
