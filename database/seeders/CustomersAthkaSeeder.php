@@ -3414,7 +3414,7 @@ class CustomersAthkaSeeder extends Seeder
 
     for ($agencyId = 1; $agencyId <= 7; $agencyId++) {
             foreach ($names as $name) {
-                Provider::create([
+                Customer::create([
                     'agency_id' => $agencyId,
                     'name'      => $name,
                     'status'    => 'approved',
