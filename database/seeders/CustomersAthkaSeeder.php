@@ -3412,17 +3412,14 @@ class CustomersAthkaSeeder extends Seeder
 
         ];
 
-        foreach ($names as $name) {
-            Customer::create([
-                'agency_id' => 3,
-                'name' => $name,
-                'email' => null,
-                'phone' => null,
-                'address' => null,
-                'has_commission' => false,
-                'account_type' => 'individual', 
-                'opening_balance' => 0,
-            ]);
+    for ($agencyId = 1; $agencyId <= 7; $agencyId++) {
+            foreach ($names as $name) {
+                Provider::create([
+                    'agency_id' => $agencyId,
+                    'name'      => $name,
+                    'status'    => 'approved',
+                ]);
+            }
         }
     }
 }
