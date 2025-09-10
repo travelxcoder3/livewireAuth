@@ -3417,7 +3417,6 @@ class CustomersAthkaSeeder extends Seeder
                 Customer::create([
                     'agency_id' => $agencyId,
                     'name'      => $name,
-                    'status'    => 'approved',
                 ]);
             }
         }
