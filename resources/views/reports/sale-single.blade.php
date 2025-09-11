@@ -3,17 +3,20 @@
     use Illuminate\Support\Facades\Log;
 
     // اتجاه وطريقة عرض العملة
-    $dir      = 'rtl';
-    $agency   = $sale->agency ?? null;
+    $dir = 'rtl';
+    $agency = $sale->agency ?? null;
     // ألوان الثيم (سيف ساني في حال ما وصل $colors من الخارج)
-    $colors = isset($colors) && is_array($colors) ? $colors : [
-        'primary-100' => '209,250,229',
-        'primary-500' => '16,185,129',
-        'primary-600' => '5,150,105',
-    ];
+    $colors =
+        isset($colors) && is_array($colors)
+            ? $colors
+            : [
+                'primary-100' => '209,250,229',
+                'primary-500' => '16,185,129',
+                'primary-600' => '5,150,105',
+            ];
 
     $currency = $agency->currency ?? 'USD';
-    $money    = fn($v) => number_format((float)$v, 2) . ' ' . $currency;
+    $money = fn($v) => number_format((float) $v, 2) . ' ' . $currency;
 
     // الشعار Base64 → data URL
     $logoPath = null;
@@ -34,36 +37,78 @@
         }
     }
 
-    // حسابات بسيطة للعرض المالي
-    $usdSell      = (float) ($sale->usd_sell ?? 0);
-    $usdBuy       = (float) ($sale->usd_buy  ?? 0);
-    $amountPaid   = (float) ($sale->amount_paid ?? 0);
-    $grossProfit  = $usdSell - $usdBuy;
-    $remaining    = max($usdSell - $amountPaid, 0);
-@endphp
+    // حسابات صحيحة للعرض المالي - تشمل جميع المدفوعات
+    $usdSell = (float) ($sale->usd_sell ?? 0);
+    $usdBuy = (float) ($sale->usd_buy ?? 0);
 
+    // حساب المدفوعات بشكل صحيح (من sale + من collections)
+    $paidFromSales = (float) ($sale->amount_paid ?? 0);
+    $paidFromCollections = (float) ($sale->collections_sum_amount ?? 0);
+
+    // إذا كانت العملية مرتجعة (كلياً أو جزئياً)، لا نحسب المدفوعات
+    if (in_array($sale->status ?? '', ['Refund-Full', 'Refund-Partial'])) {
+        $paidFromSales = 0;
+        $paidFromCollections = 0;
+    }
+
+    $totalPaid = $paidFromSales + $paidFromCollections;
+    $grossProfit = $usdSell - $usdBuy;
+    $remaining = max($usdSell - $totalPaid, 0);
+@endphp
 <!DOCTYPE html>
 <html lang="ar" dir="{{ $dir }}">
+
 <head>
     <meta charset="UTF-8">
     <title>تفاصيل عملية البيع – {{ $sale->reference ?: ($sale->pnr ?: '—') }}</title>
     <style>
-        :root{
-            --primary-100: {{ $colors['primary-100'] ?? '209,250,229' }}; /* rgb */
-            --primary-500: {{ $colors['primary-500'] ?? '16,185,129'  }}; /* rgb */
-            --primary-600: {{ $colors['primary-600'] ?? '5,150,105'   }}; /* rgb */
+        :root {
+            --primary-100: {{ $colors['primary-100'] ?? '209,250,229' }};
+            /* rgb */
+            --primary-500: {{ $colors['primary-500'] ?? '16,185,129' }};
+            /* rgb */
+            --primary-600: {{ $colors['primary-600'] ?? '5,150,105' }};
+            /* rgb */
 
             --border: #e5e7eb;
             --muted: #6b7280;
             --heading: #111827;
         }
 
-        @page { size: A4; margin: 14mm 10mm; }
-        * { box-sizing: border-box; }
-        body { font-family: DejaVu Sans, Tahoma, Arial, sans-serif; color:#111827; line-height: 1.55; font-size: 13px; }
-        h1,h2,h3 { margin:0 0 10px; color: var(--heading); font-weight: 800; }
-        .muted { color: var(--muted); font-size: 12px; }
-        .hr { border:0; border-top: 2px solid var(--border); margin: 10px 0; }
+        @page {
+            size: A4;
+            margin: 14mm 10mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: DejaVu Sans, Tahoma, Arial, sans-serif;
+            color: #111827;
+            line-height: 1.55;
+            font-size: 13px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0 0 10px;
+            color: var(--heading);
+            font-weight: 800;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .hr {
+            border: 0;
+            border-top: 2px solid var(--border);
+            margin: 10px 0;
+        }
 
         /* الهيدر: شعار + اسم الوكالة فقط */
         .invoice-head {
@@ -72,25 +117,71 @@
             border-bottom: 3px solid rgb(var(--primary-600));
             margin-bottom: 14px;
         }
-        .brand { display:flex; align-items:center; justify-content:center; gap:12px; }
-        .brand img { height: 48px; width:auto; }
-        .brand .name { font-size: 20px; font-weight:800; color: #111827; }
 
-        .title { text-align:center; margin-top: 6px; }
-        .title h2 { margin:0; font-size: 20px; color: #111827; }
-        .title .muted { margin-top: 2px; }
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
 
-        table { width:100%; border-collapse:collapse; margin-top:8px; }
-        th,td { border:1px solid var(--border); padding:6px 8px; font-size:12px; text-align:right; }
+        .brand img {
+            height: 48px;
+            width: auto;
+        }
+
+        .brand .name {
+            font-size: 20px;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .title {
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        .title h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #111827;
+        }
+
+        .title .muted {
+            margin-top: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 6px 8px;
+            font-size: 12px;
+            text-align: right;
+        }
+
         th {
             background: rgba(var(--primary-100), .1);
             color: #111827;
             font-weight: 700;
         }
 
-        .blue { color:#2563eb; }
-        .green{ color:#16a34a; }
-        .red  { color:#dc2626; }
+        .blue {
+            color: #2563eb;
+        }
+
+        .green {
+            color: #16a34a;
+        }
+
+        .red {
+            color: #dc2626;
+        }
 
         .section {
             margin: 14px 0 8px;
@@ -103,38 +194,54 @@
 
         .card {
             position: relative;
-            border:1px solid var(--border);
-            border-radius:8px;
-            padding:10px;
-            margin-bottom:12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
             background: #fff;
         }
-        .card:before{
-            content:"";
-            position:absolute;
-            inset-inline-start:0; top:0; bottom:0;
-            width:4px;
+
+        .card:before {
+            content: "";
+            position: absolute;
+            inset-inline-start: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
             background: rgb(var(--primary-600));
-            border-radius:8px 0 0 8px;
+            border-radius: 8px 0 0 8px;
         }
 
-        .totals table td, .totals table th { border:none; }
-        .totals table { border:1px solid var(--border); }
+        .totals table td,
+        .totals table th {
+            border: none;
+        }
+
+        .totals table {
+            border: 1px solid var(--border);
+        }
+
         .totals thead th {
             background: rgba(var(--primary-100), .1);
-            color:#111827;
-            border-bottom:1px solid var(--border);
+            color: #111827;
+            border-bottom: 1px solid var(--border);
         }
 
-        .footer-note { margin-top: 10px; text-align: center; font-size: 11px; color: var(--muted); }
+        .footer-note {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 11px;
+            color: var(--muted);
+        }
     </style>
 </head>
+
 <body>
 
     {{-- شعار + اسم الوكالة --}}
     <div class="invoice-head">
         <div class="brand">
-            @if(!empty($logoDataUrl))
+            @if (!empty($logoDataUrl))
                 <img src="{{ $logoDataUrl }}" alt="Logo">
             @endif
             <div class="name">{{ $agency->name ?? 'اسم الوكالة' }}</div>
@@ -147,7 +254,7 @@
         <div class="muted">تاريخ التوليد: {{ now()->format('Y-m-d') }}</div>
     </div>
 
-    <hr class="hr"/>
+    <hr class="hr" />
 
     {{-- بطاقة تفاصيل العملية --}}
     <div class="card">
@@ -192,7 +299,6 @@
                 </tr>
             </tbody>
         </table>
-
         <div class="section">القيم المالية</div>
         <table class="totals" style="margin-top:10px;">
             <thead>
@@ -209,9 +315,9 @@
                     <td class="blue">{{ $money($usdSell) }}</td>
                     <td class="blue">{{ $money($usdBuy) }}</td>
                     <td class="{{ $grossProfit >= 0 ? 'green' : 'red' }}">{{ $money($grossProfit) }}</td>
-                    <td class="green">{{ $money($amountPaid) }}</td>
+                    <td class="green">{{ $money($totalPaid) }}</td> <!-- تغيير هنا -->
                     <td>
-                        @if($remaining > 0)
+                        @if ($remaining > 0)
                             <span class="red">{{ $money($remaining) }}</span>
                         @else
                             <span class="muted">تم السداد بالكامل</span>
@@ -222,7 +328,7 @@
         </table>
     </div>
 
-    <hr class="hr"/>
+    <hr class="hr" />
 
     <div class="footer-note">
         تم إنشاء هذا التقرير بواسطة نظام إدارة وكالات السفر – {{ $agency->name ?? '' }}<br>
@@ -230,4 +336,5 @@
     </div>
 
 </body>
+
 </html>
