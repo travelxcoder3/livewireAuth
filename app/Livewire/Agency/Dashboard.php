@@ -158,17 +158,24 @@ $monthlyCostQuery = Sale::where('agency_id', $agencyId)->where('status','!=','Vo
         ->sum('usd_buy');
     
     // الأرباح = SUM(usd_sell - usd_buy)
+// عند حساب المبيعات المحققة، تأكد من استبعاد العمليات الملغاة
 $monthRows = Sale::where('agency_id', $agencyId)
     ->when(!$isAdmin, fn($q) => $q->where('user_id', $userId))
-    ->where('status','!=','Void')
+    ->where('status', '!=', 'Void') // تجاهل العمليات الملغاة
     ->whereBetween('sale_date', [$start, $end])
-    ->withSum('collections','amount')
+    ->withSum('collections', 'amount')
     ->get(['id','usd_sell','amount_paid','sale_profit','sale_group_id','status']);
+
 
 $groupedM = $monthRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
 
 $monthProfit = 0.0;
 foreach ($groupedM as $g) {
+    // تجاهل المبيعات التي تم إلغاؤها
+    if ($g->contains(fn($row) => $row->status === 'Void')) {
+        continue;
+    }
+
     $netSell = (float) $g->sum('usd_sell');
     $gProfit = (float) $g->sum('sale_profit');
 
@@ -185,6 +192,7 @@ foreach ($groupedM as $g) {
         $monthProfit += $gProfit;
     }
 }
+
 $this->monthlyProfit = round($monthProfit, 2);
 
 
@@ -758,10 +766,11 @@ $total = (float) \App\Models\Sale::where('agency_id', $aid)
         bool $isAdmin,
         ?int $serviceTypeId = null   // 👈 جديد
     ): array {
-        $q = \App\Models\Sale::query()
-            ->where('agency_id', $agencyId)
-            ->whereBetween('sale_date', [$startDate, $endDate])
-            ->with(['collections']);
+       $q = \App\Models\Sale::query()
+    ->where('agency_id', $agencyId)
+    ->where('status', '!=', 'Void') // استبعاد العمليات الملغاة
+    ->whereBetween('sale_date', [$startDate, $endDate])
+    ->with(['collections']);
     
         // فلترة المستخدم (تُفعل فقط إذا لم يكن أدمن)
         if (!$isAdmin && $userId) {

@@ -104,16 +104,16 @@ $this->serviceTypeOptions = ServiceType::whereHas('list', fn($q)=>$q->where('nam
     }
 
     protected function salesBase()
-    {
-       return $this->salesDateRange(Sale::query())
-            ->where('agency_id', $this->agencyId())
-            ->where('status','!=','Void')
-            ->when($this->service_type_id, fn($q)=>$q->where('service_type_id',$this->service_type_id))
-            ->when($this->customer_id,    fn($q)=>$q->where('customer_id',$this->customer_id))
-            ->when($this->provider_id,    fn($q)=>$q->where('provider_id',$this->provider_id))
-            ->when($this->employee_id,    fn($q)=>$q->where('user_id',$this->employee_id));
+{
+    return $this->salesDateRange(Sale::query())
+        ->where('agency_id', $this->agencyId())
+        ->where('status', '!=', 'Void') // إضافة هذا الشرط لتصفية العمليات الملغاة
+        ->when($this->service_type_id, fn($q) => $q->where('service_type_id', $this->service_type_id))
+        ->when($this->customer_id, fn($q) => $q->where('customer_id', $this->customer_id))
+        ->when($this->provider_id, fn($q) => $q->where('provider_id', $this->provider_id))
+        ->when($this->employee_id, fn($q) => $q->where('user_id', $this->employee_id));
+}
 
-    }
 
     // KPIs
     public function kpis()
@@ -131,18 +131,19 @@ $this->serviceTypeOptions = ServiceType::whereHas('list', fn($q)=>$q->where('nam
             ->sum(DB::raw('ABS(usd_sell)'));
 
         // التحصيلات (انتبه لتأهيل created_at باسم الجدول لتفادي التعارض)
-        $collections = DB::table('collections')
-            ->join('sales','collections.sale_id','=','sales.id')
-            ->where('sales.agency_id', $this->agencyId())
-            ->when($this->service_type_id, fn($q)=>$q->where('sales.service_type_id',$this->service_type_id))
-            ->when($this->customer_id,    fn($q)=>$q->where('sales.customer_id',$this->customer_id))
-            ->when($this->provider_id,    fn($q)=>$q->where('sales.provider_id',$this->provider_id))
-            ->when($this->employee_id,    fn($q)=>$q->where('sales.user_id',$this->employee_id))
-            ->whereBetween('collections.created_at', [
-                Carbon::parse($this->date_from)->startOfDay(),
-                Carbon::parse($this->date_to)->endOfDay(),
-            ])
-            ->sum('collections.amount');
+         $collections = DB::table('collections')
+        ->join('sales', 'collections.sale_id', '=', 'sales.id')
+        ->where('sales.agency_id', $this->agencyId())
+        ->where('sales.status', '!=', 'Void') // تصفية العمليات الملغاة
+        ->when($this->service_type_id, fn($q) => $q->where('sales.service_type_id', $this->service_type_id))
+        ->when($this->customer_id, fn($q) => $q->where('sales.customer_id', $this->customer_id))
+        ->when($this->provider_id, fn($q) => $q->where('sales.provider_id', $this->provider_id))
+        ->when($this->employee_id, fn($q) => $q->where('sales.user_id', $this->employee_id))
+        ->whereBetween('collections.created_at', [
+            Carbon::parse($this->date_from)->startOfDay(),
+            Carbon::parse($this->date_to)->endOfDay(),
+        ])
+        ->sum('collections.amount');
 
 
         $positiveSales = (clone $salesBase)->where('usd_sell','>',0)->sum('usd_sell');
@@ -221,29 +222,29 @@ foreach ($empIds as $uid) {
     }
 
     public function querySalesGrouped()
-    {
-        $grp = $this->groupColumn();
-        $q = $this->salesBase();
+{
+    $grp = $this->groupColumn();
+    $q = $this->salesBase();
 
-       if ($grp) {
-                return $q->selectRaw("{$grp['column']} as key_id,
-                                    COUNT(*) as row_count,
-                                    SUM(usd_sell) as total,
-                                    SUM(usd_buy)  as cost,
-                                    SUM(commission) as commission,
-                                    SUM(usd_sell - usd_buy) as net_profit")
-                        ->groupBy($grp['column'])
-                        ->paginate(10);
-            }
-
-            return $q->with(['service:id,label','customer:id,name','provider:id,name'])
-                    ->selectRaw("id, sale_date, service_type_id, customer_id, provider_id,
-                                usd_sell as total, usd_buy as cost, commission,
-                                (usd_sell - usd_buy) as net_profit")
-                    ->orderByDesc('sale_date')->orderByDesc('id')
-                    ->paginate(10);
-
+    if ($grp) {
+        return $q->selectRaw("{$grp['column']} as key_id,
+                            COUNT(*) as row_count,
+                            SUM(usd_sell) as total,
+                            SUM(usd_buy)  as cost,
+                            SUM(commission) as commission,
+                            SUM(usd_sell - usd_buy) as net_profit")
+            ->groupBy($grp['column'])
+            ->paginate(10);
     }
+
+    return $q->with(['service:id,label', 'customer:id,name', 'provider:id,name'])
+        ->selectRaw("id, sale_date, service_type_id, customer_id, provider_id,
+                    usd_sell as total, usd_buy as cost, commission,
+                    (usd_sell - usd_buy) as net_profit")
+        ->orderByDesc('sale_date')->orderByDesc('id')
+        ->paginate(10);
+}
+
 
     public function render()
     {
