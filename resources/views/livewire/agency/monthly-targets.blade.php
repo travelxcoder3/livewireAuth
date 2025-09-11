@@ -98,7 +98,7 @@
                         <tr>
                             <th class="px-2 py-1">الموظف</th>
                             <th class="px-2 py-1">الهدف الأساسي</th>
-                            <th class="px-2 py-1 hidden md:table-cell">هدف المقارنة</th>
+                            <th class="px-2 py-1 hidden md:table-cell"> الهدف البيعي</th>
                             <th class="px-2 py-1 hidden md:table-cell">العمولة الخاصة للموظف</th>
                             <th class="px-2 py-1 text-center hidden sm:table-cell">قفل</th>
                             <th class="px-2 py-1 w-24 text-center">حفظ</th>
