@@ -1,133 +1,186 @@
+<?php
 
-@php
-    use App\Services\ThemeService;
-    use App\Tables\CollectionTableEmployee;
-    $themeName = strtolower(Auth::user()?->agency?->theme_color ?? 'emerald');
-    $colors = ThemeService::getCurrentThemeColors($themeName);
+namespace App\Livewire\Agency;
 
-    $fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white text-xs peer';
-    $labelClass = 'absolute right-3 -top-2.5 px-1 bg-white text-xs text-gray-500 transition-all peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[rgb(var(--primary-600))]';
-    $containerClass = 'relative mt-1';
+use App\Models\Sale;
+use App\Models\DynamicListItemSub;
+use Livewire\Component;
+use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
+use Illuminate\Support\Facades\DB;
 
-    $columns = CollectionTableEmployee::columns();
-    // تجهيز البيانات مع القيم المحسوبة
-$rows = $sales->map(function($customer, $i) {
-    $customer->index = $i + 1;
-    return $customer;
-});
-
+use App\Models\Customer;
+class EmployeeCollectionsAll extends Component
+{
 
 
-    // معالجة url في actions
-    foreach ($columns as &$col) {
-        if (isset($col['actions'])) {
-            foreach ($col['actions'] as &$action) {
-                if (isset($action['url']) && is_callable($action['url'])) {
-                    foreach ($rows as $row) {
-                        $row->{$action['type'].'_url'} = $action['url']($row);
-                    }
-                    $action['url'] = null;
-                }
-            }
-        }
-    }
-@endphp
+    use WithPagination;
 
-<div class="space-y-6">
-    <!-- عنوان الصفحة -->
-    <h2 class="text-xl font-bold text-gray-700 border-b pb-2" style="color: rgb(var(--primary-700));">
-        عرض التحصيلات  
-    </h2>
+    public $search = '';
+    public $startDate;
+    public $endDate;
+    public $customerType = '';
+    public $debtType = '';
+    public $responseType = '';
+    public $relationType = '';
+    public $movementType = '';
 
-    <!-- الفلاتر -->
-    <div class="bg-white rounded-xl shadow-md p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="{{ $containerClass }}">
-            <input type="text" wire:model.live="search" class="{{ $fieldClass }}" >
-            <label class="{{ $labelClass }}">بحث</label>
-        </div>
-
-        <div class="{{ $containerClass }}">
-            <select wire:model.live="customerType" class="{{ $fieldClass }}">
-                <option value="">كل أنواع العملاء</option>
-                @foreach($customerTypes as $item)
-                    <option value="{{ $item->id }}">{{ $item->label }}</option>
-                @endforeach
-            </select>
-            <label class="{{ $labelClass }}">نوع العميل</label>
-        </div>
-
-        <div class="{{ $containerClass }}">
-            <select wire:model.live="debtType" class="{{ $fieldClass }}">
-                <option value="">كل أنواع المديونية</option>
-                @foreach($debtTypes as $item)
-                    <option value="{{ $item->id }}">{{ $item->label }}</option>
-                @endforeach
-            </select>
-            <label class="{{ $labelClass }}">نوع المديونية</label>
-        </div>
-
-        <div class="{{ $containerClass }}">
-            <input type="date" wire:model.live="startDate" class="{{ $fieldClass }}">
-            <label class="{{ $labelClass }}">من تاريخ</label>
-        </div>
-
-        <div class="{{ $containerClass }}">
-            <input type="date" wire:model.live="endDate" class="{{ $fieldClass }}">
-            <label class="{{ $labelClass }}">إلى تاريخ</label>
-        </div>
-
-        <div class="col-span-1 md:col-span-4 mt-2">
-  <!-- موبايل: شبكة 2x2 -->
-  <div class="md:hidden grid grid-cols-2 gap-2 w-full">
-    <x-primary-button href="{{ route('agency.collections.all') }}" class="w-full text-xs" gradient>
-      إظهار جميع التحصيلات
-    </x-primary-button>
-    <x-primary-button href="{{ route('agency.customer-credit-balances') }}" class="w-full text-xs" gradient>
-      إظهار جميع المديونية
-    </x-primary-button>
-    <x-primary-button href="{{ route('agency.customer-accounts') }}" class="w-full text-xs col-span-2" gradient>
-      عرض جميع حسابات العملاء
-    </x-primary-button>
-    <button wire:click="resetFilters"
-      class="w-full text-xs bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded shadow col-span-2">
-      إعادة تعيين الفلاتر
-    </button>
-  </div>
-
-
-  <!-- ديسكتوب/تابلت: صف يمين -->
-  <div class="hidden md:flex justify-end flex-wrap gap-2">
-    <x-primary-button href="{{ route('agency.collections.all') }}" class="text-sm" gradient>
-        حركة العمليات
-    </x-primary-button>
-    <x-primary-button href="{{ route('agency.customer-credit-balances') }}" class="text-sm" gradient>
-      عمليات الاسترجاع   
-    </x-primary-button>
-    <x-primary-button href="{{ route('agency.customer-accounts') }}" class="text-sm" gradient>
-      عرض عمليات العملاء
-    </x-primary-button>
+ public function render()
+{
+    // ✅ جلب كل المبيعات المرتبطة بالعملاء مع علاقاتها
+    $allSales = Sale::with([
+        'customer',
+        'collections' => function ($q) {
+            $q->latest();
+        },
+        'collections.customerType',
+        'collections.debtType',
+        'collections.customerResponse',
+        'collections.customerRelation'
+    ])
+        ->where('agency_id', Auth::user()->agency_id)
     
-    <button wire:click="resetFilters"
-        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl shadow transition duration-300 text-sm">
-        إعادة تعيين الفلاتر
-    </button>
+        ->when($this->search, fn($q) =>
+            $q->whereHas('customer', fn($q2) =>
+                $q2->where('name', 'like', "%{$this->search}%")
+            )
+        )
+        ->when($this->startDate, fn($q) =>
+            $q->whereDate('sale_date', '>=', $this->startDate)
+        )
+        ->when($this->endDate, fn($q) =>
+            $q->whereDate('sale_date', '<=', $this->endDate)
+        )
+        ->get();
 
-  </div>
-</div>
+    // ✅ جمع المبيعات حسب العميل ثم حسب sale_group_id
+    $groupedByCustomer = $allSales->groupBy('customer_id');
+logger()->info('تجميع العمليات لكل عميل', [
+    'count' => $groupedByCustomer->count(),
+    'ids' => $groupedByCustomer->keys()->toArray(),
+]);
+
+  $customers = $groupedByCustomer->map(function ($sales, $customerId) {
+    $firstSale = $sales->first();
+
+if (!$firstSale || !$firstSale->customer) {
+    return null;
+}
+
+$customer = $firstSale->customer;
 
 
-<!-- جدول التحصيلات -->
-<div class="col-span-1 md:col-span-4 mt-4">
-  <div class="bg-white rounded-xl shadow-md">
-    <div class="overflow-x-auto w-full">
-      <div class="inline-block min-w-full align-middle">
-        <!-- امنع الانضغاط على الموبايل ثم اسمح بالتمدد على الشاشات الأكبر -->
-        <div class="min-w-[1100px] md:min-w-0">
-          <x-data-table :rows="$rows" :columns="$columns" />
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-     
-</div>
+    $groupedByGroup = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
+
+$totalCustomerOwes = 0;
+$totalCompanyOwes = 0;
+
+// حساب الرصيد الفعلي من العمليات
+$rawCredit = 0;
+
+foreach ($groupedByGroup as $group) {
+    $remaining = $group->sum(fn($s) => $s->usd_sell - $s->amount_paid - $s->collections->sum('amount'));
+
+    if ($remaining > 0) {
+        $totalCustomerOwes += $remaining;
+    } elseif ($remaining < 0) {
+        $rawCredit += abs($remaining);
+    }
+}
+
+// طرح ما تم استخدامه لتسديد عملاء آخرين
+$usedCredit = \App\Models\Collection::whereHas('sale', function($q) use ($customerId) {
+        $q->where('customer_id', $customerId);
+    })
+    ->where('note', 'like', '%تسديد من رصيد الشركة للعميل%')
+    ->sum('amount');
+
+$totalCompanyOwes = max(0, $rawCredit - $usedCredit);
+
+
+
+    // ✅ إذا لم يكن عليه شيء إطلاقًا (صفر) نهمل السطر
+    if ($totalCustomerOwes == 0 && $totalCompanyOwes == 0) return null;
+
+    $latestCollection = $sales->flatMap->collections->sortByDesc('payment_date')->first();
+
+return (object) [
+    'id' => $customer->id,
+    'name' => $customer->name,
+    'remaining_for_customer' => $totalCustomerOwes,
+    'remaining_for_company' => $totalCompanyOwes,
+    'net_due' => $totalCustomerOwes - $totalCompanyOwes,
+    'last_payment' => optional($latestCollection)->payment_date,
+    'customer_type' => optional($latestCollection?->customerType)->label ?? '-',
+    'debt_type' => optional($latestCollection?->debtType)->label ?? '-',
+    'customer_response' => optional($latestCollection?->customerResponse)->label ?? '-',
+    'customer_relation' => optional($latestCollection?->customerRelation)->label ?? '-',
+    'first_sale_id' => $sales->first()->id,
+];
+})->filter()->values();
+
+
+
+
+      return view('livewire.agency.employee-collections-all', [
+        'sales' => $customers,
+        'customerTypes' => $this->getOptions('نوع العميل'),
+        'debtTypes' => $this->getOptions('نوع المديونية'),
+        'responseTypes' => $this->getOptions('تجاوب العميل'),
+        'relationTypes' => $this->getOptions('نوع ارتباطه بالشركة'),
+    ])->layout('layouts.agency');
+}
+
+
+
+    protected function getOptions($label)
+    {
+        return DynamicListItemSub::whereHas('parentItem', fn($q) =>
+            $q->where('label', $label)
+        )->get();
+    }
+
+    public function resetFilters()
+    {
+        $this->search = '';
+        $this->startDate = '';
+        $this->endDate = '';
+        $this->customerType = '';
+        $this->debtType = '';
+        $this->responseType = '';
+        $this->relationType = '';
+        $this->movementType = '';
+    }
+
+
+
+// احسب رصيد الشركة للعميل (بعد طرح ما استُخدم لسداد عمليات أخرى)
+protected function calcCompanyOwes(int $customerId): float
+{
+    $sales = \App\Models\Sale::with(['collections'])
+        ->where('agency_id', Auth::user()->agency_id)
+        ->where('customer_id', $customerId)
+        ->get();
+
+    $byGroup = $sales->groupBy(fn($s) => $s->sale_group_id ?? $s->id);
+
+    $rawCredit = 0;
+    foreach ($byGroup as $group) {
+        $remaining = $group->sum(fn($s) =>
+            ($s->usd_sell ?? 0) - ($s->amount_paid ?? 0) - $s->collections->sum('amount')
+        );
+        if ($remaining < 0) $rawCredit += abs($remaining);
+    }
+
+    $usedCredit = \App\Models\Collection::whereHas('sale', function($q) use ($customerId) {
+            $q->where('customer_id', $customerId);
+        })
+        ->where('note', 'like', '%تسديد من رصيد الشركة للعميل%')
+        ->sum('amount');
+
+    return max(0, $rawCredit - $usedCredit);
+}
+
+}

@@ -79,7 +79,6 @@ $rows = $sales->map(function($customer, $i) {
         <div class="col-span-1 md:col-span-4 mt-2">
   <!-- موبايل: شبكة 2x2 -->
   <div class="md:hidden grid grid-cols-2 gap-2 w-full">
-    @can('collection.details.view')
     <x-primary-button href="{{ route('agency.collections.all') }}" class="w-full text-xs" gradient>
       إظهار جميع التحصيلات
     </x-primary-button>
@@ -89,7 +88,6 @@ $rows = $sales->map(function($customer, $i) {
     <x-primary-button href="{{ route('agency.customer-accounts') }}" class="w-full text-xs col-span-2" gradient>
       عرض جميع حسابات العملاء
     </x-primary-button>
-    @endcan
     <button wire:click="resetFilters"
       class="w-full text-xs bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded shadow col-span-2">
       إعادة تعيين الفلاتر
