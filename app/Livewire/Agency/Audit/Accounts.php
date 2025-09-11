@@ -104,15 +104,15 @@ $this->serviceTypeOptions = ServiceType::whereHas('list', fn($q)=>$q->where('nam
     }
 
     protected function salesBase()
-{
-    return $this->salesDateRange(Sale::query())
-        ->where('agency_id', $this->agencyId())
-        ->where('status', '!=', 'Void') // إضافة هذا الشرط لتصفية العمليات الملغاة
-        ->when($this->service_type_id, fn($q) => $q->where('service_type_id', $this->service_type_id))
-        ->when($this->customer_id, fn($q) => $q->where('customer_id', $this->customer_id))
-        ->when($this->provider_id, fn($q) => $q->where('provider_id', $this->provider_id))
-        ->when($this->employee_id, fn($q) => $q->where('user_id', $this->employee_id));
-}
+    {
+        return $this->salesDateRange(Sale::query())
+            ->where('agency_id', $this->agencyId())
+            // تم إزالة شرط تصفية العمليات الملغاة
+            ->when($this->service_type_id, fn($q) => $q->where('service_type_id', $this->service_type_id))
+            ->when($this->customer_id, fn($q) => $q->where('customer_id', $this->customer_id))
+            ->when($this->provider_id, fn($q) => $q->where('provider_id', $this->provider_id))
+            ->when($this->employee_id, fn($q) => $q->where('user_id', $this->employee_id));
+    }
 
 
     // KPIs
@@ -134,7 +134,6 @@ $this->serviceTypeOptions = ServiceType::whereHas('list', fn($q)=>$q->where('nam
          $collections = DB::table('collections')
         ->join('sales', 'collections.sale_id', '=', 'sales.id')
         ->where('sales.agency_id', $this->agencyId())
-        ->where('sales.status', '!=', 'Void') // تصفية العمليات الملغاة
         ->when($this->service_type_id, fn($q) => $q->where('sales.service_type_id', $this->service_type_id))
         ->when($this->customer_id, fn($q) => $q->where('sales.customer_id', $this->customer_id))
         ->when($this->provider_id, fn($q) => $q->where('sales.provider_id', $this->provider_id))
