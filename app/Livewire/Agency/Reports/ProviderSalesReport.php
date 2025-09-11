@@ -41,16 +41,16 @@ class ProviderSalesReport extends Component
     public ?string $drillValue = null;  // service_type_id أو 'YYYY-MM'
 
     protected $queryString = [
-        'providerId'        => ['except' => ''],
+        'providerId' => ['except' => ''],
         'serviceTypeFilter' => ['except' => ''],
-        'employeeFilter'    => ['except' => ''],
-        'startDate'         => ['except' => ''],
-        'endDate'           => ['except' => ''],
-        'search'            => ['except' => ''],
-        'sortField'         => ['except' => 'sale_date'],
-        'sortDirection'     => ['except' => 'desc'],
-        'drillType'         => ['except' => null],
-        'drillValue'        => ['except' => null],
+        'employeeFilter' => ['except' => ''],
+        'startDate' => ['except' => ''],
+        'endDate' => ['except' => ''],
+        'search' => ['except' => ''],
+        'sortField' => ['except' => 'sale_date'],
+        'sortDirection' => ['except' => 'desc'],
+        'drillType' => ['except' => null],
+        'drillValue' => ['except' => null],
     ];
 
     public function mount()
@@ -62,17 +62,17 @@ class ProviderSalesReport extends Component
 
         $this->serviceTypes = DynamicListItem::whereHas('list', function ($q) {
             $q->where('name', 'قائمة الخدمات')
-              ->where(function ($qq) {
-                  $qq->where('created_by_agency', auth()->user()->agency_id)
-                     ->orWhereNull('created_by_agency');
-              });
+                ->where(function ($qq) {
+                    $qq->where('created_by_agency', auth()->user()->agency_id)
+                        ->orWhereNull('created_by_agency');
+                });
         })->orderBy('order')->get();
     }
 
     // ضبط/إلغاء الـdrill
     public function setDrill(string $type, string $value): void
     {
-        $this->drillType  = $type;   // 'service' أو 'month'
+        $this->drillType = $type;   // 'service' أو 'month'
         $this->drillValue = $value;  // id أو 'YYYY-MM'
         $this->resetPage();
     }
@@ -98,7 +98,7 @@ class ProviderSalesReport extends Component
         }
 
         $refundedAmount = (float) ($sale->refunded_amount ?? 0);
-        $sell           = (float) ($sale->usd_sell ?? 0);
+        $sell = (float) ($sale->usd_sell ?? 0);
 
         if ($sale->status === 'Refund-Partial' && $sell > 0 && $refundedAmount > 0) {
             $ratio = max(0.0, min(1.0, ($sell - $refundedAmount) / $sell));
@@ -111,8 +111,8 @@ class ProviderSalesReport extends Component
     // أجزاء الربح بعد الاسترداد والتحصيل
     protected function profitParts($sale): array
     {
-        $sell  = (float) ($sale->usd_sell ?? 0);
-        $buy   = (float) ($sale->usd_buy  ?? 0);
+        $sell = (float) ($sale->usd_sell ?? 0);
+        $buy = (float) ($sale->usd_buy ?? 0);
         $baseProfit = $sell - $buy;
 
         if ($sale->status === 'Refund-Full') {
@@ -138,12 +138,12 @@ class ProviderSalesReport extends Component
         $collectedProfit = round($netProfit * $collectRatio, 2);
 
         return [
-            'sell'             => $sell,
-            'buy'              => $buy,
-            'base_profit'      => $baseProfit,
-            'net_sell'         => $netSell,
-            'net_profit'       => $netProfit,
-            'collected'        => $collected,
+            'sell' => $sell,
+            'buy' => $buy,
+            'base_profit' => $baseProfit,
+            'net_sell' => $netSell,
+            'net_profit' => $netProfit,
+            'collected' => $collected,
             'collected_profit' => $collectedProfit,
         ];
     }
@@ -159,26 +159,32 @@ class ProviderSalesReport extends Component
             ? [$agency->id]
             : array_merge([$agency->id], $agency->branches()->pluck('id')->toArray());
 
-        return Sale::with(['user','service','provider','customer','collections'])
+        return Sale::with(['user', 'service', 'provider', 'customer', 'collections'])
             ->whereIn('agency_id', $agencyIds)
             ->when($this->providerId, fn($q) => $q->where('provider_id', $this->providerId))
             ->when($this->employeeFilter, fn($q) => $q->where('user_id', $this->employeeFilter))
             ->when($this->serviceTypeFilter, fn($q) => $q->where('service_type_id', $this->serviceTypeFilter))
-            ->when($this->startDate && $this->endDate, fn($q) =>
+            ->when(
+                $this->startDate && $this->endDate,
+                fn($q) =>
                 $q->whereBetween('sale_date', [$this->startDate, $this->endDate])
             )
-            ->when($this->startDate && !$this->endDate, fn($q) =>
+            ->when(
+                $this->startDate && !$this->endDate,
+                fn($q) =>
                 $q->whereDate('sale_date', '>=', $this->startDate)
             )
-            ->when(!$this->startDate && $this->endDate, fn($q) =>
+            ->when(
+                !$this->startDate && $this->endDate,
+                fn($q) =>
                 $q->whereDate('sale_date', '<=', $this->endDate)
             )
             ->when($this->search, function ($q) {
                 $term = "%{$this->search}%";
                 $q->where(function ($qq) use ($term) {
-                    $qq->where('beneficiary_name','like',$term)
-                       ->orWhere('reference','like',$term)
-                       ->orWhere('pnr','like',$term);
+                    $qq->where('beneficiary_name', 'like', $term)
+                        ->orWhere('reference', 'like', $term)
+                        ->orWhere('pnr', 'like', $term);
                 });
             });
     }
@@ -186,36 +192,39 @@ class ProviderSalesReport extends Component
     protected function operationsQuery()
     {
         return $this->baseQuery()
-            ->when($this->drillType === 'service' && $this->drillValue, fn($q) =>
+            ->when(
+                $this->drillType === 'service' && $this->drillValue,
+                fn($q) =>
                 $q->where('service_type_id', $this->drillValue)
             )
             ->when($this->drillType === 'month' && $this->drillValue, function ($q) {
                 $start = Carbon::createFromFormat('Y-m', $this->drillValue)->startOfMonth()->toDateString();
-                $end   = Carbon::createFromFormat('Y-m', $this->drillValue)->endOfMonth()->toDateString();
+                $end = Carbon::createFromFormat('Y-m', $this->drillValue)->endOfMonth()->toDateString();
                 $q->whereBetween('sale_date', [$start, $end]);
             });
     }
 
     protected function perProviderRows()
     {
-        $sales = $this->baseQuery()->with(['collections'])->withSum('collections','amount')->get();
+        $sales = $this->baseQuery()->with(['collections'])->withSum('collections', 'amount')->get();
 
         $grouped = $sales->groupBy('provider_id')->map(function ($rows) {
             $sell = (float) $rows->sum('usd_sell');
-            $buy  = (float) $rows->sum('usd_buy');
+            $buy = (float) $rows->sum('usd_buy');
             $profit = $sell - $buy;
 
             $paid = (float) $rows->map(function ($s) {
-                if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
+                if (in_array($s->status, ['Refund-Full', 'Refund-Partial']))
+                    return 0;
                 return (float) ($s->amount_paid ?? 0) + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
             })->sum();
 
             return [
-                'provider'  => $rows->first()?->provider,
-                'count'     => $rows->count(),
-                'sell'      => $sell,
-                'buy'       => $buy,
-                'profit'    => $profit,
+                'provider' => $rows->first()?->provider,
+                'count' => $rows->count(),
+                'sell' => $sell,
+                'buy' => $buy,
+                'profit' => $profit,
                 'remaining' => $sell - $paid,
             ];
         });
@@ -226,32 +235,38 @@ class ProviderSalesReport extends Component
     protected function computeTotals($sales)
     {
         $sell = (float) $sales->sum('usd_sell');
-        $buy  = (float) $sales->sum('usd_buy');
+        $buy = (float) $sales->sum('usd_buy');
         $profit = $sell - $buy;
 
         $totalPaid = $sales->map(function ($sale) {
-            if (in_array($sale->status, ['Refund-Full','Refund-Partial'])) {
+            if (in_array($sale->status, ['Refund-Full', 'Refund-Partial'])) {
                 return 0;
             }
             return (float) ($sale->amount_paid ?? 0)
-                 + (float) ($sale->collections_sum_amount ?? $sale->collections->sum('amount'));
+                + (float) ($sale->collections_sum_amount ?? $sale->collections->sum('amount'));
         })->sum();
         $remaining = $sell - $totalPaid;
 
         return [
-            'count'      => $sales->count(),
-            'sell'       => $sell,
-            'buy'        => $buy,
-            'profit'     => $profit,
-            'remaining'  => $remaining,
+            'count' => $sales->count(),
+            'sell' => $sell,
+            'buy' => $buy,
+            'profit' => $profit,
+            'remaining' => $remaining,
         ];
     }
 
     public function resetFilters()
     {
         $this->reset([
-            'providerId','serviceTypeFilter','employeeFilter',
-            'startDate','endDate','search','drillType','drillValue',
+            'providerId',
+            'serviceTypeFilter',
+            'employeeFilter',
+            'startDate',
+            'endDate',
+            'search',
+            'drillType',
+            'drillValue',
         ]);
         $this->resetPage();
     }
@@ -270,27 +285,28 @@ class ProviderSalesReport extends Component
     public function exportToPdf()
     {
         // قراءة الفلاتر من الرابط
-        $this->providerId        = request('providerId', $this->providerId);
-        $this->startDate         = request('startDate', $this->startDate);
-        $this->endDate           = request('endDate', $this->endDate);
+        $this->providerId = request('providerId', $this->providerId);
+        $this->startDate = request('startDate', $this->startDate);
+        $this->endDate = request('endDate', $this->endDate);
         $this->serviceTypeFilter = request('serviceTypeFilter', $this->serviceTypeFilter);
-        $this->employeeFilter    = request('employeeFilter', $this->employeeFilter);
-        $this->search            = request('search', $this->search);
-        $this->drillType         = request('drillType', $this->drillType);
-        $this->drillValue        = request('drillValue', $this->drillValue);
+        $this->employeeFilter = request('employeeFilter', $this->employeeFilter);
+        $this->search = request('search', $this->search);
+        $this->drillType = request('drillType', $this->drillType);
+        $this->drillValue = request('drillValue', $this->drillValue);
 
         // شعار الوكالة
-        $agency   = auth()->user()->agency;
-        $logoData = null; $logoMime = 'image/png';
+        $agency = auth()->user()->agency;
+        $logoData = null;
+        $logoMime = 'image/png';
         if ($agency && $agency->logo) {
-            $path = storage_path('app/public/'.$agency->logo);
+            $path = storage_path('app/public/' . $agency->logo);
             if (is_file($path)) {
                 $logoData = base64_encode(file_get_contents($path));
                 $logoMime = mime_content_type($path) ?: 'image/png';
             }
         }
 
-        $data    = $this->prepareReportData(applyDrill: (bool)$this->providerId);
+        $data = $this->prepareReportData(applyDrill: (bool) $this->providerId);
         $summary = $this->perProviderRows();
 
         $view = $this->providerId
@@ -298,18 +314,18 @@ class ProviderSalesReport extends Component
             : 'reports.provider-sales-summary-pdf';
 
         $html = view($view, [
-            'agency'      => $agency,
-            'logoData'    => $logoData,
-            'logoMime'    => $logoMime,
-            'currency'    => $data['agency']->currency ?? 'USD',
-            'provider'    => $data['provider'],
+            'agency' => $agency,
+            'logoData' => $logoData,
+            'logoMime' => $logoMime,
+            'currency' => $data['agency']->currency ?? 'USD',
+            'provider' => $data['provider'],
             'perProvider' => $summary,
-            'byService'   => $data['byService'],
-            'byMonth'     => $data['byMonth'],
-            'sales'       => $data['sales'],
-            'totals'      => $data['totals'],
-            'startDate'   => $data['startDate'],
-            'endDate'     => $data['endDate'],
+            'byService' => $data['byService'],
+            'byMonth' => $data['byMonth'],
+            'sales' => $data['sales'],
+            'totals' => $data['totals'],
+            'startDate' => $data['startDate'],
+            'endDate' => $data['endDate'],
         ])->render();
 
         return response(
@@ -322,25 +338,25 @@ class ProviderSalesReport extends Component
                 ->waitUntilNetworkIdle()
                 ->pdf()
         )->withHeaders([
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="provider-sales-report.pdf"',
-        ]);
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="provider-sales-report.pdf"',
+                ]);
     }
 
     // ======= تصدير Excel =======
     public function exportToExcel()
     {
-        $this->providerId        = request('providerId', $this->providerId);
-        $this->startDate         = request('startDate', $this->startDate);
-        $this->endDate           = request('endDate', $this->endDate);
+        $this->providerId = request('providerId', $this->providerId);
+        $this->startDate = request('startDate', $this->startDate);
+        $this->endDate = request('endDate', $this->endDate);
         $this->serviceTypeFilter = request('serviceTypeFilter', $this->serviceTypeFilter);
-        $this->employeeFilter    = request('employeeFilter', $this->employeeFilter);
-        $this->search            = request('search', $this->search);
-        $this->drillType         = request('drillType', $this->drillType);
-        $this->drillValue        = request('drillValue', $this->drillValue);
+        $this->employeeFilter = request('employeeFilter', $this->employeeFilter);
+        $this->search = request('search', $this->search);
+        $this->drillType = request('drillType', $this->drillType);
+        $this->drillValue = request('drillValue', $this->drillValue);
 
-        $data     = $this->prepareReportData(applyDrill: (bool)$this->providerId);
-        $summary  = $this->perProviderRows();
+        $data = $this->prepareReportData(applyDrill: (bool) $this->providerId);
+        $summary = $this->perProviderRows();
         $currency = $data['agency']->currency ?? 'USD';
 
         return Excel::download(
@@ -352,13 +368,13 @@ class ProviderSalesReport extends Component
                 byMonth: $data['byMonth'],
                 sales: $data['sales']
             ),
-            'provider-sales-'.now()->format('Y-m-d').'.xlsx'
+            'provider-sales-' . now()->format('Y-m-d') . '.xlsx'
         );
     }
 
     protected function prepareReportData(bool $applyDrill = false)
     {
-        $user   = Auth::user();
+        $user = Auth::user();
         $agency = $user->agency;
         $provider = $this->providerId ? Provider::find($this->providerId) : null;
 
@@ -366,79 +382,84 @@ class ProviderSalesReport extends Component
 
         $sales = $query
             ->orderBy($this->sortField, $this->sortDirection)
-            ->withSum('collections','amount')
+            ->withSum('collections', 'amount')
             ->get();
 
         $totals = $this->computeTotals($sales);
 
         $byService = $sales->groupBy('service_type_id')->map(function ($group) {
-            $sell   = (float) $group->sum('usd_sell');
-            $buy    = (float) $group->sum('usd_buy');
+            $sell = (float) $group->sum('usd_sell');
+            $buy = (float) $group->sum('usd_buy');
             $profit = $sell - $buy;
 
             $paid = (float) $group->map(function ($s) {
-                if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
+                if (in_array($s->status, ['Refund-Full', 'Refund-Partial']))
+                    return 0;
                 return (float) ($s->amount_paid ?? 0)
-                     + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
+                    + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
             })->sum();
 
             return [
-                'count'    => $group->count(),
-                'sell'     => $sell,
-                'buy'      => $buy,
-                'profit'   => $profit,
-                'remaining'=> $sell - $paid,
+                'count' => $group->count(),
+                'sell' => $sell,
+                'buy' => $buy,
+                'profit' => $profit,
+                'remaining' => $sell - $paid,
                 'firstRow' => $group->first(),
             ];
         });
 
         $byMonth = $sales->groupBy(fn($s) => Carbon::parse($s->sale_date)->format('Y-m'))
             ->map(function ($group) {
-                $sell   = (float) $group->sum('usd_sell');
-                $buy    = (float) $group->sum('usd_buy');
+                $sell = (float) $group->sum('usd_sell');
+                $buy = (float) $group->sum('usd_buy');
                 $profit = $sell - $buy;
 
                 $paid = (float) $group->map(function ($s) {
-                    if (in_array($s->status, ['Refund-Full','Refund-Partial'])) return 0;
+                    if (in_array($s->status, ['Refund-Full', 'Refund-Partial']))
+                        return 0;
                     return (float) ($s->amount_paid ?? 0)
-                         + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
+                        + (float) ($s->collections_sum_amount ?? $s->collections->sum('amount'));
                 })->sum();
 
                 return [
-                    'count'    => $group->count(),
-                    'sell'     => $sell,
-                    'buy'      => $buy,
-                    'profit'   => $profit,
-                    'remaining'=> $sell - $paid,
+                    'count' => $group->count(),
+                    'sell' => $sell,
+                    'buy' => $buy,
+                    'profit' => $profit,
+                    'remaining' => $sell - $paid,
                 ];
             })
             ->sortKeysDesc();
 
         return [
-            'agency'    => $agency,
-            'sales'     => $sales,
-            'totals'    => $totals,
+            'agency' => $agency,
+            'sales' => $sales,
+            'totals' => $totals,
             'byService' => $byService,
-            'byMonth'   => $byMonth,
+            'byMonth' => $byMonth,
             'startDate' => $this->startDate,
-            'endDate'   => $this->endDate,
-            'provider'  => $provider,
+            'endDate' => $this->endDate,
+            'provider' => $provider,
         ];
     }
 
     public function render()
     {
         $sales = $this->operationsQuery()
-            ->withSum('collections','amount')
+            ->withSum('collections', 'amount')
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(12);
 
         $sales->each(function ($sale) {
-            $paid = in_array($sale->status, ['Refund-Full','Refund-Partial'])
+            $paid = in_array($sale->status, ['Refund-Full', 'Refund-Partial'])
                 ? 0
-                : (float)($sale->amount_paid ?? 0) + (float)$sale->collections_sum_amount;
+                : (float) ($sale->amount_paid ?? 0) + (float) $sale->collections_sum_amount;
 
-            $sale->remaining_payment = (float)($sale->usd_sell ?? 0) - $paid;
+            // إضافة هذا السطر لحساب المتحصل
+            $sale->total_paid = $paid;
+
+            $sale->remaining_payment = (float) ($sale->usd_sell ?? 0) - $paid;
             $sale->effective_customer_commission = $this->effectiveCustomerCommission($sale);
         });
 
@@ -446,14 +467,14 @@ class ProviderSalesReport extends Component
         $perProvider = $this->perProviderRows();
 
         return view('livewire.agency.reportsView.provider-sales-report', [
-            'sales'        => $sales,
-            'totals'       => $data['totals'],
-            'byService'    => $data['byService'],
-            'byMonth'      => $data['byMonth'],
-            'employees'    => $this->employees,
+            'sales' => $sales,
+            'totals' => $data['totals'],
+            'byService' => $data['byService'],
+            'byMonth' => $data['byMonth'],
+            'employees' => $this->employees,
             'serviceTypes' => $this->serviceTypes,
-            'providers'    => $this->providers,
-            'perProvider'  => $perProvider,
+            'providers' => $this->providers,
+            'perProvider' => $perProvider,
         ]);
     }
 
@@ -474,7 +495,7 @@ class ProviderSalesReport extends Component
             ->pdf();
 
         return response()->streamDownload(
-            fn () => print($pdf),
+            fn() => print ($pdf),
             'sale-details-' . $sale->id . '.pdf'
         );
     }

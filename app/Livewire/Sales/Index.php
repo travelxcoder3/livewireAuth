@@ -626,7 +626,6 @@ foreach ($byGroup as $g) {
     $profit    = (float) $g->sum('sale_profit');
 
     $totalAmount += $sell;
-    // احتفظ بالقيمة القديمة كمرجع فقط (لن نستخدمها للكارت)
     $totalReceivedDummy += min($collected, $sell);
     $totalProfit += $profit;
 }
@@ -639,7 +638,7 @@ $customerIds = (clone $salesQuery)
 $totalPending = 0.0;
 foreach ($customerIds as $cid) {
     $net = $this->netForCustomer((int)$cid); // الصافي له − عليه
-    if ($net < 0) { $totalPending += abs($net); }   // دين علينا فقط
+    if ($net < 0) { $totalPending += abs($net); }
 }
 
 // === المحصَّل = إجمالي المبيعات − غير المحصَّل (بنفس منطق كشف الحساب) ===
@@ -647,6 +646,7 @@ $this->totalAmount   = round($totalAmount, 2);
 $this->totalPending  = round($totalPending, 2);
 $this->totalReceived = max(round($totalAmount - $totalPending, 2), 0);
 $this->totalProfit   = round($totalProfit, 2);
+
 
 
 
@@ -659,6 +659,29 @@ $this->totalProfit   = round($totalProfit, 2);
         }
         $year  = (int) $ref->year;
         $month = (int) $ref->month;
+// === إجمالي الشهر (السعر للعميل) والربح بالإشارة ===
+$monthBase = $this->scopedQueryWithoutDateFilters($user, $agency); // نفس الفلاتر لكن بدون start/end
+
+$monthly = (clone $monthBase)
+    ->whereYear('sale_date', $year)
+    ->whereMonth('sale_date', $month);
+
+$agg = $monthly
+    ->selectRaw('COALESCE(SUM(usd_sell),0) AS amount, COALESCE(SUM(sale_profit),0) AS profit')
+    ->first();
+
+$this->totalAmount = round((float)$agg->amount, 2);   // يجمع السالب والموجب كما هو
+$this->totalProfit = round((float)$agg->profit, 2);   // يجمع السالب والموجب كما هو
+
+// المتبقي والمحصّل بنفس منطق كشف الحساب
+$customerIds = (clone $monthBase)->pluck('customer_id')->filter()->unique();
+$totalPending = 0.0;
+foreach ($customerIds as $cid) {
+    $net = $this->netForCustomer((int)$cid); // له − عليه
+    if ($net < 0) { $totalPending += abs($net); }
+}
+$this->totalPending  = round($totalPending, 2);
+$this->totalReceived = max(round($this->totalAmount - $this->totalPending, 2), 0);
 
         // هدف الشهر من جدول employee_monthly_targets وإلا من users.main_target
         $target = (float) (EmployeeMonthlyTarget::where('user_id', $user->id)
@@ -1322,6 +1345,60 @@ protected function onlyReferenceFilter()
         && $filters['reference'] !== ''
         && count($active) === 1;
 }
+
+private function scopedQueryWithoutDateFilters($user, $agency)
+{
+    $q = \App\Models\Sale::query();
+
+    if ($agency->parent_id) {
+        if ($user->hasRole('agency-admin')) {
+            $userIds = $agency->users()->pluck('id')->toArray();
+            $q->where('agency_id', $agency->id)->whereIn('user_id', $userIds);
+        } else {
+            $q->where('agency_id', $agency->id);
+            if (empty($this->filters['reference']) || !$this->onlyReferenceFilter()) {
+                $q->where('user_id', $user->id);
+            }
+        }
+    } else {
+        if ($user->hasRole('agency-admin')) {
+            $branchIds = $agency->branches()->pluck('id')->toArray();
+            $allAgencyIds = array_merge([$agency->id], $branchIds);
+            $q->whereIn('agency_id', $allAgencyIds);
+        } else {
+            $q->where('agency_id', $agency->id);
+            if (empty($this->filters['reference']) || !$this->onlyReferenceFilter()) {
+                $q->where('user_id', $user->id);
+            }
+        }
+    }
+
+    if ($user->hasRole('agency-admin')) {
+        $scope = $this->filters['scope'] ?? 'mine';
+        $onlyRef = !empty($this->filters['reference']) && $this->onlyReferenceFilter();
+        if ($scope === 'mine' && !$onlyRef) {
+            $q->where('user_id', $user->id);
+        }
+    }
+
+    // نفس الفلاتر لكن بدون start_date/end_date
+    return $q
+        ->when($this->filters['service_type_id'], fn($qq) => $qq->where('service_type_id', $this->filters['service_type_id']))
+        ->when($this->filters['status'], fn($qq) => $qq->where('status', $this->filters['status']))
+        ->when($this->filters['customer_id'], fn($qq) => $qq->where('customer_id', $this->filters['customer_id']))
+        ->when($this->filters['provider_id'], fn($qq) => $qq->where('provider_id', $this->filters['provider_id']))
+        ->when($this->filters['service_date'], fn($qq) => $qq->where('service_date', $this->filters['service_date']))
+        ->when($this->filters['customer_via'], fn($qq) => $qq->where('customer_via', $this->filters['customer_via']))
+        ->when($this->filters['route'], fn($qq) => $qq->where('route', 'like', '%'.$this->filters['route'].'%'))
+        ->when($this->filters['payment_method'], fn($qq) => $qq->where('payment_method', $this->filters['payment_method']))
+        ->when($this->filters['payment_type'], fn($qq) => $qq->where('payment_type', $this->filters['payment_type']))
+        ->when($this->filters['reference'], function ($qq) {
+            $t = trim($this->filters['reference']);
+            $like = mb_strlen($t) >= 3 ? "%$t%" : "$t%";
+            $qq->where('reference', 'like', $like);
+        });
+}
+
 
 
     public function edit($id)

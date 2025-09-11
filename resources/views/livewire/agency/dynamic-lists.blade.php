@@ -94,12 +94,7 @@
                                             تعديل
                                         </button>
                                     @endcan
-                                    @can('lists.delete')
-                                        <button wire:click="deleteItem({{ $item->id }})"
-                                                class="px-2 py-1 text-xs rounded border border-red-500 text-red-600 bg-white hover:bg-red-50 transition">
-                                            حذف
-                                        </button>
-                                    @endcan
+                                
                                     </div>
                                 @endif
                             </div>
