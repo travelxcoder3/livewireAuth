@@ -29,7 +29,7 @@
 </style>
 
 <div class="space-y-6">
-  <h2 class="text-2xl font-bold" style="color: rgb(var(--primary-700));">تحصيلات الموظفين</h2>
+  <h2 class="text-2xl font-bold" style="color: rgb(var(--primary-700));"> كشف مديوينة الموظفين </h2>
 
   <!-- الفلاتر -->
   <div class="bg-white rounded-xl shadow p-4 grid md:grid-cols-4 gap-3 text-sm items-end relative empcol-filters">

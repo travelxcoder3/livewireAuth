@@ -6,7 +6,7 @@ class EmployeeCollectionsTable {
     return [
       ['key'=>'index','label'=>'#'],
       ['key'=>'employee_name','label'=>'الموظف'],
-      ['key'=>'remaining_total','label'=>' تحت التحصيل ','format'=>'money'],
+      ['key'=>'remaining_total','label'=>' المديونية','format'=>'money'],
       ['key'=>'last_payment_at','label'=>'تاريخ آخر سداد','format'=>'date'],
       ['key'=>'last_collection_amount','label'=>'مبلغ آخر تحصيل','format'=>'money'],
       [

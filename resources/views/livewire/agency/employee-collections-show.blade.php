@@ -26,7 +26,7 @@
         <!-- رأس -->
 
         <div class="flex items-center justify-between px-5 py-3 page-head">
-          <h2 class="text-xl md:text-2xl font-bold" style="color: rgb(var(--primary-700));">تفاصيل تحصيلات الموظف</h2>
+          <h2 class="text-xl md:text-2xl font-bold" style="color: rgb(var(--primary-700));">تفاصيل كشف مديوينة الموظفين</h2>
           <a href="{{ url()->previous()!=url()->current()?url()->previous():route('agency.employee-collections') }}"
              class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm
                     border-[rgb(var(--primary-300))] text-[rgb(var(--primary-700))]
