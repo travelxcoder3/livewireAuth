@@ -111,14 +111,16 @@ class AddCustomer extends Component
 
     public function save()
     {
-        $this->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:255',
-            'account_type' => 'required|in:individual,company,organization',
-            'images.*' => 'nullable|image|max:2048',
-        ]);
+       $this->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'nullable|email|max:255',
+                'phone' => 'nullable|string|max:20',
+                'address' => 'nullable|string|max:255',
+                'account_type' => 'required|in:individual,company,organization',
+                'images'   => 'nullable|array',
+                'images.*' => 'nullable|file|image|max:2048',
+            ]);
+
 
         if ($this->editingId) {
     $customer = Customer::findOrFail($this->editingId);
@@ -145,14 +147,18 @@ if (!empty($this->deletedImageIds)) {
 
 
     // حفظ الصور الجديدة
-   foreach ($this->images as $image) {
-    if ($image instanceof \Illuminate\Http\UploadedFile) {
+  foreach (array_filter($this->images) as $image) {
+    if (
+        $image instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile ||
+        $image instanceof \Illuminate\Http\UploadedFile
+    ) {
         $path = $image->store('customers', 'public');
         $customer->images()->create([
             'image_path' => $path,
         ]);
     }
 }
+
 
 
 
@@ -173,8 +179,13 @@ $this->existingImages = $customer->images->pluck('image_path', 'id')->toArray();
                 'account_type' => $this->account_type,
             ]);
 
-            if ($this->images && is_array($this->images)) {
-                foreach ($this->images as $image) {
+           if (is_array($this->images)) {
+                $files = array_values(array_filter($this->images, fn($f) =>
+                    $f instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile ||
+                    $f instanceof \Illuminate\Http\UploadedFile
+                ));
+
+                foreach ($files as $image) {
                     $path = $image->store('customers', 'public');
                     $customer->images()->create([
                         'image_path' => $path,
