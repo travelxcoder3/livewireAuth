@@ -176,7 +176,13 @@ public function mount()
             $monthProfit += $gProfit;
         }
     }
-    $this->monthlyProfit = round($monthProfit, 2);
+    $this->monthlyProfit = round(
+    Sale::where('agency_id', $agencyId)
+        ->when(!$isAdmin, fn($q) => $q->where('user_id', $userId))
+        ->whereBetween('sale_date', [$start, $end])
+        ->sum('sale_profit'),
+    2
+);
 
     // صافي المدفوع + صافي المُحصَّل (نخصم الاسترداد أولاً من التحصيلات ثم من المدفوع)
     [$netPaid, $netCollected] = $this->computeNetPaidAndCollectedForRange(
