@@ -162,7 +162,7 @@
                         <x-navbar.buttons.dropdown-link
                             :href="route('agency.employee-collections')"
                             icon="fas fa-user-group"
-                            label="تحصيلات الموظفين"
+                            label="كشف مديوينة الموظفين"
                             :show="true" />
                     @endif
                     @if (Auth::user()->hasRole('agency-admin') || Auth::user()->can('collection.view'))
