@@ -18,6 +18,7 @@ class Dashboard extends Component
     public $selectedServiceType = null;
     public $statsViewType = 'monthly'; // 'monthly' or 'service'
     public $totalSalesCount = 0;
+
     // المتغيرات الجديدة
     public $salesByService = [];
     public $salesByEmployee = [];
@@ -34,100 +35,100 @@ class Dashboard extends Component
     public $monthlyRemaining = 0;
 
     public function mount()
-{
-    if (!Auth::check() || !Auth::user()->agency_id) {
-        session()->flash('error', 'ليس لديك صلاحيات للوصول للوحة التحكم.');
-        return redirect('/');
-    }
+    {
+        if (!Auth::check() || !Auth::user()->agency_id) {
+            session()->flash('error', 'ليس لديك صلاحيات للوصول للوحة التحكم.');
+            return redirect('/');
+        }
 
-    $agencyId = Auth::user()->agency_id;
-    $userId   = Auth::user()->id;
-    $isAdmin  = Auth::user()->hasRole('agency-admin');
-    
-    // إحصائيات المستخدمين حسب الدور
-    if ($isAdmin) {
-        $this->totalUsers  = \App\Models\User::where('agency_id', $agencyId)->count();
-        $this->activeUsers = \App\Models\User::where('agency_id', $agencyId)->where('is_active', 1)->count();
-        $this->onlineUsers = \App\Models\User::where('agency_id', $agencyId)
-            ->whereNotNull('last_activity_at')
-            ->where('last_activity_at', '>=', now()->subMinutes(5))
-            ->count();
-    } else {
-        $this->totalUsers  = 1;
-        $this->activeUsers = Auth::user()->is_active ? 1 : 0;
-        $this->onlineUsers = (Auth::user()->last_activity_at && Auth::user()->last_activity_at >= now()->subMinutes(5)) ? 1 : 0;
-    }
+        $agencyId = Auth::user()->agency_id;
+        $userId   = Auth::user()->id;
+        $isAdmin  = Auth::user()->hasRole('agency-admin');
 
-    // الخدمات
-    $this->serviceTypes = ServiceType::where('agency_id', $agencyId)->get();
-    $this->selectedServiceType = $this->serviceTypes->first()?->id;
-    $this->updateStatsData();
+        // إحصائيات المستخدمين حسب الدور
+        if ($isAdmin) {
+            $this->totalUsers  = \App\Models\User::where('agency_id', $agencyId)->count();
+            $this->activeUsers = \App\Models\User::where('agency_id', $agencyId)->where('is_active', 1)->count();
+            $this->onlineUsers = \App\Models\User::where('agency_id', $agencyId)
+                ->whereNotNull('last_activity_at')
+                ->where('last_activity_at', '>=', now()->subMinutes(5))
+                ->count();
+        } else {
+            $this->totalUsers  = 1;
+            $this->activeUsers = Auth::user()->is_active ? 1 : 0;
+            $this->onlineUsers = (Auth::user()->last_activity_at && Auth::user()->last_activity_at >= now()->subMinutes(5)) ? 1 : 0;
+        }
 
-    // المبيعات حسب الخدمة (عرض مبسط)
-    $salesByServiceQuery = Sale::select(
+        // الخدمات
+        $this->serviceTypes = ServiceType::where('agency_id', $agencyId)->get();
+        $this->selectedServiceType = $this->serviceTypes->first()?->id;
+        $this->updateStatsData();
+
+        // المبيعات حسب الخدمة (يشمل السالب لإلغاء/استرداد)
+        $salesByServiceQuery = Sale::select(
             'service_type_id',
-            DB::raw('SUM(amount_paid) as total_sales'),
-            DB::raw('COUNT(*) as operations_count')
+            DB::raw('SUM(usd_sell) as total_sales'),
+            DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
         )
         ->where('agency_id', $agencyId);
 
-    if (!$isAdmin) {
-        $salesByServiceQuery->where('user_id', $userId);
-    }
-    
-    $this->salesByService = $salesByServiceQuery
-        ->groupBy('service_type_id')
-        ->with('serviceType')
-        ->get()
-        ->map(function($row) {
-            return [
-                'service_type'     => $row->serviceType ? $row->serviceType->name : '-',
-                'total_sales'      => $row->total_sales,
-                'operations_count' => $row->operations_count
-            ];
-        })->toArray();
-    
-    $month = now()->startOfMonth()->toDateString();
+        if (!$isAdmin) {
+            $salesByServiceQuery->where('user_id', $userId);
+        }
 
-    // 1) الهدف الشهري
-    $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
-        ->where('month', $month)
-        ->value('target_amount') ?? 0;
+        $this->salesByService = $salesByServiceQuery
+            ->groupBy('service_type_id')
+            ->with('serviceType')
+            ->get()
+            ->map(function($row) {
+                return [
+                    'service_type'     => $row->serviceType ? $row->serviceType->name : '-',
+                    'total_sales'      => $row->total_sales,
+                    'operations_count' => $row->operations_count
+                ];
+            })->toArray();
 
-    // المبيعات حسب الموظف (عرض مبسط)
-    $salesByEmployeeQuery = Sale::select(
+        $month = now()->startOfMonth()->toDateString();
+
+        // 1) الهدف الشهري
+        $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
+            ->where('month', $month)
+            ->value('target_amount') ?? 0;
+
+        // المبيعات حسب الموظف (يشمل السالب في المجموع)
+        $salesByEmployeeQuery = Sale::select(
             'user_id',
-            DB::raw('SUM(COALESCE(usd_sell, amount_paid, 0)) as total_sales'),
-            DB::raw('COUNT(*) as operations_count')
+            DB::raw('SUM(usd_sell) as total_sales'),
+            DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
         )
         ->where('agency_id', $agencyId)
         ->whereNotNull('user_id');
 
-    if (!$isAdmin) $salesByEmployeeQuery->where('user_id', $userId);
-    
-    $salesData = $salesByEmployeeQuery->groupBy('user_id')->get();
-    $userIds = $salesData->pluck('user_id')->toArray();
-    $users   = User::whereIn('id', $userIds)->get()->keyBy('id');
-    
-    $this->salesByEmployee = $salesData->map(function($row) use ($users) {
-        $user = $users->get($row->user_id);
-        return [
-            'employee'         => $user ? $user->name : 'مستخدم غير معروف (ID: ' . $row->user_id . ')',
-            'total_sales'      => $row->total_sales,
-            'operations_count' => $row->operations_count,
-            'user_id'          => $row->user_id
-        ];
-    })->toArray();
+        if (!$isAdmin) $salesByEmployeeQuery->where('user_id', $userId);
 
-    // المبيعات حسب الفرع (عرض مبسط)
-    $mainAgencyId = $agencyId;
-    $branchIds = Agency::where('parent_id', $mainAgencyId)->pluck('id')->toArray();
-    $branchIds[] = $mainAgencyId;
+        $salesData = $salesByEmployeeQuery->groupBy('user_id')->get();
+        $userIds = $salesData->pluck('user_id')->toArray();
+        $users   = User::whereIn('id', $userIds)->get()->keyBy('id');
 
-    $this->salesByBranch = Sale::select(
+        $this->salesByEmployee = $salesData->map(function($row) use ($users) {
+            $user = $users->get($row->user_id);
+            return [
+                'employee'         => $user ? $user->name : 'مستخدم غير معروف (ID: ' . $row->user_id . ')',
+                'total_sales'      => $row->total_sales,
+                'operations_count' => $row->operations_count,
+                'user_id'          => $row->user_id
+            ];
+        })->toArray();
+
+        // المبيعات حسب الفرع (يشمل السالب في المجموع)
+        $mainAgencyId = $agencyId;
+        $branchIds = Agency::where('parent_id', $mainAgencyId)->pluck('id')->toArray();
+        $branchIds[] = $mainAgencyId;
+
+        $this->salesByBranch = Sale::select(
             'agency_id',
-            DB::raw('SUM(amount_paid) as total_sales'),
-            DB::raw('COUNT(*) as operations_count')
+            DB::raw('SUM(usd_sell) as total_sales'),
+            DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
         )
         ->whereIn('agency_id', $branchIds)
         ->groupBy('agency_id')
@@ -141,86 +142,82 @@ class Dashboard extends Component
             ];
         })->toArray();
 
-    // نطاق الشهر الحالي
-    $start = now()->startOfMonth();
-    $end   = now()->endOfMonth();
-    
-    // إعادة الهدف (لنفس الشهر)
-    $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
-        ->where('month', $start->toDateString())
-        ->value('target_amount') ?? 0;
-    
-    // التكاليف (شراء)
-$monthlyCostQuery = Sale::where('agency_id', $agencyId)->where('status','!=','Void');
-    if (!$isAdmin) $monthlyCostQuery->where('user_id', $userId);
-    $this->monthlyCost = $monthlyCostQuery
-        ->whereBetween('sale_date', [$start, $end])
-        ->sum('usd_buy');
-    
-    // الأرباح = SUM(usd_sell - usd_buy)
-// عند حساب المبيعات المحققة، تأكد من استبعاد العمليات الملغاة
-$monthRows = Sale::where('agency_id', $agencyId)
-    ->when(!$isAdmin, fn($q) => $q->where('user_id', $userId))
-    ->where('status', '!=', 'Void') // تجاهل العمليات الملغاة
-    ->whereBetween('sale_date', [$start, $end])
-    ->withSum('collections', 'amount')
-    ->get(['id','usd_sell','amount_paid','sale_profit','sale_group_id','status']);
+        // نطاق الشهر الحالي
+        $start = now()->startOfMonth();
+        $end   = now()->endOfMonth();
 
+        // إعادة الهدف (لنفس الشهر)
+        $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
+            ->where('month', $start->toDateString())
+            ->value('target_amount') ?? 0;
 
-$groupedM = $monthRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+        // التكاليف (يشمل السالب لإلغاء/استرداد)
+        $monthlyCostQuery = Sale::where('agency_id', $agencyId);
+        if (!$isAdmin) $monthlyCostQuery->where('user_id', $userId);
+        $this->monthlyCost = $monthlyCostQuery
+            ->whereBetween('sale_date', [$start, $end])
+            ->sum('usd_buy');
 
-$monthProfit = 0.0;
-foreach ($groupedM as $g) {
-    // تجاهل المبيعات التي تم إلغاؤها
-    if ($g->contains(fn($row) => $row->status === 'Void')) {
-        continue;
+        // الأرباح = SUM(usd_sell - usd_buy) على مستوى المجموعة
+        // يجب أن نرى صفوف الـ Void كي تُصفّر أرباح المجموعة الملغاة
+        $monthRows = Sale::where('agency_id', $agencyId)
+            ->when(!$isAdmin, fn($q) => $q->where('user_id', $userId))
+            ->whereBetween('sale_date', [$start, $end])
+            ->withSum('collections', 'amount')
+            ->get(['id','usd_sell','amount_paid','sale_profit','sale_group_id','status']);
+
+        $groupedM = $monthRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+
+        $monthProfit = 0.0;
+        foreach ($groupedM as $g) {
+            // تجاهل أي مجموعة فيها Void
+            if ($g->contains(fn($row) => mb_strtolower((string)($row->status ?? '')) === 'void')) {
+                continue;
+            }
+
+            $gProfit = (float) $g->sum('sale_profit');
+
+            // لو فيها Refund أو صف سالب نكتفي بالإيجابي فقط
+            $hasRefund = $g->contains(function ($row) {
+                $st = mb_strtolower((string)($row->status ?? ''));
+                return str_contains($st, 'refund') || (float)$row->usd_sell < 0;
+            });
+
+            if ($hasRefund) {
+                $positiveOnly = (float) $g->filter(fn($row) => (float)$row->sale_profit > 0)
+                                          ->sum('sale_profit');
+                $monthProfit += max($positiveOnly, 0.0);
+            } else {
+                $monthProfit += $gProfit;
+            }
+        }
+
+        $this->monthlyProfit = round($monthProfit, 2);
+
+        // ✅ صافي المدفوع مباشرة + صافي المُحصّل (نخصم الاسترداد أولاً من التحصيلات ثم من المدفوع)
+        [$netPaid, $netCollected] = $this->computeNetPaidAndCollectedForRange(
+            $agencyId,
+            $start->toDateString(),
+            $end->toDateString(),
+            $userId,
+            $isAdmin,
+            null
+        );
+        $this->monthlyPaid      = $netPaid;
+        $this->monthlyCollected = $netCollected;
+
+        // ✅ المبيعات المحققة = المحصّل الصافي فعليًا (بعد خصم الاسترداد)
+        $this->monthlyAchieved  = $netPaid + $netCollected;
+
+        // ✅ المؤجّل بنفس منطق واجهة المبيعات وعلى مستوى مجموعات البيع
+        $this->monthlyRemaining = $this->computeDeferredForRange(
+            $agencyId,
+            $start->toDateString(),
+            $end->toDateString(),
+            $userId,
+            $isAdmin
+        );
     }
-
-    $netSell = (float) $g->sum('usd_sell');
-    $gProfit = (float) $g->sum('sale_profit');
-
-    $hasRefund = $g->contains(function ($row) {
-        $st = mb_strtolower((string)($row->status ?? ''));
-        return str_contains($st, 'refund') || (float)$row->usd_sell < 0;
-    });
-
-    if ($hasRefund) {
-        $positiveOnly = (float) $g->filter(fn($row) => (float)$row->sale_profit > 0)
-                                  ->sum('sale_profit');
-        $monthProfit += max($positiveOnly, 0.0);
-    } else {
-        $monthProfit += $gProfit;
-    }
-}
-
-$this->monthlyProfit = round($monthProfit, 2);
-
-
-    // ✅ صافي المدفوع مباشرة + صافي المُحصّل (نخصم الاسترداد أولاً من التحصيلات ثم من المدفوع)
-    [$netPaid, $netCollected] = $this->computeNetPaidAndCollectedForRange(
-        $agencyId,
-        $start->toDateString(),
-        $end->toDateString(),
-        $userId,
-        $isAdmin,
-        null // فلترة خدمة اختيارية (نتركها فارغة هنا)
-    );
-    $this->monthlyPaid      = $netPaid;
-    $this->monthlyCollected = $netCollected;
-
-    // ✅ المبيعات المحققة = المحصّل الصافي فعليًا (بعد خصم الاسترداد)
-    $this->monthlyAchieved  = $netPaid + $netCollected;
-
-    // ✅ المؤجّل بنفس منطق واجهة المبيعات وعلى مستوى مجموعات البيع
-    $this->monthlyRemaining = $this->computeDeferredForRange(
-        $agencyId,
-        $start->toDateString(),
-        $end->toDateString(),
-        $userId,
-        $isAdmin
-    );
-}
-
 
     public function updatedSelectedServiceType()
     {
@@ -236,263 +233,210 @@ $this->monthlyProfit = round($monthProfit, 2);
     }
 
     public function updateStatsData()
-{
-    $agencyId = Auth::user()->agency_id;
-    $userId   = Auth::user()->id;
-    $isAdmin  = Auth::user()->hasRole('agency-admin');
+    {
+        $agencyId = Auth::user()->agency_id;
+        $userId   = Auth::user()->id;
+        $isAdmin  = Auth::user()->hasRole('agency-admin');
 
-    if ($this->statsViewType === 'monthly') {
-        // آخر 5 أشهر
-        $months = collect();
-        $now = now()->startOfMonth();
-        for ($i = 4; $i >= 0; $i--) {
-            $months->push($now->copy()->subMonths($i));
-        }
+        if ($this->statsViewType === 'monthly') {
+            // آخر 5 أشهر
+            $months = collect();
+            $now = now()->startOfMonth();
+            for ($i = 4; $i >= 0; $i--) {
+                $months->push($now->copy()->subMonths($i));
+            }
 
-        $final = $months->map(function($date) use ($agencyId, $userId, $isAdmin) {
+            $final = $months->map(function($date) use ($agencyId, $userId, $isAdmin) {
 
-            $start = $date->copy()->startOfMonth()->toDateString();
-            $end   = $date->copy()->endOfMonth()->toDateString();
+                $start = $date->copy()->startOfMonth()->toDateString();
+                $end   = $date->copy()->endOfMonth()->toDateString();
 
-            // إجمالي (صافي) المبيعات لهذا الشهر = SUM(usd_sell) يتأثر بالاسترداد
-            $totalQuery = \App\Models\Sale::where('agency_id', $agencyId)
-    ->where('status','!=','Void')
-    ->whereBetween('sale_date', [$start, $end]);
+                // إجمالي (صافي) المبيعات للشهر = SUM(usd_sell) (يشمل السالب)
+                $totalQuery = \App\Models\Sale::where('agency_id', $agencyId)
+                    ->whereBetween('sale_date', [$start, $end]);
 
-            if (!$isAdmin) $totalQuery->where('user_id', $userId);
-            if ($this->selectedServiceType) $totalQuery->where('service_type_id', $this->selectedServiceType);
-            $total = (float) $totalQuery->sum('usd_sell');
+                if (!$isAdmin) $totalQuery->where('user_id', $userId);
+                if ($this->selectedServiceType) $totalQuery->where('service_type_id', $this->selectedServiceType);
+                $total = (float) $totalQuery->sum('usd_sell');
 
-            // المحصّل الصافي (مدفوع مباشر + محصلات) بعد خصم الاسترداد حسب منطقنا
-            [$netPaid, $netCollected] = $this->computeNetPaidAndCollectedForRange(
-                $agencyId, $start, $end, $userId, $isAdmin, $this->selectedServiceType
-            );
-            $realized = $netPaid + $netCollected;
+                // المحصّل الصافي
+                [$netPaid, $netCollected] = $this->computeNetPaidAndCollectedForRange(
+                    $agencyId, $start, $end, $userId, $isAdmin, $this->selectedServiceType
+                );
+                $realized = $netPaid + $netCollected;
 
-            // غير محصّل = إجمالي - محصّل (لا ننزل عن الصفر)
-            $pending = max($total - $realized, 0);
+                // غير محصّل = إجمالي - محصّل (لا ننزل عن الصفر)
+                $pending = max($total - $realized, 0);
 
-            // عدد العمليات الإيجابية
-            $countQuery = \App\Models\Sale::where('agency_id', $agencyId)
-                ->whereBetween('sale_date', [$start, $end])
-                ->where('usd_sell', '>', 0);
+                // عدد العمليات الإيجابية فقط (استبعاد Void)
+                $countQuery = \App\Models\Sale::where('agency_id', $agencyId)
+                    ->whereBetween('sale_date', [$start, $end])
+                    ->where('usd_sell', '>', 0)
+                    ->where('status', '!=', 'Void');
+                if (!$isAdmin) $countQuery->where('user_id', $userId);
+                if ($this->selectedServiceType) $countQuery->where('service_type_id', $this->selectedServiceType);
+
+                return [
+                    'year'             => $date->year,
+                    'month'            => $date->month,
+                    'collected_sales'  => round($realized, 2),
+                    'pending_sales'    => round($pending, 2),
+                    'total_sales'      => round($total, 2), // = collected + pending
+                    'operations_count' => (int) $countQuery->count(),
+                ];
+            });
+
+            $this->salesByMonth = $final->values()->toArray();
+
+            // عدّاد العمليات العام (إجمالي، مع استبعاد Void وعدّ الإيجابي فقط)
+            $countQuery = Sale::query()
+                ->where('agency_id', $agencyId)
+                ->where('status','!=','Void')
+                ->where('usd_sell','>', 0);
+
             if (!$isAdmin) $countQuery->where('user_id', $userId);
             if ($this->selectedServiceType) $countQuery->where('service_type_id', $this->selectedServiceType);
 
-            return [
-                'year'             => $date->year,
-                'month'            => $date->month,
-                'collected_sales'  => round($realized, 2),
-                'pending_sales'    => round($pending, 2),
-                'total_sales'      => round($total, 2), // = collected + pending
-                'operations_count' => (int) $countQuery->count(),
-            ];
-        });
+            $this->totalSalesCount = (int) $countQuery->count();
 
-        $this->salesByMonth = $final->values()->toArray();
+        } elseif ($this->statsViewType === 'service') {
+            // إجمالي المبيعات (صافي) لكل خدمة (يشمل السالب)
+            $totals = \App\Models\Sale::select(
+                'service_type_id',
+                DB::raw('SUM(usd_sell) as total_net_sales'),
+                DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
+            )
+            ->where('agency_id', $agencyId);
 
-        // عدّاد العمليات العام
-    $countQuery = Sale::query()
-    ->where('agency_id', $agencyId)
-    ->where('status','!=','Void')
-    ->where('usd_sell','>', 0);
+            if (!$isAdmin) $totals->where('user_id', $userId);
 
-if (!$isAdmin) {
-    $countQuery->where('user_id', $userId);
-}
-if ($this->selectedServiceType) {
-    $countQuery->where('service_type_id', $this->selectedServiceType);
-}
-$this->totalSalesCount = (int) $countQuery->count();
+            $totals = $totals->groupBy('service_type_id')->get()->keyBy('service_type_id');
 
+            // أحسب المحصّل/غير المحصّل لكل خدمة (لكامل الفترة)
+            $serviceIds = $totals->keys()->all();
+            $services   = \App\Models\DynamicListItem::whereIn('id', $serviceIds)->get()->keyBy('id');
 
-        if (!$isAdmin) $countQuery->where('user_id', $userId);
-        if ($this->selectedServiceType) $countQuery->where('service_type_id', $this->selectedServiceType);
-        $this->totalSalesCount = $countQuery->count();
+            $rows = collect($serviceIds)->map(function($sid) use ($totals, $services, $agencyId, $userId, $isAdmin) {
+                [$p, $c] = $this->computeNetPaidAndCollectedForRange(
+                    $agencyId, '1900-01-01', now()->endOfDay()->toDateString(),
+                    $userId, $isAdmin, $sid
+                );
+                $realized  = $p + $c;
+                $total     = (float) ($totals[$sid]->total_net_sales ?? 0);
+                $pending   = max($total - $realized, 0);
+                $opsCount  = (int) ($totals[$sid]->operations_count ?? 0);
+                $label     = optional($services->get($sid))->label ?? 'غير محدد';
 
-    } elseif ($this->statsViewType === 'service') {
-        // إجمالي المبيعات (صافي) لكل خدمة
-      $totals = \App\Models\Sale::select(
-        'service_type_id',
-        DB::raw('SUM(usd_sell) as total_net_sales'),
-        DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
-    )
-    ->where('agency_id', $agencyId)
-    ->where('status','!=','Void');
+                return [
+                    'service_type'     => $label,
+                    'collected_sales'  => round($realized, 2),
+                    'pending_sales'    => round($pending, 2),
+                    'total_sales'      => round($total, 2),
+                    'operations_count' => $opsCount,
+                ];
+            });
 
-        if (!$isAdmin) $totals->where('user_id', $userId);
+            $this->salesByService = $rows->values()->toArray();
 
-        $totals = $totals->groupBy('service_type_id')->get()->keyBy('service_type_id');
+        } elseif ($this->statsViewType === 'employee') {
+            // قائمة المستخدمين (أو المستخدم الحالي فقط)
+            $userIds = $isAdmin
+                ? User::where('agency_id', $agencyId)->pluck('id')
+                : collect([$userId]);
+            $users = User::whereIn('id', $userIds)->get()->keyBy('id');
 
-        // أحسب المحصّل/غير المحصّل لكل خدمة (لكامل الفترة)
-        $serviceIds = $totals->keys()->all();
-        $services   = \App\Models\DynamicListItem::whereIn('id', $serviceIds)->get()->keyBy('id');
+            $rows = $userIds->map(function($uid) use ($agencyId, $users) {
 
-        $rows = collect($serviceIds)->map(function($sid) use ($totals, $services, $agencyId, $userId, $isAdmin) {
-            [$p, $c] = $this->computeNetPaidAndCollectedForRange(
-                $agencyId, '1900-01-01', now()->endOfDay()->toDateString(),
-                $userId, $isAdmin, $sid
-            );
-            $realized  = $p + $c;
-            $total     = (float) ($totals[$sid]->total_net_sales ?? 0);
-            $pending   = max($total - $realized, 0);
-            $opsCount  = (int) ($totals[$sid]->operations_count ?? 0);
-            $label     = optional($services->get($sid))->label ?? 'غير محدد';
+                // إجمالي (صافي) مبيعات هذا الموظف (يشمل السالب)
+                $total = (float) \App\Models\Sale::where('agency_id', $agencyId)
+                    ->where('user_id', $uid)
+                    ->sum('usd_sell');
 
-            return [
-                'service_type'     => $label,
-                'collected_sales'  => round($realized, 2),
-                'pending_sales'    => round($pending, 2),
-                'total_sales'      => round($total, 2),
-                'operations_count' => $opsCount,
-            ];
-        });
+                // المحصّل/غير المحصّل (لكامل الفترة) لهذا الموظف
+                [$p, $c] = $this->computeNetPaidAndCollectedForRange(
+                    $agencyId, '1900-01-01', now()->endOfDay()->toDateString(),
+                    $uid,     // نمرره كـ userId
+                    false,    // نغلق isAdmin هنا حتى تُطبق فلترة user_id
+                    null
+                );
+                $realized = $p + $c;
+                $pending  = max($total - $realized, 0);
 
-        $this->salesByService = $rows->values()->toArray();
+                $count = \App\Models\Sale::where('agency_id', $agencyId)
+                    ->where('user_id', $uid)
+                    ->where('status','!=','Void')
+                    ->where('usd_sell', '>', 0)
+                    ->count();
 
-    } elseif ($this->statsViewType === 'employee') {
-        // قائمة المستخدمين (أو المستخدم الحالي فقط)
-        $userIds = $isAdmin
-            ? User::where('agency_id', $agencyId)->pluck('id')
-            : collect([$userId]);
-        $users = User::whereIn('id', $userIds)->get()->keyBy('id');
+                $u = $users->get($uid);
+                return [
+                    'employee'         => $u ? $u->name : 'مستخدم غير معروف (ID: '.$uid.')',
+                    'collected_sales'  => round($realized, 2),
+                    'pending_sales'    => round($pending, 2),
+                    'total_sales'      => round($total, 2),
+                    'operations_count' => (int) $count,
+                    'user_id'          => $uid,
+                ];
+            });
 
-        $rows = $userIds->map(function($uid) use ($agencyId, $users) {
+            $this->salesByMonth = $rows->values()->toArray();
 
-            // إجمالي (صافي) مبيعات هذا الموظف
-         $total = (float) \App\Models\Sale::where('agency_id', $agencyId)
-    ->where('user_id', $uid)
-    ->where('status','!=','Void')
-    ->sum('usd_sell');
+        } elseif ($this->statsViewType === 'branch') {
+            // فروع + الفرع الرئيسي
+            $mainAgencyId = $agencyId;
+            $branchIds = \App\Models\Agency::where('parent_id', $mainAgencyId)->pluck('id')->toArray();
+            $branchIds[] = $mainAgencyId;
 
+            $rows = collect($branchIds)->map(function($aid) {
 
+                $total = (float) \App\Models\Sale::where('agency_id', $aid)
+                    ->sum('usd_sell');
 
-            // المحصّل/غير المحصّل (لكامل الفترة) لهذا الموظف
-            [$p, $c] = $this->computeNetPaidAndCollectedForRange(
-                $agencyId, '1900-01-01', now()->endOfDay()->toDateString(),
-                $uid,     // نمرره كـ userId
-                false,    // نغلق isAdmin هنا حتى تُطبق فلترة user_id
-                null
-            );
-            $realized = $p + $c;
-            $pending  = max($total - $realized, 0);
+                // هنا نريد كل مبيعات الفرع دون تقييد user_id -> نمرر isAdmin=true
+                [$p, $c] = $this->computeNetPaidAndCollectedForRange(
+                    $aid, '1900-01-01', now()->endOfDay()->toDateString(),
+                    null,  // بدون فلترة مستخدم
+                    true,  // كأننا أدمن داخل الدالة
+                    null
+                );
+                $realized = $p + $c;
+                $pending  = max($total - $realized, 0);
 
-      $count = \App\Models\Sale::where('agency_id', $agencyId)
-    ->where('user_id', $uid)
-    ->where('status','!=','Void')
-    ->where('usd_sell', '>', 0)
-    ->count();
+                $count = \App\Models\Sale::where('agency_id', $aid)
+                    ->where('status','!=','Void')
+                    ->where('usd_sell', '>', 0)
+                    ->count();
 
+                $agency = \App\Models\Agency::find($aid);
+                return [
+                    'branch'           => $agency ? $agency->name : '-',
+                    'collected_sales'  => round($realized, 2),
+                    'pending_sales'    => round($pending, 2),
+                    'total_sales'      => round($total, 2),
+                    'operations_count' => (int) $count,
+                ];
+            });
 
-            $u = $users->get($uid);
-            return [
-                'employee'         => $u ? $u->name : 'مستخدم غير معروف (ID: '.$uid.')',
-                'collected_sales'  => round($realized, 2),
-                'pending_sales'    => round($pending, 2),
-                'total_sales'      => round($total, 2),
-                'operations_count' => (int) $count,
-                'user_id'          => $uid,
-            ];
-        });
-
-        $this->salesByMonth = $rows->values()->toArray();
-
-    } elseif ($this->statsViewType === 'branch') {
-        // فروع + الفرع الرئيسي
-        $mainAgencyId = $agencyId;
-        $branchIds = \App\Models\Agency::where('parent_id', $mainAgencyId)->pluck('id')->toArray();
-        $branchIds[] = $mainAgencyId;
-
-        $rows = collect($branchIds)->map(function($aid) {
-
-$total = (float) \App\Models\Sale::where('agency_id', $aid)
-    ->where('status','!=','Void')
-    ->sum('usd_sell');
-            // هنا نريد كل مبيعات الفرع دون تقييد user_id -> نمرر isAdmin=true
-            [$p, $c] = $this->computeNetPaidAndCollectedForRange(
-                $aid, '1900-01-01', now()->endOfDay()->toDateString(),
-                null,  // بدون فلترة مستخدم
-                true,  // كأننا أدمن داخل الدالة
-                null
-            );
-            $realized = $p + $c;
-            $pending  = max($total - $realized, 0);
-
-           $count = \App\Models\Sale::where('agency_id', $aid)
-    ->where('status','!=','Void')
-    ->where('usd_sell', '>', 0)
-    ->count();
-
-            $agency = \App\Models\Agency::find($aid);
-            return [
-                'branch'           => $agency ? $agency->name : '-',
-                'collected_sales'  => round($realized, 2),
-                'pending_sales'    => round($pending, 2),
-                'total_sales'      => round($total, 2),
-                'operations_count' => (int) $count,
-            ];
-        });
-
-        $this->salesByMonth = $rows->values()->toArray();
+            $this->salesByMonth = $rows->values()->toArray();
+        }
     }
-}
-
-
-
 
     // تحديد نوع لوحة التحكم حسب دور المستخدم
     public function getDashboardTypeProperty()
     {
         $user = Auth::user();
-        // أولوية لدور أدمن الوكالة
-        if ($user->hasRole('agency-admin')) {
-            return 'comprehensive';
-        }
-        // أولوية لدور مدير الأدوار
-        if ($user->hasRole('roles-manager')) {
-            return 'roles-focused';
-        }
-        // أولوية لدور مدير المستخدمين
-        if ($user->hasRole('users-manager')) {
-            return 'users-focused';
-        }
-        // أولوية لدور مدير الصلاحيات
-        if ($user->hasRole('permissions-manager')) {
-            return 'permissions-focused';
-        }
-        // أولوية لدور مدير المبيعات
-        if ($user->hasRole('sales-manager')) {
-            return 'sales-focused';
-        }
-        // أولوية لدور مدير الموارد البشرية
-        if ($user->hasRole('hr-manager')) {
-            return 'hr-focused';
-        }
-        // إذا كان لديه صلاحية users.view فقط
-        if ($user->can('users.view')) {
-            return 'users-focused';
-        }
-        // إذا كان لديه صلاحية roles.view فقط
-        if ($user->can('roles.view')) {
-            return 'roles-focused';
-        }
-        // إذا كان لديه صلاحية permissions.view فقط
-        if ($user->can('permissions.view')) {
-            return 'permissions-focused';
-        }
-        // إذا كان لديه صلاحية service_types.view فقط
-        if ($user->can('service_types.view')) {
-            return 'service-types-focused';
-        }
-        // إذا كان لديه صلاحية sales.view فقط
-        if ($user->can('sales.view')) {
-            return 'sales-focused';
-        }
-        // إذا كان لديه صلاحية employees.view فقط
-        if ($user->can('employees.view')) {
-            return 'hr-focused';
-        }
-        // المستخدم العادي - لوحة تحكم مبسطة
+        if ($user->hasRole('agency-admin')) return 'comprehensive';
+        if ($user->hasRole('roles-manager')) return 'roles-focused';
+        if ($user->hasRole('users-manager')) return 'users-focused';
+        if ($user->hasRole('permissions-manager')) return 'permissions-focused';
+        if ($user->hasRole('sales-manager')) return 'sales-focused';
+        if ($user->hasRole('hr-manager')) return 'hr-focused';
+        if ($user->can('users.view')) return 'users-focused';
+        if ($user->can('roles.view')) return 'roles-focused';
+        if ($user->can('permissions.view')) return 'permissions-focused';
+        if ($user->can('service_types.view')) return 'service-types-focused';
+        if ($user->can('sales.view')) return 'sales-focused';
+        if ($user->can('employees.view')) return 'hr-focused';
         return 'simple';
     }
 
@@ -665,29 +609,28 @@ $total = (float) \App\Models\Sale::where('agency_id', $aid)
         ?int $userId,
         bool $isAdmin
     ): float {
-     $q = \App\Models\Sale::query()
-    ->where('agency_id', $agencyId)
-    ->where('status','!=','Void')
-    ->whereBetween('sale_date', [$startDate, $endDate])
-    ->with(['collections']);
-
+        $q = \App\Models\Sale::query()
+            ->where('agency_id', $agencyId)
+            ->whereBetween('sale_date', [$startDate, $endDate])
+            ->with(['collections']);
 
         if (!$isAdmin && $userId) {
             $q->where('user_id', $userId);
         }
 
-        $rows = $q->get()->groupBy('sale_group_id');
+        $rows = $q->get()->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
 
         $totalNetDirectPaid = 0.0;
 
         foreach ($rows as $group) {
             $groupAmountPaid = (float) $group->sum('amount_paid');
 
-            $groupRefundsToCustomer = (float) $group
-                ->whereIn('status', ['Refund-Full', 'Refund-Partial'])
-                ->sum(function ($s) {
-                    return ($s->usd_sell ?? 0) < 0 ? abs((float) $s->usd_sell) : 0.0;
-                });
+            // اعتبر Refund + Void + أي صف سالب كاسترداد
+            $groupRefundsToCustomer = (float) $group->sum(function ($s) {
+                $st = mb_strtolower((string)($s->status ?? ''));
+                $isRefundish = str_contains($st,'refund') || $st === 'void' || ((float)$s->usd_sell) < 0;
+                return $isRefundish ? abs((float) $s->usd_sell) : 0.0;
+            });
 
             $net = $groupAmountPaid - $groupRefundsToCustomer;
 
@@ -702,7 +645,7 @@ $total = (float) \App\Models\Sale::where('agency_id', $aid)
     /**
      * حساب المؤجّل (غير المُحصَّل) لنطاق زمني، بنفس منطق واجهة المبيعات:
      * - تجميع حسب sale_group_id
-     * - تجاهل المجموعات Refund-Full و السطور Void
+     * - تجاهل المجموعات التي يصبح صافي بيعها <= 0 (ملغاة/مستردة)
      * - المؤجّل لا يمكن أن يكون سالبًا؛ فقط > 0 يُضاف
      */
     private function computeDeferredForRange(
@@ -712,48 +655,47 @@ $total = (float) \App\Models\Sale::where('agency_id', $aid)
         ?int $userId,
         bool $isAdmin
     ): float {
-        $q = \App\Models\Sale::query()
+        $q = Sale::query()
             ->where('agency_id', $agencyId)
             ->whereBetween('sale_date', [$startDate, $endDate])
             ->with(['collections'])
             ->withSum('collections', 'amount');
-    
+
         if (!$isAdmin && $userId) {
             $q->where('user_id', $userId);
         }
-    
+
         // نجلب السطور ونجمّعها مثل صفحة المبيعات
         $rows = $q->get();
-        $grouped = $rows->groupBy('sale_group_id');
-    
+        $grouped = $rows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+
         $totalAmount   = 0.0; // إجمالي البيع (netSell)
         $totalReceived = 0.0; // ما تم تحصيله فعليًا
-    
+
         foreach ($grouped as $group) {
-            $groupUsdSell     = (float) $group->sum('usd_sell');
+            $groupUsdSell = (float) $group->sum('usd_sell');
+            if ($groupUsdSell <= 0.0) { continue; } // مجموعة ملغاة/مستردة بالكامل
+
             $groupAmountPaid  = (float) $group->sum('amount_paid');
             $groupCollections = (float) $group->pluck('collections')->flatten()->sum('amount');
-    
-            // لو البيع = 0 بعد الاستردادات → تجاهل المجموعة
+
             if (round($groupUsdSell, 2) === 0.00) {
                 continue;
             }
-    
+
             $netSell      = $groupUsdSell;
             $netCollected = $groupAmountPaid + $groupCollections;
             $netRemaining = $netSell - $netCollected;
-    
+
             if ($netRemaining <= 0) {
-                // تم تحصيل كامل قيمة البيع
                 $totalReceived += $netSell;
             } else {
-                // أضف المحصل الفعلي فقط
                 $totalReceived += $netCollected;
             }
-    
+
             $totalAmount += $netSell;
         }
-    
+
         // المؤجّل = إجمالي البيع - المحصل
         return round($totalAmount - $totalReceived, 2);
     }
@@ -764,51 +706,49 @@ $total = (float) \App\Models\Sale::where('agency_id', $aid)
         string $endDate,
         ?int $userId,
         bool $isAdmin,
-        ?int $serviceTypeId = null   // 👈 جديد
+        ?int $serviceTypeId = null
     ): array {
-       $q = \App\Models\Sale::query()
-    ->where('agency_id', $agencyId)
-    ->where('status', '!=', 'Void') // استبعاد العمليات الملغاة
-    ->whereBetween('sale_date', [$startDate, $endDate])
-    ->with(['collections']);
-    
+        $q = \App\Models\Sale::query()
+            ->where('agency_id', $agencyId)
+            ->whereBetween('sale_date', [$startDate, $endDate])
+            ->with(['collections']);
+
         // فلترة المستخدم (تُفعل فقط إذا لم يكن أدمن)
         if (!$isAdmin && $userId) {
             $q->where('user_id', $userId);
         }
-    
+
         // فلترة نوع الخدمة (اختياري)
         if ($serviceTypeId) {
             $q->where('service_type_id', $serviceTypeId);
         }
-    
-        $rows    = $q->get()->groupBy('sale_group_id');
+
+        $rows    = $q->get()->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
         $sumPaid = 0.0; // صافي المدفوع مباشرة
         $sumColl = 0.0; // صافي المبالغ المُحصّلة
-    
+
         foreach ($rows as $group) {
             $groupAmountPaid  = (float) $group->sum('amount_paid');
             $groupCollections = (float) $group->pluck('collections')->flatten()->sum('amount');
-    
-            $refundsToCustomer = (float) $group
-                ->whereIn('status', ['Refund-Full', 'Refund-Partial'])
-                ->sum(function ($s) {
-                    return ($s->usd_sell ?? 0) < 0 ? abs((float) $s->usd_sell) : 0.0;
-                });
-    
+
+            // الاسترداد: Refund + Void + أي صف سالب
+            $refundsToCustomer = (float) $group->sum(function ($s) {
+                $st = mb_strtolower((string)($s->status ?? ''));
+                $isRefundish = str_contains($st, 'refund') || $st === 'void' || ((float)$s->usd_sell) < 0;
+                return $isRefundish ? abs((float) $s->usd_sell) : 0.0;
+            });
+
             // نوزّع الاسترداد: من التحصيلات أولاً ثم من المدفوع
             $refund_from_collections = min($refundsToCustomer, $groupCollections);
             $refund_from_paid        = max($refundsToCustomer - $groupCollections, 0);
-    
+
             $netCollected = max($groupCollections - $refund_from_collections, 0);
             $netPaid      = max($groupAmountPaid - $refund_from_paid, 0);
-    
+
             $sumColl += $netCollected;
             $sumPaid += $netPaid;
         }
-    
+
         return [round($sumPaid, 2), round($sumColl, 2)];
     }
-    
-    
 }

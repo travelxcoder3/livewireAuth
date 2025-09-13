@@ -35,7 +35,7 @@
                     <th class="px-2 py-1">سعر الخدمة (أصل)</th>
                     <th class="px-2 py-1">الاستردادات</th>
                     <th class="px-2 py-1">المحصل (إجمالي)</th>
-                    <th class="px-2 py-1">المتبقي / رصيد للعميل</th>
+                    <th class="px-2 py-1">المتبقي / رصيد للمستفيد</th>
                     <th class="px-2 py-1">الإجراء</th>
                 </tr>
             </thead>

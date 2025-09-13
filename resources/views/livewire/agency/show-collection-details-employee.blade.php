@@ -55,9 +55,8 @@
                 </div>
 
                 <div class="flex items-center">
-                    <strong class="min-w-[100px] text-gray-500">الحالة:</strong>
-                    <span
-                        class="font-medium">{{ optional($sale->collections->last()?->customerType)->label ?? 'غير محدد' }}</span>
+                    <strong class="min-w-[100px] text-gray-500">نوع الحساب:</strong>
+                        <span class="font-medium">{{ $accountTypeLabel }}</span>
                 </div>
             </div>
         </div>

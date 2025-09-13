@@ -177,11 +177,14 @@ class Providers extends Component
     ]);
 }
 
-        }
-        $this->showModal = false;
-        $this->fetchProviders();
-         session()->flash('message', $this->editMode ? 'تم تحديث المزود بنجاح' : 'تم إضافة المزود بنجاح');
-session()->flash('type', 'success');
+            }
+    $this->showModal = false;
+    $this->fetchProviders();
+    $this->resetForm();            // ← يمنع تكرار نفس البيانات
+    $this->resetValidation();      // ← تنظيف الأخطاء إن وجدت
+    session()->flash('message', $this->editMode ? 'تم تحديث المزود بنجاح' : 'تم إضافة المزود بنجاح');
+    session()->flash('type', 'success');
+
 
     }
 

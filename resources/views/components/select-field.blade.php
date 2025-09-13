@@ -178,7 +178,7 @@ x-effect="
                 $nextTick(() => { menuWidth = $refs.trigger?.offsetWidth || 0 })
             }"
     @keydown.tab="open = false; activeIndex = -1;"
-    @keydown.enter.prevent="if (!{{ $disabled ? 'true' : 'false' }}) { open = !open; activeIndex = -1; }"
+    @keydown.enter.prevent.stop="if (!{{ $disabled ? 'true' : 'false' }}) { if (open && activeIndex >= 0) { selectActiveItem(); } else { open = !open; activeIndex = -1; } }"
     @keydown.space.prevent="if (!{{ $disabled ? 'true' : 'false' }}) { 
     if (open && activeIndex >= 0) {
         selectActiveItem(); 
@@ -186,7 +186,7 @@ x-effect="
         open = !open; 
         activeIndex = -1;
     }
-}"    @keydown="handleArrowKeys($event)"
+}"    @keydown.enter.prevent.stop="selectActiveItem()" @keydown="handleArrowKeys($event)"
     tabindex="0"
     x-ref="trigger"
     class="w-full rounded-lg border border-gray-300 px-3 {{ $compact ? 'py-1.5 text-sm' : 'py-2 text-xs' }} focus:ring-2  focus:ring-[rgb(var(--primary-500))] focus:border-[rgb(var(--primary-500))] focus:outline-none bg-white cursor-pointer flex items-center justify-between peer"
@@ -227,7 +227,7 @@ x-effect="
                     class="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-[rgb(var(--primary-500))]"
                     @click.stop
                     @keydown.escape="open = false; activeIndex = -1;"
-                    @keydown="handleArrowKeys($event)"
+                    @keydown.enter.prevent.stop="selectActiveItem()" @keydown="handleArrowKeys($event)"
                 />
             </div>
         @endif
