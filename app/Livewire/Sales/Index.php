@@ -114,6 +114,8 @@ class Index extends Component
     ];
 
     public $successMessage;
+    public float $currentMonthRatePct = 0.0;     // % عمولة هذا الشهر (override أو المثبّت)
+    public float $currentMonthMainTarget = 0.0;  // الهدف الأساسي لهذا الشهر
 
     private function editWindowMinutes(): int
     {
@@ -697,6 +699,8 @@ $this->totalReceived = max(round($this->totalAmount - $this->totalPending, 2), 0
                 : (float)(CommissionProfile::where('agency_id',$agency->id)
                     ->where('is_active', true)->value('employee_rate') ?? 0);
             $rate = $ratePct / 100.0;
+            $this->currentMonthMainTarget = round($target, 2);
+            $this->currentMonthRatePct    = round($ratePct, 2);
 
 
         // أرباح الشهر حسب sale_date وتجميع profit المُحصّل فقط للـDue

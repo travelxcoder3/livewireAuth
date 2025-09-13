@@ -43,18 +43,28 @@ $columns = SalesTable::columns();
 
     <!-- الكروت داخل كارد رئيسي في الوسط -->
     <div class="col-span-12 md:col-span-8 lg:col-span-6">
-        <div class="bg-white border shadow rounded-xl px-2 py-2 flex flex-wrap justify-center gap-x-2 gap-y-2 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
+<div class="bg-white border shadow rounded-xl px-2 py-2 flex flex-wrap justify-center gap-x-8 md:gap-x-12 gap-y-2 items-center text-xs font-semibold text-gray-700 whitespace-nowrap">
+            <!-- نسبة عمولة الشهر (Override للشهر أو المثبّت مرة واحدة) -->
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
+                <span class="text-[rgb(var(--primary-600))]"> عمولة الشهر</span>
+                <span>{{ number_format($currentMonthRatePct, 2) }}%</span>
+            </div>
+
+            <!-- الهدف الأساسي لهذا الشهر -->
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
+                <span class="text-[rgb(var(--primary-600))]">الهدف الأساسي</span>
+                <span>{{ number_format($currentMonthMainTarget, 2) }} {{ $currency }}</span>
+            </div>
             <!-- الربح -->
             <div class="flex flex-col items-center px-1 w-full sm:w-auto">
                 <span class="text-[rgb(var(--primary-600))]">الربح</span>
                 <span>{{ number_format($totalProfit, 2) }} {{ $currency }}</span>
             </div>
             <!-- العمولة المتوقعة (بناءً على جميع المبيعات) -->
-<div class="flex flex-col items-center px-1 w-full sm:w-auto">
-    <span class="text-[rgb(var(--primary-600))]">العمولة المتوقعة</span>
-    <span>{{ number_format($userCommission, 2) }} {{ $currency }}</span>
-</div>
-
+            <div class="flex flex-col items-center px-1 w-full sm:w-auto">
+                <span class="text-[rgb(var(--primary-600))]">العمولة المتوقعة</span>
+                <span>{{ number_format($userCommission, 2) }} {{ $currency }}</span>
+            </div>
 
         </div>
     </div>
