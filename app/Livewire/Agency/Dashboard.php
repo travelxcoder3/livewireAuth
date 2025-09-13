@@ -34,167 +34,175 @@ class Dashboard extends Component
     public $monthlyCollected = 0;
     public $monthlyRemaining = 0;
 
-    public function mount()
-    {
-        if (!Auth::check() || !Auth::user()->agency_id) {
-            session()->flash('error', 'ليس لديك صلاحيات للوصول للوحة التحكم.');
-            return redirect('/');
-        }
-
-        $agencyId = Auth::user()->agency_id;
-        $userId   = Auth::user()->id;
-        $isAdmin  = Auth::user()->hasRole('agency-admin');
-
-        // إحصائيات المستخدمين حسب الدور
-        if ($isAdmin) {
-            $this->totalUsers  = User::where('agency_id', $agencyId)->count();
-            $this->activeUsers = User::where('agency_id', $agencyId)->where('is_active', 1)->count();
-            $this->onlineUsers = User::where('agency_id', $agencyId)
-                ->whereNotNull('last_activity_at')
-                ->where('last_activity_at', '>=', now()->subMinutes(5))
-                ->count();
-        } else {
-            $this->totalUsers  = 1;
-            $this->activeUsers = Auth::user()->is_active ? 1 : 0;
-            $this->onlineUsers = (Auth::user()->last_activity_at && Auth::user()->last_activity_at >= now()->subMinutes(5)) ? 1 : 0;
-        }
-
-        // الخدمات
-        $this->serviceTypes = ServiceType::where('agency_id', $agencyId)->get();
-        $this->selectedServiceType = $this->serviceTypes->first()?->id;
-        $this->updateStatsData();
-
-        // المبيعات حسب الخدمة (استبعاد Void والاحتفاظ بالسالب للاسترداد)
-        $salesByServiceQuery = Sale::select(
-            'service_type_id',
-            DB::raw('SUM(usd_sell) as total_sales'),
-            DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
-        )
-        ->where('agency_id', $agencyId)
-        ->where('status','!=','Void');
-
-        if (!$isAdmin) {
-            $salesByServiceQuery->where('user_id', $userId);
-        }
-
-        $this->salesByService = $salesByServiceQuery
-            ->groupBy('service_type_id')
-            ->with('serviceType')
-            ->get()
-            ->map(function($row) {
-                return [
-                    'service_type'     => $row->serviceType ? $row->serviceType->name : '-',
-                    'total_sales'      => $row->total_sales,
-                    'operations_count' => $row->operations_count
-                ];
-            })->toArray();
-
-        $month = now()->startOfMonth()->toDateString();
-
-        // 1) الهدف الشهري
-        $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
-            ->where('month', $month)
-            ->value('target_amount') ?? 0;
-
-        // المبيعات حسب الموظف (استبعاد Void والاحتفاظ بالسالب للاسترداد)
-        $salesByEmployeeQuery = Sale::select(
-            'user_id',
-            DB::raw('SUM(usd_sell) as total_sales'),
-            DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
-        )
-        ->where('agency_id', $agencyId)
-        ->where('status','!=','Void')
-        ->whereNotNull('user_id');
-
-        if (!$isAdmin) $salesByEmployeeQuery->where('user_id', $userId);
-
-        $salesData = $salesByEmployeeQuery->groupBy('user_id')->get();
-        $userIds = $salesData->pluck('user_id')->toArray();
-        $users   = User::whereIn('id', $userIds)->get()->keyBy('id');
-
-        $this->salesByEmployee = $salesData->map(function($row) use ($users) {
-            $user = $users->get($row->user_id);
-            return [
-                'employee'         => $user ? $user->name : 'مستخدم غير معروف (ID: ' . $row->user_id . ')',
-                'total_sales'      => $row->total_sales,
-                'operations_count' => $row->operations_count,
-                'user_id'          => $row->user_id
-            ];
-        })->toArray();
-
-        // المبيعات حسب الفرع (استبعاد Void)
-        $mainAgencyId = $agencyId;
-        $branchIds = Agency::where('parent_id', $mainAgencyId)->pluck('id')->toArray();
-        $branchIds[] = $mainAgencyId;
-
-        $this->salesByBranch = Sale::select(
-            'agency_id',
-            DB::raw('SUM(usd_sell) as total_sales'),
-            DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
-        )
-        ->whereIn('agency_id', $branchIds)
-        ->where('status','!=','Void')
-        ->groupBy('agency_id')
-        ->with('agency')
-        ->get()
-        ->map(function($row) {
-            return [
-                'branch'           => $row->agency ? $row->agency->name : '-',
-                'total_sales'      => $row->total_sales,
-                'operations_count' => $row->operations_count
-            ];
-        })->toArray();
-
-        // نطاق الشهر الحالي
-        $start = now()->startOfMonth();
-        $end   = now()->endOfMonth();
-
-        // إعادة الهدف (لنفس الشهر)
-        $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
-            ->where('month', $start->toDateString())
-            ->value('target_amount') ?? 0;
-
-        // التكاليف (استبعاد Void)
-        $monthlyCostQuery = Sale::where('agency_id', $agencyId)->where('status','!=','Void');
-        if (!$isAdmin) $monthlyCostQuery->where('user_id', $userId);
-        $this->monthlyCost = $monthlyCostQuery
-            ->whereBetween('sale_date', [$start, $end])
-            ->sum('usd_buy');
-
-        // أرباح الشهر تمامًا مثل واجهة المبيعات: sum(sale_profit) مع استبعاد Void
-        $this->monthlyProfit = round(
-            Sale::where('agency_id', $agencyId)
-                ->when(!$isAdmin, fn($q) => $q->where('user_id', $userId))
-                ->where('status','!=','Void')
-                ->whereBetween('sale_date', [$start, $end])
-                ->sum('sale_profit'),
-            2
-        );
-
-        // ✅ صافي المدفوع مباشرة + صافي المُحصّل (نخصم الاسترداد أولاً من التحصيلات ثم من المدفوع)
-        [$netPaid, $netCollected] = $this->computeNetPaidAndCollectedForRange(
-            $agencyId,
-            $start->toDateString(),
-            $end->toDateString(),
-            $userId,
-            $isAdmin,
-            null
-        );
-        $this->monthlyPaid      = $netPaid;
-        $this->monthlyCollected = $netCollected;
-
-        // ✅ المبيعات المحققة = المحصّل الصافي فعليًا (بعد خصم الاسترداد)
-        $this->monthlyAchieved  = $netPaid + $netCollected;
-
-        // ✅ المؤجّل بنفس منطق واجهة المبيعات وعلى مستوى مجموعات البيع
-        $this->monthlyRemaining = $this->computeDeferredForRange(
-            $agencyId,
-            $start->toDateString(),
-            $end->toDateString(),
-            $userId,
-            $isAdmin
-        );
+public function mount()
+{
+    if (!Auth::check() || !Auth::user()->agency_id) {
+        session()->flash('error', 'ليس لديك صلاحيات للوصول للوحة التحكم.');
+        return redirect('/');
     }
+
+    $agencyId = Auth::user()->agency_id;
+    $userId   = Auth::user()->id;
+    $isAdmin  = Auth::user()->hasRole('agency-admin');
+
+    // إحصائيات المستخدمين
+    if ($isAdmin) {
+        $this->totalUsers  = User::where('agency_id', $agencyId)->count();
+        $this->activeUsers = User::where('agency_id', $agencyId)->where('is_active', 1)->count();
+        $this->onlineUsers = User::where('agency_id', $agencyId)
+            ->whereNotNull('last_activity_at')
+            ->where('last_activity_at', '>=', now()->subMinutes(5))
+            ->count();
+    } else {
+        $this->totalUsers  = 1;
+        $this->activeUsers = Auth::user()->is_active ? 1 : 0;
+        $this->onlineUsers = (Auth::user()->last_activity_at && Auth::user()->last_activity_at >= now()->subMinutes(5)) ? 1 : 0;
+    }
+
+    // الخدمات + تحميل أولية للرسوم البيانية
+    $this->serviceTypes = ServiceType::where('agency_id', $agencyId)->get();
+    $this->selectedServiceType = $this->serviceTypes->first()?->id;
+    $this->updateStatsData();
+
+    // المبيعات حسب الخدمة (استبعاد Void والاحتفاظ بالسالب للاسترداد)
+    $salesByServiceQuery = Sale::select(
+        'service_type_id',
+        DB::raw('SUM(usd_sell) as total_sales'),
+        DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
+    )
+    ->where('agency_id', $agencyId)
+    ->where('status','!=','Void');
+
+    if (!$isAdmin) $salesByServiceQuery->where('user_id', $userId);
+
+    $this->salesByService = $salesByServiceQuery
+        ->groupBy('service_type_id')
+        ->with('serviceType')
+        ->get()
+        ->map(fn($row) => [
+            'service_type'     => $row->serviceType?->name ?? '-',
+            'total_sales'      => $row->total_sales,
+            'operations_count' => $row->operations_count,
+        ])->toArray();
+
+    // الهدف الشهري
+    $month = now()->startOfMonth()->toDateString();
+    $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
+        ->where('month', $month)
+        ->value('target_amount') ?? 0;
+
+    // المبيعات حسب الموظف (استبعاد Void)
+    $salesByEmployeeQuery = Sale::select(
+        'user_id',
+        DB::raw('SUM(usd_sell) as total_sales'),
+        DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
+    )
+    ->where('agency_id', $agencyId)
+    ->where('status','!=','Void')
+    ->whereNotNull('user_id');
+
+    if (!$isAdmin) $salesByEmployeeQuery->where('user_id', $userId);
+
+    $salesData = $salesByEmployeeQuery->groupBy('user_id')->get();
+    $users     = User::whereIn('id', $salesData->pluck('user_id'))->get()->keyBy('id');
+
+    $this->salesByEmployee = $salesData->map(fn($row) => [
+        'employee'         => $users->get($row->user_id)->name ?? "مستخدم غير معروف (ID: {$row->user_id})",
+        'total_sales'      => $row->total_sales,
+        'operations_count' => $row->operations_count,
+        'user_id'          => $row->user_id,
+    ])->toArray();
+
+    // المبيعات حسب الفرع (استبعاد Void)
+    $branchIds = Agency::where('parent_id', $agencyId)->pluck('id')->toArray();
+    $branchIds[] = $agencyId;
+
+    $this->salesByBranch = Sale::select(
+        'agency_id',
+        DB::raw('SUM(usd_sell) as total_sales'),
+        DB::raw('SUM(CASE WHEN usd_sell > 0 THEN 1 ELSE 0 END) as operations_count')
+    )
+    ->whereIn('agency_id', $branchIds)
+    ->where('status','!=','Void')
+    ->groupBy('agency_id')
+    ->with('agency')
+    ->get()
+    ->map(fn($row) => [
+        'branch'           => $row->agency?->name ?? '-',
+        'total_sales'      => $row->total_sales,
+        'operations_count' => $row->operations_count,
+    ])->toArray();
+
+    // نطاق الشهر الحالي
+    $start = now()->startOfMonth();
+    $end   = now()->endOfMonth();
+
+    // إعادة الهدف لنفس الشهر
+    $this->monthlyTarget = AgencyTarget::where('agency_id', $agencyId)
+        ->where('month', $start->toDateString())
+        ->value('target_amount') ?? 0;
+
+    // التكاليف (استبعاد Void)
+    $monthlyCostQuery = Sale::where('agency_id', $agencyId)->where('status','!=','Void');
+    if (!$isAdmin) $monthlyCostQuery->where('user_id', $userId);
+    $this->monthlyCost = $monthlyCostQuery
+        ->whereBetween('sale_date', [$start, $end])
+        ->sum('usd_buy');
+
+    // أرباح الشهر بنفس منطق شاشة المبيعات (تجميع بالمجموعة + التعامل مع Refund)
+    $monthRows = Sale::where('agency_id', $agencyId)
+        ->when(!$isAdmin, fn($q) => $q->where('user_id', $userId))
+        ->where('status','!=','Void')
+        ->whereBetween('sale_date', [$start, $end])
+        ->withSum('collections', 'amount')
+        ->get(['id','usd_sell','amount_paid','sale_profit','sale_group_id','status']);
+
+    $groupedM = $monthRows->groupBy(fn($s) => $s->sale_group_id ?: $s->id);
+
+    $monthProfit = 0.0;
+    foreach ($groupedM as $g) {
+        $gProfit = (float) $g->sum('sale_profit');
+
+        $hasRefund = $g->contains(function ($row) {
+            $st = mb_strtolower((string)($row->status ?? ''));
+            return str_contains($st, 'refund') || (float)$row->usd_sell < 0;
+        });
+
+        if ($hasRefund) {
+            $positiveOnly = (float) $g->filter(fn($row) => (float)$row->sale_profit > 0)
+                                      ->sum('sale_profit');
+            $monthProfit += max($positiveOnly, 0.0);
+        } else {
+            $monthProfit += $gProfit;
+        }
+    }
+    $this->monthlyProfit = round($monthProfit, 2);
+
+    // صافي المدفوع + صافي المُحصَّل (نخصم الاسترداد أولاً من التحصيلات ثم من المدفوع)
+    [$netPaid, $netCollected] = $this->computeNetPaidAndCollectedForRange(
+        $agencyId,
+        $start->toDateString(),
+        $end->toDateString(),
+        $userId,
+        $isAdmin,
+        null
+    );
+    $this->monthlyPaid      = $netPaid;
+    $this->monthlyCollected = $netCollected;
+
+    // المبيعات المُحققة
+    $this->monthlyAchieved  = $netPaid + $netCollected;
+
+    // المؤجَّل بنفس منطق واجهة المبيعات
+    $this->monthlyRemaining = $this->computeDeferredForRange(
+        $agencyId,
+        $start->toDateString(),
+        $end->toDateString(),
+        $userId,
+        $isAdmin
+    );
+}
+
 
     public function updatedSelectedServiceType()
     {
